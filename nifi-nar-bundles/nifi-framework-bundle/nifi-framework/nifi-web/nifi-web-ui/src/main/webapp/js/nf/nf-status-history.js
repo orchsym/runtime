@@ -43,7 +43,7 @@
 }(this, function ($, d3, nfCommon, nfDialog, nfErrorHandler) {
     var config = {
         nifiInstanceId: 'nifi-instance-id',
-        nifiInstanceLabel: 'Orchsym',
+        nifiInstanceLabel: nf._.msg('nf-status-history.NiFi'),
         type: {
             processor: 'Processor',
             inputPort: 'Input Port',
@@ -68,7 +68,7 @@
             return nfCommon.formatDuration(d);
         },
         'COUNT': function (d) {
-            // need to handle floating point number since this formatter 
+            // need to handle floating point number since this formatter
             // will also be used for average values
             if (d % 1 === 0) {
                 return nfCommon.formatInteger(d);
@@ -169,8 +169,8 @@
     var insufficientHistory = function () {
         // notify the user
         nfDialog.showOkDialog({
-            headerText: 'Status History',
-            dialogContent: 'Insufficient history, please try again later.'
+            headerText: nf._.msg('nf-status-history.StatusHistory'),
+            dialogContent: nf._.msg('nf-status-history.Message')
         });
     };
 
@@ -295,8 +295,8 @@
             $('#status-history-details').empty();
 
             // add status history details
-            var detailsContainer = buildDetailsContainer('Status History');
-            d3.map(statusHistory.details).each(function (value, label) {
+            var detailsContainer = buildDetailsContainer(nf._.msg('nf-status-history.StatusHistory'));
+            d3.map(statusHistory.details).forEach(function (label, value) {
                 addDetailItem(detailsContainer, label, value);
             });
 
@@ -450,8 +450,8 @@
                     return s.timestamp;
                 });
             });
-            addDetailItem(detailsContainer, 'Start', nfCommon.formatDateTime(minDate));
-            addDetailItem(detailsContainer, 'End', nfCommon.formatDateTime(maxDate));
+            addDetailItem(detailsContainer, nf._.msg('nf-status-history.Start'), nfCommon.formatDateTime(minDate));
+            addDetailItem(detailsContainer, nf._.msg('nf-status-history.End'), nfCommon.formatDateTime(maxDate));
 
             // determine the x axis range
             x.domain([minDate, maxDate]);
@@ -842,10 +842,10 @@
             });
 
             // build the cluster container
-            var clusterDetailsContainer = buildDetailsContainer('Orchsym');
+            var clusterDetailsContainer = buildDetailsContainer(nf._.msg('nf-status-history.NiFi'));
 
             // add the total cluster values
-            addDetailItem(clusterDetailsContainer, 'Min / Max / Mean', '', 'cluster-aggregate-statistics');
+            addDetailItem(clusterDetailsContainer, nf._.msg('nf-status-history.Min_Max_Mean'), '', 'cluster-aggregate-statistics');
 
             // build the cluster legend
             addLegendEntry(clusterDetailsContainer, cluster[0]);
@@ -856,7 +856,7 @@
                 var nodeDetailsContainer = buildDetailsContainer('Nodes');
 
                 // add the total cluster values
-                addDetailItem(nodeDetailsContainer, 'Min / Max / Mean', '', 'node-aggregate-statistics');
+                addDetailItem(nodeDetailsContainer, nf._.msg('nf-status-history.Min_Max_Mean'), '', 'node-aggregate-statistics');
 
                 // add each legend entry
                 $.each(nodes, function (_, instance) {
@@ -1033,9 +1033,9 @@
             // configure the dialog and make it draggable
             $('#status-history-dialog').modal({
                 scrollableContentStyle: 'scrollable',
-                headerText: "Status History",
+                headerText: nf._.msg('nf-status-history.StatusHistory'),
                 buttons: [{
-                    buttonText: 'Close',
+                    buttonText: nf._.msg('nf-status-history.Close'),
                     color: {
                         base: '#728E9B',
                         hover: '#004849',
