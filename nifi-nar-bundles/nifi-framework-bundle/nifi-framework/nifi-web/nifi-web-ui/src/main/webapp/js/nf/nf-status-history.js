@@ -296,7 +296,7 @@
 
             // add status history details
             var detailsContainer = buildDetailsContainer(nf._.msg('nf-status-history.StatusHistory'));
-            d3.map(statusHistory.details).forEach(function (label, value) {
+            d3.map(statusHistory.details).each(function (label, value) {
                 addDetailItem(detailsContainer, label, value);
             });
 
