@@ -164,6 +164,30 @@
     };
 
     /**
+     * Determines whether the components in the specified selection can be terminated.
+     *
+     * @param {selection} selection         The selections of currently selected components
+     */
+    var canTerminate = function (selection) {
+        if (selection.size() !== 1) {
+            return false;
+        }
+
+        if (nfCanvasUtils.canModify(selection) === false) {
+            return false;
+        }
+
+        var terminatable = false;
+        if (nfCanvasUtils.isProcessor(selection)) {
+            var selectionData = selection.datum();
+            var aggregateSnapshot = selectionData.status.aggregateSnapshot;
+            terminatable = aggregateSnapshot.runStatus !== 'Running' && aggregateSnapshot.activeThreadCount > 0;
+        }
+
+        return terminatable;
+    };
+
+    /**
      * Determines whether the components in the specified selection support stats.
      *
      * @param {selection} selection         The selection of currently selected components
@@ -771,6 +795,7 @@
         {separator: true},
         {id: 'start-menu-item', condition: isRunnable, menuItem: {clazz: 'fa fa-play', text: nf._.msg('nf-context-menu.Start'), action: 'start'}},
         {id: 'stop-menu-item', condition: isStoppable, menuItem: {clazz: 'fa fa-stop', text: nf._.msg('nf-context-menu.Stop'), action: 'stop'}},
+        {id: 'terminate-menu-item', condition: canTerminate, menuItem: {clazz: 'fa fa-hourglass-end', text: '终止', action: 'terminate'}},
         {id: 'enable-menu-item', condition: canEnable, menuItem: {clazz: 'icon icon-enable', text: nf._.msg('nf-context-menu.canEnable'), action: 'enable'}},
         {id: 'disable-menu-item', condition: canDisable, menuItem: {clazz: 'icon icon-enable-false', text: nf._.msg('nf-context-menu.canDisable'), action: 'disable'}},
         {id: 'enable-transmission-menu-item', condition: canStartTransmission, menuItem: {clazz: 'fa fa-bullseye', text: nf._.msg('nf-context-menu.EnableTransmission'), action: 'enableTransmission'}},
