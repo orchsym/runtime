@@ -25,17 +25,18 @@ body {
     left: 0px;
     right: 0px;
     bottom: 0px;
-    background: #7098AD;
+    background: #03111F;
+    background: transparent url(../images/splash.jpg) no-repeat center center;
     z-index: 2000;
 }
 
 #splash-img {
     position: absolute;
-    top: 10%;
-    bottom: 10%;
-    left: 10%;
-    right: 10%;
-    background: transparent url(../images/nifi-drop-splash.svg) no-repeat center center;
+    top: 0%;
+    bottom: 0%;
+    left: 0%;
+    right: 0%;
+    background: transparent url(../images/splash.jpg) no-repeat center center;
 }
 
 div.context-menu-provenance {
