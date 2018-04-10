@@ -16,20 +16,18 @@ limitations under the License.
 -->
 <div id="breadcrumbs">
     <div id="data-flow-title-viewport">
-        <div id="breadcrumbs-left-border"></div>
         <div id="data-flow-title-container">
             <span ng-repeat="crumb in breadcrumbs">
-                <span ng-if="separatorFunc(crumb.parentBreadcrumb)" style="margin: 0 12px;">
+                <span ng-if="separatorFunc(crumb.parentBreadcrumb)" style="margin: 0 12px;color: #fff">
                     &raquo;
                 </span>
                 <span ng-if="isTracking(crumb)" title="{{getVersionControlTooltip(crumb)}}" class="{{getVersionControlClass(crumb)}}" style="margin-right: 6px;"></span>
-                <span class="link"
-                      ng-class="(highlightCrumbId === crumb.id) ? 'link-bold' : ''"
+                <span 
+                      ng-class="(highlightCrumbId === crumb.id) ? 'not-link' : 'link'"
                       ng-click="clickFunc(crumb.id)">
                     {{crumb.label}}
                 </span>
             </span>
         </div>
-        <div id="breadcrumbs-right-border"></div>
     </div>
 </div>

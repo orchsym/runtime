@@ -93,7 +93,7 @@
                 <div id="splash-logo" layout="column" layout-align="end center" style="width:50%;height:40%">
                     <img src="./images/splash-logo.png"/>
                     <div id="splash-progress" layout="column" layout-align="end center" style="height:10%;width:85%">
-                        <md-progress-linear md-mode="indeterminate" class="md-info"></md-progress-linear>
+                        <md-progress-linear md-mode="indeterminate" class="md-warn md-hue-1"></md-progress-linear>
                     </div>
                 </div>
                 <div id="splash-copyright" layout="row" layout-align="center end" style="height:40%">
@@ -103,7 +103,10 @@
         <jsp:include page="/WEB-INF/partials/message-pane.jsp"/>
         <jsp:include page="/WEB-INF/partials/banners-main.jsp"/>
         <jsp:include page="/WEB-INF/partials/canvas/canvas-header.jsp"/>
+        <jsp:include page="/WEB-INF/partials/canvas/breadcrumb.jsp"/>
+        <!--
         <jsp:include page="/WEB-INF/partials/canvas/flow-status.jsp"/>
+        -->
         <jsp:include page="/WEB-INF/partials/canvas/about-dialog.jsp"/>
         <jsp:include page="/WEB-INF/partials/ok-dialog.jsp"/>
         <jsp:include page="/WEB-INF/partials/yes-no-dialog.jsp"/>
