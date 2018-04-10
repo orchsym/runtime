@@ -376,14 +376,14 @@
 
                         this.getElement().modal({
                             scrollableContentStyle: 'scrollable',
-                            headerText: 'About Apache NiFi',
+                            headerText: 'About Orchsym Studio',
                             handler: {
                                 resize: resizeAbout
                             },
                             buttons: [{
                                 buttonText: 'Ok',
                                 color: {
-                                    base: '#728E9B',
+                                    base: '#262729',
                                     hover: '#004849',
                                     text: '#ffffff'
                                 },
