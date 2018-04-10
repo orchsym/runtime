@@ -17,27 +17,21 @@
 <%@ page contentType="text/html" pageEncoding="UTF-8" session="false" %>
 <div id="nf-about">
     <div id="nf-about-pic-container">
-        <div id="nf-about-pic"></div>
+        <div id="nf-about-pic" layout="column" layout-align="center center">
+            <div id="about-logo" layout="column" layout-align="end center" style="width:50%;height:40%">
+                <img src="./images/logo.png"/>
+            </div>
+            <div id="about-version" layout="row" layout-align="end end" style="width:100%;height:40%">
+                <p style="font-size:12px; color:white; padding-right: 10px">版本： 1.0.0 &nbsp;&nbsp;更新时间：2018/4/10</p>
+            </div>
+        </div>
     </div>
     <div class="dialog-content">
         <div id="nf-about-content">
-            <span id="nf-version"></span>
-            <div id="nf-version-detail">
-                <p id="nf-version-detail-timestamp">
-                    <span id="nf-about-build-timestamp"></span>
-                </p>
-                <p id="nf-version-detail-tag">
-                    Tagged <span id="nf-about-build-tag"></span>
-                </p>
-                <p id="nf-version-detail-commit">
-                    From <span id="nf-about-build-revision"></span> on branch <span id="nf-about-build-branch"></span>
-                </p>
-            </div>
             <p>
-                Apache NiFi is a framework to support highly scalable and flexible dataflows.
-                It can be run on laptops up through clusters of enterprise class servers.
-                Instead of dictating a particular dataflow or behavior it empowers you to design your own
-                optimal dataflow tailored to your specific environment.
+                数聚蜂巢编排平台采用应用组件可视化拖拽的操作方式，实现对企业业务、逻辑、流程的编排重组，从而缩短企业内部创新周期，提高协作效率，快速满足业务需求。
+                <br><br>
+                技术咨询电话：400-888-8888
             </p>
         </div>
     </div>
