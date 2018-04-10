@@ -97,6 +97,10 @@ div.graph-control div.graph-control-expansion {
     margin-left: 9px !important;
 }
 
+div.graph-control div.graph-control-expansion:hover {
+    color: #FFFFFF;
+}
+
 div.graph-control-header-icon {
     float: left;
     margin: 8px 10px 0px 0px;
@@ -117,8 +121,8 @@ div.graph-control-header-action {
     width: 32px;
 }
 
-.graph-control-header-container:hover {
-    background: linear-gradient(90deg, rgba(227,232,235,0) 254px, rgba(227,232,235,1) 32px);
+.graph-control-header-container {
+    background: #E8E9EB;
 }
 
 /* navigate buttons */

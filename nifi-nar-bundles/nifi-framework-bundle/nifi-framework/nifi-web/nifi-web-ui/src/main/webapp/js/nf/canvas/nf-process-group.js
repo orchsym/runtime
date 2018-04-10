@@ -164,7 +164,7 @@
                     return d.dimensions.width;
                 },
                 'height': 32,
-                'fill': '#b8c6cd'
+                'fill': '#506773'
             });
 
         // process group name
