@@ -16,7 +16,7 @@
 --%>
 <%@ page contentType="text/html" pageEncoding="UTF-8" session="false" %>
 <div id="history">
-    <div id="history-header-text">NiFi History</div>
+    <div id="history-header-text">History</div>
     <div id="history-filter-container">
         <div id="cluster-history-message" class="hidden">
             Viewing history for the current node only. Browse to another node to view its history.

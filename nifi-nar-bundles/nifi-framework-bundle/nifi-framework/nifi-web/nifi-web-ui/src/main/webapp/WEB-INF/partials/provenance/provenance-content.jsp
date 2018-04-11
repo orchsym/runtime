@@ -21,7 +21,7 @@
     <span id="initial-flowfile-query" class="hidden"><c:out value="${param.flowFileUuid}"/></span>
     <span id="nifi-controller-uri" class="hidden"></span>
     <span id="nifi-content-viewer-url" class="hidden"></span>
-    <div id="provenance-header-text">NiFi Data Provenance</div>
+    <div id="provenance-header-text">Data Provenance</div>
     <div id="provenance-event-search" class="provenance-panel">
         <div id="provenance-filter-controls" class="filter-controls">
             <div id="provenance-filter-stats" class="filter-status">
