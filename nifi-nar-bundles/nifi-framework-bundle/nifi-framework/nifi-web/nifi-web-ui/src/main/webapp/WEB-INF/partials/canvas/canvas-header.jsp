@@ -170,12 +170,6 @@
                     </md-menu-item>
                     <md-menu-divider></md-menu-divider>
                     <md-menu-item layout-align="space-around center">
-                        <a id="help-link"
-                           ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.help.shell.launch();">
-                            <i class="fa fa-question-circle"></i>Help
-                        </a>
-                    </md-menu-item>
-                    <md-menu-item layout-align="space-around center">
                         <a id="about-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.about.modal.show();">
                             <i class="fa fa-info-circle"></i>About
