@@ -17,7 +17,7 @@
 <%@ page contentType="text/html" pageEncoding="UTF-8" session="false" %>
 <div id="cluster">
     <div id="cluster-header-and-filter">
-        <div id="cluster-header-text">NiFi Cluster</div>
+        <div id="cluster-header-text">Cluster</div>
     </div>
     <div id="cluster-tabs" class="tab-container"></div>
     <div id="cluster-tabs-content">
