@@ -27,6 +27,7 @@ body {
     bottom: 0px;
     background: #03111F;
     background: transparent url(../images/splash.jpg) no-repeat center center;
+    background-size:100%;
     z-index: 2000;
 }
 
