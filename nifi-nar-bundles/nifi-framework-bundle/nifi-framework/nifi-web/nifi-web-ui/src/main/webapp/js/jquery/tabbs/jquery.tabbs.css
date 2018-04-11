@@ -24,7 +24,7 @@ ul.tab-pane {
 
 .tab {
     float: left;
-    background-color: #eaeef0;
+    background-color: #fff;
     margin-right: 2px;
     text-align: center;
     cursor: pointer;
@@ -33,22 +33,21 @@ ul.tab-pane {
     height: 31px;
     min-width: 88px;
     padding: 0 10px;
-    border: 1px solid #CCDADB;
+    border: 0px solid #CCDADB;
     text-transform: uppercase;
     color: #004849;
     border-bottom: 0px;
 }
 
 .tab:hover {
-    border: 1px solid #004849;
+    border: 0px solid #004849;
+    background-color: #f8f8f8;
 }
 
 .selected-tab {
     background-color: #fff;
-    border: 1px solid #004849;
-    border-bottom-color: #fff;
     color: #262626;
-    border-bottom: 1px solid #fff !important;
+    border-bottom: 2px solid #1AD0A6 !important;
 }
 
 .tab-container {
