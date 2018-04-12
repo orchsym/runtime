@@ -1279,7 +1279,7 @@ public class FlowResource extends ApplicationResource {
 
         // create the about dto
         final AboutDTO aboutDTO = new AboutDTO();
-        aboutDTO.setTitle("NiFi");
+        aboutDTO.setTitle("Orchsym");
         aboutDTO.setUri(generateResourceUri());
         aboutDTO.setTimezone(new Date());
 

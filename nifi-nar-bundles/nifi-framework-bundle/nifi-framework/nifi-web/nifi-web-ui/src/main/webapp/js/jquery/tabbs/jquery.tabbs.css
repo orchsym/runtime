@@ -47,7 +47,8 @@ ul.tab-pane {
 .selected-tab {
     background-color: #fff;
     color: #262626;
-    border-bottom: 2px solid #1AD0A6 !important;
+    border-bottom: 3px solid #1AD0A6 !important;
+    font-weight: bold;
 }
 
 .tab-container {
