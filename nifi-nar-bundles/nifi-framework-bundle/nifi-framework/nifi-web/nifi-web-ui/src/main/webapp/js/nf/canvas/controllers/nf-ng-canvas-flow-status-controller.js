@@ -302,7 +302,7 @@
                     this.getSearchContainerElement().switchClass(class1, class2, 500, function () {
                         searchCtrl.getInputElement().css('display', display);
                         if (!isVisible) {
-                            //searchCtrl.getButtonElement().css('background-color', '#FFFFFF');
+                            searchCtrl.getButtonElement().css('background-color', '#506773');
                             searchCtrl.getInputElement().focus();
                         } else {
                             searchCtrl.getButtonElement().css('background-color', '#506773');
