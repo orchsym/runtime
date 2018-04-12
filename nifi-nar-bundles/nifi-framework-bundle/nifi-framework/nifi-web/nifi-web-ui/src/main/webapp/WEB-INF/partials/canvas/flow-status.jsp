@@ -15,7 +15,7 @@
   limitations under the License.
 --%>
 <%@ page contentType="text/html" pageEncoding="UTF-8" session="false" %>
-<div id="flow-status" flex layout="row" layout-align="space-between center">
+<div id="flow-status" flex layout="row" layout-align="space-between center" style="bottom: 0px;position: absolute;width: 100%;">
     <div id="flow-status-container" layout="row" layout-align="space-around center">
         <div class="fa fa-cubes" ng-if="appCtrl.nf.ClusterSummary.isClustered()" title="Connected nodes / Total number of nodes in the cluster"><span id="connected-nodes-count">{{appCtrl.serviceProvider.headerCtrl.flowStatusCtrl.connectedNodesCount}}</span></div>
         <div class="icon icon-threads" title="Active threads"><span id="active-thread-count">{{appCtrl.serviceProvider.headerCtrl.flowStatusCtrl.activeThreadCount}}</span></div>
@@ -36,12 +36,4 @@
         <div class="fa fa-refresh" title="Last refresh"><span id="stats-last-refreshed">{{appCtrl.serviceProvider.headerCtrl.flowStatusCtrl.statsLastRefreshed}}</span></div>
         <div id="canvas-loading-container" class="loading-container"></div>
     </div>
-    <div layout="row" layout-align="end center">
-        <div id="search-container">
-            <button id="search-button" ng-click="appCtrl.serviceProvider.headerCtrl.flowStatusCtrl.search.toggleSearchField();"><i class="fa fa-search"></i></button>
-            <input id="search-field" type="text" placeholder="Search"/>
-        </div>
-        <button id="bulletin-button"><i class="fa fa-sticky-note-o"></i></button>
-    </div>
 </div>
-<div id="search-flow-results"></div>
