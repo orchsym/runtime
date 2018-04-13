@@ -29,10 +29,10 @@
     </div>
     <div layout="row" layout-align="end center">
         <div id="search-container">
-            <button id="search-button" ng-click="appCtrl.serviceProvider.headerCtrl.flowStatusCtrl.search.toggleSearchField();"><i class="fa fa-search"></i></button>
+            <button id="search-button" ng-click="appCtrl.serviceProvider.headerCtrl.flowStatusCtrl.search.toggleSearchField();"><i class="icon icon-search"></i></button>
             <input id="search-field" type="text" placeholder="Search"/>
         </div>
-        <button id="bulletin-button"><i class="fa fa-bell-o"></i></button>
+        <button id="bulletin-button"><i class="icon icon-bell"></i></button>
     </div>
 </div>
 <div id="search-flow-results"></div>

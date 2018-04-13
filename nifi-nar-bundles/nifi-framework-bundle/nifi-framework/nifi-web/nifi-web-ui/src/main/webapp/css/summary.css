@@ -786,7 +786,7 @@ span.sorted {
 
 #cluster-connection-icon:before {
     font-family: flowfont;
-    content: "\e834";
+    content: "\e803";
     font-size: 32px;
     color: #ad9897;
 }
