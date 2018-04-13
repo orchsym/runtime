@@ -736,7 +736,7 @@
                             });
                     })
                     .text(function (d) {
-                        return '\ue808';
+                        return '\ue83d';
                     });
             };
 
