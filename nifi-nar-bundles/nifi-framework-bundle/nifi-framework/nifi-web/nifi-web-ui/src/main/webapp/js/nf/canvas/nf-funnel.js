@@ -147,7 +147,7 @@
                 'x': 9,
                 'y': 34
             })
-            .text('\ue803');
+            .text('\ue809');
 
         // always support selection
         funnel.call(nfSelectable.activate).call(nfContextMenu.activate);

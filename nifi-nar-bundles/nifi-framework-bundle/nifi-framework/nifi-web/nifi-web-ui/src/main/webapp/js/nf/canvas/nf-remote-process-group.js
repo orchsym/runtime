@@ -458,7 +458,7 @@
                             'class': 'active-thread-count-icon',
                             'y': 20
                         })
-                        .text('\ue83f');
+                        .text('\ue840');
 
                     // active thread icon
                     details.append('text')

@@ -247,7 +247,7 @@
                                         'class': 'add-connect',
                                         'transform': 'translate(' + x + ', ' + y + ')'
                                     })
-                                    .text('\ue834');
+                                    .text('\ue803');
                             }
                         }
                     }

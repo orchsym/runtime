@@ -188,7 +188,7 @@
 
                 if (selection.empty()) {
                     if (nfCanvasUtils.getParentGroupId() === null) {
-                        return 'icon-drop';
+                        return 'icon-orchsym-logo';
                     } else {
                         return 'icon-group';
                     }
@@ -212,7 +212,7 @@
                             return 'icon-connect';
                         }
                     } else {
-                        return 'icon-drop';
+                        return 'icon-orchsym-logo';
                     }
                 }
             },

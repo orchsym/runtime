@@ -36,7 +36,7 @@
         <div id="component-policy-controls" class="hidden policy-controls">
             <div id="policy-selected-component-container" class="hidden policy-selected-component-container">
                 <div class="policy-selected-component-type-icon">
-                    <i class="icon icon-drop" ng-class="appCtrl.serviceProvider.graphControlsCtrl.getContextIcon()"></i>
+                    <i class="icon icon-orchsym-logo" ng-class="appCtrl.serviceProvider.graphControlsCtrl.getContextIcon()"></i>
                 </div>
                 <div class="policy-selected-component-details-container">
                     <div class="policy-selected-component-name">{{appCtrl.serviceProvider.graphControlsCtrl.getContextName()}}</div>
@@ -56,7 +56,7 @@
             </div>
             <div id="policy-selected-controller-service-container" class="hidden policy-selected-component-container">
                 <div class="policy-selected-component-type-icon">
-                    <i class="icon icon-drop"></i>
+                    <i class="icon icon-orchsym-logo"></i>
                 </div>
                 <div class="policy-selected-component-details-container">
                     <div class="policy-selected-component-name"></div>
@@ -66,7 +66,7 @@
             </div>
             <div id="policy-selected-reporting-task-container" class="hidden policy-selected-component-container">
                 <div class="policy-selected-component-type-icon">
-                    <i class="icon icon-drop"></i>
+                    <i class="icon icon-orchsym-logo"></i>
                 </div>
                 <div class="policy-selected-component-details-container">
                     <div class="policy-selected-component-name"></div>

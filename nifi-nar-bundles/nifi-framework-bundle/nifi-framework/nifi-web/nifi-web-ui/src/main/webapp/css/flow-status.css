@@ -32,6 +32,12 @@
     color: #728E9B; /*base-color*/
 }
 
+#search-button .icon {
+    font-size: 15px;
+    font-style: normal;
+    color: #FFFFFF; /*base-color*/ 
+}
+
 #flow-status .fa {
     font-size: 15px;
     font-style: normal;
@@ -181,4 +187,8 @@ div.search-glass-pane {
     right: 0px;
     bottom: 0px;
     z-index: 1000;
+}
+
+#graph-controls .icon-change-color {
+    margin-left: -7px;
 }
