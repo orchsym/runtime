@@ -67,6 +67,7 @@
     border-top: none;
     border-bottom: none;
     position: relative;
+    z-index: 100;
 }
 
 #flow-status span {
