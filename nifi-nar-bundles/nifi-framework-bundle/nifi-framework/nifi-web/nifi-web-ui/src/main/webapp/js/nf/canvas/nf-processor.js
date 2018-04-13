@@ -832,7 +832,7 @@
             .text(function (d) {
                 var img = '';
                 if (d.status.aggregateSnapshot.runStatus === 'Disabled') {
-                    img = '\ue802';
+                    img = '\ue806';
                 } else if (d.status.aggregateSnapshot.runStatus === 'Invalid') {
                     img = '\uf071';
                 } else if (d.status.aggregateSnapshot.runStatus === 'Running') {

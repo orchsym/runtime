@@ -734,7 +734,7 @@
                     } else if (d.component.transmitting === true) {
                         icon = '\uf140';
                     } else {
-                        icon = '\ue80a';
+                        icon = '\ue831';
                     }
                 }
                 return icon;
