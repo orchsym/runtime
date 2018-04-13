@@ -22,7 +22,7 @@
                 <img src="./images/logo.png"/>
             </div>
             <div id="about-version" layout="row" layout-align="end end" style="width:100%;height:40%">
-                <p style="font-size:12px; color:white; padding-right: 10px">版本： 1.0.0 &nbsp;&nbsp;更新时间：2018/4/10</p>
+                <p style="font-size:12px; color:white; padding-right: 10px">版本： 1.0.0 &nbsp;&nbsp;更新时间：2018/4/13</p>
             </div>
         </div>
     </div>
