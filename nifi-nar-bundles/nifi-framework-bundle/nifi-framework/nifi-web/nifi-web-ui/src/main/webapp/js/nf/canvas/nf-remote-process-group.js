@@ -153,7 +153,7 @@
                     return d.dimensions.width;
                 },
                 'height': 32,
-                'fill': '#b8c6cd'
+                'fill': '#506773'
             });
 
         // remote process group name
@@ -458,7 +458,7 @@
                             'class': 'active-thread-count-icon',
                             'y': 20
                         })
-                        .text('\ue83f');
+                        .text('\ue840');
 
                     // active thread icon
                     details.append('text')
@@ -734,7 +734,7 @@
                     } else if (d.component.transmitting === true) {
                         icon = '\uf140';
                     } else {
-                        icon = '\ue80a';
+                        icon = '\ue831';
                     }
                 }
                 return icon;

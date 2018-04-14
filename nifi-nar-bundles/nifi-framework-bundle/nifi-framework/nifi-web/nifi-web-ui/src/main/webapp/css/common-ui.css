@@ -319,16 +319,25 @@ span.link:focus {
 
 span.link {
     cursor: pointer;
-    color: #004849; /*link-color*/
-    font-weight: normal;
+    color: #1AD0A6; /*link-color*/
+    font-weight: bold;
     display: inline-block;
-    border-bottom: 1px solid #CCDADB;
+    border-bottom: 0px solid #1AD0A6;
     font-size: 13px;
     font-family: Roboto;
 }
 
 span.link-over {
-    border-bottom: 1px solid #004849;
+    border-bottom: 1px solid #6BE3C8;
+}
+
+span.not-link {
+    border-bottom: none;
+    color: #fff; 
+    font-weight: normal;
+    display: inline-block;
+    font-size: 13px;
+    font-family: Roboto;
 }
 
 span.link-bold {

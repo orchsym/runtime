@@ -17,7 +17,7 @@
 <%@ page contentType="text/html" pageEncoding="UTF-8" session="false" %>
 <div id="counters">
     <div id="counters-header-and-filter">
-        <div id="counters-header-text">NiFi Counters</div>
+        <div id="counters-header-text">Counters</div>
         <div id="counters-filter-controls">
             <div id="counters-filter-stats" class="filter-status">
                 Displaying&nbsp;<span id="displayed-counters"></span>&nbsp;of&nbsp;<span id="total-counters"></span>

@@ -18,7 +18,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>NiFi</title>
+        <title>Orchsym Studio</title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
         <link rel="shortcut icon" href="images/nifi16.ico"/>
         <link rel="stylesheet" href="assets/reset.css/reset.css" type="text/css" />
@@ -89,14 +89,21 @@
         <script type="text/javascript" src="js/jquery/tagcloud/jquery.tagcloud.js?${project.version}"></script>
     </head>
     <body ng-controller="ngCanvasAppCtrl" id="canvas-body">
-        <div id="splash">
-            <div id="splash-img" layout="row" layout-align="center center">
-                <md-progress-circular md-mode="indeterminate" class="md-warn" md-diameter="150"></md-progress-circular>
-            </div>
+        <div id="splash" layout="column" layout-align="center center">
+                <div id="splash-logo" layout="column" layout-align="end center" style="width:50%;height:40%">
+                    <img src="./images/splash-logo.png"/>
+                    <div id="splash-progress" layout="column" layout-align="end center" style="height:10%;width:85%">
+                        <md-progress-linear md-mode="indeterminate" class="md-warn md-hue-1"></md-progress-linear>
+                    </div>
+                </div>
+                <div id="splash-copyright" layout="row" layout-align="center end" style="height:40%">
+                    <p style="font-size:20px; color:white">&copy; 2018 Baishan Cloud Incorporated. All rights reserved.</p>
+                </div>
         </div>
         <jsp:include page="/WEB-INF/partials/message-pane.jsp"/>
         <jsp:include page="/WEB-INF/partials/banners-main.jsp"/>
         <jsp:include page="/WEB-INF/partials/canvas/canvas-header.jsp"/>
+        <jsp:include page="/WEB-INF/partials/canvas/breadcrumb.jsp"/>
         <jsp:include page="/WEB-INF/partials/canvas/flow-status.jsp"/>
         <jsp:include page="/WEB-INF/partials/canvas/about-dialog.jsp"/>
         <jsp:include page="/WEB-INF/partials/ok-dialog.jsp"/>

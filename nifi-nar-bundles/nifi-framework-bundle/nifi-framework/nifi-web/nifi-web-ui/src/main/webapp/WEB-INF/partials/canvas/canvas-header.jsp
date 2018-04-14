@@ -16,7 +16,7 @@
 --%>
 <%@ page contentType="text/html" pageEncoding="UTF-8" session="false" %>
 <md-toolbar id="header" layout-align="space-between center" layout="row" class="md-small md-accent md-hue-1">
-    <img id="nifi-logo" src="images/nifi-logo.svg">
+    <img id="nifi-logo" src="images/logo.png">
     <div flex layout="row" layout-align="space-between center">
         <div id="component-container">
             <button title="{{appCtrl.serviceProvider.headerCtrl.toolboxCtrl.config.type.processor}}"
@@ -94,26 +94,26 @@
             </div>
             <md-menu md-position-mode="target-right target" md-offset="-1 44">
                 <button md-menu-origin id="global-menu-button" ng-click="$mdOpenMenu()">
-                    <div class="fa fa-navicon"></div>
+                    <div class="icon icon-menu"></div>
                 </button>
                 <md-menu-content id="global-menu-content">
                     <md-menu-item layout-align="space-around center">
                         <a id="reporting-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.summary.shell.launch();">
-                            <i class="fa fa-table"></i>Summary
+                            <i class="icon icon-menu-summary"></i>Summary
                         </a>
                     </md-menu-item>
                     <md-menu-item layout-align="space-around center">
                         <a id="counters-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.counters.shell.launch();"
                            ng-class="{disabled: !appCtrl.nf.Common.canAccessCounters()}">
-                            <i class="icon icon-counter"></i>Counters
+                            <i class="icon icon-menu-counters"></i>Counters
                         </a>
                     </md-menu-item>
                     <md-menu-item layout-align="space-around center">
                         <a id="bulletin-board-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.bulletinBoard.shell.launch();">
-                            <i class="fa fa-sticky-note-o"></i>Bulletin Board
+                            <i class="icon icon-bell"></i>Bulletin Board
                         </a>
                     </md-menu-item>
                     <md-menu-divider></md-menu-divider>
@@ -129,7 +129,7 @@
                     <md-menu-item layout-align="space-around center">
                         <a id="flow-settings-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.controllerSettings.shell.launch();">
-                            <i class="fa fa-wrench"></i>Controller Settings
+                            <i class="icon icon-menu-contorller-settings"></i>Controller Settings
                         </a>
                     </md-menu-item>
                     <md-menu-item ng-if="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.cluster.visible();"
@@ -143,7 +143,7 @@
                     <md-menu-item layout-align="space-around center">
                         <a id="history-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.flowConfigHistory.shell.launch();">
-                            <i class="fa fa-history"></i>Flow Configuration History
+                            <i class="icon icon-menu-history"></i>Flow Configuration History
                         </a>
                     </md-menu-item>
                     <md-menu-divider ng-if="appCtrl.nf.CanvasUtils.isManagedAuthorizer()"></md-menu-divider>
@@ -170,15 +170,9 @@
                     </md-menu-item>
                     <md-menu-divider></md-menu-divider>
                     <md-menu-item layout-align="space-around center">
-                        <a id="help-link"
-                           ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.help.shell.launch();">
-                            <i class="fa fa-question-circle"></i>Help
-                        </a>
-                    </md-menu-item>
-                    <md-menu-item layout-align="space-around center">
                         <a id="about-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.about.modal.show();">
-                            <i class="fa fa-info-circle"></i>About
+                            <i class="icon icon-menu-about"></i>About
                         </a>
                     </md-menu-item>
                 </md-menu-content>

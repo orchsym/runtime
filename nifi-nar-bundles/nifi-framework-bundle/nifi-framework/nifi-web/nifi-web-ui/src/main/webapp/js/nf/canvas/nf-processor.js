@@ -170,7 +170,7 @@
                 'y': 35,
                 'class': 'processor-icon'
             })
-            .text('\ue807');
+            .text('\ue826');
 
         // restricted icon background
         processor.append('circle')
@@ -549,7 +549,7 @@
                             'class': 'active-thread-count-icon',
                             'y': 45
                         })
-                        .text('\ue83f');
+                        .text('\ue840');
 
                     // active thread background
                     details.append('text')
@@ -832,7 +832,7 @@
             .text(function (d) {
                 var img = '';
                 if (d.status.aggregateSnapshot.runStatus === 'Disabled') {
-                    img = '\ue802';
+                    img = '\ue806';
                 } else if (d.status.aggregateSnapshot.runStatus === 'Invalid') {
                     img = '\uf071';
                 } else if (d.status.aggregateSnapshot.runStatus === 'Running') {

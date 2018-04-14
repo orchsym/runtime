@@ -17,7 +17,7 @@
 <%@ page contentType="text/html" pageEncoding="UTF-8" session="false" %>
 <div id="users">
     <div id="users-header-and-filter">
-        <div id="users-header-text">NiFi Users</div>
+        <div id="users-header-text">Users</div>
     </div>
     <div id="users-filter-controls">
         <div id="users-filter-status" class="filter-status">

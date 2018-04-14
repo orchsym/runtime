@@ -16,20 +16,19 @@
  */
 #nf-about {
     overflow: hidden;
-    width: 500px;
+    width: 650px;
     height: 500px;
     max-height: 450px;
 }
 
 #nf-about-pic {
-    height: 60%;
-    background: url(../images/nifi-logo-about.svg) #000000 no-repeat center center;
-    top: 20%;
+    height: 100%;
+    background-image: url(../images/about-bg.jpg);
     position: relative;
 }
 
 #nf-about-pic-container {
-    height: 40%;
+    height: 50%;
     background: #000000;
 }
 
@@ -68,4 +67,10 @@
 #nf-about-content #nf-version-detail p {
     font-size: 12px;
     padding: 0;
+}
+
+#nf-about .dialog-header {
+    height: 56px;
+    background-color: #262729;
+    overflow: hidden;
 }

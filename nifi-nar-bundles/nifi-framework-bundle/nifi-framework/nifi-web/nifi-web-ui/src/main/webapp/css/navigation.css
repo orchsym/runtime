@@ -37,7 +37,7 @@
 
 .graph-control-header-icon.fa {
     color: #004849; /*link-color*/
-    margin-left: 7px !important;
+    margin-left: 10px !important;
 }
 
 div.graph-control {
@@ -81,8 +81,15 @@ div.graph-control button {
     color: #004849;
 }
 
+#navigation-buttons button {
+    line-height: 30px;
+    border: 0px !important;
+    background-color: rgba(249,250,251,1);
+    color: #004849;
+}
+
 div.graph-control button:hover {
-    border: 1px solid #004849; /*link-color*/
+    border: 1px solid #1AD0A6; /*link-color*/
 }
 
 div.graph-control button:disabled {
@@ -95,6 +102,10 @@ div.graph-control div.graph-control-expansion {
     color: #728E9B;
     line-height: 34px;
     margin-left: 9px !important;
+}
+
+div.graph-control div.graph-control-expansion:hover {
+    color: #FFFFFF;
 }
 
 div.graph-control-header-icon {
@@ -117,8 +128,8 @@ div.graph-control-header-action {
     width: 32px;
 }
 
-.graph-control-header-container:hover {
-    background: linear-gradient(90deg, rgba(227,232,235,0) 254px, rgba(227,232,235,1) 32px);
+.graph-control-header-container {
+    background: #E8E9EB;
 }
 
 /* navigate buttons */
@@ -239,13 +250,7 @@ rect.birdseye-brush {
 /* styles for the breadcrumbs bar */
 
 #breadcrumbs {
-    position: absolute;
-    bottom: 0px;
-    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
-    background-color: rgba(249, 250, 251, 0.9);
-    border-top: 1px solid #aabbc3;
-    color: #598599;
-    z-index: 3;
+    background-color: #506773;
     height: 31px;
     width: 100%;
 }

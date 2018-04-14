@@ -111,12 +111,12 @@
                             content = 'Request transport mechanism failed. Please ensure the host where the application is running is accessible.';
                         }
                     }
-                    $('#message-title').text('Unable to communicate with NiFi');
+                    $('#message-title').text('Unable to communicate with server');
                     $('#message-content').text(content);
                 } else if (xhr.status === 401) {
                     $('#message-title').text('Unauthorized');
                     if ($.trim(xhr.responseText) === '') {
-                        $('#message-content').text('Authentication is required to use this NiFi.');
+                        $('#message-content').text('Authentication is required.');
                     } else {
                         $('#message-content').text(xhr.responseText);
                     }
@@ -130,7 +130,7 @@
                 } else if (xhr.status === 200 || xhr.status === 201) {
                     $('#message-title').text('Parse Error');
                     if ($.trim(xhr.responseText) === '') {
-                        $('#message-content').text('Unable to interpret response from NiFi.');
+                        $('#message-content').text('Unable to interpret response from server.');
                     } else {
                         $('#message-content').text(xhr.responseText);
                     }

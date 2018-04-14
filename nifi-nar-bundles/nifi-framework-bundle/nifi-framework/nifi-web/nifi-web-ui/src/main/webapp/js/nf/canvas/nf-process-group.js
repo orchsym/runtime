@@ -164,7 +164,7 @@
                     return d.dimensions.width;
                 },
                 'height': 32,
-                'fill': '#b8c6cd'
+                'fill': '#506773'
             });
 
         // process group name
@@ -330,7 +330,7 @@
                             'class': 'process-group-not-transmitting process-group-contents-icon',
                             'font-family': 'flowfont'
                         })
-                        .text('\ue80a')
+                        .text('\ue831')
                         .append("title")
                         .text("Not Transmitting Remote Process Groups");
 
@@ -402,7 +402,7 @@
                             'class': 'process-group-disabled process-group-contents-icon',
                             'font-family': 'flowfont'
                         })
-                        .text('\ue802')
+                        .text('\ue806')
                         .append("title")
                         .text("Disabled Components");
 
@@ -443,9 +443,9 @@
                                 return processGroupData.dimensions.height - 7;
                             },
                             'class': 'process-group-locally-modified process-group-contents-icon',
-                            'font-family': 'FontAwesome'
+                            'font-family': 'flowfont'
                         })
-                        .text('\uf069')
+                        .text('\ue835')
                         .append("title")
                         .text("Locally modified Versioned Process Groups");
 
@@ -465,9 +465,9 @@
                                 return processGroupData.dimensions.height - 7;
                             },
                             'class': 'process-group-stale process-group-contents-icon',
-                            'font-family': 'FontAwesome'
+                            'font-family': 'flowfont'
                         })
-                        .text('\uf0aa')
+                        .text('\ue836')
                         .append("title")
                         .text("Stale Versioned Process Groups");
 
@@ -487,9 +487,9 @@
                                 return processGroupData.dimensions.height - 7;
                             },
                             'class': 'process-group-locally-modified-and-stale process-group-contents-icon',
-                            'font-family': 'FontAwesome'
+                            'font-family': 'flowfont'
                         })
-                        .text('\uf06a')
+                        .text('\ue834')
                         .append("title")
                         .text("Locally modified and stale Versioned Process Groups");
 
@@ -509,9 +509,9 @@
                                 return processGroupData.dimensions.height - 7;
                             },
                             'class': 'process-group-sync-failure process-group-contents-icon',
-                            'font-family': 'FontAwesome'
+                            'font-family': 'flowfont'
                         })
-                        .text('\uf128')
+                        .text('\ue837')
                         .append("title")
                         .text("Sync failure Versioned Process Groups");
 
@@ -820,7 +820,7 @@
                             'class': 'active-thread-count-icon',
                             'y': 20
                         })
-                        .text('\ue83f');
+                        .text('\ue840');
 
                     // active thread icon
                     details.append('text')

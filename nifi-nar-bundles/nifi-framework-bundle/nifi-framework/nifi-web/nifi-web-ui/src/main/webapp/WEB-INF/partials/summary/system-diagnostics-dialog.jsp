@@ -189,9 +189,9 @@
             </div>
             <div id="version-tab-content" class="configuration-tab">
                 <div class="setting">
-                    <div class="setting-header">NiFi</div>
+                    <div class="setting-header">Orchsym Studio</div>
                     <dl class="setting-attributes-list">
-                        <dt>NiFi Version</dt><dd><span id="version-nifi"></span></dd>
+                        <dt>Orchsym Studio Version</dt><dd><span id="version-nifi"></span></dd>
                         <dt>Tag</dt><dd><span id="version-build-tag"></span></dd>
                         <dt>Build Date/Time</dt><dd><span id="version-build-timestamp"></span></dd>
                         <dt>Branch</dt><dd><span id="version-build-branch"></span></dd>

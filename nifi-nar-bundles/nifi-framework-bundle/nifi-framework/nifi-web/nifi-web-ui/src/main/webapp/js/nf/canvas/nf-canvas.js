@@ -592,9 +592,6 @@
                     'width': $(window).width()
                 });
 
-                //breadcrumbs
-                nfNgBridge.injector.get('breadcrumbsCtrl').updateBreadcrumbsCss({'bottom': bottom + 'px'});
-
                 // body
                 $('#canvas-body').css({
                     'height': windowHeight + 'px',

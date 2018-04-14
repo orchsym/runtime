@@ -59,7 +59,7 @@
             '100': '728E9B',
             '200': 'CCDADB', /* tint link-color 20% */
             '300': '728E9B',
-            '400': 'AABBC3', /* tint base-color 40% */
+            '400': '262729', /* tint base-color 40% */
             '500': '728E9B',
             '600': 'C7D2D7', /* tint base-color 60% */
             '700': '728E9B',
@@ -82,7 +82,7 @@
             '500': 'BA554A', /* warn-color */
             '600': 'BA554A',
             '700': 'BA554A',
-            '800': 'BA554A',
+            '800': '1AD0A6',
             '900': 'BA554A',
             'A100': 'BA554A',
             'A200': 'BA554A',
@@ -103,7 +103,8 @@
             "hue-2": "600",
             "hue-3": "800"
         }).warnPalette("warnPalette", {
-            "default": "500"
+            "default": "500",
+            "hue-1": "800"
         });
     }
 }));

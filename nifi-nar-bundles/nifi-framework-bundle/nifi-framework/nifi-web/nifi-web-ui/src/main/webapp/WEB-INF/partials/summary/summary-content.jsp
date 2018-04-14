@@ -17,7 +17,7 @@
 <%@ page contentType="text/html" pageEncoding="UTF-8" session="false" %>
 <div id="summary">
     <div id="summary-header-and-filter">
-        <div id="summary-header-text">NiFi Summary</div>
+        <div id="summary-header-text">Summary</div>
     </div>
     <div id="summary-tabs" class="tab-container"></div>
     <div id="summary-tabs-content">
