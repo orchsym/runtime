@@ -615,7 +615,7 @@
                         });
 
                     // update the processor bundle
-                    processor.select('text.processor-bundle')
+                    /**processor.select('text.processor-bundle')
                         .each(function (d) {
                             var processorBundle = d3.select(this);
 
@@ -627,7 +627,7 @@
                         }).append('title').text(function (d) {
                             return nfCommon.formatBundle(d.component.bundle);
                         });
-
+                    **/
                     // update the processor comments
                     processor.select('path.component-comments')
                         .style('visibility', nfCommon.isBlank(processorData.component.config.comments) ? 'hidden' : 'visible')

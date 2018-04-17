@@ -399,7 +399,7 @@
 
                                     // populate the dom
                                     $('#processor-type-name').text(type).attr('title', type);
-                                    $('#processor-type-bundle').text(bundle).attr('title', bundle);
+                                    // $('#processor-type-bundle').text(bundle).attr('title', bundle);
                                     $('#selected-processor-name').text(processorType.label);
                                     $('#selected-processor-type').text(processorType.type).data('bundle', processorType.bundle);
 
@@ -580,12 +580,14 @@
                                 text: 'all groups',
                                 value: ''
                             }];
+                            /**
                             groups.each(function (group) {
                                 options.push({
                                     text: group,
                                     value: group
                                 });
                             });
+                            **/
 
                             // initialize the bundle group combo
                             $('#processor-bundle-group-combo').combo({

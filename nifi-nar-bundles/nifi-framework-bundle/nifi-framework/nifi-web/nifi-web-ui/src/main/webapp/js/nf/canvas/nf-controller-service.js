@@ -1861,7 +1861,7 @@
                 // populate the controller service settings
                 nfCommon.populateField('controller-service-id', controllerService['id']);
                 nfCommon.populateField('controller-service-type', nfCommon.formatType(controllerService));
-                nfCommon.populateField('controller-service-bundle', nfCommon.formatBundle(controllerService['bundle']));
+                //nfCommon.populateField('controller-service-bundle', nfCommon.formatBundle(controllerService['bundle']));
                 $('#controller-service-name').val(controllerService['name']);
                 $('#controller-service-comments').val(controllerService['comments']);
 
@@ -1869,7 +1869,7 @@
                 if (!nfCommon.isEmpty(controllerService['controllerServiceApis'])) {
                     var formattedControllerServiceApis = nfCommon.getFormattedServiceApis(controllerService['controllerServiceApis']);
                     var serviceTips = nfCommon.formatUnorderedList(formattedControllerServiceApis);
-                    $('#controller-service-compatible-apis').append(serviceTips);
+                    //$('#controller-service-compatible-apis').append(serviceTips);
                 } else {
                     $('#controller-service-compatible-apis').append('<span class="unset">None</span>');
                 }
@@ -2042,7 +2042,7 @@
                 // populate the controller service settings
                 nfCommon.populateField('controller-service-id', controllerService['id']);
                 nfCommon.populateField('controller-service-type', nfCommon.formatType(controllerService));
-                nfCommon.populateField('controller-service-bundle', nfCommon.formatBundle(controllerService['bundle']));
+                //nfCommon.populateField('controller-service-bundle', nfCommon.formatBundle(controllerService['bundle']));
                 nfCommon.populateField('read-only-controller-service-name', controllerService['name']);
                 nfCommon.populateField('read-only-controller-service-comments', controllerService['comments']);
 
@@ -2050,7 +2050,7 @@
                 if (!nfCommon.isEmpty(controllerService['controllerServiceApis'])) {
                     var formattedControllerServiceApis = nfCommon.getFormattedServiceApis(controllerService['controllerServiceApis']);
                     var serviceTips = nfCommon.formatUnorderedList(formattedControllerServiceApis);
-                    $('#controller-service-compatible-apis').append(serviceTips);
+                    //$('#controller-service-compatible-apis').append(serviceTips);
                 } else {
                     $('#controller-service-compatible-apis').append('<span class="unset">None</span>');
                 }
