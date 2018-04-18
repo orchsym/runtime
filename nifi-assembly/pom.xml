@@ -24,7 +24,7 @@ language governing permissions and limitations under the License. -->
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
-                    <finalName>nifi-${project.version}</finalName>
+                    <finalName>runtime-${project.version}</finalName>
                     <attach>false</attach>
                 </configuration>
                 <executions>
@@ -980,7 +980,7 @@ language governing permissions and limitations under the License. -->
                     <plugin>
                         <artifactId>maven-assembly-plugin</artifactId>
                         <configuration>
-                            <finalName>nifi-${project.version}</finalName>
+                            <finalName>runtime-${project.version}</finalName>
                             <attach>false</attach>
                         </configuration>
                         <executions>
@@ -1037,7 +1037,7 @@ language governing permissions and limitations under the License. -->
                     <plugin>
                         <artifactId>maven-assembly-plugin</artifactId>
                         <configuration>
-                            <finalName>nifi-${project.version}</finalName>
+                            <finalName>runtime-${project.version}</finalName>
                             <attach>false</attach>
                         </configuration>
                         <executions>
