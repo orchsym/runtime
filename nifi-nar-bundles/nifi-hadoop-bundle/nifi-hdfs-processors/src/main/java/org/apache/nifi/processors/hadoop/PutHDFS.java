@@ -37,6 +37,7 @@ import org.apache.nifi.components.AllowableValue;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.components.RequiredPermission;
+import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.flowfile.attributes.CoreAttributes;
 import org.apache.nifi.processor.DataUnit;
@@ -66,7 +67,7 @@ import java.util.concurrent.TimeUnit;
  * This processor copies FlowFiles to HDFS.
  */
 @InputRequirement(Requirement.INPUT_REQUIRED)
-@Tags({"hadoop", "HDFS", "put", "copy", "filesystem", "restricted"})
+@Tags({"hadoop", "HDFS", "put", "copy", "filesystem"})
 @CapabilityDescription("Write FlowFile data to Hadoop Distributed File System (HDFS)")
 @ReadsAttribute(attribute = "filename", description = "The name of the file written to HDFS comes from the value of this attribute.")
 @WritesAttributes({
@@ -150,7 +151,7 @@ public class PutHDFS extends AbstractHadoopProcessor {
             .description(
                     "Changes the owner of the HDFS file to this value after it is written. This only works if NiFi is running as a user that has HDFS super user privilege to change owner")
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .expressionLanguageSupported(true)
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
             .build();
 
     public static final PropertyDescriptor REMOTE_GROUP = new PropertyDescriptor.Builder()
@@ -158,7 +159,7 @@ public class PutHDFS extends AbstractHadoopProcessor {
             .description(
                     "Changes the group of the HDFS file to this value after it is written. This only works if NiFi is running as a user that has HDFS super user privilege to change group")
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .expressionLanguageSupported(true)
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
             .build();
 
     private static final Set<Relationship> relationships;

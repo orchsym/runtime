@@ -32,6 +32,7 @@ import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.RequiredPermission;
+import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
@@ -51,7 +52,7 @@ import java.util.regex.Pattern;
 
 @TriggerWhenEmpty
 @InputRequirement(InputRequirement.Requirement.INPUT_ALLOWED)
-@Tags({"hadoop", "HDFS", "delete", "remove", "filesystem", "restricted"})
+@Tags({"hadoop", "HDFS", "delete", "remove", "filesystem"})
 @CapabilityDescription("Deletes one or more files or directories from HDFS. The path can be provided as an attribute from an incoming FlowFile, "
         + "or a statically set path that is periodically removed. If this processor has an incoming connection, it"
         + "will ignore running on a periodic basis and instead rely on incoming FlowFiles to trigger a delete. "
@@ -90,7 +91,7 @@ public class DeleteHDFS extends AbstractHadoopProcessor {
             .description("The HDFS file or directory to delete. A wildcard expression may be used to only delete certain files")
             .required(true)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .expressionLanguageSupported(true)
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
             .build();
 
     public static final PropertyDescriptor RECURSIVE = new PropertyDescriptor.Builder()
