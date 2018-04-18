@@ -43,7 +43,7 @@
 }(this, function ($, d3, nfCommon, nfDialog, nfErrorHandler) {
     var config = {
         nifiInstanceId: 'nifi-instance-id',
-        nifiInstanceLabel: 'NiFi',
+        nifiInstanceLabel: 'Orchsym',
         type: {
             processor: 'Processor',
             inputPort: 'Input Port',
@@ -842,7 +842,7 @@
             });
 
             // build the cluster container
-            var clusterDetailsContainer = buildDetailsContainer('NiFi');
+            var clusterDetailsContainer = buildDetailsContainer('Orchsym');
 
             // add the total cluster values
             addDetailItem(clusterDetailsContainer, 'Min / Max / Mean', '', 'cluster-aggregate-statistics');

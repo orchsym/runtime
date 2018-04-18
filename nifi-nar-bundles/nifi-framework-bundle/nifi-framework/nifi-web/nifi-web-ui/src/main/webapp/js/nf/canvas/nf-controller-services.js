@@ -424,7 +424,7 @@
 
                     // populate the dom
                     $('#controller-service-type-name').text(type).attr('title', type);
-                    $('#controller-service-type-bundle').text(bundle).attr('title', bundle);
+                    //$('#controller-service-type-bundle').text(bundle).attr('title', bundle);
                     $('#selected-controller-service-name').text(controllerServiceType.label);
                     $('#selected-controller-service-type').text(controllerServiceType.type).data('bundle', controllerServiceType.bundle);
 
@@ -634,12 +634,14 @@
                 text: 'all groups',
                 value: ''
             }];
+            /** 
             groups.each(function (group) {
                 options.push({
                     text: group,
                     value: group
                 });
             });
+            **/
 
             // initialize the bundle group combo
             $('#controller-service-bundle-group-combo').combo({
@@ -994,13 +996,6 @@
                 id: 'type',
                 name: 'Type',
                 formatter: nfCommon.instanceTypeFormatter,
-                sortable: true,
-                resizable: true
-            },
-            {
-                id: 'bundle',
-                name: 'Bundle',
-                formatter: nfCommon.instanceBundleFormatter,
                 sortable: true,
                 resizable: true
             },
