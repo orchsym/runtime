@@ -108,21 +108,13 @@
                         <a id="counters-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.counters.shell.launch();"
                            ng-class="{disabled: !appCtrl.nf.Common.canAccessCounters()}">
-<<<<<<< HEAD
-                            <i class="icon icon-menu-counters"></i>Counters
-=======
-                            <i class="icon icon-counter"></i><fmt:message key="partials.canvas.canvas-header.counters-link"/>
->>>>>>> localization using the JSTL standard fmt tag for multilingualization and nf._.msg() function in resource.js
+                            <i class="icon icon-menu-counters"></i><fmt:message key="partials.canvas.canvas-header.counters-link"/>
                         </a>
                     </md-menu-item>
                     <md-menu-item layout-align="space-around center">
                         <a id="bulletin-board-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.bulletinBoard.shell.launch();">
-<<<<<<< HEAD
-                            <i class="icon icon-bell"></i>Bulletin Board
-=======
-                            <i class="fa fa-sticky-note-o"></i></i><fmt:message key="partials.canvas.canvas-header.bulletin-board-link"/>
->>>>>>> localization using the JSTL standard fmt tag for multilingualization and nf._.msg() function in resource.js
+                            <i class="icon icon-bell"></i><fmt:message key="partials.canvas.canvas-header.bulletin-board-link"/>
                         </a>
                     </md-menu-item>
                     <md-menu-divider></md-menu-divider>
@@ -138,11 +130,7 @@
                     <md-menu-item layout-align="space-around center">
                         <a id="flow-settings-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.controllerSettings.shell.launch();">
-<<<<<<< HEAD
-                            <i class="icon icon-menu-contorller-settings"></i>Controller Settings
-=======
-                            <i class="fa fa-wrench"></i><fmt:message key="partials.canvas.canvas-header.flow-settings-link"/>
->>>>>>> localization using the JSTL standard fmt tag for multilingualization and nf._.msg() function in resource.js
+                            <i class="icon icon-menu-contorller-settings"></i><fmt:message key="partials.canvas.canvas-header.flow-settings-link"/>
                         </a>
                     </md-menu-item>
                     <md-menu-item ng-if="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.cluster.visible();"
@@ -156,11 +144,7 @@
                     <md-menu-item layout-align="space-around center">
                         <a id="history-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.flowConfigHistory.shell.launch();">
-<<<<<<< HEAD
-                            <i class="icon icon-menu-history"></i>Flow Configuration History
-=======
-                            <i class="fa fa-history"></i><fmt:message key="partials.canvas.canvas-header.history-link"/>
->>>>>>> localization using the JSTL standard fmt tag for multilingualization and nf._.msg() function in resource.js
+                            <i class="icon icon-menu-history"></i><fmt:message key="partials.canvas.canvas-header.history-link"/>
                         </a>
                     </md-menu-item>
                     <md-menu-divider ng-if="appCtrl.nf.CanvasUtils.isConfigurableAuthorizer()"></md-menu-divider>
@@ -187,21 +171,9 @@
                     </md-menu-item>
                     <md-menu-divider></md-menu-divider>
                     <md-menu-item layout-align="space-around center">
-<<<<<<< HEAD
                         <a id="about-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.about.modal.show();">
-                            <i class="icon icon-menu-about"></i>About
-=======
-                        <a id="help-link"
-                           ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.help.shell.launch();">
-                            <i class="fa fa-question-circle"></i><fmt:message key="partials.canvas.canvas-header.help-link"/>
-                        </a>
-                    </md-menu-item>
-                    <md-menu-item layout-align="space-around center">
-                        <a id="about-link"
-                           ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.about.modal.show();">
-                            <i class="fa fa-info-circle"></i><fmt:message key="partials.canvas.canvas-header.about-link"/>
->>>>>>> localization using the JSTL standard fmt tag for multilingualization and nf._.msg() function in resource.js
+                            <i class="icon icon-menu-about"></i><fmt:message key="partials.canvas.canvas-header.about-link"/>
                         </a>
                     </md-menu-item>
                 </md-menu-content>
