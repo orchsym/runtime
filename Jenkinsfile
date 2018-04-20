@@ -68,7 +68,7 @@ pipeline {
           s3cmd put --acl-public ${env.WORKSPACE}/nifi-assembly/target/${env.compile_target} s3://bspackage/data/
         """
 
-        slackSend ( color: 'good', message: "*Upload Finished* You can download it from  ${env.S3_BUCKET_URL}/{env.compile_target} Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`" )
+        slackSend ( color: 'good', message: "*Upload Finished* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can download it from ${env.S3_BUCKET_URL}/data/${env.compile_target} " )
       } // steps
     } // stage
     stage('Capture Output') {
