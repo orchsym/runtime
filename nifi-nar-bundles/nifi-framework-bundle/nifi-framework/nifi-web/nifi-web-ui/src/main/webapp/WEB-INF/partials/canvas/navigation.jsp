@@ -136,14 +136,14 @@
                     <fmt:message key="partials.canvas.navigation.createTemplate" var="createTemplate"/>
                     <div id="operate-template" class="action-button" title="${createTemplate}">
                         <button ng-click="appCtrl.nf.Actions['template'](appCtrl.nf.CanvasUtils.getSelection());"
-                                ng-disabled="!(appCtrl.nf.CanvasUtils.canWrite() && (appCtrl.nf.CanvasUtils.getSelection().empty() || appCtrl.nf.CanvasUtils.canRead(appCtrl.nf.CanvasUtils.getSelection())));">
+                                ng-disabled="!(appCtrl.nf.CanvasUtils.canWriteCurrentGroup() && (appCtrl.nf.CanvasUtils.getSelection().empty() || appCtrl.nf.CanvasUtils.canRead(appCtrl.nf.CanvasUtils.getSelection())));">
                             <div class="graph-control-action-icon icon icon-template-save"></div></button>
                     </div>
                     <div class="button-spacer-small">&nbsp;</div>
                     <fmt:message key="partials.canvas.navigation.uploadTemplate" var="uploadTemplate"/>
                     <div id="operate-template-upload" class="action-button" title="${uploadTemplate}">
                         <button ng-click="appCtrl.nf.Actions['uploadTemplate']();"
-                                ng-disabled="!(appCtrl.nf.CanvasUtils.canWrite() && appCtrl.nf.CanvasUtils.getSelection().empty());">
+                                ng-disabled="!(appCtrl.nf.CanvasUtils.canWriteCurrentGroup() && appCtrl.nf.CanvasUtils.getSelection().empty());">
                             <div class="graph-control-action-icon icon icon-template-import"></div></button>
                     </div>
                     <div class="clear"></div>
