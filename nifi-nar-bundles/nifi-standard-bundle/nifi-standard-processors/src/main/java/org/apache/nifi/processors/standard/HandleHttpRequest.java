@@ -82,6 +82,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
+import org.apache.nifi.apiregistry.ApiRegisterService;
+import org.apache.nifi.apiregistry.ApiInfo;
+
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
 @Tags({"http", "https", "request", "listen", "ingress", "web service"})
 @CapabilityDescription("Starts an HTTP Server and listens for HTTP Requests. For each request, creates a FlowFile and transfers to 'success'. "
@@ -235,10 +238,18 @@ public class HandleHttpRequest extends AbstractProcessor {
             .description("All content that is received is routed to the 'success' relationship")
             .build();
 
+    public static final PropertyDescriptor HTTP_API_REGISTRY = new PropertyDescriptor.Builder()
+            .name("HTTP API Registry Service")
+            .description("this is registery description")
+            .required(false)
+            .identifiesControllerService(ApiRegisterService.class)
+            .build();
+
     private static final List<PropertyDescriptor> propertyDescriptors;
 
     static {
         List<PropertyDescriptor> descriptors = new ArrayList<>();
+        descriptors.add(HTTP_API_REGISTRY);
         descriptors.add(PORT);
         descriptors.add(HOSTNAME);
         descriptors.add(SSL_CONTEXT);
@@ -260,6 +271,9 @@ public class HandleHttpRequest extends AbstractProcessor {
     private volatile Server server;
     private AtomicBoolean initialized = new AtomicBoolean(false);
     private volatile BlockingQueue<HttpRequestContainer> containerQueue;
+
+    private String schema;
+    private static ApiRegisterService apiRegistryService;
 
     @Override
     protected List<PropertyDescriptor> getSupportedPropertyDescriptors() {
@@ -431,6 +445,9 @@ public class HandleHttpRequest extends AbstractProcessor {
 
         getLogger().info("Server started and listening on port " + getPort());
 
+        //register api info to api registery service
+        registerApiInfoToService(context);
+
         initialized.set(true);
     }
 
@@ -480,6 +497,8 @@ public class HandleHttpRequest extends AbstractProcessor {
             server.join();
             getLogger().info("Shut down {}", new Object[]{server});
         }
+
+        unregisterApiInfoFromService(this.getIdentifier());
     }
 
     @Override
@@ -711,5 +730,52 @@ public class HandleHttpRequest extends AbstractProcessor {
         public AsyncContext getContext() {
             return context;
         }
+    }
+
+    private void registerApiInfoToService(final ProcessContext context) {
+
+        ApiInfo apiInfo = new ApiInfo();
+        
+        String name = context.getName();
+        apiInfo.name = name;
+
+        String identifier = this.getIdentifier();
+        apiInfo.id = identifier;
+
+        String host = context.getProperty(HOSTNAME).getValue();
+        apiInfo.host = host;
+
+        int port = context.getProperty(PORT).asInteger();
+        apiInfo.port = port;
+
+        final HttpContextMap httpContextMap = context.getProperty(HTTP_CONTEXT_MAP).asControllerService(HttpContextMap.class);
+        long requestTimeout = httpContextMap.getRequestTimeout(TimeUnit.MILLISECONDS);
+        apiInfo.requestTimeout = requestTimeout;
+
+        apiInfo.allowGet = context.getProperty(ALLOW_GET).asBoolean();
+        apiInfo.allowPost = context.getProperty(ALLOW_POST).asBoolean();
+        apiInfo.allowPut = context.getProperty(ALLOW_PUT).asBoolean();
+        apiInfo.allowDelete = context.getProperty(ALLOW_DELETE).asBoolean();
+        apiInfo.allowHead = context.getProperty(ALLOW_HEAD).asBoolean();
+        apiInfo.allowOptions = context.getProperty(ALLOW_OPTIONS).asBoolean();
+
+        String charset = context.getProperty(URL_CHARACTER_SET).getValue();
+        apiInfo.charset = charset;
+
+        String path = context.getProperty(PATH_REGEX).getValue();
+        apiInfo.path = path;
+
+        apiInfo.schema = this.schema;
+
+        final ApiRegisterService apiRegisterService = context.getProperty(HTTP_API_REGISTRY).asControllerService(ApiRegisterService.class);
+        this.apiRegistryService = apiRegisterService;
+        
+        apiRegisterService.registerApiInfo(apiInfo);
+
+    }
+
+    private void unregisterApiInfoFromService(String id) {
+
+        this.apiRegistryService.unregisterApiInfo(id);
     }
 }
