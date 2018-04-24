@@ -67,8 +67,8 @@
                 <div class="spacer">&nbsp;</div>
                 <div class="settings-right">
                     <div id="flowfile-with-no-content" class="content-details">
-                        <div class="flowfile-header">Content Claim</div>
-                        <div class="flowfile-info unset">No Content Available</div>
+                        <div class="flowfile-header"><fmt:message key="partials.canvas.flowfile-details-dialog.content-claim"/></div>
+                        <div class="flowfile-info unset"><fmt:message key="partials.canvas.flowfile-details-dialog.no-content"/></div>
                     </div>
                     <div id="flowfile-content-details" class="content-details">
                         <div class="flowfile-header"><fmt:message key="partials.canvas.flowfile-details-dialog.contentclaim"/></div>

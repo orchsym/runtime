@@ -93,7 +93,7 @@
         </div>
         <div id="policy-loading-container" class="loading-container"></div>
         <div id="admin-policy-message" class="hidden"><fmt:message key="partials.canvas.policy-management.admin-policy-message"/></div>
-        <div id="restriction-message" class="hidden">Only listing restriction specific users. Users with permission "regardless of restrictions" not shown but are also allowed.</div>
+        <div id="restriction-message" class="hidden"><fmt:message key="partials.canvas.policy-management.restriction-message"/></div>
         <div class="clear"></div>
     </div>
 </div>

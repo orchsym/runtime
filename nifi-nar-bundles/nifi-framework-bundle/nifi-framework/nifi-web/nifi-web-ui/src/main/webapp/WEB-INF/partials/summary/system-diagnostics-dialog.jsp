@@ -183,7 +183,7 @@
                     </div>
                 </div>
                 <div class="setting">
-                    <div class="setting-header">Provenance Repository Storage</div>
+                    <div class="setting-header"><fmt:message key="partials.summary.system-diagnostics-dialog.ProvenanceRepositoryStorageUsage"/></div>
                     <div class="setting-field">
                         <div id="provenance-repository-storage-usage-container"></div>
                     </div>

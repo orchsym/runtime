@@ -15,23 +15,24 @@
   limitations under the License.
 --%>
 <%@ page contentType="text/html" pageEncoding="UTF-8" session="false" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <div id="registry-configuration-dialog" layout="column" class="hidden medium-dialog">
     <div class="dialog-content">
         <div class="setting">
-            <div class="setting-name">Name</div>
+            <div class="setting-name"><fmt:message key="partials.canvas.registry-configuration.name"/></div>
             <div class="setting-field">
                 <span id="registry-id" class="hidden"></span>
                 <input type="text" id="registry-name" class="setting-input"/>
             </div>
         </div>
         <div class="setting">
-            <div class="setting-name">URL</div>
+            <div class="setting-name"><fmt:message key="partials.canvas.registry-configuration.url"/></div>
             <div class="setting-field">
                 <input type="text" id="registry-location" class="setting-input" placeholder="https://remotehost:8443"/>
             </div>
         </div>
         <div class="setting">
-            <div class="setting-name">Description</div>
+            <div class="setting-name"><fmt:message key="partials.canvas.registry-configuration.description"/></div>
             <div class="setting-field">
                 <textarea id="registry-description" class="setting-input"></textarea>
             </div>

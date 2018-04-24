@@ -44,11 +44,11 @@
                         </div>
                     </div>
                     <div class="setting">
-                        <div class="setting-name">Bundle</div>
+                        <div class="setting-name"><fmt:message key="partials.canvas.component-version-dialog.bundle"/></div>
                         <div id="controller-service-bundle" class="setting-field"></div>
                     </div>
                     <div class="setting">
-                        <div class="setting-name">Supports Controller Service</div>
+                        <div class="setting-name"><fmt:message key="partials.canvas.component-version-dialog.supports-controller-services"/></div>
                         <div id="controller-service-compatible-apis" class="setting-field"></div>
                     </div>
                 </div>

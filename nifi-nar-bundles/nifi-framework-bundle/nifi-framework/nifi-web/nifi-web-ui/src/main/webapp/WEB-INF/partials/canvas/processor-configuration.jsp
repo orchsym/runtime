@@ -45,7 +45,7 @@
                         </div>
                     </div>
                     <div class="setting">
-                        <div class="setting-name">Bundle</div>
+                        <div class="setting-name"><fmt:message key="partials.processor-details.read-only-processor-bundle"/></div>
                         <div id="processor-bundle" class="setting-field"></div>
                     </div>
                     <div class="setting">

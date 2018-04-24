@@ -15,12 +15,13 @@
   limitations under the License.
 --%>
 <%@ page contentType="text/html" pageEncoding="UTF-8" session="false" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <div id="variable-registry-dialog" class="hidden">
     <div class="dialog-content">
         <div class="settings-left">
             <div class="setting">
                 <div style="float: left;">
-                    <div class="setting-name">Process Group</div>
+                    <div class="setting-name"><fmt:message key="partials.canvas.variable-registry-dialog.process-group"/></div>
                     <div class="setting-field">
                         <span id="process-group-variable-registry"></span>
                         <span id="variable-registry-process-group-id" class="hidden"></span>
@@ -33,7 +34,7 @@
             <div id="variable-update-status" class="hidden">
                 <div class="setting">
                     <div class="setting-name">
-                        Steps to update variables
+                        <fmt:message key="partials.canvas.variable-registry-dialog.steps"/>
                     </div>
                     <div class="setting-field">
                         <ol id="variable-update-steps"></ol>
@@ -45,7 +46,7 @@
         <div class="settings-right">
             <div class="setting">
                 <div class="setting-name">
-                    Variables
+                    <fmt:message key="partials.canvas.variable-registry-dialog.variables"/>
                 </div>
                 <div class="setting-field">
                     <div id="affected-components-context"></div>
@@ -53,7 +54,7 @@
             </div>
             <div class="setting">
                 <div class="setting-name">
-                    Referencing Processors
+                    <fmt:message key="partials.canvas.variable-registry-dialog.referencing-processors"/>
                     <div class="fa fa-question-circle" alt="Info" title="Processors referencing this variable."></div>
                 </div>
                 <div class="setting-field">
@@ -62,7 +63,7 @@
             </div>
             <div class="setting">
                 <div class="setting-name">
-                    Referencing Controller Services
+                    <fmt:message key="partials.canvas.variable-registry-dialog.referencing-controller-services"/>
                     <div class="fa fa-question-circle" alt="Info" title="Controller Services referencing this variable."></div>
                 </div>
                 <div class="setting-field">
@@ -71,7 +72,7 @@
             </div>
             <div class="setting">
                 <div class="setting-name">
-                    Unauthorized referencing components
+                    <fmt:message key="partials.canvas.variable-registry-dialog.unauthorized"/>
                     <div class="fa fa-question-circle" alt="Info" title="Referencing components for which READ or WRITE permissions are not granted."></div>
                 </div>
                 <div class="setting-field">
@@ -80,12 +81,12 @@
             </div>
         </div>
     </div>
-    <div id="variable-message">Variables do not support sensitive values and will be included when versioning a Process Group.</div>
+    <div id="variable-message"><fmt:message key="partials.canvas.variable-registry-dialog.variable-message"/></div>
 </div>
 <div id="new-variable-dialog" class="dialog cancellable small-dialog hidden">
     <div class="dialog-content">
         <div>
-            <div class="setting-name">Variable name</div>
+            <div class="setting-name"><fmt:message key="partials.canvas.variable-registry-dialog.variable-name"/></div>
             <div class="setting-field new-variable-name-container">
                 <input id="new-variable-name" type="text"/>
             </div>

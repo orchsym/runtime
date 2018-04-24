@@ -43,11 +43,11 @@
         </div>
         <div class="batch-settings">
             <div class="setting-name">
-                Batch Settings:
+                <fmt:message key="partials.canvas.remote-port-configuration.batch-setting"/>
             </div>
             <div class="setting batch-setting">
                 <div class="setting-name">
-                    Count
+                    <fmt:message key="partials.canvas.remote-port-configuration.batch-setting.count"/>
                     <div class="fa fa-question-circle" alt="Info" title="The preferred number of flow files to include in a transaction for this port."></div>
                 </div>
                 <div class="setting-field">
@@ -56,7 +56,7 @@
             </div>
             <div class="setting batch-setting">
                 <div class="setting-name">
-                    Size
+                    <fmt:message key="partials.canvas.remote-port-configuration.batch-setting.size"/>
                     <div class="fa fa-question-circle" alt="Info" title="The preferred number of bytes to include in a transaction for this port."></div>
                 </div>
                 <div class="setting-field">
@@ -65,7 +65,7 @@
             </div>
             <div class="setting batch-setting">
                 <div class="setting-name">
-                    Duration
+                    <fmt:message key="partials.canvas.remote-port-configuration.batch-setting.duration"/>
                     <div class="fa fa-question-circle" alt="Info" title="The preferred amount of time that a transaction should span for this port."></div>
                 </div>
                 <div class="setting-field">
