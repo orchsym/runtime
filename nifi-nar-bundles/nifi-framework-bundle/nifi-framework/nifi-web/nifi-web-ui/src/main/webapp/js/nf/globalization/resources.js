@@ -16,7 +16,7 @@
  */
 
 nf._ = (function () {
-    var locale = "en";
+    var locale = "cn";
     var en = {
         "nf-actions.UpdateResource": "Update Resource",
         "nf-actions.Refreshing": "Refreshing",
@@ -1793,7 +1793,7 @@ nf._ = (function () {
         "nf-summary-table.ViewOutputPort": "查看输出端口详情",
         "nf-summary-table.ViewRemoteProcessorGroup": "查看远程处理组详情",
         "nf-summary-table.aria1": "数据流存储库存储使用",
-        "nf-summary.Summary": "总结",
+        "nf-summary.Summary": "总览",
         "nf-templates-table.Templates": " 模版",
         "nf-templates-table.Message": "选择模版导入",
         "nf-templates-table.Filter": "过滤",

@@ -153,7 +153,7 @@
                 dataType: 'json'
             }).done(function (response) {
                 var aboutDetails = response.about;
-                var bulletinBoardTitle = nf._.msg('nf-about') + nf._.msg('nf-bulletin-board.BulletinBoard');
+                var bulletinBoardTitle = aboutDetails.title + nf._.msg('nf-bulletin-board.BulletinBoard');
 
                 // set the document title and the about title
                 document.title = bulletinBoardTitle;
