@@ -1296,7 +1296,7 @@
         var registriesColumnModel = [
             {
                 id: 'name',
-                name: 'Name',
+                name: nf._.msg('nf-settings.Name'),
                 field: 'name',
                 formatter: nameFormatter,
                 sortable: true,
@@ -1304,7 +1304,7 @@
             },
             {
                 id: 'uri',
-                name: 'Location',
+                name: nf._.msg('nf-settings.Location'),
                 field: 'uri',
                 formatter: locationFormatter,
                 sortable: true,
@@ -1312,7 +1312,7 @@
             },
             {
                 id: 'description',
-                name: 'Description',
+                name: nf._.msg('nf-settings.Description'),
                 field: 'description',
                 formatter: descriptionFormatter,
                 sortable: true,
@@ -1663,7 +1663,7 @@
                     name: nf._.msg('nf-settings.ReportingTasks'),
                     tabContentId: 'reporting-tasks-tab-content'
                 }, {
-                    name: 'Registry Clients',
+                    name: nf._.msg('nf-settings.RegistryClients'),
                     tabContentId: 'registries-tab-content'
                 }],
                 select: function () {
@@ -1691,9 +1691,9 @@
                                 } else if (tab === nf._.msg('nf-settings.ReportingTasks')) {
                                     $('#settings-save').hide();
                                     return nf._.msg('nf-settings.Message13');
-                                } else if (tab === 'Registry Clients') {
+                                } else if (tab === nf._.msg('nf-settings.RegistryClients')) {
                                     $('#settings-save').hide();
-                                    return 'Register a new registry client';
+                                    return nf._.msg('nf-settings.RegistryClientTooltip');
                                 }
                             });
                         } else {
@@ -1742,9 +1742,9 @@
 
                     // set the initial focus
                     $('#reporting-task-type-filter').focus();
-                } else if (selectedTab === 'Registry Clients') {
-                    $('#registry-configuration-dialog').modal('setHeaderText', 'Add Registry Client').modal('setButtonModel', [{
-                        buttonText: 'Add',
+                } else if (selectedTab === nf._.msg('nf-settings.RegistryClients')) {
+                    $('#registry-configuration-dialog').modal('setHeaderText', nf._.msg('nf-settings.RegistryClientDialog')).modal('setButtonModel', [{
+                        buttonText: nf._.msg('nf-settings.Add'),
                         color: {
                             base: '#728E9B',
                             hover: '#004849',
@@ -1756,7 +1756,7 @@
                             }
                         }
                     }, {
-                        buttonText: 'Cancel',
+                        buttonText: nf._.msg('nf-settings.Cancel'),
                         color: {
                             base: '#E3E8EB',
                             hover: '#C7D2D7',

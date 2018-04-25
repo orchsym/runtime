@@ -416,7 +416,7 @@
             {
                 id: 'parentGroup',
                 field: 'parentProcessGroupName',
-                name: 'Process Group',
+                name: nf._.msg('nf-summary-table.ProcessGroups'),
                 sortable: true,
                 resizable: true,
                 formatter: nfCommon.genericValueFormatter,
@@ -1078,7 +1078,7 @@
             {
                 id: 'name',
                 field: 'name',
-                name: 'Name',
+                name: nf._.msg('nf-summary-table.Name'),
                 sortable: true,
                 resizable: true,
                 formatter: valueFormatter
@@ -1086,7 +1086,7 @@
             {
                 id: 'versionedFlowState',
                 field: 'versionedFlowState',
-                name: 'Version State',
+                name: nf._.msg('nf-summary-table.VersionState'),
                 sortable: true,
                 resizable: true,
                 formatter: versionStateFormatter

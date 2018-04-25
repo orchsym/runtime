@@ -162,7 +162,7 @@
         // update the new controller service click listener
         $('#add-process-group-configuration-controller-service').off('click').on('click', function () {
             var selectedTab = $('#process-group-configuration-tabs li.selected-tab').text();
-            if (selectedTab === 'Controller Services') {
+            if (selectedTab === nf._.msg('nf-settings.ControllerServices')) {
                 var controllerServicesUri = config.urls.api + '/process-groups/' + encodeURIComponent(groupId) + '/controller-services';
                 nfControllerServices.promptNewControllerService(controllerServicesUri, getControllerServicesTable());
             }
@@ -186,7 +186,7 @@
                     $('#process-group-comments').removeClass('unset').val(processGroup.comments);
 
                     // populate the header
-                    $('#process-group-configuration-header-text').text(processGroup.name + ' Configuration');
+                    $('#process-group-configuration-header-text').text(processGroup.name + nf._.msg('nf-controller-service.Settings'));
 
                     setEditable(true);
 
@@ -201,7 +201,7 @@
                         $('#read-only-process-group-comments').removeClass('unset').text(processGroup.comments);
 
                         // populate the header
-                        $('#process-group-configuration-header-text').text(processGroup.name + ' Configuration');
+                        $('#process-group-configuration-header-text').text(processGroup.name + nf._.msg('nf-controller-service.Settings'));
                     } else {
                         setUnauthorizedText();
                     }
@@ -294,10 +294,10 @@
                 selectedTabStyle: 'selected-tab',
                 scrollableTabContentStyle: 'scrollable',
                 tabs: [{
-                    name: 'General',
+                    name: nf._.msg('nf-settings.General'),
                     tabContentId: 'general-process-group-configuration-tab-content'
                 }, {
-                    name: 'Controller Services',
+                    name: nf._.msg('nf-settings.ControllerServices'),
                     tabContentId: 'process-group-controller-services-tab-content'
                 }],
                 select: function () {
