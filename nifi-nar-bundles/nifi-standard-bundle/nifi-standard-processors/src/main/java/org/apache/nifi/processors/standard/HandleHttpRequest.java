@@ -273,7 +273,7 @@ public class HandleHttpRequest extends AbstractProcessor {
     private volatile BlockingQueue<HttpRequestContainer> containerQueue;
 
     private String schema;
-    private static ApiRegisterService apiRegistryService;
+    private ApiRegisterService apiRegistryService;
 
     @Override
     protected List<PropertyDescriptor> getSupportedPropertyDescriptors() {
@@ -286,8 +286,11 @@ public class HandleHttpRequest extends AbstractProcessor {
     }
 
     @OnScheduled
-    public void clearInit(){
+    public void onScheduled(final ProcessContext context){
         initialized.set(false);
+
+        //register api info to api registery service
+        registerApiInfoToService(context);
     }
 
     private synchronized void initializeServer(final ProcessContext context) throws Exception {
@@ -444,9 +447,6 @@ public class HandleHttpRequest extends AbstractProcessor {
         server.start();
 
         getLogger().info("Server started and listening on port " + getPort());
-
-        //register api info to api registery service
-        registerApiInfoToService(context);
 
         initialized.set(true);
     }
@@ -776,6 +776,9 @@ public class HandleHttpRequest extends AbstractProcessor {
 
     private void unregisterApiInfoFromService(String id) {
 
-        this.apiRegistryService.unregisterApiInfo(id);
+        if (this.apiRegistryService != null) {
+
+            this.apiRegistryService.unregisterApiInfo(id);   
+        }
     }
 }
