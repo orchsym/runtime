@@ -26,7 +26,7 @@
     <div id="provenance-event-search" class="provenance-panel">
         <div id="provenance-filter-controls" class="filter-controls">
             <div id="provenance-filter-stats" class="filter-status">
-                <fmt:message key="partials.provenance.provenance-content.Displaying"/>&nbsp;<span id="displayed-events"></span>&nbsp;of&nbsp;<span id="total-events"></span>
+                <fmt:message key="partials.provenance.provenance-content.Displaying"/>&nbsp;<span id="displayed-events"></span>&nbsp;/&nbsp;<span id="total-events"></span>
             </div>
             <div id="oldest-event-message">
                 <fmt:message key="partials.provenance.provenance-content.oldest-event-message"/>:&nbsp;<span id="oldest-event" class="value-color"></span>

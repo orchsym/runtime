@@ -32,8 +32,8 @@
             <div class="start-date-setting">
                 <div class="setting-name">
                     <fmt:message key="partials.history.history-filter-dialog.StartDate"/>
-                    <fmt:message key="partials.history.history-filter-dialog.StartDate.title" var="history-filter-dialog_StartDate"/>
-                    <div class="fa fa-question-circle" alt="Info" title="${history-filter-dialog_StartDate}"></div>
+                    <fmt:message key="partials.history.history-filter-dialog.StartDate.title" var="historyFilterDialogStartDate"/>
+                    <div class="fa fa-question-circle" alt="Info" title="${historyFilterDialogStartDate}"></div>
                 </div>
                 <div class="setting-field">
                     <input type="text" id="history-filter-start-date" class="history-small-input"/>
@@ -42,8 +42,8 @@
             <div class="start-time-setting">
                 <div class="setting-name">
                     <fmt:message key="partials.history.history-filter-dialog.StartTime"/> (<span class="timezone"></span>)
-                    <fmt:message key="partials.history.history-filter-dialog.StartTime.title" var="history-filter-dialog_StartTime"/>
-                    <div class="fa fa-question-circle" alt="Info" title="${history-filter-dialog_StartTime}"></div>
+                    <fmt:message key="partials.history.history-filter-dialog.StartTime.title" var="historyFilterDialogStartTime"/>
+                    <div class="fa fa-question-circle" alt="Info" title="${historyFilterDialogStartTime}"></div>
                 </div>
                 <div class="setting-field">
                     <input type="text" id="history-filter-start-time" class="history-small-input"/>
@@ -55,8 +55,8 @@
             <div class="end-date-setting">
                 <div class="setting-name">
                     <fmt:message key="partials.history.history-filter-dialog.EndDate"/>
-                    <fmt:message key="partials.history.history-filter-dialog.EndDate.title" var="history-filter-dialog_EndDate"/>
-                    <div class="fa fa-question-circle" alt="Info" title="${history-filter-dialog_EndDate}"></div>
+                    <fmt:message key="partials.history.history-filter-dialog.EndDate.title" var="historyFilterDialogEndDate"/>
+                    <div class="fa fa-question-circle" alt="Info" title="${historyFilterDialogEndDate}"></div>
                 </div>
                 <div class="setting-field">
                     <input type="text" id="history-filter-end-date" class="history-small-input"/>
@@ -65,8 +65,8 @@
             <div class="end-time-setting">
                 <div class="setting-name">
                     <fmt:message key="partials.history.history-filter-dialog.EndTime"/> (<span class="timezone"></span>)
-                    <fmt:message key="partials.history.history-filter-dialog.EndTime.title" var="history-filter-dialog_EndTime"/>
-                    <div class="fa fa-question-circle" alt="Info" title="${history-filter-dialog_EndTime}"></div>
+                    <fmt:message key="partials.history.history-filter-dialog.EndTime.title" var="historyFilterDialogEndTime"/>
+                    <div class="fa fa-question-circle" alt="Info" title="${historyFilterDialogEndTime}"></div>
                 </div>
                 <div class="setting-field">
                     <input type="text" id="history-filter-end-time" class="history-small-input"/>

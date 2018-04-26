@@ -638,7 +638,7 @@
 
                     // populate the dom
                     $('#reporting-task-type-name').text(type).attr('title', type);
-                    $('#reporting-task-type-bundle').text(bundle).attr('title', bundle);
+                    //$('#reporting-task-type-bundle').text(bundle).attr('title', bundle);
                     $('#selected-reporting-task-name').text(reportingTaskType.label);
                     $('#selected-reporting-task-type').text(reportingTaskType.type).data('bundle', reportingTaskType.bundle);
 
@@ -821,7 +821,7 @@
 
             // build the combo options
             var options = [{
-                text: 'all groups',
+                text: nf._.msg('tag.filter.allgroup'),
                 value: ''
             }];
             groups.each(function (group) {
@@ -1086,13 +1086,14 @@
                 sortable: true,
                 resizable: true
             },
+            /** 
             {
                 id: 'bundle',
                 name: 'Bundle',
                 formatter: nfCommon.instanceBundleFormatter,
                 sortable: true,
                 resizable: true
-            },
+            },**/
             {
                 id: 'state',
                 name: nf._.msg('nf-settings.RunStatus'),
@@ -1417,8 +1418,8 @@
         $('#registry-description').val(registryEntity.component.description);
 
         // show the dialog
-        $('#registry-configuration-dialog').modal('setHeaderText', 'Edit Registry Client').modal('setButtonModel', [{
-            buttonText: 'Update',
+        $('#registry-configuration-dialog').modal('setHeaderText', nf._.msg('nf-settings.RegistryClientEdit')).modal('setButtonModel', [{
+            buttonText: nf._.msg('nf-dialog.Update'),
             color: {
                 base: '#728E9B',
                 hover: '#004849',
@@ -1430,7 +1431,7 @@
                 }
             }
         }, {
-            buttonText: 'Cancel',
+            buttonText: nf._.msg('nf-dialog.Cancel'),
             color: {
                 base: '#E3E8EB',
                 hover: '#C7D2D7',

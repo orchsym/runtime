@@ -40,7 +40,7 @@
 	<fmt:message key="paritals.history.history-content.refresh-button.title" var="historyContentRefresh"/>
     <button id="refresh-button" class="refresh-button pointer fa fa-refresh" title="${historyContentRefresh}"></button>
     <div id="history-last-refreshed-container" class="last-refreshed-container">
-        <fmt:message key="paritals.history.history-content.history-last-refreshed-container"/>&nbsp;<span id="history-last-refreshed" class="value-color"></span>
+        <fmt:message key="paritals.history.history-content.history-last-refreshed-container"/>:&nbsp;<span id="history-last-refreshed" class="value-color"></span>
     </div>
     <div id="history-loading-container" class="loading-container"></div>
 </div>

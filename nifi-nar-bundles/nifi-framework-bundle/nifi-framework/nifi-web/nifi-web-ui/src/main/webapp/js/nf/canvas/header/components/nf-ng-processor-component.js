@@ -577,7 +577,7 @@
 
                             // build the combo options
                             var options = [{
-                                text: 'all groups',
+                                text: nf._.msg('tag.filter.allgroup'),
                                 value: ''
                             }];
                             /**

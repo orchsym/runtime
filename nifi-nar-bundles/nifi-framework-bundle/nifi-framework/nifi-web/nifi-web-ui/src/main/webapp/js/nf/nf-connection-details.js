@@ -235,7 +235,7 @@
                 var processorType = $('<div></div>').text(nfCommon.substringAfterLast(processor.type, '.')).addClass('ellipsis').attr('title', nfCommon.substringAfterLast(processor.type, '.'));
 
                 // populate destination processor details
-                $('#read-only-connection-target-label').text('To processor');
+                $('#read-only-connection-target-label').text(nf._.msg('nf-connection-details.ToProcessor'));
                 $('#read-only-connection-target').append(processorName).append(processorType);
                 $('#read-only-connection-target-group-name').text(groupName);
 

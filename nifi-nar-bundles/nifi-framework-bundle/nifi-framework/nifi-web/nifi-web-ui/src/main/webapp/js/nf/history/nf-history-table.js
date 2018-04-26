@@ -143,7 +143,7 @@
                         // extract the filter text
                         var filterText = $('#history-filter').val();
                         if (filterText !== '') {
-                            var filterType = $('#history-filter-type').combo('getSelectedOption').text;
+                            var filterType = $('#history-filter-type').combo('getSelectedOption').value;
                             if (filterType === 'by id') {
                                 filter['sourceId'] = filterText;
                             } else if (filterType === 'by user') {

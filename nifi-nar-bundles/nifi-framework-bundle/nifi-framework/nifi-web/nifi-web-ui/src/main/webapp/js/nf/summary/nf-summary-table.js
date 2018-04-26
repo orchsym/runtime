@@ -2174,7 +2174,7 @@
                 name: nf._.msg('nf-summary-table.System'),
                 tabContentId: 'system-tab-content'
             }, {
-                name: 'Version',
+                name: nf._.msg('nf-summary-table.Version'),
                 tabContentId: 'version-tab-content'
             }]
         });

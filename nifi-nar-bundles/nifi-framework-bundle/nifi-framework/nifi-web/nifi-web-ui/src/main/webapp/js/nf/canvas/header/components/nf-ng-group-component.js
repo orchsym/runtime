@@ -237,8 +237,8 @@
                         // ensure the group name is specified
                         if (nfCommon.isBlank(groupName)) {
                             nfDialog.showOkDialog({
-                                headerText: 'Create Process Group',
-                                dialogContent: 'The group name is required.'
+                                headerText: nf._.msg('nf-group-component.AddProcessGroup'),
+                                dialogContent: nf._.msg('nf-group-component.NameRequired')
                             });
 
                             deferred.reject();

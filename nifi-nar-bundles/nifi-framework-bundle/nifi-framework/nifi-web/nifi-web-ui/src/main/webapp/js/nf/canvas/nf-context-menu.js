@@ -754,10 +754,10 @@
         {separator: true},
         {id: 'show-configuration-menu-item', condition: isConfigurable, menuItem: {clazz: 'fa fa-gear', text: nf._.msg('nf-context-menu.Configure'), action: 'showConfiguration'}},
         {id: 'show-details-menu-item', condition: hasDetails, menuItem: {clazz: 'fa fa-gear', text: nf._.msg('nf-context-menu.ViewConfiguration'), action: 'showDetails'}},
-        {id: 'variable-registry-menu-item', condition: hasVariables, menuItem: {clazz: 'fa', text: 'Variables', action: 'openVariableRegistry'}},
+        {id: 'variable-registry-menu-item', condition: hasVariables, menuItem: {clazz: 'fa', text: nf._.msg('nf-context-menu.Variable'), action: 'openVariableRegistry'}},
         {separator: true},
-        {id: 'version-menu-item', groupMenuItem: {clazz: 'fa', text: 'Version'}, menuItems: [
-            {id: 'start-version-control-menu-item', condition: supportsStartFlowVersioning, menuItem: {clazz: 'fa fa-upload', text: 'Start version control', action: 'saveFlowVersion'}},
+        {id: 'version-menu-item', groupMenuItem: {clazz: 'fa', text: nf._.msg('nf-context-menu.Version')}, menuItems: [
+            {id: 'start-version-control-menu-item', condition: supportsStartFlowVersioning, menuItem: {clazz: 'fa fa-upload', text: nf._.msg('nf-context-menu.StartVersionControl'), action: 'saveFlowVersion'}},
             {separator: true},
             {id: 'commit-menu-item', condition: supportsCommitFlowVersion, menuItem: {clazz: 'fa fa-upload', text: 'Commit local changes', action: 'saveFlowVersion'}},
             {id: 'local-changes-menu-item', condition: hasLocalChanges, menuItem: {clazz: 'fa', text: 'Show local changes', action: 'showLocalChanges'}},
@@ -771,7 +771,7 @@
         {separator: true},
         {id: 'start-menu-item', condition: isRunnable, menuItem: {clazz: 'fa fa-play', text: nf._.msg('nf-context-menu.Start'), action: 'start'}},
         {id: 'stop-menu-item', condition: isStoppable, menuItem: {clazz: 'fa fa-stop', text: nf._.msg('nf-context-menu.Stop'), action: 'stop'}},
-        {id: 'enable-menu-item', condition: canEnable, menuItem: {clazz: 'fa fa-flash', text: nf._.msg('nf-context-menu.canEnable'), action: 'enable'}},
+        {id: 'enable-menu-item', condition: canEnable, menuItem: {clazz: 'icon icon-enable', text: nf._.msg('nf-context-menu.canEnable'), action: 'enable'}},
         {id: 'disable-menu-item', condition: canDisable, menuItem: {clazz: 'icon icon-enable-false', text: nf._.msg('nf-context-menu.canDisable'), action: 'disable'}},
         {id: 'enable-transmission-menu-item', condition: canStartTransmission, menuItem: {clazz: 'fa fa-bullseye', text: nf._.msg('nf-context-menu.EnableTransmission'), action: 'enableTransmission'}},
         {id: 'disable-transmission-menu-item', condition: canStopTransmission, menuItem: { clazz: 'icon icon-transmit-false', text: nf._.msg('nf-context-menu.DisableTransmission'), action: 'disableTransmission'}},
@@ -780,7 +780,7 @@
         {id: 'show-stats-menu-item', condition: supportsStats, menuItem: {clazz: 'fa fa-area-chart', text: nf._.msg('nf-context-menu.StatsHistory'), action: 'showStats'}},
         {id: 'view-state-menu-item', condition: isStatefulProcessor, menuItem: {clazz: 'fa fa-tasks', text: nf._.msg('nf-context-menu.ViewState'), action: 'viewState'}},
         {id: 'list-queue-menu-item', condition: canListQueue, menuItem: {clazz: 'fa fa-list', text: nf._.msg('nf-context-menu.QueueList'), action: 'listQueue'}},
-        {id: 'view-menu-item', groupMenuItem: {clazz: 'icon icon-connect', text: 'View connections'}, menuItems: [
+        {id: 'view-menu-item', groupMenuItem: {clazz: 'icon icon-connect', text: nf._.msg('nf-context-menu.ViewConnections')}, menuItems: [
             {id: 'show-upstream-menu-item', condition: hasUpstream, menuItem: {clazz: 'icon', text: nf._.msg('nf-context-menu.UpstreamConnections'), action: 'showUpstream'}},
             {id: 'show-downstream-menu-item', condition: hasDownstream, menuItem: {clazz: 'icon', text: nf._.msg('nf-context-menu.DownstreamConnections'), action: 'showDownstream'}}
         ]},

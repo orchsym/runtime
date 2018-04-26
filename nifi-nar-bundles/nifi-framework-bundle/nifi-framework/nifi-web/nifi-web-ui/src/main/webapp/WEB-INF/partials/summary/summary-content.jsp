@@ -60,7 +60,7 @@
 	<fmt:message key="partials.summary.summary-content.Refresh" var="refresh"/>
     <button id="refresh-button" class="refresh-button pointer fa fa-refresh" title="${refresh}"></button>
     <div id="summary-last-refreshed-container" class="last-refreshed-container">
-        <fmt:message key="partials.summary.summary-content.LastUpdated"/>&nbsp;<span id="summary-last-refreshed" class="value-color"></span>
+        <fmt:message key="partials.summary.summary-content.LastUpdated"/>:&nbsp;<span id="summary-last-refreshed" class="value-color"></span>
     </div>
     <div id="summary-loading-container" class="loading-container"></div>
     <div id="system-diagnostics-link-container">
