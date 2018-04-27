@@ -172,7 +172,7 @@
                             dataType: 'json'
                         }).done(function (response) {
                             var aboutDetails = response.about;
-                            var templatesTitle = aboutDetails.title + ' Templates';
+                            var templatesTitle = aboutDetails.title + nf._.msg('nf-templates-table.Templates');
 
                             // set the document title and the about title
                             document.title = templatesTitle;

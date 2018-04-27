@@ -15,6 +15,7 @@
   limitations under the License.
 --%>
 <%@ page contentType="text/html" pageEncoding="UTF-8" session="false" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <div id="show-local-changes-dialog" layout="column" class="hidden large-dialog">
     <div class="dialog-content">
         <div class="setting local-changes-message">
@@ -22,7 +23,7 @@
         </div>
         <div id="show-local-changes-filter-controls">
             <div id="show-local-changes-filter-status" class="filter-status">
-                Displaying&nbsp;<span id="displayed-show-local-changes-entries"></span>&nbsp;of&nbsp;<span id="total-show-local-changes-entries"></span>
+                <fmt:message key="partials.canvas.revert-local-changes-dialog.displaying"/>&nbsp;<span id="displayed-show-local-changes-entries"></span>&nbsp;/&nbsp;<span id="total-show-local-changes-entries"></span>
             </div>
             <div id="show-local-changes-filter-container">
                 <input type="text" id="show-local-changes-filter" placeholder="Filter"/>

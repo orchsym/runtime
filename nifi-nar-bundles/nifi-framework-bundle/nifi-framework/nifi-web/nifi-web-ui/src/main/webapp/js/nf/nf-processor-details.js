@@ -85,16 +85,16 @@
                 selectedTabStyle: 'selected-tab',
                 scrollableTabContentStyle: 'scrollable',
                 tabs: [{
-                    name: 'Settings',
+                    name: nf._.msg('nf-processor-details.Settings'),
                     tabContentId: 'details-standard-settings-tab-content'
                 }, {
-                    name: 'Scheduling',
+                    name: nf._.msg('nf-processor-details.Scheduling'),
                     tabContentId: 'details-scheduling-tab-content'
                 }, {
-                    name: 'Properties',
+                    name: nf._.msg('nf-processor-details.Properties'),
                     tabContentId: 'details-processor-properties-tab-content'
                 }, {
-                    name: 'Comments',
+                    name: nf._.msg('nf-processor-details.Comments'),
                     tabContentId: 'details-processor-comments-tab-content'
                 }],
                 select: function () {
@@ -102,7 +102,7 @@
                     nfUniversalCapture.removeAllPropertyDetailDialogs();
 
                     // resize the property grid in case this is the first time its rendered
-                    if ($(this).text() === 'Properties') {
+                    if ($(this).text() === nf._.msg('nf-processor-details.Properties')) {
                         $('#read-only-processor-properties').propertytable('resetTableSize');
                     }
 
@@ -116,7 +116,7 @@
 
             // configure the processor details dialog
             $('#processor-details').modal({
-                headerText: 'Processor Details',
+                headerText: nf._.msg('nf-processor-details.ProcessorDetails'),
                 scrollableContentStyle: 'scrollable',
                 handler: {
                     close: function () {
@@ -236,7 +236,7 @@
                             createRelationshipOption(relationship);
                         });
                     } else {
-                        $('#read-only-auto-terminate-relationship-names').append('<div class="unset">This processor has no relationships.</div>');
+                        $('#read-only-auto-terminate-relationship-names').append('<div class="unset">' + nf._.msg('nf-processor-details.ThisProcessorHasNoRelationships') + '</div>');
                     }
                 }
             });
@@ -264,7 +264,7 @@
                 $('#read-only-processor-properties').propertytable('loadProperties', processor.config.properties, processor.config.descriptors, history.propertyHistory);
 
                 var buttons = [{
-                    buttonText: 'Ok',
+                    buttonText: nf._.msg('nf-dialog.Ok'),
                     color: {
                         base: '#728E9B',
                         hover: '#004849',
@@ -281,7 +281,7 @@
                 // determine if we should show the advanced button
                 if (top === window && nfCommon.isDefinedAndNotNull(nfCustomUi) && nfCommon.isDefinedAndNotNull(processor.config.customUiUrl) && processor.config.customUiUrl !== '') {
                     buttons.push({
-                        buttonText: 'Advanced',
+                        buttonText: nf._.msg('nf-processor-details.Advanced'),
                         clazz: 'fa fa-cog button-icon',
                         color: {
                             base: '#E3E8EB',
@@ -314,7 +314,7 @@
             }).fail(function (xhr, status, error) {
                 if (xhr.status === 400 || xhr.status === 404 || xhr.status === 409) {
                     nfDialog.showOkDialog({
-                        headerText: 'Error',
+                        headerText: nf._.msg('nf-processor-details.Error'),
                         dialogContent: nfCommon.escapeHtml(xhr.responseText)
                     });
                 } else {

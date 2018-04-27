@@ -132,8 +132,8 @@
         }).done(function (response) {
             // close the settings dialog
             nfDialog.showOkDialog({
-                headerText: 'Settings',
-                dialogContent: 'Settings successfully applied.'
+                headerText: nf._.msg('nf-settings.Settings'),
+                dialogContent: nf._.msg('nf-settings.Message2')
             });
 
             // register the click listener for the save button
@@ -405,8 +405,8 @@
         // ensure something was selected
         if (selectedTaskType === '') {
             nfDialog.showOkDialog({
-                headerText: 'Settings',
-                dialogContent: 'The type of reporting task to create must be selected.'
+                headerText: nf._.msg('nf-settings.Settings'),
+                dialogContent: nf._.msg('nf-settings.Message3')
             });
         } else {
             addReportingTask(selectedTaskType, selectedTaskBundle);
@@ -561,7 +561,7 @@
         var reportingTaskTypesColumns = [
             {
                 id: 'type',
-                name: 'Type',
+                name: nf._.msg('nf-settings.Type'),
                 field: 'label',
                 formatter: nfCommon.typeFormatter,
                 sortable: true,
@@ -577,7 +577,7 @@
             },
             {
                 id: 'tags',
-                name: 'Tags',
+                name: nf._.msg('nf-settings.Tags'),
                 field: 'tags',
                 sortable: true,
                 resizable: true,
@@ -638,7 +638,7 @@
 
                     // populate the dom
                     $('#reporting-task-type-name').text(type).attr('title', type);
-                    $('#reporting-task-type-bundle').text(bundle).attr('title', bundle);
+                    //$('#reporting-task-type-bundle').text(bundle).attr('title', bundle);
                     $('#selected-reporting-task-name').text(reportingTaskType.label);
                     $('#selected-reporting-task-type').text(reportingTaskType.type).data('bundle', reportingTaskType.bundle);
 
@@ -821,7 +821,7 @@
 
             // build the combo options
             var options = [{
-                text: 'all groups',
+                text: nf._.msg('tag.filter.allgroup'),
                 value: ''
             }];
             groups.each(function (group) {
@@ -870,9 +870,9 @@
         // initialize the reporting task dialog
         $('#new-reporting-task-dialog').modal({
             scrollableContentStyle: 'scrollable',
-            headerText: 'Add Reporting Task',
+            headerText: nf._.msg('nf-settings.Message11'),
             buttons: [{
-                buttonText: 'Add',
+                buttonText: nf._.msg('nf-settings.Add'),
                 color: {
                     base: '#728E9B',
                     hover: '#004849',
@@ -896,7 +896,7 @@
                 }
             },
                 {
-                    buttonText: 'Cancel',
+                    buttonText: nf._.msg('nf-settings.Cancel'),
                     color: {
                         base: '#E3E8EB',
                         hover: '#C7D2D7',
@@ -967,7 +967,7 @@
                 return '';
             }
 
-            var markup = '<div title="View Details" class="pointer view-reporting-task fa fa-info-circle"></div>';
+            var markup = '<div title="' + nf._.msg('nf-settings.ViewDetails') + '" class="pointer view-reporting-task fa fa-info-circle"></div>';
 
             // always include a button to view the usage
             // markup += '<div title="Usage" class="pointer reporting-task-usage fa fa-book"></div>';
@@ -998,17 +998,17 @@
             // determine the appropriate label
             var icon = '', label = '';
             if (!nfCommon.isEmpty(dataContext.component.validationErrors)) {
-                label = 'Invalid';
+                label = nf._.msg('nf-settings.Invalid');
                 icon = 'invalid fa fa-warning';
             } else {
                 if (dataContext.component.state === 'STOPPED') {
-                    label = 'Stopped';
+                    label = nf._.msg('nf-settings.Stopped');
                     icon = 'fa fa-stop stopped';
                 } else if (dataContext.component.state === 'RUNNING') {
-                    label = 'Running';
+                    label = nf._.msg('nf-settings.Running');
                     icon = 'fa fa-play running';
                 } else {
-                    label = 'Disabled';
+                    label = nf._.msg('nf-settings.Disabled');
                     icon = 'icon icon-enable-false disabled';
                 }
             }
@@ -1029,13 +1029,13 @@
 
             if (dataContext.permissions.canRead && dataContext.permissions.canWrite) {
                 if (dataContext.component.state === 'RUNNING') {
-                    markup += '<div title="Stop" class="pointer stop-reporting-task fa fa-stop" style="margin-top: 2px; margin-right: 3px;" ></div>';
+                    markup += '<div title="' + nf._.msg('nf-settings.Stop') + '" class="pointer stop-reporting-task fa fa-stop" style="margin-top: 2px; margin-right: 3px;" ></div>';
                 } else if (dataContext.component.state === 'STOPPED' || dataContext.component.state === 'DISABLED') {
-                    markup += '<div title="Edit" class="pointer edit-reporting-task fa fa-pencil" style="margin-top: 2px; margin-right: 3px;" ></div>';
+                    markup += '<div title="' + nf._.msg('nf-settings.Edit') + '" class="pointer edit-reporting-task fa fa-pencil" style="margin-top: 2px; margin-right: 3px;" ></div>';
 
                     // support starting when stopped and no validation errors
                     if (dataContext.component.state === 'STOPPED' && nfCommon.isEmpty(dataContext.component.validationErrors)) {
-                        markup += '<div title="Start" class="pointer start-reporting-task fa fa-play" style="margin-top: 2px; margin-right: 3px;"></div>';
+                        markup += '<div title="' + nf._.msg('nf-settings.Start') + '" class="pointer start-reporting-task fa fa-play" style="margin-top: 2px; margin-right: 3px;"></div>';
                     }
 
                     if (dataContext.component.multipleVersionsAvailable === true) {
@@ -1048,13 +1048,13 @@
                 }
 
                 if (dataContext.component.persistsState === true) {
-                    markup += '<div title="View State" class="pointer view-state-reporting-task fa fa-tasks" style="margin-top: 2px; margin-right: 3px;" ></div>';
+                    markup += '<div title="' + nf._.msg('nf-settings.ViewState') + '" class="pointer view-state-reporting-task fa fa-tasks" style="margin-top: 2px; margin-right: 3px;" ></div>';
                 }
             }
 
             // allow policy configuration conditionally
-            if (nfCanvasUtils.isManagedAuthorizer() && nfCommon.canAccessTenants()) {
-                markup += '<div title="Access Policies" class="pointer edit-access-policies fa fa-key" style="margin-top: 2px;"></div>';
+            if (nfCanvasUtils.isConfigurableAuthorizer() && nfCommon.canAccessTenants()) {
+                markup += '<div title="' + nf._.msg('nf-settings.AccessPolicies') + '" class="pointer edit-access-policies fa fa-key" style="margin-top: 2px;"></div>';
             }
 
             return markup;
@@ -1074,28 +1074,29 @@
             },
             {
                 id: 'name',
-                name: 'Name',
+                name: nf._.msg('nf-settings.Name'),
                 sortable: true,
                 resizable: true,
                 formatter: nameFormatter
             },
             {
                 id: 'type',
-                name: 'Type',
+                name: nf._.msg('nf-settings.Type'),
                 formatter: nfCommon.instanceTypeFormatter,
                 sortable: true,
                 resizable: true
             },
+            /** 
             {
                 id: 'bundle',
                 name: 'Bundle',
                 formatter: nfCommon.instanceBundleFormatter,
                 sortable: true,
                 resizable: true
-            },
+            },**/
             {
                 id: 'state',
-                name: 'Run Status',
+                name: nf._.msg('nf-settings.RunStatus'),
                 sortable: true,
                 resizeable: true,
                 formatter: reportingTaskRunStatusFormatter
@@ -1296,7 +1297,7 @@
         var registriesColumnModel = [
             {
                 id: 'name',
-                name: 'Name',
+                name: nf._.msg('nf-settings.Name'),
                 field: 'name',
                 formatter: nameFormatter,
                 sortable: true,
@@ -1304,7 +1305,7 @@
             },
             {
                 id: 'uri',
-                name: 'Location',
+                name: nf._.msg('nf-settings.Location'),
                 field: 'uri',
                 formatter: locationFormatter,
                 sortable: true,
@@ -1312,7 +1313,7 @@
             },
             {
                 id: 'description',
-                name: 'Description',
+                name: nf._.msg('nf-settings.Description'),
                 field: 'description',
                 formatter: descriptionFormatter,
                 sortable: true,
@@ -1417,8 +1418,8 @@
         $('#registry-description').val(registryEntity.component.description);
 
         // show the dialog
-        $('#registry-configuration-dialog').modal('setHeaderText', 'Edit Registry Client').modal('setButtonModel', [{
-            buttonText: 'Update',
+        $('#registry-configuration-dialog').modal('setHeaderText', nf._.msg('nf-settings.RegistryClientEdit')).modal('setButtonModel', [{
+            buttonText: nf._.msg('nf-dialog.Update'),
             color: {
                 base: '#728E9B',
                 hover: '#004849',
@@ -1430,7 +1431,7 @@
                 }
             }
         }, {
-            buttonText: 'Cancel',
+            buttonText: nf._.msg('nf-dialog.Cancel'),
             color: {
                 base: '#E3E8EB',
                 hover: '#C7D2D7',
@@ -1654,21 +1655,21 @@
                 selectedTabStyle: 'selected-tab',
                 scrollableTabContentStyle: 'scrollable',
                 tabs: [{
-                    name: 'General',
+                    name: nf._.msg('nf-settings.General'),
                     tabContentId: 'general-settings-tab-content'
                 }, {
-                    name: 'Reporting Task Controller Services',
+                    name: nf._.msg('nf-settings.ControllerServices'),
                     tabContentId: 'controller-services-tab-content'
                 }, {
-                    name: 'Reporting Tasks',
+                    name: nf._.msg('nf-settings.ReportingTasks'),
                     tabContentId: 'reporting-tasks-tab-content'
                 }, {
-                    name: 'Registry Clients',
+                    name: nf._.msg('nf-settings.RegistryClients'),
                     tabContentId: 'registries-tab-content'
                 }],
                 select: function () {
                     var tab = $(this).text();
-                    if (tab === 'General') {
+                    if (tab === nf._.msg('nf-settings.General')) {
                         $('#controller-cs-availability').hide();
                         $('#new-service-or-task').hide();
                         $('#settings-save').show();
@@ -1685,15 +1686,15 @@
 
                             // update the tooltip on the button
                             $('#new-service-or-task').attr('title', function () {
-                                if (tab === 'Reporting Task Controller Services') {
+                                if (tab === nf._.msg('nf-settings.ControllerServices')) {
                                     $('#settings-save').hide();
-                                    return 'Create a new reporting task controller service';
-                                } else if (tab === 'Reporting Tasks') {
+                                    return nf._.msg('nf-settings.Message12');
+                                } else if (tab === nf._.msg('nf-settings.ReportingTasks')) {
                                     $('#settings-save').hide();
-                                    return 'Create a new reporting task';
-                                } else if (tab === 'Registry Clients') {
+                                    return nf._.msg('nf-settings.Message13');
+                                } else if (tab === nf._.msg('nf-settings.RegistryClients')) {
                                     $('#settings-save').hide();
-                                    return 'Register a new registry client';
+                                    return nf._.msg('nf-settings.RegistryClientTooltip');
                                 }
                             });
                         } else {
@@ -1701,9 +1702,9 @@
                             $('div.controller-settings-table').css('top', '0');
                         }
 
-                        if (tab === 'Reporting Task Controller Services') {
+                        if (tab === nf._.msg('nf-settings.ControllerServices')) {
                             $('#controller-cs-availability').show();
-                        } else if (tab === 'Reporting Tasks' || tab === 'Registry Clients') {
+                        } else if (tab === nf._.msg('nf-settings.ReportingTasks')) {
                             $('#controller-cs-availability').hide();
                         }
 
@@ -1721,10 +1722,10 @@
             // create a new controller service or reporting task
             $('#new-service-or-task').on('click', function () {
                 var selectedTab = $('#settings-tabs li.selected-tab').text();
-                if (selectedTab === 'Reporting Task Controller Services') {
+                if (selectedTab === nf._.msg('nf-settings.ControllerServices')) {
                     var controllerServicesUri = config.urls.api + '/controller/controller-services';
                     nfControllerServices.promptNewControllerService(controllerServicesUri, getControllerServicesTable());
-                } else if (selectedTab === 'Reporting Tasks') {
+                } else if (selectedTab === nf._.msg('nf-settings.ReportingTasks')) {
                     $('#new-reporting-task-dialog').modal('show');
 
                     var reportingTaskTypesGrid = $('#reporting-task-types-table').data('gridInstance');
@@ -1742,9 +1743,9 @@
 
                     // set the initial focus
                     $('#reporting-task-type-filter').focus();
-                } else if (selectedTab === 'Registry Clients') {
-                    $('#registry-configuration-dialog').modal('setHeaderText', 'Add Registry Client').modal('setButtonModel', [{
-                        buttonText: 'Add',
+                } else if (selectedTab === nf._.msg('nf-settings.RegistryClients')) {
+                    $('#registry-configuration-dialog').modal('setHeaderText', nf._.msg('nf-settings.RegistryClientDialog')).modal('setButtonModel', [{
+                        buttonText: nf._.msg('nf-settings.Add'),
                         color: {
                             base: '#728E9B',
                             hover: '#004849',
@@ -1756,7 +1757,7 @@
                             }
                         }
                     }, {
-                        buttonText: 'Cancel',
+                        buttonText: nf._.msg('nf-settings.Cancel'),
                         color: {
                             base: '#E3E8EB',
                             hover: '#C7D2D7',

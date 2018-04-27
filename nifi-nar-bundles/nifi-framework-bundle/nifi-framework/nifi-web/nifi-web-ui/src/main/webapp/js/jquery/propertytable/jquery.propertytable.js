@@ -1684,7 +1684,7 @@
                             '<div id="new-property-dialog" class="dialog cancellable small-dialog hidden">' +
                                 '<div class="dialog-content">' +
                                     '<div>' +
-                                    '<div class="setting-name">Property name</div>' +
+                                    '<div class="setting-name">' + nf._.msg('jquery-propertytable.PropertyName') + '</div>' +
                                         '<div class="setting-field new-property-name-container">' +
                                             '<input class="new-property-name" type="text"/>' +
                                         '</div>' +
@@ -1696,10 +1696,10 @@
                         var newPropertyNameField = newPropertyDialog.find('input.new-property-name');
 
                         newPropertyDialog.modal({
-                            headerText: 'Add Property',
+                            headerText: nf._.msg('jquery-propertytable.AddProperty'),
                             scrollableContentStyle: 'scrollable',
                             buttons: [{
-                                buttonText: 'Ok',
+                                buttonText: nf._.msg('nf-dialog.Ok'),
                                 color: {
                                     base: '#728E9B',
                                     hover: '#004849',
@@ -1712,7 +1712,7 @@
                                 }
                             },
                                 {
-                                    buttonText: 'Cancel',
+                                    buttonText: nf._.msg('nf-dialog.Cancel'),
                                     color: {
                                         base: '#E3E8EB',
                                         hover: '#C7D2D7',

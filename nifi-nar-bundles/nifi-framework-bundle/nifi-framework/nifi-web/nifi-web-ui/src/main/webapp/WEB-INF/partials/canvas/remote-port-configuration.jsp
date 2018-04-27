@@ -15,10 +15,11 @@
   limitations under the License.
 --%>
 <%@ page contentType="text/html" pageEncoding="UTF-8" session="false" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <div id="remote-port-configuration" class="hidden medium-dialog">
     <div class="dialog-content">
         <div class="setting">
-            <div class="setting-name">Name</div>
+            <div class="setting-name"><fmt:message key="partials.canvas.remote-port-configuration.Name"/></div>
             <div class="setting-field">
                 <span id="remote-port-id" class="hidden"></span>
                 <span id="remote-port-type" class="hidden"></span>
@@ -27,25 +28,26 @@
         </div>
         <div class="setting">
             <div class="setting-name">
-                Concurrent tasks
-                <div class="fa fa-question-circle" alt="Info" title="The number of tasks that should be concurrently scheduled for this port."></div>
+                <fmt:message key="partials.canvas.remote-port-configuration.ConcurrentTasks"/>
+                <fmt:message key="partials.canvas.remote-port-configuration.ConcurrentTasks.title" var="ConcurrentTasks"/>
+                <div class="fa fa-question-circle" alt="Info" title="${ConcurrentTasks}"></div>
             </div>
             <div class="setting-field">
                 <input id="remote-port-concurrent-tasks" type="text"/>
                 <div id="remote-port-use-compression-container">
                     <div id="remote-port-use-compression" class="nf-checkbox"></div>
-                    <span class="nf-checkbox-label">Compressed</span>
+                    <span class="nf-checkbox-label"><fmt:message key="partials.canvas.remote-port-configuration.remote-port-use-compression"/></span>
                 </div>
             </div>
             <div class="clear"></div>
         </div>
         <div class="batch-settings">
             <div class="setting-name">
-                Batch Settings:
+                <fmt:message key="partials.canvas.remote-port-configuration.batch-setting"/>
             </div>
             <div class="setting batch-setting">
                 <div class="setting-name">
-                    Count
+                    <fmt:message key="partials.canvas.remote-port-configuration.batch-setting.count"/>
                     <div class="fa fa-question-circle" alt="Info" title="The preferred number of flow files to include in a transaction for this port."></div>
                 </div>
                 <div class="setting-field">
@@ -54,7 +56,7 @@
             </div>
             <div class="setting batch-setting">
                 <div class="setting-name">
-                    Size
+                    <fmt:message key="partials.canvas.remote-port-configuration.batch-setting.size"/>
                     <div class="fa fa-question-circle" alt="Info" title="The preferred number of bytes to include in a transaction for this port."></div>
                 </div>
                 <div class="setting-field">
@@ -63,7 +65,7 @@
             </div>
             <div class="setting batch-setting">
                 <div class="setting-name">
-                    Duration
+                    <fmt:message key="partials.canvas.remote-port-configuration.batch-setting.duration"/>
                     <div class="fa fa-question-circle" alt="Info" title="The preferred amount of time that a transaction should span for this port."></div>
                 </div>
                 <div class="setting-field">
