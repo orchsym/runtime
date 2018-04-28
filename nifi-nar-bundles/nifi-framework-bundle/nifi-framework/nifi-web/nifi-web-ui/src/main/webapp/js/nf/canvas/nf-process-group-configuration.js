@@ -305,7 +305,7 @@
                     var canWrite = nfCommon.isDefinedAndNotNull(processGroup) ? processGroup.permissions.canWrite : false;
 
                     var tab = $(this).text();
-                    if (tab === 'General') {
+                    if (tab === nf._.msg('nf-settings.General')) {
                         $('#flow-cs-availability').hide();
                         $('#add-process-group-configuration-controller-service').hide();
 

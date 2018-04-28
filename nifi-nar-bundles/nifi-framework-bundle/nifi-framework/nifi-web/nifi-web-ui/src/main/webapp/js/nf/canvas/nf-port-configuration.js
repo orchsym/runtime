@@ -133,7 +133,7 @@
 
                                 nfDialog.showOkDialog({
                                     dialogContent: content,
-                                    headerText: nf._.msg('nf=port-configuration.PortConfigure')
+                                    headerText: nf._.msg('nf-port-configuration.PortConfigure')
                                 });
                             } else {
                                 // close the details panel
@@ -147,7 +147,7 @@
                 }
             },
                 {
-                    buttonText: nf._.msg('nf=port-configuration.Cancel'),
+                    buttonText: nf._.msg('nf-port-configuration.Cancel'),
                     color: {
                         base: '#E3E8EB',
                         hover: '#C7D2D7',
