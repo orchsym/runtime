@@ -49,18 +49,6 @@ pipeline {
       }
     }
 
-    stage('Upload to Samba') {
-      steps {
-        slackSend ( color: 'good', message: "*Uploading to Samba* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`" )
-
-        sh """
-          rsync --progress ${env.WORKSPACE}/nifi-assembly/target/${env.compile_target} ${env.SAMBA_LOCAL_MOUNT_PATH}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/
-        """
-
-        slackSend ( color: 'good', message: "*Upload to Samba Finished* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can get it from Samba Server `//${env.SAMBA_SERVER}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/${env.compile_target}` " )
-      }
-    }
-
     stage('Deploy') {
       steps {
         slackSend ( color: 'good', message: "*Deploying/Updating the NIFI `test` Environment* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nOpen `${env.JOB_URL}${env.BUILD_NUMBER}/input/` and click `Proceed` or `Abort`" )
@@ -94,6 +82,19 @@ pipeline {
         )
 
         slackSend( color: 'good', message: "NIFI `test` Environment has been updated!")
+      }
+    }
+
+
+    stage('Upload to Samba') {
+      steps {
+        slackSend ( color: 'good', message: "*Uploading to Samba* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`" )
+
+        sh """
+          sudo rsync --progress ${env.WORKSPACE}/nifi-assembly/target/${env.compile_target} ${env.SAMBA_LOCAL_MOUNT_PATH}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/
+        """
+
+        slackSend ( color: 'good', message: "*Upload to Samba Finished* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can get it from Samba Server `//${env.SAMBA_SERVER}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/${env.compile_target}` " )
       }
     }
 
