@@ -3,16 +3,7 @@ pipeline {
 
   environment {
     PROJECT_NAME = 'runtime'
-
-    // bcr: [B]aishan [C]ontainer [R]egstiry
-    DOCKER_REGISTRY_ADDR = 'bcr.baishancloud.com'
-
-    // this directory must be writable by jenkins user
-    JENKINS_EXTERNAL_DIR = '/data/jenkins-external'
-
     BUILD_OUTPUT_FILE = "${WORKSPACE}/build.output"
-
-    S3_BUCKET_URL = "http://bspackage.ss.bscstorage.com"
   }
 
   triggers { pollSCM('0 1 * * *') }
@@ -28,8 +19,8 @@ pipeline {
         script {
           noci action: 'check'
         }
-      } // steps
-    } // stage
+      }
+    }
 
     stage('Print information') {
       steps {
@@ -41,8 +32,8 @@ pipeline {
         """
 
         slackSend ( color: 'good', message: "*Build Started* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`" )
-      } // steps
-    } // stage
+      }
+    }
 
     stage('Build') {
       steps {
@@ -57,28 +48,41 @@ pipeline {
         }
 
         slackSend ( color: 'good', message: "*Compile Finished* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nGenerated `${env.compile_target}`" )
-      } // steps
-    } // stage
+      }
+    }
+
+    stage('Upload to Samba') {
+      steps {
+        slackSend ( color: 'good', message: "*Uploading to Samba* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`" )
+
+        sh """
+          rsync --progress ${env.WORKSPACE}/nifi-assembly/target/${env.compile_target} ${env.SAMBA_LOCAL_MOUNT_PATH}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/
+        """
+
+        slackSend ( color: 'good', message: "*Upload to Samba Finished* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can get it from Samba Server `//${env.SAMBA_SERVER}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/${env.compile_target}` " )
+      }
+    }
 
     stage('Upload to s3') {
       steps {
-        slackSend ( color: 'good', message: "*Uploading* to S2. Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`" )
+        slackSend ( color: 'good', message: "*Uploading to S2* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`" )
 
         sh """
-          s3cmd put --acl-public ${env.WORKSPACE}/nifi-assembly/target/${env.compile_target} s3://bspackage/data/
+          s3cmd put --acl-public ${env.WORKSPACE}/nifi-assembly/target/${env.compile_target} ${env.S3_PACKAGES_URL}/files/
         """
 
-        slackSend ( color: 'good', message: "*Upload Finished* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can download it from ${env.S3_BUCKET_URL}/data/${env.compile_target} " )
-      } // steps
-    } // stage
+        slackSend ( color: 'good', message: "*Upload to S2 Finished* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can download it from ${env.DOWNLOAD_FILE_URL_BASE}/${env.compile_target} " )
+      }
+    }
+
     stage('Capture Output') {
       steps {
         script {
           env.build_output = readFile "build.output"
         }
-      } // steps
-    } // stage
-  } // stages
+      }
+    }
+  }
 
   post {
     always {
@@ -94,5 +98,5 @@ pipeline {
       echo "Sending message to Slack"
       slackSend ( color: 'danger', message: "*Build Failed* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}" )
     }
-  } // post
+  }
 }
