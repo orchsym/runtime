@@ -62,17 +62,15 @@ import java.util.*;
         "This processor can be scheduled to run on a timer, or cron expression, using the standard scheduling methods, " +
         "or it can be triggered by an incoming FlowFile. If it is triggered by an incoming FlowFile, then attributes of " +
         "that FlowFile will be available when evaluating the executing the SOAP request.")
-@WritesAttribute(attribute = "mime.type", description = "Sets mime type to text/xml")
-@DynamicProperty(name = "The name of a input parameter the needs to be passed to the SOAP method being invoked.",
-        value = "The value for this parameter '=' and ',' are not considered valid values and must be escpaed . Note, if the value of parameter needs to be an array the format should be key1=value1,key2=value2.  ",
-        	supportsExpressionLanguage = true,
+@WritesAttribute(attribute = "mime.type", description = "Sets mime type to application/xml")
+@DynamicProperty(name = "The name of a input parameter needs to be passed to the SOAP method being invoked.",
+        value = "The value for this parameter '=' and ',' are not considered valid values and must be escaped . Note, if the value of parameter needs to be an array the format should be key1=value1,key2=value2.  ",
+        expressionLanguageScope = ExpressionLanguageScope.FLOWFILE_ATTRIBUTES,
         description = "The name provided will be the name sent in the SOAP method, therefore please make sure " +
                 "it matches the wsdl documentation for the SOAP service being called. In the case of arrays " +
                 "the name will be the name of the array and the key's specified in the value will be the element " +
                 "names pased.")
-
 public class InvokeSOAP extends AbstractProcessor {
-
 
     protected static final PropertyDescriptor ENDPOINT_URL = new PropertyDescriptor
             .Builder()
@@ -121,12 +119,11 @@ public class InvokeSOAP extends AbstractProcessor {
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
 
-
     protected static final PropertyDescriptor USER_AGENT = new PropertyDescriptor
             .Builder()
             .name("User Agent")
             .defaultValue("SOAP Processor")
-            .description("The user agent string to use, the default is Nifi SOAP Processor")
+            .description("The user agent string to use, the default is SOAP Processor")
             .required(false)
             .expressionLanguageSupported(ExpressionLanguageScope.NONE)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
@@ -152,17 +149,25 @@ public class InvokeSOAP extends AbstractProcessor {
             .addValidator(StandardValidators.POSITIVE_INTEGER_VALIDATOR)
             .build();
 
-
     public static final Relationship REL_ORIGINAL = new Relationship.Builder()
-            .name("original")
-            .description("Original flowfile received by this processor")
+            .name("Original")
+            .description("Original flowfile received by this processor.")
             .build();
     
     public static final Relationship REL_SUCCESS = new Relationship.Builder()
-            .name("success")
-            .description("All FlowFiles that are created are routed to this relationship")
+            .name("Success")
+            .description("A Response FlowFile will be routed upon success (2xx status codes).")
+            .build();
+    
+    public static final Relationship REL_FAILURE = new Relationship.Builder()
+            .name("Failure")
+            .description("The original FlowFile will be routed on any type of connection failure, timeout or general exception. "
+                    + "It will have new attributes detailing the request.")
             .build();
 
+	public static final String EXCEPTION_CLASS = "invokesoap.java.exception.class";
+	
+	public static final String EXCEPTION_MESSAGE = "invokesoap.java.exception.message";
 
     private List<PropertyDescriptor> descriptors;
 
@@ -186,8 +191,9 @@ public class InvokeSOAP extends AbstractProcessor {
     @Override
     public Set<Relationship> getRelationships() {
         final Set<Relationship> relationships = new HashSet<>(2);
+        relationships.add(REL_ORIGINAL);
         relationships.add(REL_SUCCESS);
-        relationships.add(REL_ORIGINAL);        
+        relationships.add(REL_FAILURE);
         return relationships;
     }
 
@@ -200,7 +206,7 @@ public class InvokeSOAP extends AbstractProcessor {
     protected PropertyDescriptor getSupportedDynamicPropertyDescriptor(final String propertyDescriptorName) {
         return new PropertyDescriptor.Builder()
                 .description("Specifies the method name and parameter names and values for '" + propertyDescriptorName + "' the SOAP method being called.")
-                .name(propertyDescriptorName).addValidator(StandardValidators.NON_EMPTY_VALIDATOR).expressionLanguageSupported(true).dynamic(true)
+                .name(propertyDescriptorName).addValidator(StandardValidators.NON_EMPTY_VALIDATOR).expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).dynamic(true)
                 .build();
     }
 
@@ -220,12 +226,10 @@ public class InvokeSOAP extends AbstractProcessor {
         options.setCallTransportCleanup(true);
         options.setProperty(HTTPConstants.CHUNKED, false);
 
-
         options.setProperty(HTTPConstants.USER_AGENT, context.getProperty(USER_AGENT).getValue());
         options.setProperty(HTTPConstants.SO_TIMEOUT, context.getProperty(SO_TIMEOUT).asInteger());
         options.setProperty(HTTPConstants.CONNECTION_TIMEOUT, context.getProperty(CONNECTION_TIMEOUT).asInteger());
         //get the username and password -- they both must be populated.
-
         final String userName = context.getProperty(USER_NAME).getValue();
         final String password = context.getProperty(PASSWORD).getValue();
         if (null != userName && null != password && !userName.isEmpty() && !password.isEmpty()) {
@@ -259,23 +263,46 @@ public class InvokeSOAP extends AbstractProcessor {
     @Override
     public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
-        final StopWatch stopWatch = new StopWatch(true);
-        //get the dynamic properties, execute the call and return the results
-        OMFactory fac = OMAbstractFactory.getOMFactory();
-        OMNamespace omNamespace = fac.createOMNamespace(context.getProperty(WSDL_URL).getValue(), "nifi");
-
-        final OMElement method = getSoapMethod(fac, omNamespace, context.getProperty(METHOD_NAME).getValue());
-        FlowFile ff = session.get();
-        //now we need to walk the arguments and add them
-        addArgumentsToMethod(ff, context, fac, omNamespace, method);
-        final OMElement result = executeSoapMethod(method);
-        final FlowFile flowFile = processSoapRequest(session, result);
-        if(ff != null) {
-        		session.putAllAttributes(flowFile, ff.getAttributes());
-        		session.transfer(ff, REL_ORIGINAL);
-        }
-        session.transfer(flowFile, REL_SUCCESS);
-        
+    		final ComponentLog logger = getLogger();
+    		FlowFile ff = session.get();
+    		FlowFile responseFlowFile = null;
+    		try {
+	        //get the dynamic properties, execute the call and return the results
+	        OMFactory fac = OMAbstractFactory.getOMFactory();
+	        OMNamespace omNamespace = fac.createOMNamespace(context.getProperty(WSDL_URL).getValue(), "nifi");
+	        final OMElement method = getSoapMethod(fac, omNamespace, context.getProperty(METHOD_NAME).getValue());
+	        
+	        //now we need to walk the arguments and add them
+	        addArgumentsToMethod(ff, context, fac, omNamespace, method);
+	        final OMElement result = executeSoapMethod(method);
+	        responseFlowFile = processSoapRequest(session, result);
+	        if(ff != null) {
+	        		session.putAllAttributes(responseFlowFile, ff.getAttributes());
+	        		session.transfer(ff, REL_ORIGINAL);
+	        }
+	        session.transfer(responseFlowFile, REL_SUCCESS);
+    		} catch (final Exception e) {
+	        // penalize or yield
+	        if (ff != null) {
+	            logger.error("Routing to {} due to exception: {}", new Object[]{REL_FAILURE.getName(), e}, e);
+	            ff = session.penalize(ff);
+	            ff = session.putAttribute(ff, EXCEPTION_CLASS, e.getClass().getName());
+	            ff = session.putAttribute(ff, EXCEPTION_MESSAGE, e.getMessage());
+	            // transfer original to failure
+	            session.transfer(ff, REL_FAILURE);
+	        } else {
+	            logger.error("Yielding processor due to exception encountered as a source processor: {}", e);
+	            context.yield();
+	        }
+	        // cleanup response flowfile, if applicable
+            try {
+                if (responseFlowFile != null) {
+                    session.remove(responseFlowFile);
+                }
+            } catch (final Exception e1) {
+                logger.error("Could not cleanup response flowfile due to exception: {}", new Object[]{e1}, e1);
+            }
+    		}
 
     }
 

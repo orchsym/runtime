@@ -178,7 +178,7 @@ public class InvokeSOAPTest {
         testRunner.run();
 
         final Relationship REL_SUCCESS = new Relationship.Builder()
-                .name("success")
+                .name("Success")
                 .description("All FlowFiles that are created are routed to this relationship")
                 .build();
         testRunner.assertAllFlowFilesTransferred(REL_SUCCESS,1);
@@ -222,7 +222,7 @@ public class InvokeSOAPTest {
         testRunner.run();
 
         final Relationship REL_SUCCESS = new Relationship.Builder()
-                .name("success")
+                .name("Success")
                 .description("All FlowFiles that are created are routed to this relationship")
                 .build();
         testRunner.assertAllFlowFilesTransferred(REL_SUCCESS,1);
@@ -247,7 +247,7 @@ public class InvokeSOAPTest {
         testRunner.run();
 
         final Relationship REL_SUCCESS = new Relationship.Builder()
-                .name("success")
+                .name("Success")
                 .description("All FlowFiles that are created are routed to this relationship")
                 .build();
         testRunner.assertAllFlowFilesTransferred(REL_SUCCESS,1);
@@ -265,7 +265,7 @@ public class InvokeSOAPTest {
         InvokeSOAP getSOAP = new InvokeSOAP();
         Set<Relationship> relationshipSet = getSOAP.getRelationships();
         assert(null != relationshipSet);
-        assert(2 == relationshipSet.size());
+        assert(3 == relationshipSet.size());
     }
     
     @Test
