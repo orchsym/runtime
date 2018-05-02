@@ -36,7 +36,7 @@ pipeline {
     stage('Build') {
       steps {
         sh """
-          mvn -T 4 clean install -Dmaven.test.failure.ignore=true
+          mvn -T 4 install -Dmaven.test.failure.ignore=true
 
           echo `ls nifi-assembly/target/ | grep '.tar.gz\$'` > compile_target
         """
