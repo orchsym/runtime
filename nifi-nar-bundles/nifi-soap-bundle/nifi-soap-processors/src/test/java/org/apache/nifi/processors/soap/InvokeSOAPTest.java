@@ -54,84 +54,14 @@ import static org.mockito.Mockito.*;
 public class InvokeSOAPTest {
 
     private TestRunner testRunner;
-//    @Rule
-//    public MockServerRule mockServerRule = new MockServerRule(9090,this);
 
     private static ClientAndServer mockServer;
-   // private MockServerClient mockServerClient;
-
-    private static String wsdl = "<?xml version=\"1.0\"?>\n" +
-            "<definitions name=\"TestService\"\n" +
-            "             targetNamespace=\"http://localhost.com/stockquote.wsdl\"\n" +
-            "             xmlns:tns=\"http://localhost.com/stockquote.wsdl\"\n" +
-            "             xmlns:xsd1=\"http://localhost.com/stockquote.xsd\"\n" +
-            "             xmlns:soap=\"http://schemas.xmlsoap.org/wsdl/soap/\"\n" +
-            "             xmlns=\"http://schemas.xmlsoap.org/wsdl/\">\n" +
-            "\n" +
-            "  <types>\n" +
-            "    <schema targetNamespace=\"http://localhost.com/stockquote.xsd\"\n" +
-            "            xmlns=\"http://www.w3.org/2000/10/XMLSchema\">\n" +
-            "      <element name=\"TradePriceRequest\">\n" +
-            "        <complexType>\n" +
-            "          <all>\n" +
-            "            <element name=\"tickerSymbol\" type=\"string\"/>\n" +
-            "          </all>\n" +
-            "        </complexType>\n" +
-            "      </element>\n" +
-            "      <element name=\"TradePrice\">\n" +
-            "         <complexType>\n" +
-            "           <all>\n" +
-            "             <element name=\"price\" type=\"float\"/>\n" +
-            "           </all>\n" +
-            "         </complexType>\n" +
-            "      </element>\n" +
-            "    </schema>\n" +
-            "  </types>\n" +
-            "\n" +
-            "  <message name=\"GetLastTradePriceInput\">\n" +
-            "    <part name=\"body\" element=\"xsd1:TradePriceRequest\"/>\n" +
-            "  </message>\n" +
-            "\n" +
-            "  <message name=\"GetLastTradePriceOutput\">\n" +
-            "    <part name=\"body\" element=\"xsd1:TradePrice\"/>\n" +
-            "  </message>\n" +
-            "\n" +
-            "  <portType name=\"StockQuotePortType\">\n" +
-            "    <operation name=\"GetLastTradePrice\">\n" +
-            "      <input message=\"tns:GetLastTradePriceInput\"/>\n" +
-            "      <output message=\"tns:GetLastTradePriceOutput\"/>\n" +
-            "    </operation>\n" +
-            "  </portType>\n" +
-            "\n" +
-            "  <binding name=\"StockQuoteSoapBinding\" type=\"tns:StockQuotePortType\">\n" +
-            "    <soap:binding style=\"document\" transport=\"http://schemas.xmlsoap.org/soap/http\"/>\n" +
-            "    <operation name=\"GetLastTradePrice\">\n" +
-            "      <soap:operation soapAction=\"http://localhost.com/GetLastTradePrice\"/>\n" +
-            "      <input>\n" +
-            "        <soap:body use=\"literal\"/>\n" +
-            "      </input>\n" +
-            "      <output>\n" +
-            "        <soap:body use=\"literal\"/>\n" +
-            "      </output>\n" +
-            "    </operation>\n" +
-            "  </binding>\n" +
-            "\n" +
-            "  <service name=\"StockQuoteService\">\n" +
-            "    <documentation>My first service</documentation>\n" +
-            "    <port name=\"StockQuotePort\" binding=\"tns:StockQuoteSoapBinding\">\n" +
-            "      <soap:address location=\"http://localhost.com/stockquote\"/>\n" +
-            "    </port>\n" +
-            "  </service>\n" +
-            "\n" +
-            "</definitions>";
 
     @BeforeClass
     public static void setup() {
         mockServer = startClientAndServer(9090);
-
-       // mockServerClient = new MockServerClient("127.0.0.1", 9090);
-
     }
+    
     @AfterClass
     public static void tearDown(){
         mockServer.stop();
@@ -140,18 +70,16 @@ public class InvokeSOAPTest {
     @Before
     public  void init() {
         testRunner = TestRunners.newTestRunner(InvokeSOAP.class);
-
-        // mockServerClient = new MockServerClient("127.0.0.1", 9090);
+        mockServer.reset();
     }
+    
     @After
     public void after(){
         testRunner.shutdown();
     }
 
     @Test
-    public void testHTTPUsernamePasswordProcessor() throws IOException {
-
-
+    public void testHTTPWithoutUsernamePassword() throws IOException {
 
         final String xmlBody = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" +
                 "<SOAP-ENV:Envelope SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
@@ -162,38 +90,25 @@ public class InvokeSOAPTest {
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>";
 
-        new MockServerClient("127.0.0.1", 9090).when(request()
-                        .withMethod("POST")
-        )
-                .respond(
-                        response()
-                                .withBody(xmlBody)
-                );
+        mockServer.when(request().withMethod("POST"))
+				.respond(response().withBody(xmlBody));
 
         testRunner.setProperty(InvokeSOAP.ENDPOINT_URL,"http://localhost:9090/test_path");
         testRunner.setProperty(InvokeSOAP.WSDL_URL,"http://localhost:9090/test_path.wsdl");
         testRunner.setProperty(InvokeSOAP.METHOD_NAME,"testMethod");
-
-
         testRunner.run();
 
-        final Relationship REL_SUCCESS = new Relationship.Builder()
-                .name("Success")
-                .description("All FlowFiles that are created are routed to this relationship")
-                .build();
-        testRunner.assertAllFlowFilesTransferred(REL_SUCCESS,1);
-        List<MockFlowFile> flowFileList = testRunner.getFlowFilesForRelationship(REL_SUCCESS);
+        testRunner.assertAllFlowFilesTransferred(InvokeSOAP.REL_SUCCESS,1);
+        List<MockFlowFile> flowFileList = testRunner.getFlowFilesForRelationship(InvokeSOAP.REL_SUCCESS);
         assert(null != flowFileList);
 
         final String expectedBody = "<?xml version='1.0'?><dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='http://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'><latLonList>35.9153,-79.0838</latLonList></dwml>";
         flowFileList.get(0).assertContentEquals(expectedBody.getBytes());
 
-
     }
 
     @Test
-    public void testHTTPWithUsernamePasswordProcessor() throws IOException {
-
+    public void testHTTPWithUsernamePassword() throws IOException {
 
         final String xmlBody = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" +
                 "<SOAP-ENV:Envelope SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
@@ -204,59 +119,71 @@ public class InvokeSOAPTest {
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>";
 
-        new MockServerClient("127.0.0.1", 9090).when(request()
-                .withMethod("POST")
-        )
-                .respond(
-                        response()
-                                .withBody(xmlBody)
-                );
+        mockServer.when(request().withMethod("POST"))
+				.respond(response().withBody(xmlBody));
 
         testRunner.setProperty(InvokeSOAP.ENDPOINT_URL,"http://localhost:9090/test_path");
         testRunner.setProperty(InvokeSOAP.WSDL_URL,"http://localhost:9090/test_path.wsdl");
         testRunner.setProperty(InvokeSOAP.METHOD_NAME,"testMethod");
         testRunner.setProperty(InvokeSOAP.USER_NAME,"username");
         testRunner.setProperty(InvokeSOAP.PASSWORD,"password");
-
-
         testRunner.run();
 
-        final Relationship REL_SUCCESS = new Relationship.Builder()
-                .name("Success")
-                .description("All FlowFiles that are created are routed to this relationship")
-                .build();
-        testRunner.assertAllFlowFilesTransferred(REL_SUCCESS,1);
-        List<MockFlowFile> flowFileList = testRunner.getFlowFilesForRelationship(REL_SUCCESS);
+        testRunner.assertAllFlowFilesTransferred(InvokeSOAP.REL_SUCCESS,1);
+        List<MockFlowFile> flowFileList = testRunner.getFlowFilesForRelationship(InvokeSOAP.REL_SUCCESS);
         assert(null != flowFileList);
 
         final String expectedBody = "<?xml version='1.0'?><dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='http://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'><latLonList>35.9153,-79.0838</latLonList></dwml>";
         flowFileList.get(0).assertContentEquals(expectedBody.getBytes());
 
+    }
+    
+    @Test
+    public void testFailureRelationshipHandling() throws IOException {
+
+        final String xmlBody = "Service unavailable";
+
+        mockServer.when(request().withMethod("POST"))
+				.respond(response().withStatusCode(503).withBody(xmlBody));
+
+        testRunner.setProperty(InvokeSOAP.ENDPOINT_URL,"http://localhost:9090/test_path");
+        testRunner.setProperty(InvokeSOAP.WSDL_URL,"http://localhost:9090/test_path.wsdl");
+        testRunner.setProperty(InvokeSOAP.METHOD_NAME,"testMethod");
+        testRunner.enqueue("test".getBytes());
+        testRunner.run();
+
+        testRunner.assertAllFlowFilesTransferred(InvokeSOAP.REL_FAILURE,1);
+        testRunner.assertTransferCount(InvokeSOAP.REL_ORIGINAL,0);
+        testRunner.assertTransferCount(InvokeSOAP.REL_SUCCESS,0);
+        List<MockFlowFile> flowFileList = testRunner.getFlowFilesForRelationship(InvokeSOAP.REL_FAILURE);
+        assert(null != flowFileList);
+
+        flowFileList.get(0).assertContentEquals("test".getBytes());
 
     }
 
     @Test
-    @Ignore
-    public void testGeoServiceHTTPWithArgumentsProcessor() throws IOException {
+    public void testGeoServiceHTTPWithArguments() throws IOException {
 
 
         testRunner.setProperty(InvokeSOAP.ENDPOINT_URL,"https://graphical.weather.gov/xml/SOAP_server/ndfdXMLserver.php");
         testRunner.setProperty(InvokeSOAP.WSDL_URL,"https://graphical.weather.gov/xml/DWMLgen/wsdl/ndfdXML.wsdl");
         testRunner.setProperty(InvokeSOAP.METHOD_NAME,"LatLonListZipCode");
         testRunner.setProperty("zipCodeList","27510");
+        testRunner.enqueue("test".getBytes());
         testRunner.run();
 
-        final Relationship REL_SUCCESS = new Relationship.Builder()
-                .name("Success")
-                .description("All FlowFiles that are created are routed to this relationship")
-                .build();
-        testRunner.assertAllFlowFilesTransferred(REL_SUCCESS,1);
-        List<MockFlowFile> flowFileList = testRunner.getFlowFilesForRelationship(REL_SUCCESS);
+        testRunner.assertTransferCount(InvokeSOAP.REL_SUCCESS,1);
+        testRunner.assertTransferCount(InvokeSOAP.REL_ORIGINAL,1);
+        List<MockFlowFile> flowFileList = testRunner.getFlowFilesForRelationship(InvokeSOAP.REL_SUCCESS);
         assert(null != flowFileList);
 
-        final String expectedBody = "<?xml version='1.0'?><dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='http://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'><latLonList>35.9153,-79.0838</latLonList></dwml>";
+        final String expectedBody = "<?xml version='1.0'?><dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='https://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'><latLonList>35.9153,-79.0838</latLonList></dwml>";
         flowFileList.get(0).assertContentEquals(expectedBody.getBytes());
-
+        
+        flowFileList = testRunner.getFlowFilesForRelationship(InvokeSOAP.REL_ORIGINAL);
+        assert(null != flowFileList);
+        flowFileList.get(0).assertContentEquals("test".getBytes());
 
     }
 

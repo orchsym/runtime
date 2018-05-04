@@ -346,9 +346,11 @@ public class InvokeSOAP extends AbstractProcessor {
         for (final Map.Entry<PropertyDescriptor, String> entry : context.getProperties().entrySet()) {
             PropertyDescriptor descriptor = entry.getKey();
             if (descriptor.isDynamic() && descriptor.isExpressionLanguageSupported()) {
-            		String dynamicValue = context.getProperty(descriptor).evaluateAttributeExpressions().getValue();
+            		String dynamicValue;
             		if(ff != null)
             			dynamicValue = context.getProperty(descriptor).evaluateAttributeExpressions(ff).getValue();
+            		else 
+            			dynamicValue = context.getProperty(descriptor).evaluateAttributeExpressions().getValue();
                 if (null != logger)
                     logger.debug("Processing dynamic property: " + descriptor.getName() + " with value: " + dynamicValue);
                 OMElement value = getSoapMethod(fac, omNamespace, descriptor.getName());
