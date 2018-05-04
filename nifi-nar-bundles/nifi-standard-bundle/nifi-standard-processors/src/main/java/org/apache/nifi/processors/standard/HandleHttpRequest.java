@@ -25,7 +25,9 @@ import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
+import org.apache.nifi.annotation.lifecycle.OnAdded;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
+import org.apache.nifi.annotation.lifecycle.OnRemoved;
 import org.apache.nifi.components.AllowableValue;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.expression.ExpressionLanguageScope;
@@ -51,6 +53,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.apache.nifi.controller.ControllerServiceLookup;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
@@ -240,8 +243,8 @@ public class HandleHttpRequest extends AbstractProcessor {
 
     public static final PropertyDescriptor HTTP_API_REGISTRY = new PropertyDescriptor.Builder()
             .name("HTTP API Registry Service")
-            .description("this is registery description")
-            .required(false)
+            .description("this is service is for api registry")
+            .required(true)
             .identifiesControllerService(ApiRegisterService.class)
             .build();
 
@@ -275,6 +278,9 @@ public class HandleHttpRequest extends AbstractProcessor {
     private String schema;
     private ApiRegisterService apiRegistryService;
 
+    //processor state, init running stopped?
+    private String state;
+
     @Override
     protected List<PropertyDescriptor> getSupportedPropertyDescriptors() {
         return propertyDescriptors;
@@ -285,12 +291,67 @@ public class HandleHttpRequest extends AbstractProcessor {
         return Collections.singleton(REL_SUCCESS);
     }
 
+    @Override
+    public void onPropertyModified(final PropertyDescriptor descriptor, final String oldValue, final String newValue) {
+        if (this.apiRegistryService != null) {
+            modifyApiInfoFromService(descriptor.getName(), newValue);
+            return;
+        }
+
+        //fresh
+        if (descriptor.getName().equals("HTTP API Registry Service")) {
+
+            ControllerServiceLookup serviceLookup = getControllerServiceLookup();
+            ApiRegisterService service;
+            if (newValue != null) {
+                service = (ApiRegisterService)serviceLookup.getControllerService(newValue);
+                if (service != null && serviceLookup.isControllerServiceEnabled(service)) {
+                    
+                    this.apiRegistryService = service;
+
+                    ApiInfo apiInfo = new ApiInfo();
+                    apiInfo.id = this.getIdentifier();
+
+                    //pre register api info to server
+                    this.apiRegistryService.registerApiInfo(apiInfo, false);
+                }
+            }         
+        }
+    }
+
+    @OnAdded
+    public void onAdded(final ProcessContext context) {
+
+    }
+
     @OnScheduled
-    public void onScheduled(final ProcessContext context){
+    public void onScheduled(final ProcessContext context) {
         initialized.set(false);
 
+        this.state = "running";
+
         //register api info to api registery service
-        registerApiInfoToService(context);
+        registerApiInfoToService(context, true);
+    }
+
+    @OnStopped
+    public void shutdown() throws Exception{
+
+        this.state = "stopped";
+        modifyApiInfoFromService("state", this.state);
+
+        if (server != null) {
+            getLogger().debug("Shutting down server");
+            server.stop();
+            server.destroy();
+            server.join();
+            getLogger().info("Shut down {}", new Object[]{server});
+        }
+    }
+
+    @OnRemoved
+    public void onRemoved(ProcessContext processContext) {
+        unregisterApiInfoFromService(this.getIdentifier());
     }
 
     private synchronized void initializeServer(final ProcessContext context) throws Exception {
@@ -486,19 +547,6 @@ public class HandleHttpRequest extends AbstractProcessor {
         }
 
         return sslFactory;
-    }
-
-    @OnStopped
-    public void shutdown() throws Exception {
-        if (server != null) {
-            getLogger().debug("Shutting down server");
-            server.stop();
-            server.destroy();
-            server.join();
-            getLogger().info("Shut down {}", new Object[]{server});
-        }
-
-        unregisterApiInfoFromService(this.getIdentifier());
     }
 
     @Override
@@ -732,15 +780,29 @@ public class HandleHttpRequest extends AbstractProcessor {
         }
     }
 
-    private void registerApiInfoToService(final ProcessContext context) {
+    private void registerApiInfoToService(final ProcessContext context, Boolean shouldHandleGroupID) {
+
+        ApiInfo apiInfo;
+        try {
+            apiInfo = getApiInfo(context);
+        } catch (Exception exc) {
+            return;
+        }
+
+        ApiRegisterService apiRegisterService = context.getProperty(HTTP_API_REGISTRY).asControllerService(ApiRegisterService.class);
+        this.apiRegistryService = apiRegisterService;
+        
+        apiRegisterService.registerApiInfo(apiInfo, shouldHandleGroupID);
+    }
+
+    private ApiInfo getApiInfo(final ProcessContext context) throws Exception{
 
         ApiInfo apiInfo = new ApiInfo();
         
         String name = context.getName();
         apiInfo.name = name;
 
-        String identifier = this.getIdentifier();
-        apiInfo.id = identifier;
+        apiInfo.id = this.getIdentifier();
 
         String host = context.getProperty(HOSTNAME).getValue();
         apiInfo.host = host;
@@ -767,18 +829,23 @@ public class HandleHttpRequest extends AbstractProcessor {
 
         apiInfo.schema = this.schema;
 
-        final ApiRegisterService apiRegisterService = context.getProperty(HTTP_API_REGISTRY).asControllerService(ApiRegisterService.class);
-        this.apiRegistryService = apiRegisterService;
-        
-        apiRegisterService.registerApiInfo(apiInfo);
+        apiInfo.state = this.state;
 
+        return apiInfo;
+    }
+
+    private void modifyApiInfoFromService(String key, String value) {
+
+        if (this.apiRegistryService != null) {
+            this.apiRegistryService.modifyApiInfo(this.getIdentifier(), key, value);
+        }
     }
 
     private void unregisterApiInfoFromService(String id) {
 
         if (this.apiRegistryService != null) {
-
             this.apiRegistryService.unregisterApiInfo(id);   
         }
     }
+
 }

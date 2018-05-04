@@ -28,7 +28,9 @@ import java.util.HashMap;
 @CapabilityDescription("Api Regigter Service.")
 public interface ApiRegisterService extends ControllerService {
 
-    public void registerApiInfo(ApiInfo apiInfo);
+    public void registerApiInfo(ApiInfo apiInfo, Boolean shouldHandleGroupID);
+
+    public void modifyApiInfo(String id, String key, String value);
 
     public void unregisterApiInfo(String id);
 }
