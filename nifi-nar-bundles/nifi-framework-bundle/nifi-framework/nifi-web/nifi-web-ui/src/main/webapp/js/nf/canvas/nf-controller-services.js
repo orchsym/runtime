@@ -277,8 +277,8 @@
         // ensure something was selected
         if (selectedServiceType === '') {
             nfDialog.showOkDialog({
-                headerText: 'Controller Service',
-                dialogContent: 'The type of controller service to create must be selected.'
+                headerText: nf._.msg('nf-controller-service.ControllerService'),
+                dialogContent: nf._.msg('nf-controller-service.Message14')
             });
         } else {
             addControllerService(controllerServicesUri, serviceTable, selectedServiceType, selectedServiceBundle);
@@ -347,7 +347,7 @@
         var controllerServiceTypesColumns = [
             {
                 id: 'type',
-                name: 'Type',
+                name: nf._.msg('nf-controller-services.Type'),
                 field: 'label',
                 formatter: nfCommon.typeFormatter,
                 sortable: true,
@@ -355,7 +355,7 @@
             },
             {
                 id: 'version',
-                name: 'Version',
+                name: nf._.msg('nf-controller-services.Version'),
                 field: 'version',
                 formatter: nfCommon.typeVersionFormatter,
                 sortable: true,
@@ -363,7 +363,7 @@
             },
             {
                 id: 'tags',
-                name: 'Tags',
+                name: nf._.msg('nf-controller-services.Tags'),
                 field: 'tags',
                 sortable: true,
                 resizable: true,
@@ -631,7 +631,7 @@
 
             // build the combo options
             var options = [{
-                text: 'all groups',
+                text: nf._.msg('tag.filter.allgroup'),
                 value: ''
             }];
             /** 
@@ -652,7 +652,7 @@
 
         // initialize the controller service dialog
         $('#new-controller-service-dialog').modal({
-            headerText: 'Add Controller Service',
+            headerText: nf._.msg('nf-controller-service.AddControllerService'),
             scrollableContentStyle: 'scrollable',
             handler: {
                 close: function () {
@@ -702,7 +702,7 @@
         if (!dataContext.permissions.canRead) {
             return '<span class="blank">' + nfCommon.escapeHtml(dataContext.id) + '</span>';
         }
-        
+
         return nfCommon.escapeHtml(dataContext.component.name);
     };
 
@@ -848,7 +848,7 @@
 
     /**
      * Initializes the controller services tab.
-     * 
+     *
      * @param {jQuery} serviceTable
      * @param {function} showSettings
      */
@@ -862,7 +862,6 @@
             // always include a button to view the usage
             // var markup = '<div title="Usage" class="pointer controller-service-usage fa fa-book" style="margin-top: 5px; margin-right: 3px;" ></div>';
             var markup =''
-
             var hasErrors = !nfCommon.isEmpty(dataContext.component.validationErrors);
             var hasBulletins = !nfCommon.isEmpty(dataContext.bulletins);
 
@@ -885,25 +884,25 @@
             if (!dataContext.permissions.canRead) {
                 return '';
             }
-            
+
             // determine the appropriate label
             var icon = '', label = '';
             if (!nfCommon.isEmpty(dataContext.component.validationErrors)) {
                 icon = 'invalid fa fa-warning';
-                label = 'Invalid';
+                label = nf._.msg('nf-controller-services.Invalid');
             } else {
                 if (dataContext.component.state === 'DISABLED') {
                     icon = 'disabled icon icon-enable-false"';
-                    label = 'Disabled';
+                    label = nf._.msg('nf-controller-services.Disabled');
                 } else if (dataContext.component.state === 'DISABLING') {
                     icon = 'disabled icon icon-enable-false"';
-                    label = 'Disabling';
+                    label = nf._.msg('nf-controller-services.Disabling');
                 } else if (dataContext.component.state === 'ENABLED') {
                     icon = 'enabled fa fa-flash';
-                    label = 'Enabled';
+                    label = nf._.msg('nf-controller-services.Enabled');
                 } else if (dataContext.component.state === 'ENABLING') {
                     icon = 'enabled fa fa-flash';
-                    label = 'Enabling';
+                    label = nf._.msg('nf-controller-services.Enabling');
                 }
             }
 
@@ -932,13 +931,13 @@
                         // write permission... allow actions based on the current state of the service
                         if (dataContext.component.state === 'ENABLED' || dataContext.component.state === 'ENABLING') {
                             markup += '<div class="pointer view-controller-service fa fa-gear" title="View Configuration" style="margin-top: 2px; margin-right: 3px;" ></div>';
-                            markup += '<div class="pointer disable-controller-service icon icon-enable-false" title="Disable" style="margin-top: 2px; margin-right: 3px;" ></div>';
+                            markup += '<div class="pointer disable-controller-service icon icon-enable-false" title="' + nf._.msg('nf-controller-services.disable') + '" style="margin-top: 2px; margin-right: 3px;" ></div>';
                         } else if (dataContext.component.state === 'DISABLED') {
-                            markup += '<div class="pointer edit-controller-service fa fa-gear" title="Configure" style="margin-top: 2px; margin-right: 3px;" ></div>';
+                            markup += '<div class="pointer edit-controller-service fa fa-gear" title="' + nf._.msg('nf-controller-services.edit') + '" style="margin-top: 2px; margin-right: 3px;" ></div>';
 
                             // if there are no validation errors allow enabling
                             if (nfCommon.isEmpty(dataContext.component.validationErrors)) {
-                                markup += '<div class="pointer enable-controller-service fa fa-flash" title="Enable" style="margin-top: 2px; margin-right: 3px;"></div>';
+                                markup += '<div class="pointer enable-controller-service fa fa-flash" title="' + nf._.msg('nf-controller-services.enable') + '" style="margin-top: 2px; margin-right: 3px;"></div>';
                             }
 
                             if (dataContext.component.multipleVersionsAvailable === true) {
@@ -967,7 +966,7 @@
 
             // allow policy configuration conditionally
             if (nfCanvasUtils.isManagedAuthorizer() && nfCommon.canAccessTenants()) {
-                markup += '<div title="Access Policies" class="pointer edit-access-policies fa fa-key" style="margin-top: 2px;"></div>';
+                markup += '<div title="' + nf._.msg('nf-controller-services.acesspolicies') + '" class="pointer edit-access-policies fa fa-key" style="margin-top: 2px;"></div>';
             }
 
             return markup;
@@ -987,28 +986,28 @@
             },
             {
                 id: 'name',
-                name: 'Name',
+                name: nf._.msg('nf-controller-services.Name'),
                 formatter: nameFormatter,
                 sortable: true,
                 resizable: true
             },
             {
                 id: 'type',
-                name: 'Type',
+                name: nf._.msg('nf-controller-services.Type'),
                 formatter: nfCommon.instanceTypeFormatter,
                 sortable: true,
                 resizable: true
             },
             {
                 id: 'state',
-                name: 'State',
+                name: nf._.msg('nf-controller-services.State'),
                 formatter: controllerServiceStateFormatter,
                 sortable: true,
                 resizeable: true
             },
             {
                 id: 'parentGroupId',
-                name: 'Scope',
+                name: nf._.msg('nf-controller-services.ProcessGroup'),
                 formatter: groupIdFormatter,
                 sortable: true,
                 resizeable: true
@@ -1300,7 +1299,7 @@
 
             // update the button model and show the dialog
             $('#new-controller-service-dialog').modal('setButtonModel', [{
-                buttonText: 'Add',
+                buttonText: nf._.msg('nf-controller-services.Add'),
                 color: {
                     base: '#728E9B',
                     hover: '#004849',
@@ -1323,7 +1322,7 @@
                     }
                 }
             }, {
-                buttonText: 'Cancel',
+                buttonText: nf._.msg('nf-controller-service.Cancel'),
                 color: {
                     base: '#E3E8EB',
                     hover: '#C7D2D7',
@@ -1365,7 +1364,7 @@
 
         /**
          * Update the size of the grid based on its container's current size.
-         * 
+         *
          * @param {jQuery} serviceTable
          */
         resetTableSize: function (serviceTable) {

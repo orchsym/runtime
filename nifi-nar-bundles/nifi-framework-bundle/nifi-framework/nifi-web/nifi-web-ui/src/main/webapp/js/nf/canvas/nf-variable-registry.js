@@ -414,7 +414,7 @@
         var variableColumns = [
             {
                 id: 'scope',
-                name: 'Scope',
+                name: nf._.msg('nf-variable-registry.scope'),
                 field: 'processGroupId',
                 formatter: scopeFormatter,
                 sortable: true,
@@ -422,7 +422,7 @@
             },
             {
                 id: 'name',
-                name: 'Name',
+                name: nf._.msg('nf-variable-registry.name'),
                 field: 'name',
                 formatter: nameFormatter,
                 sortable: true,
@@ -430,7 +430,7 @@
             },
             {
                 id: 'value',
-                name: 'Value',
+                name: nf._.msg('nf-variable-registry.value'),
                 field: 'value',
                 formatter: valueFormatter,
                 sortable: true,
@@ -1482,8 +1482,8 @@
                     variableGrid.editActiveCell();
                 } else {
                     nfDialog.showOkDialog({
-                        headerText: 'Variable Exists',
-                        dialogContent: 'A variable with this name already exists.'
+                        headerText: nf._.msg('nf-variable-registry.NameExist'),
+                        dialogContent: nf._.msg('nf-variable-registry.NameExistMessage')
                     });
 
                     // select the existing properties row
@@ -1494,8 +1494,8 @@
             }
         } else {
             nfDialog.showOkDialog({
-                headerText: 'Variable Name',
-                dialogContent: 'Variable name must be specified.'
+                headerText: nf._.msg('nf-variable-registry.new'),
+                dialogContent: nf._.msg('nf-variable-registry.NameRequired')
             });
         }
 
@@ -1548,7 +1548,7 @@
         init: function () {
             $('#variable-registry-dialog').modal({
                 scrollableContentStyle: 'scrollable',
-                headerText: 'Variables',
+                headerText: nf._.msg('nf-variable-registry.title'),
                 handler: {
                     close: function () {
                         resetDialog();
@@ -1563,9 +1563,9 @@
             });
 
             $('#new-variable-dialog').modal({
-                headerText: 'New Variable',
+                headerText: nf._.msg('nf-variable-registry.new'),
                 buttons: [{
-                    buttonText: 'Ok',
+                    buttonText: nf._.msg('nf-dialog.Ok'),
                     color: {
                         base: '#728E9B',
                         hover: '#004849',
@@ -1613,7 +1613,7 @@
         showVariables: function (processGroupId) {
             // restore the button model
             $('#variable-registry-dialog').modal('setButtonModel', [{
-                buttonText: 'Apply',
+                buttonText: nf._.msg('nf-dialog.Apply'),
                 color: {
                     base: '#728E9B',
                     hover: '#004849',
@@ -1625,7 +1625,7 @@
                     }
                 }
             }, {
-                buttonText: 'Cancel',
+                buttonText: nf._.msg('nf-dialog.Cancel'),
                 color: {
                     base: '#E3E8EB',
                     hover: '#C7D2D7',

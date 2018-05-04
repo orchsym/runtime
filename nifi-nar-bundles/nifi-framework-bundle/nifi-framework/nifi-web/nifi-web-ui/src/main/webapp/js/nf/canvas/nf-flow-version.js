@@ -470,7 +470,7 @@
         var importFlowVersionColumns = [
             {
                 id: 'version',
-                name: 'Version',
+                name: nf._.msg('nf-flow-version.import.table.version'),
                 field: 'version',
                 formatter: valueFormatter,
                 sortable: true,
@@ -480,7 +480,7 @@
             },
             {
                 id: 'timestamp',
-                name: 'Created',
+                name: nf._.msg('nf-flow-version.import.table.created'),
                 field: 'timestamp',
                 formatter: timestampFormatter,
                 sortable: true,
@@ -490,7 +490,7 @@
             },
             {
                 id: 'changeComments',
-                name: 'Comments',
+                name: nf._.msg('nf-flow-version.import.table.comments'),
                 field: 'comments',
                 sortable: true,
                 resizable: true,
@@ -771,8 +771,8 @@
             return true;
         }).done(function () {
             // show the import dialog
-            $('#import-flow-version-dialog').modal('setHeaderText', 'Import Version').modal('setButtonModel', [{
-                buttonText: 'Import',
+            $('#import-flow-version-dialog').modal('setHeaderText', nf._.msg('nf-flow-version.import.header')).modal('setButtonModel', [{
+                buttonText: nf._.msg('nf-dialog.Import'),
                 color: {
                     base: '#728E9B',
                     hover: '#004849',
@@ -787,7 +787,7 @@
                     }
                 }
             }, {
-                buttonText: 'Cancel',
+                buttonText: nf._.msg('nf-dialog.Cancel'),
                 color: {
                     base: '#E3E8EB',
                     hover: '#C7D2D7',
@@ -1582,9 +1582,9 @@
             // initialize the flow version dialog
             $('#save-flow-version-dialog').modal({
                 scrollableContentStyle: 'scrollable',
-                headerText: 'Save Flow Version',
+                headerText: nf._.msg('nf-flow-version.SaveFlow.header'),
                 buttons: [{
-                    buttonText: 'Save',
+                    buttonText: nf._.msg('nf-dialog.Save'),
                     color: {
                         base: '#728E9B',
                         hover: '#004849',
@@ -1615,7 +1615,7 @@
                         }
                     }
                 }, {
-                    buttonText: 'Cancel',
+                    buttonText: nf._.msg('nf-dialog.Cancel'),
                     color: {
                         base: '#E3E8EB',
                         hover: '#C7D2D7',

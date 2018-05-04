@@ -15,24 +15,25 @@
   limitations under the License.
 --%>
 <%@ page contentType="text/html" pageEncoding="UTF-8" session="false" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <div id="import-flow-version-dialog" layout="column" class="hidden large-dialog">
     <div class="dialog-content">
         <div class="setting">
-            <div class="setting-name">Registry</div>
+            <div class="setting-name"><fmt:message key="partials.canvas.import-flow-version-dialog.registry"/></div>
             <div class="setting-field">
                 <div id="import-flow-version-registry-combo"></div>
                 <div id="import-flow-version-registry" class="hidden"></div>
             </div>
         </div>
         <div class="setting">
-            <div class="setting-name">Bucket</div>
+            <div class="setting-name"><fmt:message key="partials.canvas.import-flow-version-dialog.bucket"/></div>
             <div class="setting-field">
                 <div id="import-flow-version-bucket-combo"></div>
                 <div id="import-flow-version-bucket" class="hidden"></div>
             </div>
         </div>
         <div class="setting">
-            <div class="setting-name">Name</div>
+            <div class="setting-name"><fmt:message key="partials.canvas.import-flow-version-dialog.name"/></div>
             <div class="setting-field">
                 <span id="import-flow-version-process-group-id" class="hidden"></span>
                 <div id="import-flow-version-name-combo"></div>
@@ -40,7 +41,7 @@
             </div>
         </div>
         <div id="import-flow-version-container" class="setting hidden">
-            <div class="setting-name">Current Version</div>
+            <div class="setting-name"><fmt:message key="partials.canvas.import-flow-version-dialog.current-version"/></div>
             <div class="setting-field">
                 <div id="import-flow-version-label"></div>
             </div>

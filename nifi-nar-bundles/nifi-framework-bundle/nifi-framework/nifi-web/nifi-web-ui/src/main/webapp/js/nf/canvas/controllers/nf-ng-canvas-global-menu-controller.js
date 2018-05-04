@@ -376,12 +376,12 @@
 
                         this.getElement().modal({
                             scrollableContentStyle: 'scrollable',
-                            headerText: 'About Orchsym Studio',
+                            headerText: nf._.msg('nf-canvas-global-menu-controller.About'),
                             handler: {
                                 resize: resizeAbout
                             },
                             buttons: [{
-                                buttonText: 'Ok',
+                                buttonText: nf._.msg('nf-canvas-global-menu-controller.OK'),
                                 color: {
                                     base: '#262729',
                                     hover: '#004849',

@@ -30,7 +30,7 @@
     <div layout="row" layout-align="end center">
         <div id="search-container">
             <button id="search-button" ng-click="appCtrl.serviceProvider.headerCtrl.flowStatusCtrl.search.toggleSearchField();"><i class="icon icon-search"></i></button>
-            <input id="search-field" type="text" placeholder="Search"/>
+            <input id="search-field" type="text" placeholder=""/>
         </div>
         <button id="bulletin-button"><i class="icon icon-bell"></i></button>
     </div>

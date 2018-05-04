@@ -3,19 +3,8 @@ pipeline {
 
   environment {
     PROJECT_NAME = 'runtime'
-
-    // bcr: [B]aishan [C]ontainer [R]egstiry
-    DOCKER_REGISTRY_ADDR = 'bcr.baishancloud.com'
-
-    // this directory must be writable by jenkins user
-    JENKINS_EXTERNAL_DIR = '/data/jenkins-external'
-
     BUILD_OUTPUT_FILE = "${WORKSPACE}/build.output"
-
-    S3_BUCKET_URL = "http://bspackage.ss.bscstorage.com"
   }
-
-  triggers { pollSCM('0 1 * * *') }
 
   tools {
     // the 'Maven' is the name pre-configured in Global Tool Configuration
@@ -28,8 +17,8 @@ pipeline {
         script {
           noci action: 'check'
         }
-      } // steps
-    } // stage
+      }
+    }
 
     stage('Print information') {
       steps {
@@ -41,13 +30,13 @@ pipeline {
         """
 
         slackSend ( color: 'good', message: "*Build Started* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`" )
-      } // steps
-    } // stage
+      }
+    }
 
     stage('Build') {
       steps {
         sh """
-          mvn -T 4 clean install -Dmaven.test.failure.ignore=true
+          mvn -T 4 install -Dmaven.test.failure.ignore=true
 
           echo `ls nifi-assembly/target/ | grep '.tar.gz\$'` > compile_target
         """
@@ -57,28 +46,78 @@ pipeline {
         }
 
         slackSend ( color: 'good', message: "*Compile Finished* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nGenerated `${env.compile_target}`" )
-      } // steps
-    } // stage
+      }
+    }
+
+    stage('Deploy') {
+      steps {
+        slackSend ( color: 'good', message: "*Deploying/Updating the NIFI `test` Environment* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nOpen `${env.JOB_URL}${env.BUILD_NUMBER}/input/` and click `Proceed` or `Abort`" )
+        input ( id: "CONTINUE", message: 'Continue to Deploy...' )
+
+        sshPublisher(
+          publishers: [
+            sshPublisherDesc(
+              configName: 'nifi_deploy_1',
+              transfers: [
+                sshTransfer(
+                  excludes: '',
+                  execCommand: "cd ${env.JENKINS_SSH_UPLOAD_DIR} && tar -xzvf ${env.compile_target} -C ${env.ORCHSYM_INSTALL_BASE_DIR}/; cd ${env.ORCHSYM_INSTALL_BASE_DIR}/runtime && bash bin/nifi.sh  restart",
+                  execTimeout: 120000,
+                  flatten: false,
+                  makeEmptyDirs: false,
+                  noDefaultExcludes: false,
+                  patternSeparator: '[, ]+',
+                  remoteDirectory: '',
+                  remoteDirectorySDF: false,
+                  removePrefix: 'nifi-assembly/target/',
+                  //sourceFiles: "nifi-assembly/target/runtime-1.7.0-SNAPSHOT-bin.tar.gz"
+                  sourceFiles: "nifi-assembly/target/${env.compile_target}"
+                )
+              ],
+              usePromotionTimestamp: false,
+              useWorkspaceInPromotion: false,
+              verbose: false
+            )
+          ]
+        )
+
+        slackSend( color: 'good', message: "NIFI `test` Environment has been updated!")
+      }
+    }
+
+
+    stage('Upload to Samba') {
+      steps {
+        slackSend ( color: 'good', message: "*Uploading to Samba* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`" )
+
+        sh """
+          sudo rsync --progress ${env.WORKSPACE}/nifi-assembly/target/${env.compile_target} ${env.SAMBA_LOCAL_MOUNT_PATH}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/
+        """
+
+        slackSend ( color: 'good', message: "*Upload to Samba Finished* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can get it from Samba Server `//${env.SAMBA_SERVER}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/${env.compile_target}` " )
+      }
+    }
 
     stage('Upload to s3') {
       steps {
-        slackSend ( color: 'good', message: "*Uploading* to S2. Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`" )
+        slackSend ( color: 'good', message: "*Uploading to S2* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`" )
 
         sh """
-          s3cmd put --acl-public ${env.WORKSPACE}/nifi-assembly/target/${env.compile_target} s3://bspackage/data/
+          s3cmd put --acl-public ${env.WORKSPACE}/nifi-assembly/target/${env.compile_target} ${env.S3_PACKAGES_URL}/files/
         """
 
-        slackSend ( color: 'good', message: "*Upload Finished* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can download it from ${env.S3_BUCKET_URL}/data/${env.compile_target} " )
-      } // steps
-    } // stage
+        slackSend ( color: 'good', message: "*Upload to S2 Finished* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can download it from ${env.DOWNLOAD_FILE_URL_BASE}/${env.compile_target} " )
+      }
+    }
+
     stage('Capture Output') {
       steps {
         script {
           env.build_output = readFile "build.output"
         }
-      } // steps
-    } // stage
-  } // stages
+      }
+    }
+  }
 
   post {
     always {
@@ -94,5 +133,5 @@ pipeline {
       echo "Sending message to Slack"
       slackSend ( color: 'danger', message: "*Build Failed* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}" )
     }
-  } // post
+  }
 }
