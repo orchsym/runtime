@@ -303,8 +303,8 @@ span.breadcrumb-version-control-gray {
     overflow: hidden;
     position: absolute;
     left: 5px;
-    top: 8px;
-    right: 5px;
+    top: 6px;
+    width: 75%;
     z-index: 4;
 }
 
