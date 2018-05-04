@@ -263,46 +263,46 @@ public class InvokeSOAP extends AbstractProcessor {
     @Override
     public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
-    		final ComponentLog logger = getLogger();
-    		FlowFile ff = session.get();
-    		FlowFile responseFlowFile = null;
-    		try {
-	        //get the dynamic properties, execute the call and return the results
-	        OMFactory fac = OMAbstractFactory.getOMFactory();
-	        OMNamespace omNamespace = fac.createOMNamespace(context.getProperty(WSDL_URL).getValue(), "nifi");
-	        final OMElement method = getSoapMethod(fac, omNamespace, context.getProperty(METHOD_NAME).getValue());
-	        
-	        //now we need to walk the arguments and add them
-	        addArgumentsToMethod(ff, context, fac, omNamespace, method);
-	        final OMElement result = executeSoapMethod(method);
-	        responseFlowFile = processSoapRequest(session, result);
-	        if(ff != null) {
-	        		session.putAllAttributes(responseFlowFile, ff.getAttributes());
-	        		session.transfer(ff, REL_ORIGINAL);
-	        }
-	        session.transfer(responseFlowFile, REL_SUCCESS);
-    		} catch (final Exception e) {
-	        // penalize or yield
-	        if (ff != null) {
-	            logger.error("Routing to {} due to exception: {}", new Object[]{REL_FAILURE.getName(), e}, e);
-	            ff = session.penalize(ff);
-	            ff = session.putAttribute(ff, EXCEPTION_CLASS, e.getClass().getName());
-	            ff = session.putAttribute(ff, EXCEPTION_MESSAGE, e.getMessage());
-	            // transfer original to failure
-	            session.transfer(ff, REL_FAILURE);
-	        } else {
-	            logger.error("Yielding processor due to exception encountered as a source processor: {}", e);
-	            context.yield();
-	        }
-	        // cleanup response flowfile, if applicable
+        final ComponentLog logger = getLogger();
+        FlowFile ff = session.get();
+        FlowFile responseFlowFile = null;
+        try {
+            // get the dynamic properties, execute the call and return the results
+            OMFactory fac = OMAbstractFactory.getOMFactory();
+            OMNamespace omNamespace = fac.createOMNamespace(context.getProperty(WSDL_URL).getValue(), "nifi");
+            final OMElement method = getSoapMethod(fac, omNamespace, context.getProperty(METHOD_NAME).getValue());
+
+            // now we need to walk the arguments and add them
+            addArgumentsToMethod(ff, context, fac, omNamespace, method);
+            final OMElement result = executeSoapMethod(method);
+            responseFlowFile = processSoapRequest(session, result);
+            if (ff != null) {
+                session.putAllAttributes(responseFlowFile, ff.getAttributes());
+                session.transfer(ff, REL_ORIGINAL);
+            }
+            session.transfer(responseFlowFile, REL_SUCCESS);
+        } catch (final Exception e) {
+            // penalize or yield
+            if (ff != null) {
+                logger.error("Routing to {} due to exception: {}", new Object[] { REL_FAILURE.getName(), e }, e);
+                ff = session.penalize(ff);
+                ff = session.putAttribute(ff, EXCEPTION_CLASS, e.getClass().getName());
+                ff = session.putAttribute(ff, EXCEPTION_MESSAGE, e.getMessage());
+                // transfer original to failure
+                session.transfer(ff, REL_FAILURE);
+            } else {
+                logger.error("Yielding processor due to exception encountered as a source processor: {}", e);
+                context.yield();
+            }
+            // cleanup response flowfile, if applicable
             try {
                 if (responseFlowFile != null) {
                     session.remove(responseFlowFile);
                 }
             } catch (final Exception e1) {
-                logger.error("Could not cleanup response flowfile due to exception: {}", new Object[]{e1}, e1);
+                logger.error("Could not cleanup response flowfile due to exception: {}", new Object[] { e1 }, e1);
             }
-    		}
+        }
 
     }
 
@@ -346,11 +346,11 @@ public class InvokeSOAP extends AbstractProcessor {
         for (final Map.Entry<PropertyDescriptor, String> entry : context.getProperties().entrySet()) {
             PropertyDescriptor descriptor = entry.getKey();
             if (descriptor.isDynamic() && descriptor.isExpressionLanguageSupported()) {
-            		String dynamicValue;
-            		if(ff != null)
-            			dynamicValue = context.getProperty(descriptor).evaluateAttributeExpressions(ff).getValue();
-            		else 
-            			dynamicValue = context.getProperty(descriptor).evaluateAttributeExpressions().getValue();
+                String dynamicValue;
+                if (ff != null)
+                    dynamicValue = context.getProperty(descriptor).evaluateAttributeExpressions(ff).getValue();
+                else
+                    dynamicValue = context.getProperty(descriptor).evaluateAttributeExpressions().getValue();
                 if (null != logger)
                     logger.debug("Processing dynamic property: " + descriptor.getName() + " with value: " + dynamicValue);
                 OMElement value = getSoapMethod(fac, omNamespace, descriptor.getName());
