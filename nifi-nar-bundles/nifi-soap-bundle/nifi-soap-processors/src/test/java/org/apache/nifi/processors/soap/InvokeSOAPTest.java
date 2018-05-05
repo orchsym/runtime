@@ -16,6 +16,17 @@
  */
 package org.apache.nifi.processors.soap;
 
+import static org.mockserver.integration.ClientAndServer.startClientAndServer;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.HttpResponse.response;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.axiom.om.OMAbstractFactory;
 import org.apache.axiom.om.OMElement;
 import org.apache.axiom.om.OMFactory;
@@ -25,31 +36,15 @@ import org.apache.axiom.om.impl.llom.OMElementImpl;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.Relationship;
-import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
-import org.junit.*;
-import org.mockserver.client.server.MockServerClient;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.mockserver.integration.ClientAndServer;
-import org.mockserver.junit.MockServerRule;
-import org.mockserver.model.Cookie;
-import org.mockserver.model.Delay;
-import org.mockserver.model.Header;
-import org.mockserver.model.Parameter;
-
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.mockserver.integration.ClientAndServer.startClientAndServer;
-import static org.mockserver.matchers.Times.exactly;
-import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.HttpResponse.response;
-import static org.mockserver.model.StringBody.exact;
-import static org.mockito.Mockito.*;
 
 public class InvokeSOAPTest {
 
@@ -96,6 +91,7 @@ public class InvokeSOAPTest {
         testRunner.setProperty(InvokeSOAP.ENDPOINT_URL,"http://localhost:9090/test_path");
         testRunner.setProperty(InvokeSOAP.WSDL_URL,"http://localhost:9090/test_path.wsdl");
         testRunner.setProperty(InvokeSOAP.METHOD_NAME,"testMethod");
+        testRunner.setValidateExpressionUsage(false);
         testRunner.run();
 
         testRunner.assertAllFlowFilesTransferred(InvokeSOAP.REL_SUCCESS,1);
@@ -127,6 +123,7 @@ public class InvokeSOAPTest {
         testRunner.setProperty(InvokeSOAP.METHOD_NAME,"testMethod");
         testRunner.setProperty(InvokeSOAP.USER_NAME,"username");
         testRunner.setProperty(InvokeSOAP.PASSWORD,"password");
+        testRunner.setValidateExpressionUsage(false);
         testRunner.run();
 
         testRunner.assertAllFlowFilesTransferred(InvokeSOAP.REL_SUCCESS,1);
@@ -135,6 +132,40 @@ public class InvokeSOAPTest {
 
         final String expectedBody = "<?xml version='1.0'?><dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='http://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'><latLonList>35.9153,-79.0838</latLonList></dwml>";
         flowFileList.get(0).assertContentEquals(expectedBody.getBytes());
+
+    }
+    
+    @Test
+    public void testExpressionLanuageSupport() throws IOException {
+
+        final String xmlBody = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" +
+                "<SOAP-ENV:Envelope SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "    <SOAP-ENV:Body>\n" +
+                "        <ns1:LatLonListZipCodeResponse xmlns:ns1=\"http://graphical.weather.gov/xml/DWMLgen/wsdl/ndfdXML.wsdl\">\n" +
+                "            <listLatLonOut></listLatLonOut>\n" +
+                "        </ns1:LatLonListZipCodeResponse>\n" +
+                "    </SOAP-ENV:Body>\n" +
+                "</SOAP-ENV:Envelope>";
+
+        mockServer.when(request().withMethod("POST"))
+                .respond(response().withBody(xmlBody));
+
+        testRunner.setProperty(InvokeSOAP.ENDPOINT_URL,"http://localhost:9090/test_path");
+        testRunner.setProperty(InvokeSOAP.WSDL_URL,"http://localhost:9090/test_path.wsdl");
+        testRunner.setProperty(InvokeSOAP.METHOD_NAME,"${soap.methodName}");
+        testRunner.setProperty(InvokeSOAP.USER_NAME,"username");
+        testRunner.setProperty(InvokeSOAP.PASSWORD,"password");
+        final Map<String, String> attributes = new HashMap<String, String>();
+        attributes.put("soap.methodName", "testMethod");
+        testRunner.enqueue("test".getBytes(), attributes);
+        testRunner.run();
+
+        testRunner.assertTransferCount(InvokeSOAP.REL_SUCCESS,1);
+        testRunner.assertTransferCount(InvokeSOAP.REL_ORIGINAL,1);
+        List<MockFlowFile> flowFileList = testRunner.getFlowFilesForRelationship(InvokeSOAP.REL_SUCCESS);
+        assert(null != flowFileList);
+
+        flowFileList.get(0).assertContentEquals("".getBytes());
 
     }
     

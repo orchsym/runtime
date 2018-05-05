@@ -77,7 +77,7 @@ public class InvokeSOAP extends AbstractProcessor {
             .name("Endpoint URL")
             .description("The endpoint url that hosts the web service(s) that should be called.")
             .required(true)
-            .expressionLanguageSupported(ExpressionLanguageScope.NONE)
+            .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
             .addValidator(StandardValidators.URL_VALIDATOR)
             .build();
 
@@ -86,7 +86,7 @@ public class InvokeSOAP extends AbstractProcessor {
             .name("WSDL URL")
             .description("The url where the wsdl file can be retrieved and referenced.")
             .required(true)
-            .expressionLanguageSupported(ExpressionLanguageScope.NONE)
+            .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
             .addValidator(StandardValidators.URL_VALIDATOR)
             .build();
 
@@ -95,7 +95,7 @@ public class InvokeSOAP extends AbstractProcessor {
             .name("SOAP Method Name")
             .description("The method exposed by the SOAP webservice that should be invoked.")
             .required(true)
-            .expressionLanguageSupported(ExpressionLanguageScope.NONE)
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
 
@@ -105,7 +105,7 @@ public class InvokeSOAP extends AbstractProcessor {
             .sensitive(true)
             .description("The username to use in the case of basic Auth")
             .required(false)
-            .expressionLanguageSupported(ExpressionLanguageScope.NONE)
+            .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
 
@@ -115,7 +115,7 @@ public class InvokeSOAP extends AbstractProcessor {
             .sensitive(true)
             .description("The password to use in the case of basic Auth")
             .required(false)
-            .expressionLanguageSupported(ExpressionLanguageScope.NONE)
+            .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
 
@@ -168,6 +168,8 @@ public class InvokeSOAP extends AbstractProcessor {
 	public static final String EXCEPTION_CLASS = "invokesoap.java.exception.class";
 	
 	public static final String EXCEPTION_MESSAGE = "invokesoap.java.exception.message";
+	
+	private static final String MIME_APPLICATION_XML = "application/xml";
 
     private List<PropertyDescriptor> descriptors;
 
@@ -190,11 +192,11 @@ public class InvokeSOAP extends AbstractProcessor {
 
     @Override
     public Set<Relationship> getRelationships() {
-        final Set<Relationship> relationships = new HashSet<>(2);
+        final Set<Relationship> relationships = new HashSet<>(3);
         relationships.add(REL_ORIGINAL);
         relationships.add(REL_SUCCESS);
         relationships.add(REL_FAILURE);
-        return relationships;
+        return Collections.unmodifiableSet(relationships);
     }
 
     @Override
@@ -214,7 +216,7 @@ public class InvokeSOAP extends AbstractProcessor {
     public void onScheduled(final ProcessContext context) {
         Options options = new Options();
 
-        final String endpointURL = context.getProperty(ENDPOINT_URL).getValue();
+        final String endpointURL = context.getProperty(ENDPOINT_URL).evaluateAttributeExpressions().getValue();
         options.setTo(new EndpointReference(endpointURL));
 
         if (isHTTPS(endpointURL)) {
@@ -230,8 +232,8 @@ public class InvokeSOAP extends AbstractProcessor {
         options.setProperty(HTTPConstants.SO_TIMEOUT, context.getProperty(SO_TIMEOUT).asInteger());
         options.setProperty(HTTPConstants.CONNECTION_TIMEOUT, context.getProperty(CONNECTION_TIMEOUT).asInteger());
         //get the username and password -- they both must be populated.
-        final String userName = context.getProperty(USER_NAME).getValue();
-        final String password = context.getProperty(PASSWORD).getValue();
+        final String userName = context.getProperty(USER_NAME).evaluateAttributeExpressions().getValue();
+        final String password = context.getProperty(PASSWORD).evaluateAttributeExpressions().getValue();
         if (null != userName && null != password && !userName.isEmpty() && !password.isEmpty()) {
 
             HttpTransportPropertiesImpl.Authenticator
@@ -269,8 +271,14 @@ public class InvokeSOAP extends AbstractProcessor {
         try {
             // get the dynamic properties, execute the call and return the results
             OMFactory fac = OMAbstractFactory.getOMFactory();
-            OMNamespace omNamespace = fac.createOMNamespace(context.getProperty(WSDL_URL).getValue(), "nifi");
-            final OMElement method = getSoapMethod(fac, omNamespace, context.getProperty(METHOD_NAME).getValue());
+            OMNamespace omNamespace = fac.createOMNamespace(context.getProperty(WSDL_URL).evaluateAttributeExpressions().getValue(), "nifi");
+            String methodName;
+            if(ff != null) {
+                methodName = context.getProperty(METHOD_NAME).evaluateAttributeExpressions(ff).getValue();
+            } else {
+                methodName = context.getProperty(METHOD_NAME).evaluateAttributeExpressions().getValue();
+            }
+            final OMElement method = getSoapMethod(fac, omNamespace, methodName);
 
             // now we need to walk the arguments and add them
             addArgumentsToMethod(ff, context, fac, omNamespace, method);
@@ -314,7 +322,10 @@ public class InvokeSOAP extends AbstractProcessor {
             @Override
             public void process(final OutputStream out) throws IOException {
                 try {
-                    String response = result.getFirstElement().getText();
+                    String response = "";
+                    if(result != null && result.getFirstElement() != null) {
+                        response = result.getFirstElement().getText();
+                    }
                     out.write(response.getBytes());
                 } catch (AxisFault axisFault) {
                     final ComponentLog logger = getLogger();
@@ -326,7 +337,7 @@ public class InvokeSOAP extends AbstractProcessor {
         });
 
         final Map<String, String> attributes = new HashMap<>();
-        attributes.put(CoreAttributes.MIME_TYPE.key(), "application/xml");
+        attributes.put(CoreAttributes.MIME_TYPE.key(), MIME_APPLICATION_XML);
         return session.putAllAttributes(intermediateFlowFile, attributes);
     }
 
