@@ -897,10 +897,10 @@
                     tipContent.push(nfCommon.escapeHtml(propertyDescriptor.description));
                 }
                 if (!nfCommon.isBlank(propertyDescriptor.defaultValue)) {
-                    tipContent.push('<b>' + nf._.msg('nf-summary-table.DefaultValue') + ':</b> ' + nfCommon.escapeHtml(propertyDescriptor.defaultValue));
+                    tipContent.push('<b>' + nf._.msg('nf-common.DefaultValue') + ':</b> ' + nfCommon.escapeHtml(propertyDescriptor.defaultValue));
                 }
                 if (!nfCommon.isBlank(propertyDescriptor.supportsEl)) {
-                    tipContent.push('<b>' + nf._.msg('nf-summary-table.SupportsExpressionLanguage') + ':</b> ' + nfCommon.escapeHtml(propertyDescriptor.supportsEl));
+                    tipContent.push('<b>' + nf._.msg('nf-common.SupportsExpressionLanguage') + ':</b> ' + nfCommon.escapeHtml(propertyDescriptor.supportsEl));
                 }
                 if (!nfCommon.isBlank(propertyDescriptor.identifiesControllerService)) {
                     var formattedType = nfCommon.formatType({
@@ -918,7 +918,7 @@
                     $.each(propertyHistory.previousValues, function (_, previousValue) {
                         history.push('<li>' + nfCommon.escapeHtml(previousValue.previousValue) + ' - ' + nfCommon.escapeHtml(previousValue.timestamp) + ' (' + nfCommon.escapeHtml(previousValue.userIdentity) + ')</li>');
                     });
-                    tipContent.push('<b>' + nf._.msg('nf-summary-table.History') + ':</b><ul class="property-info">' + history.join('') + '</ul>');
+                    tipContent.push('<b>' + nf._.msg('nf-common.History') + ':</b><ul class="property-info">' + history.join('') + '</ul>');
                 }
             }
 
