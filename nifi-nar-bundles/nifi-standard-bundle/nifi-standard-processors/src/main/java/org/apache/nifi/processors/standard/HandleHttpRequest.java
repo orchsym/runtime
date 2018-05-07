@@ -25,7 +25,6 @@ import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
-import org.apache.nifi.annotation.lifecycle.OnAdded;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
 import org.apache.nifi.annotation.lifecycle.OnRemoved;
 import org.apache.nifi.components.AllowableValue;
@@ -317,11 +316,6 @@ public class HandleHttpRequest extends AbstractProcessor {
                 }
             }         
         }
-    }
-
-    @OnAdded
-    public void onAdded(final ProcessContext context) {
-
     }
 
     @OnScheduled
