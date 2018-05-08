@@ -29,7 +29,7 @@ pipeline {
           echo >> ${env.BUILD_OUTPUT_FILE}
         """
 
-        slackSend ( color: 'good', message: "*Build Started* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`" )
+        slackSend ( color: 'good', message: "*Build Started, based on commit: ${env.GIT_COMMIT}* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`" )
       }
     }
 
@@ -49,15 +49,18 @@ pipeline {
       }
     }
 
-    stage('Deploy') {
+    stage('Deploy to Dev') {
+      when { branch 'develop' }
+
       steps {
-        slackSend ( color: 'good', message: "*Deploying/Updating the NIFI `test` Environment* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nOpen `${env.JOB_URL}${env.BUILD_NUMBER}/input/` and click `Proceed` or `Abort`" )
-        input ( id: "CONTINUE", message: 'Continue to Deploy...' )
+        slackSend ( color: 'good', message: "*Deploying/Updating the runtime `Dev` Environment (${env.ORCHSYM_DEV_ENVIRONMENT}), using branch* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nOpen `${env.JOB_URL}${env.BUILD_NUMBER}/input/` and click `Proceed` or `Abort`" )
+
+        // input ( id: "CONTINUE", message: 'Continue to Deploy to Dev...' )
 
         sshPublisher(
           publishers: [
             sshPublisherDesc(
-              configName: 'nifi_deploy_1',
+              configName: 'runtime_dev_environment',
               transfers: [
                 sshTransfer(
                   excludes: '',
@@ -81,10 +84,57 @@ pipeline {
           ]
         )
 
-        slackSend( color: 'good', message: "NIFI `test` Environment has been updated!")
+        slackSend( color: 'good', message: "runtime `Dev` Environment (${env.ORCHSYM_DEV_ENVIRONMENT}) has been updated!")
       }
     }
 
+    stage('Deploy to Test') {
+      when { branch 'master' }
+
+      steps {
+        slackSend ( color: 'good', message: "*Deploying/Updating the runtime `Test` Environment (${env.RUNTIME_Test_ENVIRONMENT})* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nOpen `${env.JOB_URL}${env.BUILD_NUMBER}/input/` and click `Proceed` or `Abort`" )
+
+        input ( id: "CONTINUE", message: "Continue to Deploy to Test... " )
+
+        sshPublisher(
+          publishers: [
+            sshPublisherDesc(
+              configName: 'runtime_test_environment',
+              transfers: [
+                sshTransfer(
+                  excludes: '',
+                  execCommand: "cd ${env.JENKINS_SSH_UPLOAD_DIR} && tar -xzvf ${env.compile_target} -C ${env.ORCHSYM_INSTALL_BASE_DIR}/; cd ${env.ORCHSYM_INSTALL_BASE_DIR}/runtime && bash bin/nifi.sh  restart",
+                  execTimeout: 120000,
+                  flatten: false,
+                  makeEmptyDirs: false,
+                  noDefaultExcludes: false,
+                  patternSeparator: '[, ]+',
+                  remoteDirectory: '',
+                  remoteDirectorySDF: false,
+                  removePrefix: 'nifi-assembly/target/',
+                  //sourceFiles: "nifi-assembly/target/runtime-1.7.0-SNAPSHOT-bin.tar.gz"
+                  sourceFiles: "nifi-assembly/target/${env.compile_target}"
+                )
+              ],
+              usePromotionTimestamp: false,
+              useWorkspaceInPromotion: false,
+              verbose: false
+            )
+          ]
+        )
+
+        slackSend( color: 'good', message: "runtime `Test` Environment has been updated!")
+      }
+    }
+
+
+    stage('Deploy to Stage') {
+      // Todo
+    }
+
+    stage('Deploy to Prod') {
+      // Todo
+    }
 
     stage('Upload to Samba') {
       steps {
@@ -103,10 +153,10 @@ pipeline {
         slackSend ( color: 'good', message: "*Uploading to S2* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`" )
 
         sh """
-          s3cmd put --acl-public ${env.WORKSPACE}/nifi-assembly/target/${env.compile_target} ${env.S3_PACKAGES_URL}/files/
+          s3cmd put --acl-public ${env.WORKSPACE}/nifi-assembly/target/${env.compile_target} ${env.S3_PACKAGES_URL}/services/
         """
 
-        slackSend ( color: 'good', message: "*Upload to S2 Finished* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can download it from ${env.DOWNLOAD_FILE_URL_BASE}/${env.compile_target} " )
+        slackSend ( color: 'good', message: "*Upload to S2 Finished* Jenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can download it from ${env.DOWNLOAD_PACKAGES_URL_BASE}/services/${env.compile_target} " )
       }
     }
 
