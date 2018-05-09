@@ -129,11 +129,19 @@ pipeline {
 
 
     stage('Deploy to Stage') {
-      // Todo
+      when { branch 'master' }
+
+      steps {
+        echo "TODO"
+      }
     }
 
     stage('Deploy to Prod') {
-      // Todo
+      when { branch 'master' }
+
+      steps {
+        echo "TODO"
+      }
     }
 
     stage('Upload to Samba') {
