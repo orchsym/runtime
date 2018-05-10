@@ -8,12 +8,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -27,6 +25,7 @@ import org.apache.nifi.annotation.behavior.SideEffectFree;
 import org.apache.nifi.annotation.behavior.SupportsBatching;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.avro.AvroTypeUtil;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
@@ -55,11 +54,9 @@ import org.apache.nifi.serialization.WriteResult;
 import org.apache.nifi.serialization.record.ListRecordSet;
 import org.apache.nifi.serialization.record.MapRecord;
 import org.apache.nifi.serialization.record.Record;
-import org.apache.nifi.serialization.record.RecordFieldType;
 import org.apache.nifi.serialization.record.RecordSchema;
 import org.apache.nifi.serialization.record.RecordSet;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 @SideEffectFree
@@ -73,40 +70,45 @@ public class RecordMapper extends AbstractProcessor {
     static final String PRE_INPUT = "input.";
     static final String PRE_OUTPUT = "output.";
 
-    static final PropertyDescriptor RECORD_READER = new PropertyDescriptor.Builder()
-        .name("record-reader")
-        .displayName("Record Reader")
-        .description("Specifies the Controller Service to use for reading incoming data")
-        .identifiesControllerService(RecordReaderFactory.class)
-        .required(true)
-        .build();
-    static final PropertyDescriptor RECORD_WRITER = new PropertyDescriptor.Builder()
-        .name("record-writer")
-        .displayName("Record Writer")
-        .description("Specifies the Controller Service to use for writing out the records")
-        .identifiesControllerService(RecordSetWriterFactory.class)
-        .required(true)
-        .build();
-    
+    static final PropertyDescriptor RECORD_READER = new PropertyDescriptor.Builder().name("record-reader").displayName("Record Reader")
+            .description("Specifies the Controller Service to use for reading incoming data").identifiesControllerService(RecordReaderFactory.class).required(true).build();
+    static final PropertyDescriptor RECORD_WRITER = new PropertyDescriptor.Builder().name("record-writer").displayName("Record Writer")
+            .description("Specifies the Controller Service to use for writing out the records").identifiesControllerService(RecordSetWriterFactory.class).required(true).build();
+
     static final Relationship REL_ORIGINAL = new Relationship.Builder().name("original")
             .description("The original FlowFile that was mapped. If the FlowFile fails processing, nothing will be sent to " + "this relationship").build();
 
-    static final Relationship REL_FAILURE = new Relationship.Builder().name("failure")
-            .description("A FlowFile is routed to this relationship when do map with some reasons").build();
+    static final Relationship REL_FAILURE = new Relationship.Builder().name("failure").description("A FlowFile is routed to this relationship when do map with some reasons").build();
 
     private List<PropertyDescriptor> descriptors;
+    private Map<String, MapperTable> outputTables;
+    private Map<String, Relationship> relationships;
 
-    private Map<String, MapperTable> outputMappingTables = new LinkedHashMap<>();
-    private Map<String, Relationship> outputRelationships = new LinkedHashMap<>();
+    /**
+     * Cache of dynamic collections set during {@link #onScheduled(ProcessContext)} for quick access in {@link #onTrigger(ProcessContext, ProcessSession)}
+     */
+    private volatile Map<String, Map<String, String>> outputFlowAttributesMap;
+    private volatile Map<String, RecordSchema> outputRecordSchemasMap;
+    private volatile Map<String, AtomicLong> writeCountsMap;
 
     @Override
     protected void init(ProcessorInitializationContext context) {
         super.init(context);
 
+        // properties
         final List<PropertyDescriptor> properties = new ArrayList<>();
         properties.add(RECORD_READER);
         properties.add(RECORD_WRITER);
         this.descriptors = Collections.unmodifiableList(properties);
+
+        // output tables
+        this.outputTables = Collections.unmodifiableMap(Collections.emptyMap());
+
+        // relationships
+        final Map<String, Relationship> outputRelationships = new HashMap<>();
+        outputRelationships.put(REL_ORIGINAL.getName(), REL_ORIGINAL);
+        outputRelationships.put(REL_FAILURE.getName(), REL_FAILURE);
+        this.relationships = Collections.unmodifiableMap(outputRelationships);
     }
 
     @Override
@@ -121,31 +123,81 @@ public class RecordMapper extends AbstractProcessor {
     }
 
     @Override
-    public void onPropertyModified(PropertyDescriptor descriptor, String oldValue, String newValue) {
-        super.onPropertyModified(descriptor, oldValue, newValue);
-
-        // if change the output schema, need update the relationships
-        if (StringUtils.isNotEmpty(newValue) && !newValue.equals(oldValue)) {
-            try {
-                if (descriptor.isDynamic()) {
-                    final String name = descriptor.getName();
-                    if (name.startsWith(PRE_OUTPUT)) { // output table
-                        loadTableSetting(name, newValue);
-                    }
-                }
-            } catch (IOException e) {
-                getLogger().error("Cannot create the map flow via new settings {} - {}", new Object[] { newValue, e });
-            }
-
-        }
+    public Set<Relationship> getRelationships() {
+        return this.relationships.values().stream().collect(Collectors.toSet());
     }
 
     @Override
-    public Set<Relationship> getRelationships() {
-        Set<Relationship> relations = new LinkedHashSet<>(outputRelationships.values());
-        relations.add(REL_FAILURE);
-        relations.add(REL_ORIGINAL);
-        return relations;
+    public void onPropertyModified(PropertyDescriptor descriptor, String oldValue, String newValue) {
+        super.onPropertyModified(descriptor, oldValue, newValue);
+
+        final String descriptorName = descriptor.getName();
+
+        final Map<String, MapperTable> newDynamicOutputTables = new HashMap<>(this.outputTables);
+        final Map<String, Relationship> newDynamicRelationships = new HashMap<>(this.relationships);
+
+        try {
+
+            if (newValue == null) { // remove?
+                if (descriptor.isDynamic()) {
+                    if (descriptorName.startsWith(PRE_OUTPUT)) { // output table
+                        String outputTableName = descriptorName.substring(PRE_OUTPUT.length());
+                        newDynamicOutputTables.remove(outputTableName);
+                        newDynamicRelationships.remove(outputTableName);
+                    }
+                }
+
+            } else if (oldValue == null) { // new property
+                //
+            }
+
+            // if change the output schema, need update the relationships
+            if (descriptor.isDynamic() && StringUtils.isNotEmpty(newValue) && !newValue.equals(oldValue)) {
+                if (descriptorName.startsWith(PRE_OUTPUT)) { // output table
+                    final MapperTable mappingTable = new MapperTable.Parser().parseTable(newValue);
+                    final Schema schema = mappingTable.getSchema();
+                    if (schema == null) {
+                        throw new IllegalArgumentException("The schema is missing for table " + descriptorName);
+                    }
+                    final String tableName = mappingTable.getName();
+                    final String schemaName = schema.getName();
+
+                    String outputTableName = descriptorName.substring(PRE_OUTPUT.length());
+                    if (!outputTableName.equals(tableName)) {
+                        throw new JsonMappingException(null, MessageFormat.format("The mapping table name {0} is different with property setting name {1}", tableName, outputTableName));
+                    }
+                    if (!tableName.equals(schemaName)) {
+                        throw new JsonMappingException(null, MessageFormat.format("The mapping table name {0} is different with schema name {1}", tableName, schemaName));
+                    }
+
+                    newDynamicOutputTables.put(schemaName, mappingTable);
+
+                    // the relationship is output.xxx
+                    final Relationship relationship = new Relationship.Builder().name(descriptorName).description(MessageFormat.format("A FlowFile is mapped to this \"{0}\" relationship", schemaName))
+                            .build();
+                    newDynamicRelationships.put(schemaName, relationship);
+
+                }
+            }
+
+        } catch (IOException e) {
+            getLogger().error("Cannot create the map flow via new settings {} - {}", new Object[] { newValue, descriptorName, e });
+        }
+
+        //
+        this.outputTables = Collections.unmodifiableMap(newDynamicOutputTables);
+        this.relationships = Collections.unmodifiableMap(newDynamicRelationships);
+
+    }
+
+    @OnScheduled
+    public void onScheduled(final ProcessContext context) {
+        final Set<String> outputTablesKeyset = outputTables.keySet();
+        final Collection<MapperTable> outputTablesValues = outputTables.values();
+
+        outputFlowAttributesMap = outputTablesKeyset.stream().collect(Collectors.toMap(Function.identity(), n -> new HashMap<String, String>()));
+        outputRecordSchemasMap = outputTablesValues.stream().collect(Collectors.toMap(MapperTable::getName, t -> AvroTypeUtil.createSchema(t.getSchema())));
+        writeCountsMap = outputTablesKeyset.stream().collect(Collectors.toMap(Function.identity(), n -> new AtomicLong()));
     }
 
     @Override
@@ -161,15 +213,9 @@ public class RecordMapper extends AbstractProcessor {
         final ComponentLog logger = getLogger();
 
         // init some maps
-        final Set<String> outputTablesKeyset = outputMappingTables.keySet();
-        final Collection<MapperTable> outputTablesValues = outputMappingTables.values();
+        final Set<String> outputTablesKeyset = outputTables.keySet();
+        final Map<String, FlowFile> outputFlowsMap = outputTables.keySet().stream().collect(Collectors.toMap(Function.identity(), n -> session.create()));
 
-        final Map<String, FlowFile> outputFlowsMap = outputTablesKeyset.stream().collect(Collectors.toMap(Function.identity(), n -> session.create()));
-        final Map<String, Map<String, String>> outputFlowAttributesMap = outputTablesKeyset.stream().collect(Collectors.toMap(Function.identity(), n -> new HashMap<String, String>()));
-        final Map<String, RecordSchema> outputRecordSchemasMap = outputTablesValues.stream().collect(Collectors.toMap(MapperTable::getName, t -> AvroTypeUtil.createSchema(t.getSchema())));
-        final Map<String, AtomicLong> writeCountsMap = outputTablesKeyset.stream().collect(Collectors.toMap(Function.identity(), n -> new AtomicLong()));
-
-        final AtomicInteger readCount = new AtomicInteger();
         final FlowFile original = flowFile;
         final Map<String, String> originalAttributes = flowFile.getAttributes();
         // read
@@ -178,30 +224,28 @@ public class RecordMapper extends AbstractProcessor {
             public void process(final InputStream rawIn) throws IOException {
                 try (final RecordReader reader = readerFactory.createRecordReader(originalAttributes, rawIn, getLogger())) {
                     final Map<String, List<Record>> outputRecordsMap = outputTablesKeyset.stream().collect(Collectors.toMap(Function.identity(), n -> new ArrayList<>()));
+                    final Set<Entry<String, MapperTable>> entrySet = outputTables.entrySet();
 
                     // TODO: I think we should refactor this part to be more 'streaming' oriented, not to hold too many record in the memory
                     // but process one incoming record one at a time, let framework to handle batching
                     // read record
                     Record curRecord = null;
                     while ((curRecord = reader.nextRecord()) != null) {
-                        for (final Map.Entry<String, MapperTable> entry : outputMappingTables.entrySet()) {
-                            final Record writeRecord = processRecord(context, entry.getValue(), outputRecordSchemasMap.get(entry.getKey()), original, outputFlowsMap.get(entry.getKey()),
-                                    curRecord);
+                        for (final Map.Entry<String, MapperTable> entry : entrySet) {
+                            final Record writeRecord = processRecord(context, entry.getValue(), outputRecordSchemasMap.get(entry.getKey()), original, outputFlowsMap.get(entry.getKey()), curRecord);
                             if (writeRecord != null) {
                                 outputRecordsMap.get(entry.getKey()).add(writeRecord);
                             }
                         }
                     }
 
-                    for (final Map.Entry<String, MapperTable> entry : outputMappingTables.entrySet()) {
+                    for (final Map.Entry<String, MapperTable> entry : entrySet) {
                         final List<Record> records = outputRecordsMap.get(entry.getKey());
                         if (records != null && !records.isEmpty()) {
                             RecordSet recordSet = new ListRecordSet(outputRecordSchemasMap.get(entry.getKey()), records);
-                            writeRecordSet(context, session, original, recordSet, entry.getKey(), outputFlowsMap, outputFlowAttributesMap, outputRecordSchemasMap, writerFactory,
-                                    writeCountsMap);
+                            writeRecordSet(context, session, original, recordSet, entry.getKey(), outputFlowsMap, writerFactory);
                             records.clear();
                         }
-
                     }
                 } catch (final SchemaNotFoundException e) {
                     throw new ProcessException(e.getLocalizedMessage(), e);
@@ -214,23 +258,25 @@ public class RecordMapper extends AbstractProcessor {
         try {
             session.read(flowFile, readerCallback);
 
-            // transfer
-            session.transfer(original, REL_ORIGINAL);
-
-            for (Map.Entry<String, MapperTable> entry : outputMappingTables.entrySet()) {
+            for (Map.Entry<String, MapperTable> entry : outputTables.entrySet()) {
                 final String outputName = entry.getKey();
 
                 FlowFile outputFlow = outputFlowsMap.get(outputName);
+                final Relationship relationship = this.relationships.get(outputName);
 
                 final Map<String, String> attributes = outputFlowAttributesMap.get(outputName);
-                attributes.put("record.count", String.valueOf(writeCountsMap.get(outputName).get()));
+                attributes.put("map.count", String.valueOf(writeCountsMap.get(outputName).get()));
+                attributes.put("output.name", relationship.getName());
 
                 outputFlow = session.putAllAttributes(outputFlow, attributes);
 
-                final Relationship relationship = outputRelationships.get(outputName);
+                session.getProvenanceReporter().route(outputFlow, relationship);
                 session.transfer(outputFlow, relationship);
             }
 
+            // original
+            session.getProvenanceReporter().route(original, REL_ORIGINAL);
+            session.transfer(original, REL_ORIGINAL);
         } catch (final ProcessException e) {
             logger.error("Cannot do map {} - ", new Object[] { flowFile, e });
             session.transfer(flowFile, REL_FAILURE);
@@ -238,35 +284,8 @@ public class RecordMapper extends AbstractProcessor {
 
     }
 
-    /**
-     * Load the output schema and table settings with expressions.
-     */
-    void loadTableSetting(String outputPropName, String value) throws JsonProcessingException, IOException {
-        final MapperTable mappingTable = new MapperTable.Parser().parseTable(value);
-        final Schema schema = mappingTable.getSchema();
-        if (schema == null) {
-            throw new IllegalArgumentException("The schema is missing for table " + outputPropName);
-        }
-        final String tableName = mappingTable.getName();
-        final String schemaName = schema.getName();
-
-        String outputTableName = outputPropName.substring(PRE_OUTPUT.length());
-        if (!outputTableName.equals(tableName)) {
-            throw new JsonMappingException(null, MessageFormat.format("The mapping table name '{0}' is different with property setting name '{1}'", tableName, outputTableName));
-        }
-        if (!tableName.equals(schemaName)) {
-            throw new JsonMappingException(null, MessageFormat.format("The mapping table name '{0}' is different with schema name '{1}'", tableName, schemaName));
-        }
-        outputMappingTables.put(schemaName, mappingTable);
-
-        // the relationship is output.xxx
-        final Relationship relationship = new Relationship.Builder().name(outputPropName).description(MessageFormat.format("A FlowFile is mapped to this '{0}' relationship", schemaName)).build();
-        outputRelationships.put(schemaName, relationship);
-    }
-
     void writeRecordSet(final ProcessContext context, final ProcessSession session, final FlowFile original, final RecordSet recordSet, final String outputName,
-            final Map<String, FlowFile> outputFlowsMap, final Map<String, Map<String, String>> outputFlowAttributesMap, final Map<String, RecordSchema> outputRecordSchemasMap,
-            final RecordSetWriterFactory writerFactory, final Map<String, AtomicLong> writeCountsMap) {
+            final Map<String, FlowFile> outputFlowsMap, final RecordSetWriterFactory writerFactory) {
         FlowFile outputFlow = outputFlowsMap.get(outputName);
 
         final Map<String, String> attributes = new HashMap<>();
@@ -292,15 +311,6 @@ public class RecordMapper extends AbstractProcessor {
 
         outputFlow = session.putAllAttributes(outputFlow, attributes);
         outputFlowsMap.put(outputName, outputFlow);
-    }
-
-    static Map<Schema.Type, RecordFieldType> typesMap = new HashMap<>();
-    static {
-        typesMap.put(Schema.Type.ARRAY, RecordFieldType.ARRAY);
-        // typesMap.put(Schema.Type., RecordFieldType.BIGINT);
-        typesMap.put(Schema.Type.BOOLEAN, RecordFieldType.BOOLEAN);
-        typesMap.put(Schema.Type.BYTES, RecordFieldType.BYTE);
-        typesMap.put(Schema.Type.DOUBLE, RecordFieldType.CHAR);
     }
 
     Record processRecord(final ProcessContext context, final MapperTable outputTable, RecordSchema writeRecordSchema, final FlowFile inputFlowFile, final FlowFile outputFlowFile,
