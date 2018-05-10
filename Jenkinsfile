@@ -8,6 +8,7 @@ pipeline {
     RUNTIME_TEST_VERSION = 'master'
     RUNTIME_STAGE_VERSION = 'master'
     RUNTIME_PROD_VERSION = 'master'
+    compile_target = 'runtime-1.7.0-SNAPSHOT-bin.tar.gz'
   }
 
   tools {
@@ -39,24 +40,24 @@ pipeline {
       }
     }
 
-    stage('Build') {
-      steps {
-        sh """
-          mvn -T 4 install -Dmaven.test.failure.ignore=true
+    // stage('Build') {
+    //   steps {
+    //     sh """
+    //       mvn -T 4 install -Dmaven.test.failure.ignore=true
 
-          echo `ls nifi-assembly/target/ | grep '.tar.gz\$'` > compile_target
-        """
+    //       echo `ls nifi-assembly/target/ | grep '.tar.gz\$'` > compile_target
+    //     """
 
-        script {
-          env.compile_target = readFile("compile_target").trim()
-        }
+    //     script {
+    //       env.compile_target = readFile("compile_target").trim()
+    //     }
 
-        slackSend (
-          color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Compile Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nGenerated `${env.compile_target}`"
-        )
-      }
-    }
+    //     slackSend (
+    //       color: 'good',
+    //       message: "${env.EMOJI_SERVICE_RUNTIME} *Compile Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nGenerated `${env.compile_target}`"
+    //     )
+    //   }
+    // }
 
     stage('Deploy to Dev') {
       when { branch "${env.RUNTIME_DEV_VERSION}" }
@@ -70,8 +71,8 @@ pipeline {
         // nifi-assembly/target/runtime-1.7.0-SNAPSHOT-bin.tar.gz
         sh """
           scp nifi-assembly/target/${env.compile_target} root@${env.RUNTIME_DEV_ENVIRONMENT}:/data/packages/services/
-          tar -xzvf /data/packages/services/${env.compile_target} -C ${env.ORCHSYM_INSTALL_BASE_DIR}/
-          cd ${env.ORCHSYM_INSTALL_BASE_DIR}/runtime && bash bin/nifi.sh  restart
+          ssh root@${env.RUNTIME_DEV_ENVIRONMENT} "tar -xzvf /data/packages/services/${env.compile_target} -C ${env.ORCHSYM_INSTALL_BASE_DIR}/"
+          ssh root@${env.RUNTIME_DEV_ENVIRONMENT} "cd ${env.ORCHSYM_INSTALL_BASE_DIR}/runtime && bash bin/nifi.sh restart"
         """
 
         slackSend(
@@ -93,8 +94,8 @@ pipeline {
         // nifi-assembly/target/runtime-1.7.0-SNAPSHOT-bin.tar.gz
         sh """
           scp nifi-assembly/target/${env.compile_target} root@${env.RUNTIME_TEST_ENVIRONMENT}:/data/packages/services/
-          tar -xzvf /data/packages/services/${env.compile_target} -C ${env.ORCHSYM_INSTALL_BASE_DIR}/
-          cd ${env.ORCHSYM_INSTALL_BASE_DIR}/runtime && bash bin/nifi.sh  restart
+          ssh root@${env.RUNTIME_TEST_ENVIRONMENT} "tar -xzvf /data/packages/services/${env.compile_target} -C ${env.ORCHSYM_INSTALL_BASE_DIR}/"
+          ssh root@${env.RUNTIME_TEST_ENVIRONMENT} "cd ${env.ORCHSYM_INSTALL_BASE_DIR}/runtime && bash bin/nifi.sh restart"
         """
 
         slackSend(
