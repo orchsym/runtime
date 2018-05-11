@@ -108,14 +108,14 @@
                     <fmt:message key="partials.canvas.navigation.enable" var="enable"/>
                     <div id="operate-enable" class="action-button" title="${enable}">
                         <button ng-click="appCtrl.nf.Actions['enable'](appCtrl.nf.CanvasUtils.getSelection());"
-                                ng-disabled="!appCtrl.nf.CanvasUtils.canEnable(appCtrl.nf.CanvasUtils.getSelection());">
+                                ng-disabled="!appCtrl.nf.CanvasUtils.getSelection().empty() && !appCtrl.nf.CanvasUtils.canModify(appCtrl.nf.CanvasUtils.getSelection());">
                             <div class="graph-control-action-icon icon icon-enable"></div></button>
                     </div>
                     <div class="button-spacer-small">&nbsp;</div>
                     <fmt:message key="partials.canvas.navigation.disable" var="disable"/>
                     <div id="operate-disable" class="action-button" title="${disable}">
                         <button ng-click="appCtrl.nf.Actions['disable'](appCtrl.nf.CanvasUtils.getSelection());"
-                                ng-disabled="!appCtrl.nf.CanvasUtils.canDisable(appCtrl.nf.CanvasUtils.getSelection());">
+                                ng-disabled="!appCtrl.nf.CanvasUtils.getSelection().empty() && !appCtrl.nf.CanvasUtils.canModify(appCtrl.nf.CanvasUtils.getSelection());">
                             <div class="graph-control-action-icon icon icon-enable-false"></div></button>
                     </div>
                     <div class="button-spacer-large">&nbsp;</div>
