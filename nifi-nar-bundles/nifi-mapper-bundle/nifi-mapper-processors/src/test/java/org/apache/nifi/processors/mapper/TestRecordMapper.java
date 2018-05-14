@@ -1,20 +1,24 @@
 package org.apache.nifi.processors.mapper;
 
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Type;
 import org.apache.commons.io.FileUtils;
-import org.apache.nifi.avro.AvroReader;
-import org.apache.nifi.avro.AvroRecordSetWriter;
 import org.apache.nifi.avro.AvroTypeUtil;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.expression.ExpressionLanguageScope;
@@ -29,22 +33,33 @@ import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestRecordMapper {
     private static final int TEST_NUM = 100;
-    private Schema mainStaffSchema;
+    private static Schema mainStaffSchema;
 
     private TestRunner runner;
     private MockRecordParser readerService;
     private MockRecordWriter writerService;
     final String PRE_MAIN_INPUT_EXP = RecordMapper.PRE_INPUT + RecordMapper.DEFAULT_MAIN;
 
+    @BeforeClass
+    public static void init() throws IOException {
+        mainStaffSchema = new Schema.Parser().parse(new File("src/test/resources/staff.avsc"));
+    }
+
+    @AfterClass
+    public static void cleanup() {
+        mainStaffSchema = null;
+    }
+
     @Before
     public void setup() throws IOException, InitializationException {
-        mainStaffSchema = new Schema.Parser().parse(new File("src/test/resources/staff.avsc"));
 
         readerService = new MockRecordParser();
         writerService = new MockRecordWriter("header", false);
@@ -54,7 +69,7 @@ public class TestRecordMapper {
         runner.enableControllerService(readerService);
         runner.addControllerService("writer", writerService);
         runner.enableControllerService(writerService);
-        
+
         runner.setProperty(RecordMapper.RECORD_READER, "reader");
         runner.setProperty(RecordMapper.RECORD_WRITER, "writer");
 
@@ -62,13 +77,12 @@ public class TestRecordMapper {
 
     @After
     public void clean() throws IOException {
-        mainStaffSchema = null;
         runner = null;
         readerService = null;
         writerService = null;
     }
 
-    private void createMainStaff(final int numOfStaff, final MockRecordParser readerService) throws IOException {
+    private void createMainStaffRecords(final int numOfStaff, final MockRecordParser readerService) throws IOException {
         AvroTypeUtil.createSchema(mainStaffSchema).getFields().stream().forEach(f -> readerService.addSchemaField(f.getFieldName(), f.getDataType().getFieldType()));
 
         LocalDate date = LocalDate.now().withYear(1919).withMonth(1).withDayOfMonth(1);
@@ -86,6 +100,13 @@ public class TestRecordMapper {
         return table;
     }
 
+    private Schema copySchema(String outSchemaName) {
+        Schema schema = Schema.createRecord(outSchemaName, outSchemaName + " schema", mainStaffSchema.getNamespace(), false);
+        List<Field> fields = mainStaffSchema.getFields().stream().map(f -> new Field(f.name(), f.schema(), f.doc(), f.defaultVal())).collect(Collectors.toList());
+        schema.setFields(fields);
+        return schema;
+    }
+
     private void doRunnerTest(TestRunner runner, MapperTable outTable, int dataCount, String testContents) throws Exception {
         doRunnerTest(runner, outTable, dataCount, null, testContents);
     }
@@ -93,13 +114,13 @@ public class TestRecordMapper {
     private void doRunnerTest(TestRunner runner, MapperTable outTable, int dataCount, Integer filteredCount, String testContents) throws Exception {
         final Schema outSchema = outTable.getSchema();
         final String outSchemaName = outSchema.getName();
-        final String outputFlowName = RecordMapper.PRE_OUTPUT + outSchema.getName();
+        final String outputFlowName = RecordMapper.PRE_OUTPUT + outSchemaName;
 
-        PropertyDescriptor outputTableSettings = new PropertyDescriptor.Builder().name(RecordMapper.PRE_OUTPUT + outSchemaName).description(outSchemaName + " relationship")
-                .addValidator(StandardValidators.NON_EMPTY_VALIDATOR).expressionLanguageSupported(ExpressionLanguageScope.NONE).dynamic(true).build();
+        PropertyDescriptor outputTableSettings = new PropertyDescriptor.Builder().name(outputFlowName).description(outSchemaName + " relationship").addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+                .expressionLanguageSupported(ExpressionLanguageScope.NONE).dynamic(true).build();
         runner.setProperty(outputTableSettings, new MapperTable.Writer().write(outTable));
 
-        createMainStaff(dataCount, readerService);
+        createMainStaffRecords(dataCount, readerService);
 
         runner.enqueue("");
         runner.run();
@@ -115,7 +136,7 @@ public class TestRecordMapper {
         if (filteredCount == null) {// same as dataCount
             filteredCount = dataCount;
         }
-        out.assertAttributeEquals("record.count", String.valueOf(filteredCount));
+        out.assertAttributeEquals("map.count", String.valueOf(filteredCount));
 
         // contents
         if (testContents != null) {
@@ -127,12 +148,9 @@ public class TestRecordMapper {
     @Test
     public void testMapRecord_1vs1_full() throws Exception {
         final String outSchemaName = "out1_full";
-        final MapperTable table = createOutputTable(outSchemaName);
 
-        Schema schema = Schema.createRecord(outSchemaName, outSchemaName + " schema", mainStaffSchema.getNamespace(), false);
-        List<Field> fields = mainStaffSchema.getFields().stream().map(f -> new Field(f.name(), f.schema(), f.doc(), f.defaultVal())).collect(Collectors.toList());
-        schema.setFields(fields);
-        table.setSchema(schema);
+        final MapperTable table = createOutputTable(outSchemaName);
+        table.setSchema(copySchema(outSchemaName));
 
         doRunnerTest(runner, table, TEST_NUM, null);
     }
@@ -140,12 +158,9 @@ public class TestRecordMapper {
     @Test
     public void testMapRecord_1vs1_fullBatch() throws Exception {
         final String outSchemaName = "out1_full_batch";
-        final MapperTable table = createOutputTable(outSchemaName);
 
-        Schema schema = Schema.createRecord(outSchemaName, outSchemaName + " schema", mainStaffSchema.getNamespace(), false);
-        List<Field> fields = mainStaffSchema.getFields().stream().map(f -> new Field(f.name(), f.schema(), f.doc(), f.defaultVal())).collect(Collectors.toList());
-        schema.setFields(fields);
-        table.setSchema(schema);
+        final MapperTable table = createOutputTable(outSchemaName);
+        table.setSchema(copySchema(outSchemaName));
 
         final int dataNum = 44;
         final String testContents = FileUtils.readFileToString(new File("src/test/resources/expected-output-content"), "UTF-8");
@@ -156,12 +171,9 @@ public class TestRecordMapper {
     @Test
     public void testMapRecord_1vs1_assertContents() throws Exception {
         final String outSchemaName = "out1_contents";
-        final MapperTable table = createOutputTable(outSchemaName);
 
-        Schema schema = Schema.createRecord(outSchemaName, outSchemaName + " schema", mainStaffSchema.getNamespace(), false);
-        List<Field> fields = mainStaffSchema.getFields().stream().map(f -> new Field(f.name(), f.schema(), f.doc(), f.defaultVal())).collect(Collectors.toList());
-        schema.setFields(fields);
-        table.setSchema(schema);
+        final MapperTable table = createOutputTable(outSchemaName);
+        table.setSchema(copySchema(outSchemaName));
 
         //
         final int dataNum = 3;
@@ -204,10 +216,7 @@ public class TestRecordMapper {
         table.getExpressions().addAll(expFields);
 
         // schema
-        Schema schema = Schema.createRecord(outSchemaName, outSchemaName + " schema", mainStaffSchema.getNamespace(), false);
-        List<Field> fields = mainStaffSchema.getFields().stream().map(f -> new Field(f.name(), f.schema(), f.doc(), f.defaultVal())).collect(Collectors.toList());
-        schema.setFields(fields);
-        table.setSchema(schema);
+        table.setSchema(copySchema(outSchemaName));
 
         //
         final int dataNum = 3;
@@ -398,18 +407,125 @@ public class TestRecordMapper {
         doRunnerTest(runner, table, dataNum, 4, testContents);
     }
 
+    @Test
+    public void testMapRecord_UpdateDynamicOutputTables() throws Exception {
+        final String out1 = "out_test1";
+        final MapperTable table1 = createOutputTable(out1);
+        table1.setSchema(copySchema(out1));
+
+        PropertyDescriptor outputTableSetting1 = new PropertyDescriptor.Builder().name(RecordMapper.PRE_OUTPUT + out1).description(out1 + " relationship")
+                .addValidator(StandardValidators.NON_EMPTY_VALIDATOR).expressionLanguageSupported(ExpressionLanguageScope.NONE).dynamic(true).build();
+        runner.setProperty(outputTableSetting1, new MapperTable.Writer().write(table1));
+
+        assertEquals(3, runner.getProcessContext().getAvailableRelationships().size());
+        assertEquals(RecordMapper.PRE_OUTPUT + out1, runner.getProcessContext().getAvailableRelationships().iterator().next().getName());
+
+        // add another one
+        final String out2 = "out_test2";
+        final MapperTable table2 = createOutputTable(out2);
+        table2.setSchema(copySchema(out2));
+
+        PropertyDescriptor outputTableSetting2 = new PropertyDescriptor.Builder().name(RecordMapper.PRE_OUTPUT + out2).description(out2 + " relationship")
+                .addValidator(StandardValidators.NON_EMPTY_VALIDATOR).expressionLanguageSupported(ExpressionLanguageScope.NONE).dynamic(true).build();
+        runner.setProperty(outputTableSetting2, new MapperTable.Writer().write(table2));
+
+        assertThat(runner.getProcessContext().getAvailableRelationships(), hasSize(4));
+        Set<String> newRelationships = runner.getProcessContext().getAvailableRelationships().stream().map(r -> r.getName()).collect(Collectors.toSet());
+        assertThat(newRelationships, hasItem(RecordMapper.PRE_OUTPUT + out1));
+        assertThat(newRelationships, hasItem(RecordMapper.PRE_OUTPUT + out2));
+
+        // remove 1
+        runner.removeProperty(outputTableSetting1);
+        // runner.setProperty(outputTableSetting1, (String) null);
+
+        assertThat(runner.getProcessContext().getAvailableRelationships(), hasSize(3));
+        Set<String> removedRelationships = runner.getProcessContext().getAvailableRelationships().stream().map(r -> r.getName()).collect(Collectors.toSet());
+        assertThat(removedRelationships, not(hasItem(RecordMapper.PRE_OUTPUT + out1)));
+        assertThat(removedRelationships, hasItem(RecordMapper.PRE_OUTPUT + out2));
+
+        // rename?
+        runner.removeProperty(outputTableSetting2);
+        // runner.setProperty(outputTableSetting2, (String) null);
+
+        final String out4 = "out_test4";
+        final MapperTable table4 = createOutputTable(out4);
+        table4.setSchema(copySchema(out4));
+
+        PropertyDescriptor outputTableSetting4 = new PropertyDescriptor.Builder().name(RecordMapper.PRE_OUTPUT + out4).description(out4 + " relationship")
+                .addValidator(StandardValidators.NON_EMPTY_VALIDATOR).expressionLanguageSupported(ExpressionLanguageScope.NONE).dynamic(true).build();
+        runner.setProperty(outputTableSetting4, new MapperTable.Writer().write(table4));
+
+        assertThat(runner.getProcessContext().getAvailableRelationships(), hasSize(3));
+        Set<String> renameRelationships = runner.getProcessContext().getAvailableRelationships().stream().map(r -> r.getName()).collect(Collectors.toSet());
+        assertThat(renameRelationships, not(hasItem(RecordMapper.PRE_OUTPUT + out1)));
+        assertThat(renameRelationships, not(hasItem(RecordMapper.PRE_OUTPUT + out2)));
+        assertThat(renameRelationships, hasItem(RecordMapper.PRE_OUTPUT + out4));
+    }
+
+    @Test
+    public void testMapRecord_1vsN_full() throws Exception {
+        // 1
+        final String outSchemaName1 = "out_outputN1";
+        final MapperTable table1 = createOutputTable(outSchemaName1);
+
+        final List<MapperExpField> expFields = mainStaffSchema.getFields().stream().map(f -> {
+            MapperExpField ef = new MapperExpField();
+            ef.setPath('/' + f.name());
+            ef.setExp("${" + PRE_MAIN_INPUT_EXP + '.' + f.name() + "}");
+            return ef;
+        }).collect(Collectors.toList());
+        table1.getExpressions().addAll(expFields);
+        table1.setSchema(copySchema(outSchemaName1));
+
+        String outputFlowName1 = RecordMapper.PRE_OUTPUT + outSchemaName1;
+        PropertyDescriptor outputTableSetting1 = new PropertyDescriptor.Builder().name(outputFlowName1).description(outSchemaName1 + " relationship")
+                .addValidator(StandardValidators.NON_EMPTY_VALIDATOR).expressionLanguageSupported(ExpressionLanguageScope.NONE).dynamic(true).build();
+        runner.setProperty(outputTableSetting1, new MapperTable.Writer().write(table1));
+
+        // 2
+        final String outSchemaName2 = "out_outputN2";
+        final MapperTable table2 = createOutputTable(outSchemaName2);
+        table2.setSchema(copySchema(outSchemaName2));
+
+        String outputFlowName2 = RecordMapper.PRE_OUTPUT + outSchemaName2;
+        PropertyDescriptor outputTableSetting2 = new PropertyDescriptor.Builder().name(outputFlowName2).description(outSchemaName2 + " relationship")
+                .addValidator(StandardValidators.NON_EMPTY_VALIDATOR).expressionLanguageSupported(ExpressionLanguageScope.NONE).dynamic(true).build();
+        runner.setProperty(outputTableSetting2, new MapperTable.Writer().write(table2));
+
+        //
+
+        final int dataCount = 44;
+        createMainStaffRecords(dataCount, readerService);
+
+        runner.enqueue("");
+        runner.run();
+
+        runner.assertTransferCount(RecordMapper.REL_ORIGINAL, 1);
+        runner.assertTransferCount(RecordMapper.REL_FAILURE, 0);
+
+        final String testContents = FileUtils.readFileToString(new File("src/test/resources/expected-output-content"), StandardCharsets.UTF_8);
+        //
+        runner.assertTransferCount(outputFlowName1, 1);
+        final List<MockFlowFile> flowfiles1 = runner.getFlowFilesForRelationship(outputFlowName1);
+        assertEquals(flowfiles1.size(), 1);
+
+        final MockFlowFile outFlow1 = flowfiles1.get(0);
+        outFlow1.assertAttributeEquals("map.count", String.valueOf(dataCount));
+        outFlow1.assertContentEquals(testContents);
+
+        //
+        runner.assertTransferCount(outputFlowName2, 1);
+        final List<MockFlowFile> flowfiles2 = runner.getFlowFilesForRelationship(outputFlowName2);
+        assertEquals(flowfiles2.size(), 1);
+
+        final MockFlowFile outFlow2 = flowfiles2.get(0);
+        outFlow2.assertAttributeEquals("map.count", String.valueOf(dataCount));
+        outFlow2.assertContentEquals(testContents);
+
+    }
+
     // @Test
     public void testMapRecord_1vs1_withVar() throws IOException {
-        Assert.fail("Not impl yet!");
-    }
-
-    // @Test
-    public void testMapRecord_1vsN_full() throws Exception {
-        Assert.fail("Not impl yet!");
-    }
-
-    // @Test
-    public void testMapRecord_1vsN_batch() throws Exception {
         Assert.fail("Not impl yet!");
     }
 
