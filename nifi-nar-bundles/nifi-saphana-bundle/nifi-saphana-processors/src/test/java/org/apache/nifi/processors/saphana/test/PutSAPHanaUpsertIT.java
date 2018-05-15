@@ -1,4 +1,4 @@
-package org.apache.nifi.processors.saphana;
+package org.apache.nifi.processors.saphana.test;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,6 +13,9 @@ import org.apache.nifi.dbcp.DBCPService;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
+import org.apache.nifi.processors.saphana.GetSAPHana;
+import org.apache.nifi.processors.saphana.PutSAPHana;
+import org.apache.nifi.processors.saphana.util.ConnectionFactory;
 import org.apache.nifi.reporting.InitializationException;
 import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;

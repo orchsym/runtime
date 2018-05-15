@@ -1,4 +1,4 @@
-package org.apache.nifi.processors.saphana;
+package org.apache.nifi.processors.saphana.test;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,6 +13,9 @@ import org.apache.nifi.dbcp.DBCPService;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
+import org.apache.nifi.processors.saphana.GetSAPHana;
+import org.apache.nifi.processors.saphana.PutSAPHana;
+import org.apache.nifi.processors.saphana.util.ConnectionFactory;
 import org.apache.nifi.reporting.InitializationException;
 import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
@@ -20,12 +23,18 @@ import org.apache.nifi.util.TestRunners;
 import org.junit.Test;
 
 /***
- * 
+ * baishanTable表源数据
+ *     A,B
+ *     1,"a"
+ *     2,"b"
+ *     3,"c"
+ *     4,"d"
+ *     5,"ee"
  * */
 @SuppressWarnings("deprecation")
-public class PutSAPHanaUpsertMultipleRowsIT {
+public class PutSAPHanaInsertIT {
     
-    private final String TABLE_NAME = "baishanTest2";
+    private final String TABLE_NAME = "baishaninsert";
     private final String SOURCE_INPUT_FILE = "C:/NiFi/nifi-1.7.0/nifi-nar-bundles/nifi-saphana-bundle/nifi-saphana-processors/src/test/resources/baishanTestAVROInsert.txt";
     private final int SOURCE_INPUT_FILE_ROW_COUNT = 10;
 
@@ -47,7 +56,6 @@ public class PutSAPHanaUpsertMultipleRowsIT {
     }
     
     private void dropTable()  throws InitializationException{
-        // TODO Auto-generated method stub
         String sql = "drop table "+TABLE_NAME;
         GetSAPHanaIT.executeSQL(sql);
     }
@@ -62,7 +70,7 @@ public class PutSAPHanaUpsertMultipleRowsIT {
         runner.addControllerService("dbcp", dbcp, dbcpProperties);
         runner.enableControllerService(dbcp);
         runner.setProperty(PutSAPHana.DBCP_SERVICE, "dbcp");
-        runner.setProperty(PutSAPHana.OPERATION, "UPSERT");
+        runner.setProperty(PutSAPHana.OPERATION, "INSERT");
         runner.setProperty(PutSAPHana.TABLE_NAME, String.valueOf(TABLE_NAME));
         runner.setProperty(PutSAPHana.BATCHSIZE, String.valueOf("10"));
         runner.setProperty(PutSAPHana.KEYCOLUMN, String.valueOf("id"));
@@ -93,8 +101,8 @@ public class PutSAPHanaUpsertMultipleRowsIT {
             System.out.println(new String(flowFile.toByteArray()));
         }
         System.out.println("rowCount：" + rowCount);
-        System.out.println("totalFlowFilesSize：" + totalFlowFilesSize);
         Assert.assertEquals(SOURCE_INPUT_FILE_ROW_COUNT, rowCount);
+        Assert.assertEquals(totalFlowFilesSize, 601);
     }
 
 }

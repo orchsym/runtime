@@ -1,4 +1,4 @@
-package org.apache.nifi.processors.saphana;
+package org.apache.nifi.processors.saphana.util;
 
 import java.sql.Connection;
 import java.sql.SQLException;

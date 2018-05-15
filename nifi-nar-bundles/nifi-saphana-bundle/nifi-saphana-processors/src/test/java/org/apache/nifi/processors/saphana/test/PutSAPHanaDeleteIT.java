@@ -1,4 +1,4 @@
-package org.apache.nifi.processors.saphana;
+package org.apache.nifi.processors.saphana.test;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,6 +13,9 @@ import org.apache.nifi.dbcp.DBCPService;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
+import org.apache.nifi.processors.saphana.GetSAPHana;
+import org.apache.nifi.processors.saphana.PutSAPHana;
+import org.apache.nifi.processors.saphana.util.ConnectionFactory;
 import org.apache.nifi.reporting.InitializationException;
 import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
@@ -22,7 +25,7 @@ import org.junit.Test;
 /***
  * */
 @SuppressWarnings("deprecation")
-public class PutSAPHanaUpdateIT {
+public class PutSAPHanaDeleteIT {
     
     private final String TABLE_NAME = "baishanupdate";
     private final String SOURCE_INPUT_FILE = "C:/NiFi/nifi-1.7.0/nifi-nar-bundles/nifi-saphana-bundle/nifi-saphana-processors/src/test/resources/baishanTestAVROInsert.txt";
@@ -38,7 +41,7 @@ public class PutSAPHanaUpdateIT {
         long endtime = System.currentTimeMillis();
         System.out.println((endtime-begintime)/1000);
         checkTableRowCount();
-        updateTable();
+        deleteTable();
         checkUpdateContent();
         dropTable();
     }
@@ -55,7 +58,7 @@ public class PutSAPHanaUpdateIT {
     }
 
     /**
-     * 更新数据
+     * 插入数据
      * */
     public void insertTable() throws InitializationException, FileNotFoundException {
         final DBCPService dbcp = new ConnectionFactory();
@@ -81,14 +84,14 @@ public class PutSAPHanaUpdateIT {
     /**
      * 更新数据
      * */
-    public void updateTable() throws InitializationException, FileNotFoundException {
+    public void deleteTable() throws InitializationException, FileNotFoundException {
         final DBCPService dbcp = new ConnectionFactory();
         final Map<String, String> dbcpProperties = new HashMap<>();
         final TestRunner runner = TestRunners.newTestRunner(PutSAPHana.class);
         runner.addControllerService("dbcp", dbcp, dbcpProperties);
         runner.enableControllerService(dbcp);
         runner.setProperty(PutSAPHana.DBCP_SERVICE, "dbcp");
-        runner.setProperty(PutSAPHana.OPERATION, "UPDATE");
+        runner.setProperty(PutSAPHana.OPERATION, "DELETE");
         runner.setProperty(PutSAPHana.TABLE_NAME, String.valueOf(TABLE_NAME));
         runner.setProperty(PutSAPHana.BATCHSIZE, String.valueOf("10"));
         runner.setProperty(PutSAPHana.KEYCOLUMN, String.valueOf("id"));
@@ -139,8 +142,8 @@ public class PutSAPHanaUpdateIT {
             System.out.println(new String(flowFile.toByteArray()));
         }
         System.out.println("rowCount：" + rowCount);
-        Assert.assertEquals(SOURCE_INPUT_FILE_ROW_COUNT, rowCount);
-        Assert.assertEquals(totalFlowFilesSize, 611);
+        System.out.println("totalFlowFilesSize：" + totalFlowFilesSize);
+        Assert.assertEquals(0,rowCount);
     }
 
 }

@@ -171,12 +171,7 @@ public class GetSAPHana extends AbstractProcessor {
         final Integer defaultPrecision = context.getProperty(DEFAULT_PRECISION).evaluateAttributeExpressions(fileToProcess).asInteger();
         final Integer defaultScale = context.getProperty(DEFAULT_SCALE).evaluateAttributeExpressions(fileToProcess).asInteger();
         final StopWatch stopWatch = new StopWatch(true);
-        final String selectQuery;
-        if (context.getProperty(SQL_SELECT_QUERY).isSet()) {
-            selectQuery = context.getProperty(SQL_SELECT_QUERY).evaluateAttributeExpressions(fileToProcess).getValue();
-        } else {
-            throw new RuntimeException("Select Query must be specified!");
-        }
+        final String selectQuery = context.getProperty(SQL_SELECT_QUERY).evaluateAttributeExpressions(fileToProcess).getValue();
 
         int resultCount=0;
         try (final Connection con = dbcpService.getConnection(); final Statement st = con.createStatement()) {
