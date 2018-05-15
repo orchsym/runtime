@@ -81,6 +81,7 @@ public abstract class NiFiProperties {
     public static final String PROCESSOR_SCHEDULING_TIMEOUT = "nifi.processor.scheduling.timeout";
     public static final String BACKPRESSURE_COUNT = "nifi.queue.backpressure.count";
     public static final String BACKPRESSURE_SIZE = "nifi.queue.backpressure.size";
+    public static final String HEADLESS = "nifi.headless";
 
     // content repository properties
     public static final String REPOSITORY_CONTENT_PREFIX = "nifi.content.repository.directory.";
@@ -1403,6 +1404,10 @@ public abstract class NiFiProperties {
 
     public String getDefaultBackPressureDataSizeThreshold() {
         return getProperty(BACKPRESSURE_SIZE, DEFAULT_BACKPRESSURE_SIZE);
+    }
+
+    public boolean isHeadlessMode() {
+        return Boolean.parseBoolean(getProperty(HEADLESS));
     }
 
     /**

@@ -19,12 +19,15 @@ language governing permissions and limitations under the License. -->
     <artifactId>nifi-assembly</artifactId>
     <packaging>pom</packaging>
     <description>This is the assembly Apache NiFi</description>
+    <properties>
+		<product.name>runtime</product.name>
+    </properties>
     <build>
         <plugins>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
-                    <finalName>runtime-${project.version}</finalName>
+                    <finalName>${product.name}-${project.version}</finalName>
                     <attach>false</attach>
                 </configuration>
                 <executions>
@@ -992,7 +995,7 @@ language governing permissions and limitations under the License. -->
                     <plugin>
                         <artifactId>maven-assembly-plugin</artifactId>
                         <configuration>
-                            <finalName>runtime-${project.version}</finalName>
+                            <finalName>${product.name}-${project.version}</finalName>
                             <attach>false</attach>
                         </configuration>
                         <executions>
@@ -1049,7 +1052,7 @@ language governing permissions and limitations under the License. -->
                     <plugin>
                         <artifactId>maven-assembly-plugin</artifactId>
                         <configuration>
-                            <finalName>runtime-${project.version}</finalName>
+                            <finalName>${product.name}-${project.version}</finalName>
                             <attach>false</attach>
                         </configuration>
                         <executions>
@@ -1078,6 +1081,17 @@ language governing permissions and limitations under the License. -->
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+            <id>headless-runtime</id>
+            <activation>
+                <property>
+                    <name>headless</name>
+                </property>
+            </activation>
+            <properties>
+            	<product.name>orchsym-runtime</product.name>
+            </properties>
         </profile>
     </profiles>
 </project>
