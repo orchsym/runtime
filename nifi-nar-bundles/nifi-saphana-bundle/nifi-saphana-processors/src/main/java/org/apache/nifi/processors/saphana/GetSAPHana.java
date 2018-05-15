@@ -102,7 +102,7 @@ public class GetSAPHana extends AbstractProcessor {
                     + "incoming flowfiles. If this property is empty, the content of the incoming flow file is expected "
                     + "to contain a valid SQL select query, to be issued by the processor to the database. Note that Expression "
                     + "Language is not evaluated for flow file contents.")
-            .required(false)
+            .required(true)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .expressionLanguageSupported(true)
             .build();
