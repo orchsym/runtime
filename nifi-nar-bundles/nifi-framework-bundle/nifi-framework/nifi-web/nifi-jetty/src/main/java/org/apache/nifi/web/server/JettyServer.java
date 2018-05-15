@@ -202,16 +202,20 @@ public class JettyServer implements NiFiServer {
         }
 
         // ensure the required wars were found
-        if (webUiWar == null && !props.isHeadlessMode()) {
-            throw new RuntimeException("Unable to load nifi-web WAR");
-        } else if (webApiWar == null) {
+        if (webApiWar == null) {
             throw new RuntimeException("Unable to load nifi-web-api WAR");
-        } else if (webDocsWar == null) {
-            throw new RuntimeException("Unable to load nifi-web-docs WAR");
-        } else if (webErrorWar == null) {
-            throw new RuntimeException("Unable to load nifi-web-error WAR");
-        } else if (webContentViewerWar == null) {
-            throw new RuntimeException("Unable to load nifi-web-content-viewer WAR");
+        }
+        final boolean headlessMode = props.isHeadlessMode();
+        if(!headlessMode) {
+            if (webUiWar == null) {
+                throw new RuntimeException("Unable to load nifi-web WAR");
+            } else if (webDocsWar == null) {
+                throw new RuntimeException("Unable to load nifi-web-docs WAR");
+            } else if (webErrorWar == null) {
+                throw new RuntimeException("Unable to load nifi-web-error WAR");
+            } else if (webContentViewerWar == null) {
+                throw new RuntimeException("Unable to load nifi-web-content-viewer WAR");
+            }
         }
 
         // handlers for each war and init params for the web api
@@ -305,39 +309,38 @@ public class JettyServer implements NiFiServer {
             componentUiExtensions = new UiExtensionMapping(Collections.EMPTY_MAP);
         }
 
-        // load the web ui app
-        if(!props.isHeadlessMode()) {
-            final WebAppContext webUiContext = loadWar(webUiWar, "/nifi", frameworkClassLoader);
-            webUiContext.getInitParams().put("oidc-supported", String.valueOf(props.isOidcEnabled()));
-            webUiContext.getInitParams().put("knox-supported", String.valueOf(props.isKnoxSsoEnabled()));
-            handlers.addHandler(webUiContext);
-        }
-        
         // load the web api app
         webApiContext = loadWar(webApiWar, "/nifi-api", frameworkClassLoader);
         handlers.addHandler(webApiContext);
 
-        // load the content viewer app
-        webContentViewerContext = loadWar(webContentViewerWar, "/nifi-content-viewer", frameworkClassLoader);
-        webContentViewerContext.getInitParams().putAll(mimeMappings);
-        handlers.addHandler(webContentViewerContext);
-
-        // create a web app for the docs
-        final String docsContextPath = "/nifi-docs";
-
-        // load the documentation war
-        webDocsContext = loadWar(webDocsWar, docsContextPath, frameworkClassLoader);
-
-        // overlay the actual documentation
-        final ContextHandlerCollection documentationHandlers = new ContextHandlerCollection();
-        documentationHandlers.addHandler(createDocsWebApp(docsContextPath));
-        documentationHandlers.addHandler(webDocsContext);
-        handlers.addHandler(documentationHandlers);
-
-        // load the web error app
-        final WebAppContext webErrorContext = loadWar(webErrorWar, "/", frameworkClassLoader);
-        webErrorContext.getInitParams().put("whitelistedContextPaths", props.getWhitelistedContextPaths());
-        handlers.addHandler(webErrorContext);
+        if(!headlessMode) {
+            // load the web ui app
+            final WebAppContext webUiContext = loadWar(webUiWar, "/nifi", frameworkClassLoader);
+            webUiContext.getInitParams().put("oidc-supported", String.valueOf(props.isOidcEnabled()));
+            webUiContext.getInitParams().put("knox-supported", String.valueOf(props.isKnoxSsoEnabled()));
+            handlers.addHandler(webUiContext);
+            
+            // load the content viewer app
+            webContentViewerContext = loadWar(webContentViewerWar, "/nifi-content-viewer", frameworkClassLoader);
+            webContentViewerContext.getInitParams().putAll(mimeMappings);
+            handlers.addHandler(webContentViewerContext);
+            
+            // create a web app for the docs
+            final String docsContextPath = "/nifi-docs";
+            // load the documentation war
+            webDocsContext = loadWar(webDocsWar, docsContextPath, frameworkClassLoader);
+            
+            // overlay the actual documentation
+            final ContextHandlerCollection documentationHandlers = new ContextHandlerCollection();
+            documentationHandlers.addHandler(createDocsWebApp(docsContextPath));
+            documentationHandlers.addHandler(webDocsContext);
+            handlers.addHandler(documentationHandlers);
+            
+            // load the web error app
+            final WebAppContext webErrorContext = loadWar(webErrorWar, "/", frameworkClassLoader);
+            webErrorContext.getInitParams().put("whitelistedContextPaths", props.getWhitelistedContextPaths());
+            handlers.addHandler(webErrorContext);
+        }
 
         // deploy the web apps
         return gzip(handlers);
