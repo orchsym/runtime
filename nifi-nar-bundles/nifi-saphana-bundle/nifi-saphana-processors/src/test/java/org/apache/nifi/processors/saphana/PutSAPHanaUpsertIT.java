@@ -28,7 +28,8 @@ import org.junit.Test;
  *     4,"d"
  *     5,"ee"
  * */
-public class PutSAPHanaIT {
+@SuppressWarnings("deprecation")
+public class PutSAPHanaUpsertIT {
 
     @Test
     public void testOnTriggerProcessContextProcessSession() throws InitializationException, FileNotFoundException {
@@ -47,6 +48,7 @@ public class PutSAPHanaIT {
         runner.addControllerService("dbcp", dbcp, dbcpProperties);
         runner.enableControllerService(dbcp);
         runner.setProperty(PutSAPHana.DBCP_SERVICE, "dbcp");
+        runner.setProperty(PutSAPHana.OPERATION, "UPSERT");
         runner.setProperty(PutSAPHana.TABLE_NAME, String.valueOf("baishanTable"));
         runner.setProperty(PutSAPHana.BATCHSIZE, String.valueOf("2"));
         runner.setProperty(PutSAPHana.KEYCOLUMN, String.valueOf("A"));
@@ -87,6 +89,7 @@ public class PutSAPHanaIT {
             System.out.println(new String(flowFile.toByteArray()));
         }
         System.out.println("rowCount：" + rowCount);
+        System.out.println("totalFlowFilesSize：" + totalFlowFilesSize);
         Assert.assertEquals(6, rowCount);
     }
 
@@ -125,6 +128,7 @@ public class PutSAPHanaIT {
             System.out.println(new String(flowFile.toByteArray()));
         }
         System.out.println("rowCount：" + rowCount);
+        System.out.println("totalFlowFilesSize：" + totalFlowFilesSize);
         Assert.assertEquals(5, rowCount);
 
     }

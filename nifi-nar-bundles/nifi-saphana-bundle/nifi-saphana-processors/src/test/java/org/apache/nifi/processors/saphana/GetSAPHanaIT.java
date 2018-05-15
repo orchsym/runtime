@@ -14,22 +14,28 @@ import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation")
 public class GetSAPHanaIT {
-
-    @Test
-    public void testOnTriggerProcessContextProcessSession() throws InitializationException {
+    
+    public synchronized static TestRunner executeSQL(String sql) throws InitializationException {
         final DBCPService dbcp = new ConnectionFactory();
         final Map<String, String> dbcpProperties = new HashMap<>();
         final TestRunner runner = TestRunners.newTestRunner(GetSAPHana.class);
         runner.addControllerService("dbcp", dbcp, dbcpProperties);
         runner.enableControllerService(dbcp);
         runner.setProperty(GetSAPHana.DBCP_SERVICE, "dbcp");
-        runner.setProperty(GetSAPHana.SQL_SELECT_QUERY, String.valueOf("select * from baishanTable"));
+        runner.setProperty(GetSAPHana.SQL_SELECT_QUERY, String.valueOf(sql));
         runner.setIncomingConnection(false);
         ProcessContext processContext = runner.getProcessContext();
         GetSAPHana processor = (GetSAPHana) runner.getProcessor();
         processor.updateScheduledTrue();
         processor.onTrigger(processContext, runner.getProcessSessionFactory());
+        return runner;
+    }
+
+    @Test
+    public void testOnTriggerProcessContextProcessSession() throws InitializationException {
+        final TestRunner runner = executeSQL("select * from baishanTable");
         final List<MockFlowFile> flowFiles = runner.getFlowFilesForRelationship(GetSAPHana.REL_SUCCESS);
         long totalFlowFilesSize = 0;
         long rowCount = 0;
@@ -40,6 +46,7 @@ public class GetSAPHanaIT {
             System.out.println(new String(flowFile.toByteArray()));
         }
         System.out.println("rowCount：" + rowCount);
+        System.out.println("totalFlowFilesSize：" + totalFlowFilesSize);
         Assert.assertEquals(5, rowCount);
     }
 

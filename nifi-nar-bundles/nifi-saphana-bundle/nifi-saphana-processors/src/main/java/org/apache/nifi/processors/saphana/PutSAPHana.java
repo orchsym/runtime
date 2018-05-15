@@ -69,6 +69,7 @@ import org.apache.nifi.processors.database.util.DBUtil;
 @WritesAttributes({ 
     @WritesAttribute(attribute = "record-count", description = "Contains the number of rows returned in the select query") 
 })
+@SuppressWarnings("deprecation")
 public class PutSAPHana extends AbstractProcessor {
 
     public static final String RECORD_COUNT = "record-count";
@@ -91,10 +92,17 @@ public class PutSAPHana extends AbstractProcessor {
             .identifiesControllerService(DBCPService.class)
             .build();
 
+    public static final PropertyDescriptor OPERATION = new PropertyDescriptor.Builder()
+            .name("Operation for table")
+            .description("Operation for table,INSERT,UPDATE,UPSERT or DELETE.")
+            .allowableValues("INSERT","UPDATE","UPSERT","DELETE")
+            .defaultValue("INSERT")
+            .required(true)
+            .build();
     public static final PropertyDescriptor KEYCOLUMN = new PropertyDescriptor.Builder()
             .name("Key Column for unique")
             .description("KEY FOR UPDATE DATA")
-            .required(true)
+            .required(false)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .expressionLanguageSupported(true)
             .build();
@@ -136,6 +144,7 @@ public class PutSAPHana extends AbstractProcessor {
         final List<PropertyDescriptor> pds = new ArrayList<>();
         pds.add(DBCP_SERVICE);
         pds.add(TABLE_NAME);
+        pds.add(OPERATION);
         pds.add(KEYCOLUMN);
         pds.add(BATCHSIZE);
         pds.add(QUERY_TIMEOUT);
@@ -166,9 +175,11 @@ public class PutSAPHana extends AbstractProcessor {
         final ComponentLog logger = getLogger();
 
         final String outputTable = context.getProperty(TABLE_NAME).evaluateAttributeExpressions(flowFile).getValue();
+        final String operation = context.getProperty(OPERATION).evaluateAttributeExpressions(flowFile).getValue();
         final DBCPService dbcpService = context.getProperty(DBCP_SERVICE).asControllerService(DBCPService.class);
-        StringBuffer preparedSQL = new StringBuffer("upsert " + outputTable + " ");
-        final String keyColumn = context.getProperty(KEYCOLUMN).evaluateAttributeExpressions(flowFile).getValue().toUpperCase();
+        
+        StringBuffer preparedSQL = new StringBuffer("");
+        final String keyColumnPV = context.getProperty(KEYCOLUMN).evaluateAttributeExpressions(flowFile).getValue();
         try (final Connection con = dbcpService.getConnection();) {
             con.setAutoCommit(false);
             Map<String, String> map = new HashMap<String, String>();
@@ -176,28 +187,54 @@ public class PutSAPHana extends AbstractProcessor {
             session.read(flowFile, new InputStreamCallback() {
                 @Override
                 public void process(final InputStream rawIn) throws IOException {
+                    String keyColumn = keyColumnPV;
+                    if(keyColumnPV!=null){
+                        keyColumn = keyColumnPV.toUpperCase();
+                    }else{
+                        keyColumn = "";
+                    }
                     try (final InputStream in = new BufferedInputStream(rawIn); 
                             final DataFileStream<GenericRecord> reader = new DataFileStream<>(in, new GenericDatumReader<GenericRecord>())) {
                         List<Field> list = reader.getSchema().getFields();
                         List<String> columns = new ArrayList<String>();
+                        List<String> columns_withoutKey = new ArrayList<String>();
                         List<String> values = new ArrayList<String>();
                         String columnName = "";
                         Object value = null;
                         for (int i = 0; i < list.size(); i++) {
                             columnName = list.get(i).name();
                             columns.add(columnName.toUpperCase());
+                            if("UPDATE".equals(operation)){
+                                if (!keyColumn.equalsIgnoreCase(columnName)) {
+                                    columns_withoutKey.add(columnName.toUpperCase());
+                                }
+                            }
                             values.add("?");
                         }
-                        if (!columns.contains(keyColumn)) {
-                            throw new RuntimeException("Please check key column for input schema!");
+                        if ((keyColumn.length()==0 || !columns.contains(keyColumn)) && ("UPDATE".equals(operation) || "UPSERT".equals(operation) || "DELETE".equals(operation))) {
+                            throw new RuntimeException("Input schema must include key column named "+keyColumn+".Please check input schema!");
                         }
-                        preparedSQL.append("(" + StringUtils.join(columns, ",") + "  ) values(" + StringUtils.join(values, ",") + ") where " + keyColumn + "=?");
+                        if("INSERT".equals(operation)){
+                            preparedSQL.append("insert into " + outputTable + " ");
+                            preparedSQL.append("(" + StringUtils.join(columns, ",") + "  ) values(" + StringUtils.join(values, ",") + ")");
+                        }else if("UPDATE".equals(operation)){
+                            preparedSQL.append("update " + outputTable + " set ");
+                            preparedSQL.append( StringUtils.join(columns_withoutKey, "=?,")).append("=?");
+                            preparedSQL.append("  where " + keyColumn + "=?");
+                        }else if("UPSERT".equals(operation)){
+                            preparedSQL.append("upsert " + outputTable + " ");
+                            preparedSQL.append("(" + StringUtils.join(columns, ",") + "  ) values(" + StringUtils.join(values, ",") + ") where " + keyColumn + "=?");
+                        }else if("DELETE".equals(operation)){
+                            preparedSQL.append("DELETE FROM " + outputTable);
+                            preparedSQL.append(" where " + keyColumn + "=?");
+                        }
                         final PreparedStatement ps = con.prepareStatement(preparedSQL.toString());
                         GenericRecord currRecord = null;
                         int batchIndex = 0;
                         int recordCount = 0;
                         while (reader.hasNext()) {
                             currRecord = reader.next(currRecord);
+                            int paramIndex = 1;
                             for (int i = 0; i < list.size(); i++) {
                                 Field field = list.get(i);
                                 Schema schema = field.schema();
@@ -206,9 +243,25 @@ public class PutSAPHana extends AbstractProcessor {
                                     fieldType = schema.getTypes().get(1).getType();
                                 }
                                 value = currRecord.get(i);
-                                DBUtil.setValueForParam(ps, (1 + i), fieldType, value);
-                                if (keyColumn.equalsIgnoreCase(field.name())) {
-                                    DBUtil.setValueForParam(ps, list.size() + 1, fieldType, value);
+                                
+                                if("INSERT".equals(operation)){
+                                    DBUtil.setValueForParam(ps, paramIndex++, fieldType, value);
+                                }else if("UPDATE".equals(operation)){
+                                    if (keyColumn.equalsIgnoreCase(field.name())) {
+                                        DBUtil.setValueForParam(ps, list.size(), fieldType, value);
+                                    }else{
+                                        DBUtil.setValueForParam(ps, paramIndex++, fieldType, value);
+                                    }
+                                }else if("UPSERT".equals(operation)){
+                                    DBUtil.setValueForParam(ps, paramIndex++, fieldType, value);
+                                    if (keyColumn.equalsIgnoreCase(field.name())) {
+                                        DBUtil.setValueForParam(ps, list.size()+1, fieldType, value);
+                                    }
+                                }else if("DELETE".equals(operation)){
+                                    if (keyColumn.equalsIgnoreCase(field.name())) {
+                                        DBUtil.setValueForParam(ps, 1, fieldType, value);
+                                        break;
+                                    }
                                 }
                             }
                             ps.addBatch();
@@ -218,7 +271,6 @@ public class PutSAPHana extends AbstractProcessor {
                                 ps.executeBatch();
                                 con.commit();
                                 logger.debug("has conmmit "+recordCount+" rows");
-                                System.out.println("has conmmit "+recordCount+" rows");
                                 batchIndex = 0;
                             }
                         }
@@ -226,7 +278,6 @@ public class PutSAPHana extends AbstractProcessor {
                             ps.executeBatch();
                             con.commit();
                             logger.debug("has conmmit "+recordCount+" rows");
-                            System.out.println("has conmmit "+recordCount+" rows");
                         }
                         map.put(RECORD_COUNT, String.valueOf(recordCount));
                     } catch (Exception e) {
