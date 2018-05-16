@@ -1,4 +1,4 @@
-package org.apache.nifi.processors.saphana;
+package org.apache.nifi.processors.saphana.test;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,6 +13,9 @@ import org.apache.nifi.dbcp.DBCPService;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
+import org.apache.nifi.processors.saphana.GetSAPHana;
+import org.apache.nifi.processors.saphana.PutSAPHana;
+import org.apache.nifi.processors.saphana.util.ConnectionFactory;
 import org.apache.nifi.reporting.InitializationException;
 import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
@@ -28,7 +31,8 @@ import org.junit.Test;
  *     4,"d"
  *     5,"ee"
  * */
-public class PutSAPHanaIT {
+@SuppressWarnings("deprecation")
+public class PutSAPHanaUpsertIT {
 
     @Test
     public void testOnTriggerProcessContextProcessSession() throws InitializationException, FileNotFoundException {
@@ -47,6 +51,7 @@ public class PutSAPHanaIT {
         runner.addControllerService("dbcp", dbcp, dbcpProperties);
         runner.enableControllerService(dbcp);
         runner.setProperty(PutSAPHana.DBCP_SERVICE, "dbcp");
+        runner.setProperty(PutSAPHana.OPERATION, "UPSERT");
         runner.setProperty(PutSAPHana.TABLE_NAME, String.valueOf("baishanTable"));
         runner.setProperty(PutSAPHana.BATCHSIZE, String.valueOf("2"));
         runner.setProperty(PutSAPHana.KEYCOLUMN, String.valueOf("A"));
@@ -56,7 +61,7 @@ public class PutSAPHanaIT {
         processor.updateScheduledTrue();
         ProcessSession session = runner.getProcessSessionFactory().createSession();
         FlowFile flowFile1 = session.create();
-        flowFile1 = session.importFrom(new FileInputStream(new File("C:\\runtime\\saphana\\avro.txt")), flowFile1);
+        flowFile1 = session.importFrom(new FileInputStream(new File("src/test/resources/avro.txt")), flowFile1);
         runner.enqueue(flowFile1);
         processor.onTrigger(processContext, runner.getProcessSessionFactory());
     }
@@ -78,15 +83,10 @@ public class PutSAPHanaIT {
         processor.updateScheduledTrue();
         processor.onTrigger(processContext, runner.getProcessSessionFactory());
         final List<MockFlowFile> flowFiles = runner.getFlowFilesForRelationship(GetSAPHana.REL_SUCCESS);
-        long totalFlowFilesSize = 0;
         long rowCount = 0;
         for (final MockFlowFile flowFile : flowFiles) {
             rowCount = Long.parseLong(flowFile.getAttribute(GetSAPHana.RESULT_ROW_COUNT));
-            System.out.println(flowFile);
-            totalFlowFilesSize += flowFile.getSize();
-            System.out.println(new String(flowFile.toByteArray()));
         }
-        System.out.println("rowCount：" + rowCount);
         Assert.assertEquals(6, rowCount);
     }
 
@@ -116,15 +116,10 @@ public class PutSAPHanaIT {
         processor.updateScheduledTrue();
         processor.onTrigger(processContext, runner.getProcessSessionFactory());
         final List<MockFlowFile> flowFiles = runner.getFlowFilesForRelationship(GetSAPHana.REL_SUCCESS);
-        long totalFlowFilesSize = 0;
         long rowCount = 0;
         for (final MockFlowFile flowFile : flowFiles) {
             rowCount = Long.parseLong(flowFile.getAttribute(GetSAPHana.RESULT_ROW_COUNT));
-            System.out.println(flowFile);
-            totalFlowFilesSize += flowFile.getSize();
-            System.out.println(new String(flowFile.toByteArray()));
         }
-        System.out.println("rowCount：" + rowCount);
         Assert.assertEquals(5, rowCount);
 
     }

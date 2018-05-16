@@ -23,7 +23,6 @@ import static org.apache.nifi.processors.database.util.JdbcCommon.NORMALIZE_NAME
 import static org.apache.nifi.processors.database.util.JdbcCommon.USE_AVRO_LOGICAL_TYPES;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -37,7 +36,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.nifi.annotation.behavior.EventDriven;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
@@ -56,7 +54,6 @@ import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
-import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.processor.io.OutputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.processors.database.util.JdbcCommon;
@@ -97,6 +94,7 @@ public class GetSAPHana extends AbstractProcessor {
             .identifiesControllerService(DBCPService.class)
             .build();
  
+    @SuppressWarnings("deprecation")
     public static final PropertyDescriptor SQL_SELECT_QUERY = new PropertyDescriptor.Builder()
             .name("SQL select query")
             .description("The SQL select query to execute. The query can be empty, a constant value, or built from attributes "
@@ -104,7 +102,7 @@ public class GetSAPHana extends AbstractProcessor {
                     + "incoming flowfiles. If this property is empty, the content of the incoming flow file is expected "
                     + "to contain a valid SQL select query, to be issued by the processor to the database. Note that Expression "
                     + "Language is not evaluated for flow file contents.")
-            .required(false)
+            .required(true)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .expressionLanguageSupported(true)
             .build();
@@ -164,15 +162,7 @@ public class GetSAPHana extends AbstractProcessor {
         FlowFile fileToProcess = null;
         if (context.hasIncomingConnection()) {
             fileToProcess = session.get();
-
-            // If we have no FlowFile, and all incoming connections are self-loops then we can continue on.
-            // However, if we have no FlowFile and we have connections coming from other Processors, then
-            // we know that we should run only if we have a FlowFile.
-            if (fileToProcess == null && context.hasNonLoopConnection()) {
-                return;
-            }
         }
-
         final ComponentLog logger = getLogger();
         final DBCPService dbcpService = context.getProperty(DBCP_SERVICE).asControllerService(DBCPService.class);
         final Integer queryTimeout = context.getProperty(QUERY_TIMEOUT).asTimePeriod(TimeUnit.SECONDS).intValue();
@@ -181,21 +171,7 @@ public class GetSAPHana extends AbstractProcessor {
         final Integer defaultPrecision = context.getProperty(DEFAULT_PRECISION).evaluateAttributeExpressions(fileToProcess).asInteger();
         final Integer defaultScale = context.getProperty(DEFAULT_SCALE).evaluateAttributeExpressions(fileToProcess).asInteger();
         final StopWatch stopWatch = new StopWatch(true);
-        final String selectQuery;
-        if (context.getProperty(SQL_SELECT_QUERY).isSet()) {
-            selectQuery = context.getProperty(SQL_SELECT_QUERY).evaluateAttributeExpressions(fileToProcess).getValue();
-        } else {
-            // If the query is not set, then an incoming flow file is required, and expected to contain a valid SQL select query.
-            // If there is no incoming connection, onTrigger will not be called as the processor will fail when scheduled.
-            final StringBuilder queryContents = new StringBuilder();
-            session.read(fileToProcess, new InputStreamCallback() {
-                @Override
-                public void process(InputStream in) throws IOException {
-                    queryContents.append(IOUtils.toString(in));
-                }
-            });
-            selectQuery = queryContents.toString();
-        }
+        final String selectQuery = context.getProperty(SQL_SELECT_QUERY).evaluateAttributeExpressions(fileToProcess).getValue();
 
         int resultCount=0;
         try (final Connection con = dbcpService.getConnection(); final Statement st = con.createStatement()) {
