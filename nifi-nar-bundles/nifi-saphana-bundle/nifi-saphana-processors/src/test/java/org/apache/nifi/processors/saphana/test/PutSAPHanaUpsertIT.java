@@ -61,7 +61,7 @@ public class PutSAPHanaUpsertIT {
         processor.updateScheduledTrue();
         ProcessSession session = runner.getProcessSessionFactory().createSession();
         FlowFile flowFile1 = session.create();
-        flowFile1 = session.importFrom(new FileInputStream(new File("C:\\runtime\\saphana\\avro.txt")), flowFile1);
+        flowFile1 = session.importFrom(new FileInputStream(new File("src/test/resources/avro.txt")), flowFile1);
         runner.enqueue(flowFile1);
         processor.onTrigger(processContext, runner.getProcessSessionFactory());
     }
@@ -83,16 +83,10 @@ public class PutSAPHanaUpsertIT {
         processor.updateScheduledTrue();
         processor.onTrigger(processContext, runner.getProcessSessionFactory());
         final List<MockFlowFile> flowFiles = runner.getFlowFilesForRelationship(GetSAPHana.REL_SUCCESS);
-        long totalFlowFilesSize = 0;
         long rowCount = 0;
         for (final MockFlowFile flowFile : flowFiles) {
             rowCount = Long.parseLong(flowFile.getAttribute(GetSAPHana.RESULT_ROW_COUNT));
-            System.out.println(flowFile);
-            totalFlowFilesSize += flowFile.getSize();
-            System.out.println(new String(flowFile.toByteArray()));
         }
-        System.out.println("rowCount：" + rowCount);
-        System.out.println("totalFlowFilesSize：" + totalFlowFilesSize);
         Assert.assertEquals(6, rowCount);
     }
 
@@ -122,16 +116,10 @@ public class PutSAPHanaUpsertIT {
         processor.updateScheduledTrue();
         processor.onTrigger(processContext, runner.getProcessSessionFactory());
         final List<MockFlowFile> flowFiles = runner.getFlowFilesForRelationship(GetSAPHana.REL_SUCCESS);
-        long totalFlowFilesSize = 0;
         long rowCount = 0;
         for (final MockFlowFile flowFile : flowFiles) {
             rowCount = Long.parseLong(flowFile.getAttribute(GetSAPHana.RESULT_ROW_COUNT));
-            System.out.println(flowFile);
-            totalFlowFilesSize += flowFile.getSize();
-            System.out.println(new String(flowFile.toByteArray()));
         }
-        System.out.println("rowCount：" + rowCount);
-        System.out.println("totalFlowFilesSize：" + totalFlowFilesSize);
         Assert.assertEquals(5, rowCount);
 
     }

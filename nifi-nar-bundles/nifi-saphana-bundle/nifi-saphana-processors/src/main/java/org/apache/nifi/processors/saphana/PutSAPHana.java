@@ -61,6 +61,7 @@ import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.processors.database.util.DBUtil;
+import org.apache.nifi.processors.saphana.enums.OperationEnum;
 
 @EventDriven
 @InputRequirement(Requirement.INPUT_REQUIRED)
@@ -204,27 +205,27 @@ public class PutSAPHana extends AbstractProcessor {
                         for (int i = 0; i < list.size(); i++) {
                             columnName = list.get(i).name();
                             columns.add(columnName.toUpperCase());
-                            if("UPDATE".equals(operation)){
+                            if(OperationEnum.UPDATE.toString().equals(operation)){
                                 if (!keyColumn.equalsIgnoreCase(columnName)) {
                                     columns_withoutKey.add(columnName.toUpperCase());
                                 }
                             }
                             values.add("?");
                         }
-                        if ((keyColumn.length()==0 || !columns.contains(keyColumn)) && ("UPDATE".equals(operation) || "UPSERT".equals(operation) || "DELETE".equals(operation))) {
+                        if ((keyColumn.length()==0 || !columns.contains(keyColumn)) && (OperationEnum.UPDATE.toString().equals(operation) || OperationEnum.UPSERT.toString().equals(operation) || OperationEnum.DELETE.toString().equals(operation))) {
                             throw new RuntimeException("Input schema must include key column named "+keyColumn+".Please check input schema!");
                         }
-                        if("INSERT".equals(operation)){
+                        if(OperationEnum.INSERT.toString().equals(operation)){
                             preparedSQL.append("insert into " + outputTable + " ");
                             preparedSQL.append("(" + StringUtils.join(columns, ",") + "  ) values(" + StringUtils.join(values, ",") + ")");
-                        }else if("UPDATE".equals(operation)){
+                        }else if(OperationEnum.UPDATE.toString().equals(operation)){
                             preparedSQL.append("update " + outputTable + " set ");
                             preparedSQL.append( StringUtils.join(columns_withoutKey, "=?,")).append("=?");
                             preparedSQL.append("  where " + keyColumn + "=?");
-                        }else if("UPSERT".equals(operation)){
+                        }else if(OperationEnum.UPSERT.toString().equals(operation)){
                             preparedSQL.append("upsert " + outputTable + " ");
                             preparedSQL.append("(" + StringUtils.join(columns, ",") + "  ) values(" + StringUtils.join(values, ",") + ") where " + keyColumn + "=?");
-                        }else if("DELETE".equals(operation)){
+                        }else if(OperationEnum.DELETE.toString().equals(operation)){
                             preparedSQL.append("DELETE FROM " + outputTable);
                             preparedSQL.append(" where " + keyColumn + "=?");
                         }
@@ -244,20 +245,20 @@ public class PutSAPHana extends AbstractProcessor {
                                 }
                                 value = currRecord.get(i);
                                 
-                                if("INSERT".equals(operation)){
+                                if(OperationEnum.INSERT.toString().equals(operation)){
                                     DBUtil.setValueForParam(ps, paramIndex++, fieldType, value);
-                                }else if("UPDATE".equals(operation)){
+                                }else if(OperationEnum.UPDATE.toString().equals(operation)){
                                     if (keyColumn.equalsIgnoreCase(field.name())) {
                                         DBUtil.setValueForParam(ps, list.size(), fieldType, value);
                                     }else{
                                         DBUtil.setValueForParam(ps, paramIndex++, fieldType, value);
                                     }
-                                }else if("UPSERT".equals(operation)){
+                                }else if(OperationEnum.UPSERT.toString().equals(operation)){
                                     DBUtil.setValueForParam(ps, paramIndex++, fieldType, value);
                                     if (keyColumn.equalsIgnoreCase(field.name())) {
                                         DBUtil.setValueForParam(ps, list.size()+1, fieldType, value);
                                     }
-                                }else if("DELETE".equals(operation)){
+                                }else if(OperationEnum.DELETE.toString().equals(operation)){
                                     if (keyColumn.equalsIgnoreCase(field.name())) {
                                         DBUtil.setValueForParam(ps, 1, fieldType, value);
                                         break;

@@ -25,11 +25,11 @@ import org.junit.Test;
 /***
  * */
 @SuppressWarnings("deprecation")
-public class PutSAPHanaUpdateIT {
+public class PutSAPHanaUpdateIT extends ExecuteSAPHanaSQL{
     
     private final String TABLE_NAME = "baishanupdate";
-    private final String SOURCE_INPUT_FILE = "C:/NiFi/nifi-1.7.0/nifi-nar-bundles/nifi-saphana-bundle/nifi-saphana-processors/src/test/resources/baishanTestAVROInsert.txt";
-    private final String SOURCE_INPUT_UPDATE_FILE = "C:/NiFi/nifi-1.7.0/nifi-nar-bundles/nifi-saphana-bundle/nifi-saphana-processors/src/test/resources/baishanTestAVROUpdate.txt";
+    private final String SOURCE_INPUT_FILE = "src/test/resources/baishanTestAVROInsert.txt";
+    private final String SOURCE_INPUT_UPDATE_FILE = "src/test/resources/baishanTestAVROUpdate.txt";
     private final int SOURCE_INPUT_FILE_ROW_COUNT = 10;
 
 
@@ -39,7 +39,7 @@ public class PutSAPHanaUpdateIT {
         long begintime = System.currentTimeMillis();
         insertTable();
         long endtime = System.currentTimeMillis();
-        System.out.println((endtime-begintime)/1000);
+        logger.info("Spend time "+(endtime-begintime)/1000+" seconds");
         checkTableRowCount();
         updateTable();
         checkUpdateContent();
@@ -48,13 +48,13 @@ public class PutSAPHanaUpdateIT {
     
     private void createTable()  throws InitializationException{
         String sql = "create table "+TABLE_NAME+"(id integer,name varchar(20),birthday datetime)";
-        GetSAPHanaIT.executeSQL(sql);
+        executeSQL(sql);
     }
     
     private void dropTable()  throws InitializationException{
         // TODO Auto-generated method stub
         String sql = "drop table "+TABLE_NAME;
-        GetSAPHanaIT.executeSQL(sql);
+        executeSQL(sql);
     }
 
     /**
@@ -112,17 +112,14 @@ public class PutSAPHanaUpdateIT {
      * */
     public void checkTableRowCount() throws InitializationException {
         String sql = "select * from "+TABLE_NAME;
-        TestRunner runner = GetSAPHanaIT.executeSQL(sql);
+        TestRunner runner = executeSQL(sql);
         final List<MockFlowFile> flowFiles = runner.getFlowFilesForRelationship(GetSAPHana.REL_SUCCESS);
         long totalFlowFilesSize = 0;
         long rowCount = 0;
         for (final MockFlowFile flowFile : flowFiles) {
             rowCount = Long.parseLong(flowFile.getAttribute(GetSAPHana.RESULT_ROW_COUNT));
-            System.out.println(flowFile);
             totalFlowFilesSize += flowFile.getSize();
-            System.out.println(new String(flowFile.toByteArray()));
         }
-        System.out.println("rowCount：" + rowCount);
         Assert.assertEquals(SOURCE_INPUT_FILE_ROW_COUNT, rowCount);
         Assert.assertEquals(totalFlowFilesSize, 601);
     }
@@ -131,17 +128,14 @@ public class PutSAPHanaUpdateIT {
      * */
     public void checkUpdateContent() throws InitializationException {
         String sql = "select * from "+TABLE_NAME;
-        TestRunner runner = GetSAPHanaIT.executeSQL(sql);
+        TestRunner runner = executeSQL(sql);
         final List<MockFlowFile> flowFiles = runner.getFlowFilesForRelationship(GetSAPHana.REL_SUCCESS);
         long totalFlowFilesSize = 0;
         long rowCount = 0;
         for (final MockFlowFile flowFile : flowFiles) {
             rowCount = Long.parseLong(flowFile.getAttribute(GetSAPHana.RESULT_ROW_COUNT));
-            System.out.println(flowFile);
             totalFlowFilesSize += flowFile.getSize();
-            System.out.println(new String(flowFile.toByteArray()));
         }
-        System.out.println("rowCount：" + rowCount);
         Assert.assertEquals(SOURCE_INPUT_FILE_ROW_COUNT, rowCount);
         Assert.assertEquals(totalFlowFilesSize, 611);
     }
