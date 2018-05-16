@@ -19,6 +19,8 @@ package org.apache.nifi.processors.standard;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,6 +45,7 @@ import org.apache.nifi.annotation.lifecycle.OnUnscheduled;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.ValidationContext;
 import org.apache.nifi.components.ValidationResult;
+import org.apache.nifi.csv.CSVUtils;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.lookup.KeyValueLookupService;
 import org.apache.nifi.processor.DataUnit;
@@ -74,12 +77,14 @@ import org.apache.nifi.ssl.SSLContextService;
 @WritesAttributes({ @WritesAttribute(attribute = ListenTCP.TCP_SENDER, description = "The sending host of the messages."),
         @WritesAttribute(attribute = ListenTCP.TCP_PORT, description = "The sending port the messages were received."),
         @WritesAttribute(attribute = ListenTCP.TCP_CONTEXT_ID, description = "The sending identifier of the messages."),
-        @WritesAttribute(attribute = ListenTCP.TCP_CONTEXT_CHARSET, description = "The sending charset of the messages.") })
+        @WritesAttribute(attribute = ListenTCP.TCP_CONTEXT_CHARSET, description = "The sending charset of the messages."),
+        @WritesAttribute(attribute = ListenTCP.TCP_RESPONSE_SEPERATOR, description = "The sending response seperator of the messages.") })
 public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEvent> {
     public static final String TCP_SENDER = "tcp.sender";
     public static final String TCP_PORT = "tcp.port";
     public static final String TCP_CONTEXT_ID = "tcp.context.identifier";
     public static final String TCP_CONTEXT_CHARSET = "tcp.context.charset";
+    public static final String TCP_RESPONSE_SEPERATOR = "tcp.response.seperator";
 
     public static final PropertyDescriptor SSL_CONTEXT_SERVICE = new PropertyDescriptor.Builder().name("SSL Context Service")
             .description("The Controller Service to use in order to obtain an SSL Context. If this property is set, " + "messages will be received over a secure connection.").required(false)
@@ -98,6 +103,7 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
 
     protected volatile String contextIdentifier;
     protected volatile boolean keepAlive;
+    protected volatile String responseSeperator;
 
     @Override
     protected List<PropertyDescriptor> getAdditionalProperties() {
@@ -109,6 +115,8 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
     public void onScheduled(ProcessContext context) throws IOException {
         super.onScheduled(context);
         contextIdentifier = UUID.randomUUID().toString();
+
+        responseSeperator = new String(messageDemarcatorBytes, charset); // reuse the value of property MESSAGE_DELIMITER.
 
         // if set responder, need keep alive
         final KeyValueLookupService lookupService = context.getProperty(RESPONDER_CONTEXT_MAP).asControllerService(KeyValueLookupService.class);
@@ -125,7 +133,7 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
 
     @OnStopped
     public void onStopped() {
-        //force to stop always
+        // force to stop always
         if (dispatcher != null) {
             dispatcher.close();
         }
@@ -178,6 +186,7 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
         attributes.put(TCP_PORT, String.valueOf(port));
         attributes.put(TCP_CONTEXT_ID, contextIdentifier);
         attributes.put(TCP_CONTEXT_CHARSET, charset.name());
+        attributes.put(TCP_RESPONSE_SEPERATOR, responseSeperator);
         return attributes;
     }
 
@@ -198,14 +207,7 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
         // sent response text for current processor
         final String responseText = context.getProperty(RESPONSE_TEXT).evaluateAttributeExpressions().getValue();
         if (StringUtils.isNotEmpty(responseText)) {
-            final ChannelResponse response = new ChannelResponse() {
-
-                @Override
-                public byte[] toByteArray() {
-                    return responseText.getBytes(charset);
-                }
-            };
-
+            final ChannelResponse response = new TCPResponse(responseText, responseSeperator, charset);
             for (StandardEvent event : events) {
                 ChannelResponder responder = event.getResponder();
                 responder.addResponse(response);
@@ -222,6 +224,31 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
         final String senderHost = sender.startsWith("/") && sender.length() > 1 ? sender.substring(1) : sender;
         final String transitUri = new StringBuilder().append("tcp").append("://").append(senderHost).append(":").append(port).toString();
         return transitUri;
+    }
+
+    static class TCPResponse implements ChannelResponse {
+        private Charset charset = StandardCharsets.UTF_8;
+
+        private String responseText;
+
+        private String responseSeperator;
+
+        public TCPResponse(String responseText, String responseSeperator, Charset charset) {
+            super();
+            this.responseText = responseText;
+            this.responseSeperator = CSVUtils.unescape(responseSeperator); // reuse the csv for \t \r \n
+            this.charset = charset;
+        }
+
+        @Override
+        public byte[] toByteArray() {
+            if (StringUtils.isNotEmpty(responseSeperator)) {
+                return (responseText + responseSeperator).getBytes(charset);
+            } else {
+                return responseText.getBytes(charset);
+            }
+        }
+
     }
 
     static class TCPContextEvent {

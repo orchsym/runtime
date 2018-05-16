@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
@@ -24,6 +23,7 @@ import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
 import org.apache.nifi.annotation.lifecycle.OnUnscheduled;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.components.Validator;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.lookup.KeyValueLookupService;
@@ -38,6 +38,7 @@ import org.apache.nifi.processor.util.listen.event.StandardEvent;
 import org.apache.nifi.processor.util.listen.response.ChannelResponder;
 import org.apache.nifi.processor.util.listen.response.ChannelResponse;
 import org.apache.nifi.processors.standard.ListenTCP.TCPContextEvent;
+import org.apache.nifi.processors.standard.ListenTCP.TCPResponse;
 import org.apache.nifi.util.StopWatch;
 
 @InputRequirement(Requirement.INPUT_REQUIRED)
@@ -53,6 +54,10 @@ public class HandleTCPResponse extends AbstractProcessor {
 
     public static final PropertyDescriptor RESPONSE_TEXT = new PropertyDescriptor.Builder().name("Responder text").description("The value of response after process data").required(true)
             .addValidator(StandardValidators.NON_BLANK_VALIDATOR).expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).build();
+
+    public static final PropertyDescriptor RESPONSE_SEPERATOR = new PropertyDescriptor.Builder().name("Response seperator")
+            .description("Specifies the delimiter to place between messages， if not set, will be same as ListenTCP.").addValidator(Validator.VALID)
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).defaultValue("${" + ListenTCP.TCP_RESPONSE_SEPERATOR + "}").required(false).build();
 
     public static final PropertyDescriptor RESPONDER_CONTEXT_MAP = new PropertyDescriptor.Builder().name("Responder context map")
             .description("The Controller Service to use in order to hold the response of current TCP, If this property is set, " + "messages will be sent over a secure connection.").required(true)
@@ -71,12 +76,14 @@ public class HandleTCPResponse extends AbstractProcessor {
             .build();
 
     protected volatile boolean keepAlive;
+
     protected volatile ChannelDispatcher dispatcher;
 
     @Override
     public final List<PropertyDescriptor> getSupportedPropertyDescriptors() {
         final List<PropertyDescriptor> properties = new ArrayList<>();
         properties.add(RESPONSE_TEXT);
+        properties.add(RESPONSE_SEPERATOR);
         properties.add(RESPONDER_CONTEXT_MAP);
         properties.add(KEEP_ALIVE_STILL);
         return properties;
@@ -140,21 +147,21 @@ public class HandleTCPResponse extends AbstractProcessor {
         if (contextEvent.events != null && !contextEvent.events.isEmpty()) {
             // sent response text
             final String responseText = context.getProperty(RESPONSE_TEXT).evaluateAttributeExpressions(flowFile).getValue();
-            if (StringUtils.isNotEmpty(responseText)) {
-                // same as request charset
-                Charset charset = StandardCharsets.UTF_8;
-                String charsetStr = flowFile.getAttribute(ListenTCP.TCP_CONTEXT_CHARSET);
-                if (StringUtils.isBlank(charsetStr)) {
-                    charset = Charset.forName(charsetStr);
-                }
-                final Charset responseCharset = charset;
-                final ChannelResponse response = new ChannelResponse() {
 
-                    @Override
-                    public byte[] toByteArray() {
-                        return responseText.getBytes(responseCharset);
-                    }
-                };
+            // same as request charset
+            Charset charset = StandardCharsets.UTF_8;
+            String charsetStr = flowFile.getAttribute(ListenTCP.TCP_CONTEXT_CHARSET);
+            if (StringUtils.isNotBlank(charsetStr) && StringUtils.isNotBlank(charsetStr)) {
+                charset = Charset.forName(charsetStr);
+            }
+            String seperator = context.getProperty(RESPONSE_SEPERATOR).evaluateAttributeExpressions(flowFile).getValue();
+            String seperatorStr = flowFile.getAttribute(ListenTCP.TCP_RESPONSE_SEPERATOR);
+            if (StringUtils.isEmpty(seperator) && StringUtils.isNotEmpty(seperatorStr)) {
+                seperator = seperatorStr;
+            }
+
+            if (StringUtils.isNotEmpty(responseText)) {
+                final ChannelResponse response = new TCPResponse(responseText, seperator, charset);
 
                 for (StandardEvent event : contextEvent.events) {
                     ChannelResponder responder = event.getResponder();
