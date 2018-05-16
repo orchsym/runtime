@@ -1096,14 +1096,14 @@ language governing permissions and limitations under the License. -->
         	</dependencies>
         </profile>
         <profile>
-            <id>headless-runtime</id>
+            <id>headless-runtime-engine</id>
             <activation>
                 <property>
                     <name>headless</name>
                 </property>
             </activation>
             <properties>
-            	<product.name>orchsym-runtime</product.name>
+            	<product.name>runtime-engine</product.name>
             </properties>
         </profile>
     </profiles>

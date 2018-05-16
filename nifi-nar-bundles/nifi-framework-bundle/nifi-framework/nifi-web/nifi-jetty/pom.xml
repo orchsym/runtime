@@ -151,7 +151,7 @@
     </dependencies>
     <profiles>
         <profile>
-            <id>ignore-web-ui-wars</id>
+            <id>include-web-ui-wars</id>
             <activation>
                 <property>
                     <name>!headless</name>
