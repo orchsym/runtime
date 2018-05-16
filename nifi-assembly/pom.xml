@@ -19,12 +19,15 @@ language governing permissions and limitations under the License. -->
     <artifactId>nifi-assembly</artifactId>
     <packaging>pom</packaging>
     <description>This is the assembly Apache NiFi</description>
+    <properties>
+		<product.name>runtime</product.name>
+    </properties>
     <build>
         <plugins>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
-                    <finalName>runtime-${project.version}</finalName>
+                    <finalName>${product.name}-${project.version}</finalName>
                     <attach>false</attach>
                 </configuration>
                 <executions>
@@ -114,14 +117,6 @@ language governing permissions and limitations under the License. -->
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-resources</artifactId>
-            <classifier>resources</classifier>
-            <version>1.7.0-SNAPSHOT</version>
-            <scope>runtime</scope>
-            <type>zip</type>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-docs</artifactId>
             <classifier>resources</classifier>
             <version>1.7.0-SNAPSHOT</version>
             <scope>runtime</scope>
@@ -998,7 +993,7 @@ language governing permissions and limitations under the License. -->
                     <plugin>
                         <artifactId>maven-assembly-plugin</artifactId>
                         <configuration>
-                            <finalName>runtime-${project.version}</finalName>
+                            <finalName>${product.name}-${project.version}</finalName>
                             <attach>false</attach>
                         </configuration>
                         <executions>
@@ -1055,7 +1050,7 @@ language governing permissions and limitations under the License. -->
                     <plugin>
                         <artifactId>maven-assembly-plugin</artifactId>
                         <configuration>
-                            <finalName>runtime-${project.version}</finalName>
+                            <finalName>${product.name}-${project.version}</finalName>
                             <attach>false</attach>
                         </configuration>
                         <executions>
@@ -1084,6 +1079,38 @@ language governing permissions and limitations under the License. -->
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+		<profile>
+            <id>non-headless-runtime</id>
+            <activation>
+                <property>
+                    <name>!headless</name>
+                </property>
+            </activation>
+            <properties>
+            	<product.name>runtime</product.name>
+            </properties>
+            <dependencies>
+				<dependency>
+		            <groupId>org.apache.nifi</groupId>
+		            <artifactId>nifi-docs</artifactId>
+		            <classifier>resources</classifier>
+		            <version>1.7.0-SNAPSHOT</version>
+		            <scope>runtime</scope>
+		            <type>zip</type>
+				</dependency>
+        	</dependencies>
+        </profile>
+        <profile>
+            <id>headless-runtime-engine</id>
+            <activation>
+                <property>
+                    <name>headless</name>
+                </property>
+            </activation>
+            <properties>
+            	<product.name>runtime-engine</product.name>
+            </properties>
         </profile>
     </profiles>
 </project>
