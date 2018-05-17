@@ -89,7 +89,7 @@ public class InvokeSOAPTest {
 				.respond(response().withBody(xmlBody));
 
         testRunner.setProperty(InvokeSOAP.ENDPOINT_URL,"http://localhost:9090/test_path");
-        testRunner.setProperty(InvokeSOAP.WSDL_URL,"http://localhost:9090/test_path.wsdl");
+        testRunner.setProperty(InvokeSOAP.TARGET_NAMESPACE,"http://localhost:9090/test_path.wsdl");
         testRunner.setProperty(InvokeSOAP.METHOD_NAME,"testMethod");
         testRunner.setValidateExpressionUsage(false);
         testRunner.run();
@@ -119,7 +119,7 @@ public class InvokeSOAPTest {
 				.respond(response().withBody(xmlBody));
 
         testRunner.setProperty(InvokeSOAP.ENDPOINT_URL,"http://localhost:9090/test_path");
-        testRunner.setProperty(InvokeSOAP.WSDL_URL,"http://localhost:9090/test_path.wsdl");
+        testRunner.setProperty(InvokeSOAP.TARGET_NAMESPACE,"http://localhost:9090/test_path.wsdl");
         testRunner.setProperty(InvokeSOAP.METHOD_NAME,"testMethod");
         testRunner.setProperty(InvokeSOAP.USER_NAME,"username");
         testRunner.setProperty(InvokeSOAP.PASSWORD,"password");
@@ -151,7 +151,7 @@ public class InvokeSOAPTest {
                 .respond(response().withBody(xmlBody));
 
         testRunner.setProperty(InvokeSOAP.ENDPOINT_URL,"http://localhost:9090/test_path");
-        testRunner.setProperty(InvokeSOAP.WSDL_URL,"http://localhost:9090/test_path.wsdl");
+        testRunner.setProperty(InvokeSOAP.TARGET_NAMESPACE,"http://localhost:9090/test_path.wsdl");
         testRunner.setProperty(InvokeSOAP.METHOD_NAME,"${soap.methodName}");
         testRunner.setProperty(InvokeSOAP.USER_NAME,"username");
         testRunner.setProperty(InvokeSOAP.PASSWORD,"password");
@@ -178,7 +178,7 @@ public class InvokeSOAPTest {
 				.respond(response().withStatusCode(503).withBody(xmlBody));
 
         testRunner.setProperty(InvokeSOAP.ENDPOINT_URL,"http://localhost:9090/test_path");
-        testRunner.setProperty(InvokeSOAP.WSDL_URL,"http://localhost:9090/test_path.wsdl");
+        testRunner.setProperty(InvokeSOAP.TARGET_NAMESPACE,"http://localhost:9090/test_path.wsdl");
         testRunner.setProperty(InvokeSOAP.METHOD_NAME,"testMethod");
         testRunner.enqueue("test".getBytes());
         testRunner.run();
@@ -198,7 +198,7 @@ public class InvokeSOAPTest {
 
 
         testRunner.setProperty(InvokeSOAP.ENDPOINT_URL,"https://graphical.weather.gov/xml/SOAP_server/ndfdXMLserver.php");
-        testRunner.setProperty(InvokeSOAP.WSDL_URL,"https://graphical.weather.gov/xml/DWMLgen/wsdl/ndfdXML.wsdl");
+        testRunner.setProperty(InvokeSOAP.TARGET_NAMESPACE,"https://graphical.weather.gov/xml/DWMLgen/wsdl/ndfdXML.wsdl");
         testRunner.setProperty(InvokeSOAP.METHOD_NAME,"LatLonListZipCode");
         testRunner.setProperty("zipCodeList","27510");
         testRunner.enqueue("test".getBytes());

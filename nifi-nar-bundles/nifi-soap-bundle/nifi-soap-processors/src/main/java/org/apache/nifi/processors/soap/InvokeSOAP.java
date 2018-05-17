@@ -81,9 +81,9 @@ public class InvokeSOAP extends AbstractProcessor {
             .addValidator(StandardValidators.URL_VALIDATOR)
             .build();
 
-    protected static final PropertyDescriptor WSDL_URL = new PropertyDescriptor
+    protected static final PropertyDescriptor TARGET_NAMESPACE = new PropertyDescriptor
             .Builder()
-            .name("WSDL URL")
+            .name("Target Namespace")
             .description("The url where the wsdl file can be retrieved and referenced.")
             .required(true)
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
@@ -179,7 +179,7 @@ public class InvokeSOAP extends AbstractProcessor {
     protected void init(final ProcessorInitializationContext context) {
         final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
         descriptors.add(ENDPOINT_URL);
-        descriptors.add(WSDL_URL);
+        descriptors.add(TARGET_NAMESPACE);
         descriptors.add(METHOD_NAME);
         descriptors.add(USER_NAME);
         descriptors.add(PASSWORD);
@@ -271,7 +271,7 @@ public class InvokeSOAP extends AbstractProcessor {
         try {
             // get the dynamic properties, execute the call and return the results
             OMFactory fac = OMAbstractFactory.getOMFactory();
-            OMNamespace omNamespace = fac.createOMNamespace(context.getProperty(WSDL_URL).evaluateAttributeExpressions().getValue(), "nifi");
+            OMNamespace omNamespace = fac.createOMNamespace(context.getProperty(TARGET_NAMESPACE).evaluateAttributeExpressions().getValue(), "nifi");
             String methodName;
             if(ff != null) {
                 methodName = context.getProperty(METHOD_NAME).evaluateAttributeExpressions(ff).getValue();
@@ -285,7 +285,7 @@ public class InvokeSOAP extends AbstractProcessor {
             final OMElement result = executeSoapMethod(method);
             responseFlowFile = processSoapRequest(session, result);
             if (ff != null) {
-                session.putAllAttributes(responseFlowFile, ff.getAttributes());
+                responseFlowFile = session.putAllAttributes(responseFlowFile, ff.getAttributes());
                 session.transfer(ff, REL_ORIGINAL);
             }
             session.transfer(responseFlowFile, REL_SUCCESS);
@@ -324,7 +324,7 @@ public class InvokeSOAP extends AbstractProcessor {
                 try {
                     String response = "";
                     if(result != null && result.getFirstElement() != null) {
-                        response = result.getFirstElement().getText();
+                        response = result.getFirstElement().toString();
                     }
                     out.write(response.getBytes());
                 } catch (AxisFault axisFault) {
