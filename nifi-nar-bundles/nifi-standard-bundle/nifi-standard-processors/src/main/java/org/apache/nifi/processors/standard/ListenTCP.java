@@ -18,6 +18,7 @@ package org.apache.nifi.processors.standard;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -63,6 +64,7 @@ import org.apache.nifi.processor.util.listen.handler.ChannelHandlerFactory;
 import org.apache.nifi.processor.util.listen.handler.socket.SocketChannelHandlerFactory;
 import org.apache.nifi.processor.util.listen.response.ChannelResponder;
 import org.apache.nifi.processor.util.listen.response.ChannelResponse;
+import org.apache.nifi.processor.util.listen.response.socket.SocketChannelResponder;
 import org.apache.nifi.security.util.SslContextFactory;
 import org.apache.nifi.ssl.RestrictedSSLContextService;
 import org.apache.nifi.ssl.SSLContextService;
@@ -78,13 +80,13 @@ import org.apache.nifi.ssl.SSLContextService;
         @WritesAttribute(attribute = ListenTCP.TCP_PORT, description = "The sending port the messages were received."),
         @WritesAttribute(attribute = ListenTCP.TCP_CONTEXT_ID, description = "The sending identifier of the messages."),
         @WritesAttribute(attribute = ListenTCP.TCP_CONTEXT_CHARSET, description = "The sending charset of the messages."),
-        @WritesAttribute(attribute = ListenTCP.TCP_RESPONSE_SEPERATOR, description = "The sending response seperator of the messages.") })
+        @WritesAttribute(attribute = ListenTCP.TCP_RESPONSE_DELIMITER, description = "The sending response delimiter of the messages.") })
 public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEvent> {
     public static final String TCP_SENDER = "tcp.sender";
     public static final String TCP_PORT = "tcp.port";
     public static final String TCP_CONTEXT_ID = "tcp.context.identifier";
     public static final String TCP_CONTEXT_CHARSET = "tcp.context.charset";
-    public static final String TCP_RESPONSE_SEPERATOR = "tcp.response.seperator";
+    public static final String TCP_RESPONSE_DELIMITER = "tcp.response.delimiter";
 
     public static final PropertyDescriptor SSL_CONTEXT_SERVICE = new PropertyDescriptor.Builder().name("SSL Context Service")
             .description("The Controller Service to use in order to obtain an SSL Context. If this property is set, " + "messages will be received over a secure connection.").required(false)
@@ -93,9 +95,6 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
     public static final PropertyDescriptor CLIENT_AUTH = new PropertyDescriptor.Builder().name("Client Auth")
             .description("The client authentication policy to use for the SSL Context. Only used if an SSL Context Service is provided.").required(false)
             .allowableValues(SSLContextService.ClientAuth.values()).defaultValue(SSLContextService.ClientAuth.REQUIRED.name()).build();
-
-    public static final PropertyDescriptor RESPONSE_TEXT = new PropertyDescriptor.Builder().name("Response text").description("The value of response after process data").required(false)
-            .addValidator(StandardValidators.NON_BLANK_VALIDATOR).expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).build();
 
     public static final PropertyDescriptor RESPONDER_CONTEXT_MAP = new PropertyDescriptor.Builder().name("Responder context map")
             .description("The Controller Service to use in order to hold the response of current TCP, If this property is set, " + "messages will be sent over a secure connection.").required(false)
@@ -107,7 +106,7 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
 
     @Override
     protected List<PropertyDescriptor> getAdditionalProperties() {
-        return Arrays.asList(MAX_CONNECTIONS, SSL_CONTEXT_SERVICE, CLIENT_AUTH, RESPONSE_TEXT, RESPONDER_CONTEXT_MAP);
+        return Arrays.asList(MAX_CONNECTIONS, SSL_CONTEXT_SERVICE, CLIENT_AUTH, RESPONDER_CONTEXT_MAP);
     }
 
     @Override
@@ -186,7 +185,7 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
         attributes.put(TCP_PORT, String.valueOf(port));
         attributes.put(TCP_CONTEXT_ID, contextIdentifier);
         attributes.put(TCP_CONTEXT_CHARSET, charset.name());
-        attributes.put(TCP_RESPONSE_SEPERATOR, responseDelimiter);
+        attributes.put(TCP_RESPONSE_DELIMITER, responseDelimiter);
         return attributes;
     }
 
@@ -203,52 +202,12 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
         if (lookupService != null) { // if not set, won't register
             lookupService.register(contextIdentifier, new TCPContextEvent(dispatcher, events));
         }
-
-        // sent response text for current processor
-        final String responseText = context.getProperty(RESPONSE_TEXT).evaluateAttributeExpressions().getValue();
-        if (StringUtils.isNotEmpty(responseText)) {
-            final ChannelResponse response = new TCPResponse(responseText, responseDelimiter, charset);
-            for (StandardEvent event : events) {
-                ChannelResponder responder = event.getResponder();
-                responder.addResponse(response);
-                try {
-                    responder.respond();
-                } catch (IOException e) {
-                    getLogger().error("Error sending response for transaction {} due to {}", new Object[] { responseText, e.getMessage() }, e);
-                }
-            }
-        }
     }
 
     static String getTransitUri(String sender, String port) {
         final String senderHost = sender.startsWith("/") && sender.length() > 1 ? sender.substring(1) : sender;
         final String transitUri = new StringBuilder().append("tcp").append("://").append(senderHost).append(":").append(port).toString();
         return transitUri;
-    }
-
-    static class TCPResponse implements ChannelResponse {
-        private Charset charset = StandardCharsets.UTF_8;
-
-        private String responseText;
-
-        private String responseDelimiter;
-
-        public TCPResponse(String responseText, String delimiter, Charset charset) {
-            super();
-            this.responseText = responseText;
-            this.responseDelimiter = CSVUtils.unescape(delimiter); // reuse the csv for \t \r \n
-            this.charset = charset;
-        }
-
-        @Override
-        public byte[] toByteArray() {
-            if (StringUtils.isNotEmpty(responseDelimiter)) {
-                return (responseText + responseDelimiter).getBytes(charset);
-            } else {
-                return responseText.getBytes(charset);
-            }
-        }
-
     }
 
     static class TCPContextEvent {
