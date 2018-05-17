@@ -103,7 +103,7 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
 
     protected volatile String contextIdentifier;
     protected volatile boolean keepAlive;
-    protected volatile String responseSeperator;
+    protected volatile String responseDelimiter;
 
     @Override
     protected List<PropertyDescriptor> getAdditionalProperties() {
@@ -116,7 +116,7 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
         super.onScheduled(context);
         contextIdentifier = UUID.randomUUID().toString();
 
-        responseSeperator = new String(messageDemarcatorBytes, charset); // reuse the value of property MESSAGE_DELIMITER.
+        responseDelimiter = new String(messageDemarcatorBytes, charset); // reuse the value of property MESSAGE_DELIMITER.
 
         // if set responder, need keep alive
         final KeyValueLookupService lookupService = context.getProperty(RESPONDER_CONTEXT_MAP).asControllerService(KeyValueLookupService.class);
@@ -186,7 +186,7 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
         attributes.put(TCP_PORT, String.valueOf(port));
         attributes.put(TCP_CONTEXT_ID, contextIdentifier);
         attributes.put(TCP_CONTEXT_CHARSET, charset.name());
-        attributes.put(TCP_RESPONSE_SEPERATOR, responseSeperator);
+        attributes.put(TCP_RESPONSE_SEPERATOR, responseDelimiter);
         return attributes;
     }
 
@@ -207,7 +207,7 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
         // sent response text for current processor
         final String responseText = context.getProperty(RESPONSE_TEXT).evaluateAttributeExpressions().getValue();
         if (StringUtils.isNotEmpty(responseText)) {
-            final ChannelResponse response = new TCPResponse(responseText, responseSeperator, charset);
+            final ChannelResponse response = new TCPResponse(responseText, responseDelimiter, charset);
             for (StandardEvent event : events) {
                 ChannelResponder responder = event.getResponder();
                 responder.addResponse(response);
@@ -231,19 +231,19 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
 
         private String responseText;
 
-        private String responseSeperator;
+        private String responseDelimiter;
 
-        public TCPResponse(String responseText, String responseSeperator, Charset charset) {
+        public TCPResponse(String responseText, String delimiter, Charset charset) {
             super();
             this.responseText = responseText;
-            this.responseSeperator = CSVUtils.unescape(responseSeperator); // reuse the csv for \t \r \n
+            this.responseDelimiter = CSVUtils.unescape(delimiter); // reuse the csv for \t \r \n
             this.charset = charset;
         }
 
         @Override
         public byte[] toByteArray() {
-            if (StringUtils.isNotEmpty(responseSeperator)) {
-                return (responseText + responseSeperator).getBytes(charset);
+            if (StringUtils.isNotEmpty(responseDelimiter)) {
+                return (responseText + responseDelimiter).getBytes(charset);
             } else {
                 return responseText.getBytes(charset);
             }

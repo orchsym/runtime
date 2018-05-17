@@ -55,7 +55,7 @@ public class HandleTCPResponse extends AbstractProcessor {
     public static final PropertyDescriptor RESPONSE_TEXT = new PropertyDescriptor.Builder().name("Responder text").description("The value of response after process data").required(true)
             .addValidator(StandardValidators.NON_BLANK_VALIDATOR).expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).build();
 
-    public static final PropertyDescriptor RESPONSE_SEPERATOR = new PropertyDescriptor.Builder().name("Response seperator")
+    public static final PropertyDescriptor RESPONSE_DELIMITER = new PropertyDescriptor.Builder().name("Response delimiter")
             .description("Specifies the delimiter to place between messages， if not set, will be same as ListenTCP.").addValidator(Validator.VALID)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).defaultValue("${" + ListenTCP.TCP_RESPONSE_SEPERATOR + "}").required(false).build();
 
@@ -63,9 +63,6 @@ public class HandleTCPResponse extends AbstractProcessor {
             .description("The Controller Service to use in order to hold the response of current TCP, If this property is set, " + "messages will be sent over a secure connection.").required(true)
             .identifiesControllerService(KeyValueLookupService.class).build();
 
-    public static final PropertyDescriptor KEEP_ALIVE_STILL = new PropertyDescriptor.Builder().name("Keep alive still")
-            .description("If keep alive still, will keep the TCP connection for another processor.").required(false).allowableValues(Boolean.FALSE.toString(), Boolean.TRUE.toString())
-            .defaultValue(Boolean.FALSE.toString()).build();
 
     public static final Relationship REL_SUCCESS = new Relationship.Builder().name("success")
             .description("FlowFiles will be routed to this Relationship after the response has been successfully sent to the requestor").build();
@@ -75,17 +72,13 @@ public class HandleTCPResponse extends AbstractProcessor {
                     + "for instance, if the connection times out or if NiFi is restarted before responding to the HTTP Request.")
             .build();
 
-    protected volatile boolean keepAlive;
-
-    protected volatile ChannelDispatcher dispatcher;
 
     @Override
     public final List<PropertyDescriptor> getSupportedPropertyDescriptors() {
         final List<PropertyDescriptor> properties = new ArrayList<>();
         properties.add(RESPONSE_TEXT);
-        properties.add(RESPONSE_SEPERATOR);
+        properties.add(RESPONSE_DELIMITER);
         properties.add(RESPONDER_CONTEXT_MAP);
-        properties.add(KEEP_ALIVE_STILL);
         return properties;
     }
 
@@ -97,26 +90,6 @@ public class HandleTCPResponse extends AbstractProcessor {
         return relationships;
     }
 
-    @OnScheduled
-    public void onScheduled(ProcessContext context) throws IOException {
-        keepAlive = context.getProperty(KEEP_ALIVE_STILL).asBoolean();
-    }
-
-    @OnUnscheduled
-    public void onUnscheduled() {
-        // if want to use for other TCP response, should keep alive still
-        if (dispatcher != null && !keepAlive) {
-            dispatcher.close();
-        }
-    }
-
-    @OnStopped
-    public void onStopped() {
-        // force to stop always
-        if (dispatcher != null) {
-            dispatcher.close();
-        }
-    }
 
     @Override
     public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
@@ -142,8 +115,6 @@ public class HandleTCPResponse extends AbstractProcessor {
         }
 
         TCPContextEvent contextEvent = (TCPContextEvent) optional.get();
-        dispatcher = contextEvent.dispatcher;
-
         if (contextEvent.events != null && !contextEvent.events.isEmpty()) {
             // sent response text
             final String responseText = context.getProperty(RESPONSE_TEXT).evaluateAttributeExpressions(flowFile).getValue();
@@ -154,14 +125,14 @@ public class HandleTCPResponse extends AbstractProcessor {
             if (StringUtils.isNotBlank(charsetStr) && StringUtils.isNotBlank(charsetStr)) {
                 charset = Charset.forName(charsetStr);
             }
-            String seperator = context.getProperty(RESPONSE_SEPERATOR).evaluateAttributeExpressions(flowFile).getValue();
-            String seperatorStr = flowFile.getAttribute(ListenTCP.TCP_RESPONSE_SEPERATOR);
-            if (StringUtils.isEmpty(seperator) && StringUtils.isNotEmpty(seperatorStr)) {
-                seperator = seperatorStr;
+            String delimiter = context.getProperty(RESPONSE_DELIMITER).evaluateAttributeExpressions(flowFile).getValue();
+            String delimiterStr = flowFile.getAttribute(ListenTCP.TCP_RESPONSE_SEPERATOR);
+            if (StringUtils.isEmpty(delimiter) && StringUtils.isNotEmpty(delimiterStr)) {
+                delimiter = delimiterStr;
             }
 
             if (StringUtils.isNotEmpty(responseText)) {
-                final ChannelResponse response = new TCPResponse(responseText, seperator, charset);
+                final ChannelResponse response = new TCPResponse(responseText, delimiter, charset);
 
                 for (StandardEvent event : contextEvent.events) {
                     ChannelResponder responder = event.getResponder();
