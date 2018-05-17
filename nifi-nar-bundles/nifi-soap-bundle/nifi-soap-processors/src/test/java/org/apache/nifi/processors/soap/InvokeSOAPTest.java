@@ -33,6 +33,7 @@ import org.apache.axiom.om.OMFactory;
 import org.apache.axiom.om.OMNamespace;
 import org.apache.axiom.om.impl.common.OMNamespaceImpl;
 import org.apache.axiom.om.impl.llom.OMElementImpl;
+import org.apache.axiom.soap.SOAPFactory;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.Relationship;
@@ -98,7 +99,7 @@ public class InvokeSOAPTest {
         List<MockFlowFile> flowFileList = testRunner.getFlowFilesForRelationship(InvokeSOAP.REL_SUCCESS);
         assert(null != flowFileList);
 
-        final String expectedBody = "<?xml version='1.0'?><dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='http://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'><latLonList>35.9153,-79.0838</latLonList></dwml>";
+        final String expectedBody = "<listLatLonOut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xsi:type=\"xsd:string\">&lt;?xml version='1.0'?>&lt;dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='http://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'>&lt;latLonList>35.9153,-79.0838&lt;/latLonList>&lt;/dwml></listLatLonOut>";
         flowFileList.get(0).assertContentEquals(expectedBody.getBytes());
 
     }
@@ -130,7 +131,7 @@ public class InvokeSOAPTest {
         List<MockFlowFile> flowFileList = testRunner.getFlowFilesForRelationship(InvokeSOAP.REL_SUCCESS);
         assert(null != flowFileList);
 
-        final String expectedBody = "<?xml version='1.0'?><dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='http://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'><latLonList>35.9153,-79.0838</latLonList></dwml>";
+        final String expectedBody = "<listLatLonOut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xsi:type=\"xsd:string\">&lt;?xml version='1.0'?>&lt;dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='http://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'>&lt;latLonList>35.9153,-79.0838&lt;/latLonList>&lt;/dwml></listLatLonOut>";
         flowFileList.get(0).assertContentEquals(expectedBody.getBytes());
 
     }
@@ -165,7 +166,7 @@ public class InvokeSOAPTest {
         List<MockFlowFile> flowFileList = testRunner.getFlowFilesForRelationship(InvokeSOAP.REL_SUCCESS);
         assert(null != flowFileList);
 
-        flowFileList.get(0).assertContentEquals("".getBytes());
+        flowFileList.get(0).assertContentEquals("<listLatLonOut/>".getBytes());
 
     }
     
@@ -209,7 +210,7 @@ public class InvokeSOAPTest {
         List<MockFlowFile> flowFileList = testRunner.getFlowFilesForRelationship(InvokeSOAP.REL_SUCCESS);
         assert(null != flowFileList);
 
-        final String expectedBody = "<?xml version='1.0'?><dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='https://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'><latLonList>35.9153,-79.0838</latLonList></dwml>";
+        final String expectedBody = "<listLatLonOut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xsi:type=\"xsd:string\">&lt;?xml version='1.0'?>&lt;dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='https://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'>&lt;latLonList>35.9153,-79.0838&lt;/latLonList>&lt;/dwml></listLatLonOut>";
         flowFileList.get(0).assertContentEquals(expectedBody.getBytes());
         
         flowFileList = testRunner.getFlowFilesForRelationship(InvokeSOAP.REL_ORIGINAL);
