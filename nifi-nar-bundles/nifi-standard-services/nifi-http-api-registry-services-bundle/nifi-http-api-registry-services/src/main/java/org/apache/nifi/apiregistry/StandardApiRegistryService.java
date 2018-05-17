@@ -91,7 +91,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
     private String requestPath;
     private int port;
     private Server server;
-    final CopyOnWriteArrayList<ApiInfo>apiInfos = new CopyOnWriteArrayList();
+    final CopyOnWriteArrayList<ApiInfo> apiInfos = new CopyOnWriteArrayList();
 
     static {
         final List<PropertyDescriptor> props = new ArrayList<>();
@@ -152,8 +152,33 @@ public class StandardApiRegistryService extends AbstractControllerService implem
 
             String pathInfo = request.getPathInfo();
             if (pathInfo.equals(this.service.getRequestPath())) {
-                HashMap<String, CopyOnWriteArrayList<ApiInfo>> apis = new HashMap();
-                apis.put("apis", this.service.apiInfos);
+                HashMap<String, ArrayList<ApiInfo>> apis = new HashMap();
+
+                //get groupid, uri:/apis/groupid=123
+                String query = request.getQueryString();
+                String[] strarray=query.split("=");
+                String queryGroupID = null;
+                ArrayList<ApiInfo> collectApis = new ArrayList();
+
+                for (int i = 0; i < strarray.length; i++) {
+                    if (i == 1) {
+                        queryGroupID = strarray[i];
+                        break;
+                    }
+                }
+                
+                Iterator<ApiInfo> infoItr = this.service.apiInfos.iterator();
+
+                while (infoItr.hasNext()) {
+
+                    ApiInfo apiInfo = (ApiInfo) infoItr.next();
+                    String groupID = apiInfo.groupID;
+                    if (groupID.equals(queryGroupID)) {
+                        collectApis.add(apiInfo);
+                    }
+                }
+
+                apis.put("apis", collectApis);
 
                 Gson gson = new Gson();
                 String json = gson.toJson(apis);
