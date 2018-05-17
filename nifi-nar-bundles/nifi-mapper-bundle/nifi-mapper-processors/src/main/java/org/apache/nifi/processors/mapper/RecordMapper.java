@@ -269,6 +269,7 @@ public class RecordMapper extends AbstractProcessor {
                 attributes.put("output.name", relationship.getName());
 
                 outputFlow = session.putAllAttributes(outputFlow, attributes);
+                outputFlow = session.putAllAttributes(outputFlow, originalAttributes);
 
                 session.getProvenanceReporter().route(outputFlow, relationship);
                 session.transfer(outputFlow, relationship);
