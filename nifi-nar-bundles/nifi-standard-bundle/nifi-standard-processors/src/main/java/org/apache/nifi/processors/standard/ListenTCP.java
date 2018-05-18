@@ -78,12 +78,14 @@ import org.apache.nifi.ssl.SSLContextService;
         + "set as large as the largest messages expected to be received, meaning if every 100kb there is a line separator, then " + "the Receive Buffer Size must be greater than 100kb.")
 @WritesAttributes({ @WritesAttribute(attribute = ListenTCP.TCP_SENDER, description = "The sending host of the messages."),
         @WritesAttribute(attribute = ListenTCP.TCP_PORT, description = "The sending port the messages were received."),
+        @WritesAttribute(attribute = ListenTCP.TCP_MESSAGES, description = "The sending the messages were received."),
         @WritesAttribute(attribute = ListenTCP.TCP_CONTEXT_ID, description = "The sending identifier of the messages."),
         @WritesAttribute(attribute = ListenTCP.TCP_CONTEXT_CHARSET, description = "The sending charset of the messages."),
         @WritesAttribute(attribute = ListenTCP.TCP_RESPONSE_DELIMITER, description = "The sending response delimiter of the messages.") })
 public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEvent> {
     public static final String TCP_SENDER = "tcp.sender";
     public static final String TCP_PORT = "tcp.port";
+    public static final String TCP_MESSAGES = "tcp.messages";
     public static final String TCP_CONTEXT_ID = "tcp.context.identifier";
     public static final String TCP_CONTEXT_CHARSET = "tcp.context.charset";
     public static final String TCP_RESPONSE_DELIMITER = "tcp.response.delimiter";
@@ -100,6 +102,7 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
             .description("The Controller Service to use in order to hold the response of current TCP, If this property is set, " + "messages will be sent over a secure connection.").required(false)
             .identifiesControllerService(KeyValueLookupService.class).build();
 
+    protected volatile int maxBatchSize;
     protected volatile String contextIdentifier;
     protected volatile boolean keepAlive;
     protected volatile String responseDelimiter;
@@ -113,6 +116,8 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
     @OnScheduled
     public void onScheduled(ProcessContext context) throws IOException {
         super.onScheduled(context);
+
+        maxBatchSize = context.getProperty(MAX_BATCH_SIZE).asInteger();
         contextIdentifier = UUID.randomUUID().toString();
 
         responseDelimiter = new String(messageDemarcatorBytes, charset); // reuse the value of property MESSAGE_DELIMITER.
@@ -179,13 +184,19 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
 
     @Override
     protected Map<String, String> getAttributes(final FlowFileEventBatch batch) {
-        final String sender = batch.getEvents().get(0).getSender();
+        final StandardEvent standardEvent = batch.getEvents().get(0);
+        final String sender = standardEvent.getSender();
         final Map<String, String> attributes = new HashMap<>(3);
         attributes.put(TCP_SENDER, sender);
         attributes.put(TCP_PORT, String.valueOf(port));
         attributes.put(TCP_CONTEXT_ID, contextIdentifier);
         attributes.put(TCP_CONTEXT_CHARSET, charset.name());
         attributes.put(TCP_RESPONSE_DELIMITER, responseDelimiter);
+
+        final byte[] data = standardEvent.getData();
+        if (data != null && maxBatchSize == 1) { // only add the messages attribute when batch is 1.
+            attributes.put(TCP_MESSAGES, new String(data, charset));
+        }
         return attributes;
     }
 

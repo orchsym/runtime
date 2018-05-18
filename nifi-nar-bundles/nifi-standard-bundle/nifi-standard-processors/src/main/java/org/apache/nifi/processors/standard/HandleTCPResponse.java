@@ -49,6 +49,7 @@ import org.apache.nifi.util.StopWatch;
         + "the ListenTCP in order to create a web service.")
 @ReadsAttributes({ @ReadsAttribute(attribute = ListenTCP.TCP_SENDER, description = "The sending host of the messages."),
         @ReadsAttribute(attribute = ListenTCP.TCP_PORT, description = "The sending port the messages were received."),
+        @ReadsAttribute(attribute = ListenTCP.TCP_MESSAGES, description = "The sending messages were received."),
         @ReadsAttribute(attribute = ListenTCP.TCP_CONTEXT_ID, description = "The sending identifier of the messages."),
         @ReadsAttribute(attribute = ListenTCP.TCP_CONTEXT_CHARSET, description = "The sending charset of the messages."),
         @ReadsAttribute(attribute = ListenTCP.TCP_RESPONSE_DELIMITER, description = "The sending response delimiter of the messages.") })
