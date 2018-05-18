@@ -33,6 +33,7 @@ import org.apache.axiom.om.OMFactory;
 import org.apache.axiom.om.OMNamespace;
 import org.apache.axiom.om.impl.common.OMNamespaceImpl;
 import org.apache.axiom.om.impl.llom.OMElementImpl;
+import org.apache.axiom.soap.SOAPFactory;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.Relationship;
@@ -89,7 +90,7 @@ public class InvokeSOAPTest {
 				.respond(response().withBody(xmlBody));
 
         testRunner.setProperty(InvokeSOAP.ENDPOINT_URL,"http://localhost:9090/test_path");
-        testRunner.setProperty(InvokeSOAP.WSDL_URL,"http://localhost:9090/test_path.wsdl");
+        testRunner.setProperty(InvokeSOAP.TARGET_NAMESPACE,"http://localhost:9090/test_path.wsdl");
         testRunner.setProperty(InvokeSOAP.METHOD_NAME,"testMethod");
         testRunner.setValidateExpressionUsage(false);
         testRunner.run();
@@ -98,7 +99,7 @@ public class InvokeSOAPTest {
         List<MockFlowFile> flowFileList = testRunner.getFlowFilesForRelationship(InvokeSOAP.REL_SUCCESS);
         assert(null != flowFileList);
 
-        final String expectedBody = "<?xml version='1.0'?><dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='http://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'><latLonList>35.9153,-79.0838</latLonList></dwml>";
+        final String expectedBody = "<listLatLonOut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xsi:type=\"xsd:string\">&lt;?xml version='1.0'?>&lt;dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='http://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'>&lt;latLonList>35.9153,-79.0838&lt;/latLonList>&lt;/dwml></listLatLonOut>";
         flowFileList.get(0).assertContentEquals(expectedBody.getBytes());
 
     }
@@ -119,7 +120,7 @@ public class InvokeSOAPTest {
 				.respond(response().withBody(xmlBody));
 
         testRunner.setProperty(InvokeSOAP.ENDPOINT_URL,"http://localhost:9090/test_path");
-        testRunner.setProperty(InvokeSOAP.WSDL_URL,"http://localhost:9090/test_path.wsdl");
+        testRunner.setProperty(InvokeSOAP.TARGET_NAMESPACE,"http://localhost:9090/test_path.wsdl");
         testRunner.setProperty(InvokeSOAP.METHOD_NAME,"testMethod");
         testRunner.setProperty(InvokeSOAP.USER_NAME,"username");
         testRunner.setProperty(InvokeSOAP.PASSWORD,"password");
@@ -130,7 +131,7 @@ public class InvokeSOAPTest {
         List<MockFlowFile> flowFileList = testRunner.getFlowFilesForRelationship(InvokeSOAP.REL_SUCCESS);
         assert(null != flowFileList);
 
-        final String expectedBody = "<?xml version='1.0'?><dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='http://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'><latLonList>35.9153,-79.0838</latLonList></dwml>";
+        final String expectedBody = "<listLatLonOut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xsi:type=\"xsd:string\">&lt;?xml version='1.0'?>&lt;dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='http://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'>&lt;latLonList>35.9153,-79.0838&lt;/latLonList>&lt;/dwml></listLatLonOut>";
         flowFileList.get(0).assertContentEquals(expectedBody.getBytes());
 
     }
@@ -151,7 +152,7 @@ public class InvokeSOAPTest {
                 .respond(response().withBody(xmlBody));
 
         testRunner.setProperty(InvokeSOAP.ENDPOINT_URL,"http://localhost:9090/test_path");
-        testRunner.setProperty(InvokeSOAP.WSDL_URL,"http://localhost:9090/test_path.wsdl");
+        testRunner.setProperty(InvokeSOAP.TARGET_NAMESPACE,"http://localhost:9090/test_path.wsdl");
         testRunner.setProperty(InvokeSOAP.METHOD_NAME,"${soap.methodName}");
         testRunner.setProperty(InvokeSOAP.USER_NAME,"username");
         testRunner.setProperty(InvokeSOAP.PASSWORD,"password");
@@ -165,7 +166,7 @@ public class InvokeSOAPTest {
         List<MockFlowFile> flowFileList = testRunner.getFlowFilesForRelationship(InvokeSOAP.REL_SUCCESS);
         assert(null != flowFileList);
 
-        flowFileList.get(0).assertContentEquals("".getBytes());
+        flowFileList.get(0).assertContentEquals("<listLatLonOut/>".getBytes());
 
     }
     
@@ -178,7 +179,7 @@ public class InvokeSOAPTest {
 				.respond(response().withStatusCode(503).withBody(xmlBody));
 
         testRunner.setProperty(InvokeSOAP.ENDPOINT_URL,"http://localhost:9090/test_path");
-        testRunner.setProperty(InvokeSOAP.WSDL_URL,"http://localhost:9090/test_path.wsdl");
+        testRunner.setProperty(InvokeSOAP.TARGET_NAMESPACE,"http://localhost:9090/test_path.wsdl");
         testRunner.setProperty(InvokeSOAP.METHOD_NAME,"testMethod");
         testRunner.enqueue("test".getBytes());
         testRunner.run();
@@ -198,7 +199,7 @@ public class InvokeSOAPTest {
 
 
         testRunner.setProperty(InvokeSOAP.ENDPOINT_URL,"https://graphical.weather.gov/xml/SOAP_server/ndfdXMLserver.php");
-        testRunner.setProperty(InvokeSOAP.WSDL_URL,"https://graphical.weather.gov/xml/DWMLgen/wsdl/ndfdXML.wsdl");
+        testRunner.setProperty(InvokeSOAP.TARGET_NAMESPACE,"https://graphical.weather.gov/xml/DWMLgen/wsdl/ndfdXML.wsdl");
         testRunner.setProperty(InvokeSOAP.METHOD_NAME,"LatLonListZipCode");
         testRunner.setProperty("zipCodeList","27510");
         testRunner.enqueue("test".getBytes());
@@ -209,7 +210,7 @@ public class InvokeSOAPTest {
         List<MockFlowFile> flowFileList = testRunner.getFlowFilesForRelationship(InvokeSOAP.REL_SUCCESS);
         assert(null != flowFileList);
 
-        final String expectedBody = "<?xml version='1.0'?><dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='https://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'><latLonList>35.9153,-79.0838</latLonList></dwml>";
+        final String expectedBody = "<listLatLonOut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xsi:type=\"xsd:string\">&lt;?xml version='1.0'?>&lt;dwml version='1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='https://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd'>&lt;latLonList>35.9153,-79.0838&lt;/latLonList>&lt;/dwml></listLatLonOut>";
         flowFileList.get(0).assertContentEquals(expectedBody.getBytes());
         
         flowFileList = testRunner.getFlowFilesForRelationship(InvokeSOAP.REL_ORIGINAL);
