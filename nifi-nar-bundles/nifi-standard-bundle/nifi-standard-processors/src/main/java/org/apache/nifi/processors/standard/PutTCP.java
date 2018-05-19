@@ -38,6 +38,7 @@ import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.processor.util.put.AbstractPutEventProcessor;
 import org.apache.nifi.processor.util.put.sender.ChannelSender;
 import org.apache.nifi.processor.util.put.sender.SocketChannelSender;
+import org.apache.nifi.remote.io.socket.SocketChannelInputStream;
 import org.apache.nifi.ssl.SSLContextService;
 import org.apache.nifi.util.StopWatch;
 
@@ -114,7 +115,7 @@ public class PutTCP extends AbstractPutEventProcessor {
             .displayName("Receive Buffer Size")
             .description("The size of the buffer to receive data in. Default 16384 (16MB).")
             .required(false)
-            .defaultValue("16MB")
+            .defaultValue("2048B")
             .addValidator(StandardValidators.DATA_SIZE_VALIDATOR)
             .build();
 
@@ -256,36 +257,25 @@ public class PutTCP extends AbstractPutEventProcessor {
                 }
                 out.flush();
                 if(receiveBufferSize > 0 || endOfMessageByte > 0 ) {
-                    Thread.sleep(30);
                     SocketChannel socketChannel = ((SocketChannelSender)sender).getOpenChannel();
-                    ByteBuffer buf = ByteBuffer.allocate(receiveBufferSize);
-                    int count = -1;
+                    SocketChannelInputStream sockIn = new SocketChannelInputStream(socketChannel);
+                    int count = 0;
+                    sockIn.setTimeout(100);
+                    byte[] buf = new byte[receiveBufferSize];
+                    byte[] bufByte = new byte[1];
                     boolean finished = false;
-                    while (!finished && (count = socketChannel.read(buf)) > 0){
-                        byte lastByte = buf.get(buf.position() - 1);
-                        if (buf.remaining() == 0 || lastByte == endOfMessageByte) {
-                            //this.processBuffer(selectionKey);
-                            //if (lastByte == endOfMessageByte) {
+                    while (!finished) {
+                        int n;
+                        while (IOUtils.EOF != (n = sockIn.read(bufByte))) {
+                            buf[count] = bufByte[0];
+                            count ++;
+                            if (count >= receiveBufferSize || bufByte[0] == endOfMessageByte) {
                                 finished = true;
-                            //}
+                                break;
+                            }
                         }
                     }
-//                    int nBytes = 0;
-//                    while (!finished) {
-//                        while ((nBytes = socketChannel.read(buf)) > 0) {
-//                            buf.flip();
-//                            Charset charset = Charset.forName("us-ascii");
-//                            CharsetDecoder decoder = charset.newDecoder();
-//                            CharBuffer charBuffer = decoder.decode(buf);
-//                            String result = charBuffer.toString();
-//                            System.out.println(result);
-//                            if(result == "\n") 
-//                                finished = true;
-//                            buf.flip();
-//                        }
-//                    }
-                    
-                    byte ar[] = new String(buf.array()).replaceAll("\0", "").getBytes();
+                    byte ar[] = new String(buf).replaceAll("\0", "").getBytes();
                     response = new String(ar,charSet);
                 }
                 
