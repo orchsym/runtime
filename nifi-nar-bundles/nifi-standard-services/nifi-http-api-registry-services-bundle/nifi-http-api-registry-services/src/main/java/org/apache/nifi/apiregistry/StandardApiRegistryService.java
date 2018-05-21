@@ -31,7 +31,6 @@ import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.reporting.InitializationException;
 
-
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -44,6 +43,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -153,30 +154,36 @@ public class StandardApiRegistryService extends AbstractControllerService implem
             String pathInfo = request.getPathInfo();
             if (pathInfo.equals(this.service.getRequestPath())) {
                 HashMap<String, ArrayList<ApiInfo>> apis = new HashMap();
-
-                //get groupid, uri:/apis/groupid=123
-                String query = request.getQueryString();
-                String[] strarray=query.split("=");
-                String queryGroupID = null;
                 ArrayList<ApiInfo> collectApis = new ArrayList();
 
-                for (int i = 0; i < strarray.length; i++) {
-                    if (i == 1) {
-                        queryGroupID = strarray[i];
-                        break;
+                //get groupid, uri:/apis?groupid=123
+                String query = request.getQueryString();
+                String queryGroupID = null;
+                
+                try {
+                    Map<String, String> query_pairs = splitQuery(query);
+                    for (Map.Entry<String, String> entry : query_pairs.entrySet()) {  
+                        if (entry.getKey().equals("groupid")) {
+                            if (!entry.getValue().equals("")) {
+                                queryGroupID = entry.getValue();
+                            }
+                        }
                     }
+                }catch(Exception e) {
+
                 }
                 
-                Iterator<ApiInfo> infoItr = this.service.apiInfos.iterator();
-
-                while (infoItr.hasNext()) {
-
-                    ApiInfo apiInfo = (ApiInfo) infoItr.next();
-                    String groupID = apiInfo.groupID;
-                    if (groupID.equals(queryGroupID)) {
-                        collectApis.add(apiInfo);
+                if (queryGroupID != null) {
+                    Iterator<ApiInfo> infoItr = this.service.apiInfos.iterator();
+                    while (infoItr.hasNext()) {
+                        ApiInfo apiInfo = (ApiInfo) infoItr.next();
+                        String groupID = apiInfo.groupID;
+                        if (groupID.equals(queryGroupID)) {
+                            collectApis.add(apiInfo);
+                        }
                     }
-                }
+                }          
+                apis.put("apis", collectApis);
 
                 apis.put("apis", collectApis);
 
@@ -304,6 +311,16 @@ public class StandardApiRegistryService extends AbstractControllerService implem
         }
         
         return groupID;
+    }
+
+    private Map<String, String> splitQuery(String query) throws UnsupportedEncodingException{
+        Map<String, String> query_pairs = new HashMap();
+        String[] pairs = query.split("&");
+        for (String pair : pairs) {
+            int idx = pair.indexOf("=");
+            query_pairs.put(URLDecoder.decode(pair.substring(0, idx), "UTF-8"), URLDecoder.decode(pair.substring(idx + 1), "UTF-8"));
+        }
+        return query_pairs;
     }
 
 

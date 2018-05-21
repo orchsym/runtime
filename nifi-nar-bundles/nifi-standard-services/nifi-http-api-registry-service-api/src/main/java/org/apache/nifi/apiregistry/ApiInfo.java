@@ -6,7 +6,7 @@ public class ApiInfo {
 
 	public String id;
 
-	public String groupID;
+	public String groupID = "";
 
 	public String path;
 
