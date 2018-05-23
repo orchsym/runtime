@@ -11,7 +11,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -39,14 +42,19 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestRecordMapper {
+/**
+ * 
+ * @author GU Guoqiang
+ * 
+ */
+public class TestFlatRecordMapper {
     private static final int TEST_NUM = 100;
     private static Schema mainStaffSchema;
 
     private TestRunner runner;
     private MockRecordParser readerService;
     private MockRecordWriter writerService;
-    final String PRE_MAIN_INPUT_EXP = RecordMapper.PRE_INPUT + RecordMapper.DEFAULT_MAIN;
+    final static String PRE_MAIN_INPUT_EXP = RecordMapper.PRE_INPUT + RecordMapper.DEFAULT_MAIN;
 
     @BeforeClass
     public static void init() throws IOException {

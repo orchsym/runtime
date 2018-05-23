@@ -22,6 +22,11 @@ import org.junit.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+/**
+ * 
+ * @author GU Guoqiang
+ * 
+ */
 public class TestMappingTableParser {
     private MapperTable.Parser parser;
 

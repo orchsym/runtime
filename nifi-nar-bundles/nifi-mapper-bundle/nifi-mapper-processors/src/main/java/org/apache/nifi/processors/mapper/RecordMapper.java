@@ -8,8 +8,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -26,6 +28,8 @@ import org.apache.nifi.annotation.behavior.SupportsBatching;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
+import org.apache.nifi.attribute.expression.language.PreparedQuery;
+import org.apache.nifi.attribute.expression.language.Query;
 import org.apache.nifi.avro.AvroTypeUtil;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
@@ -42,8 +46,9 @@ import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.processor.io.OutputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
-import org.apache.nifi.processors.mapper.exp.MapperExpField;
 import org.apache.nifi.processors.mapper.exp.MapperTable;
+import org.apache.nifi.processors.mapper.record.RecordPathsMap;
+import org.apache.nifi.processors.mapper.record.RecordPathsWriter;
 import org.apache.nifi.schema.access.SchemaNotFoundException;
 import org.apache.nifi.serialization.MalformedRecordException;
 import org.apache.nifi.serialization.RecordReader;
@@ -52,7 +57,6 @@ import org.apache.nifi.serialization.RecordSetWriter;
 import org.apache.nifi.serialization.RecordSetWriterFactory;
 import org.apache.nifi.serialization.WriteResult;
 import org.apache.nifi.serialization.record.ListRecordSet;
-import org.apache.nifi.serialization.record.MapRecord;
 import org.apache.nifi.serialization.record.Record;
 import org.apache.nifi.serialization.record.RecordSchema;
 import org.apache.nifi.serialization.record.RecordSet;
@@ -66,6 +70,8 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 @CapabilityDescription("Enable to map the flows to another one.")
 @DynamicProperty(name = "The name of a flow for output.", value = "the value is json format, which contained the settings for expression fields, avro schema, writer controller, etc.", expressionLanguageScope = ExpressionLanguageScope.FLOWFILE_ATTRIBUTES, description = "enable to customize multi-output flows and do mapping with expression for each fields.")
 public class RecordMapper extends AbstractProcessor {
+    static final String OP_SLASH = "/";
+
     static final String DEFAULT_MAIN = "main";
     static final String PRE_INPUT = "input.";
     static final String PRE_OUTPUT = "output.";
@@ -90,6 +96,8 @@ public class RecordMapper extends AbstractProcessor {
     private volatile Map<String, Map<String, String>> outputFlowAttributesMap;
     private volatile Map<String, RecordSchema> outputRecordSchemasMap;
     private volatile Map<String, AtomicLong> writeCountsMap;
+    private volatile Map<String, RecordPathsMap> outputRecordPathsMap;
+    private volatile RecordPathsWriter recordPathsWriter;
 
     @Override
     protected void init(ProcessorInitializationContext context) {
@@ -192,12 +200,16 @@ public class RecordMapper extends AbstractProcessor {
 
     @OnScheduled
     public void onScheduled(final ProcessContext context) {
+        recordPathsWriter = new RecordPathsWriter();
+        // recordPathsWriter.setTypeChecked(true);
+
         final Set<String> outputTablesKeyset = outputTables.keySet();
         final Collection<MapperTable> outputTablesValues = outputTables.values();
 
         outputFlowAttributesMap = outputTablesKeyset.stream().collect(Collectors.toMap(Function.identity(), n -> new HashMap<String, String>()));
         outputRecordSchemasMap = outputTablesValues.stream().collect(Collectors.toMap(MapperTable::getName, t -> AvroTypeUtil.createSchema(t.getSchema())));
         writeCountsMap = outputTablesKeyset.stream().collect(Collectors.toMap(Function.identity(), n -> new AtomicLong()));
+        outputRecordPathsMap = outputTablesValues.stream().collect(Collectors.toMap(MapperTable::getName, t -> new RecordPathsMap(t)));
     }
 
     @Override
@@ -232,9 +244,10 @@ public class RecordMapper extends AbstractProcessor {
                     Record curRecord = null;
                     while ((curRecord = reader.nextRecord()) != null) {
                         for (final Map.Entry<String, MapperTable> entry : entrySet) {
-                            final Record writeRecord = processRecord(context, entry.getValue(), outputRecordSchemasMap.get(entry.getKey()), original, outputFlowsMap.get(entry.getKey()), curRecord);
-                            if (writeRecord != null) {
-                                outputRecordsMap.get(entry.getKey()).add(writeRecord);
+                            final Optional<Record> writeRecordOp = processRecord(context, entry.getValue(), outputRecordSchemasMap.get(entry.getKey()), original, outputFlowsMap.get(entry.getKey()),
+                                    curRecord);
+                            if (writeRecordOp.isPresent()) {
+                                outputRecordsMap.get(entry.getKey()).add(writeRecordOp.get());
                             }
                         }
                     }
@@ -314,62 +327,62 @@ public class RecordMapper extends AbstractProcessor {
         outputFlowsMap.put(outputName, outputFlow);
     }
 
-    Record processRecord(final ProcessContext context, final MapperTable outputTable, RecordSchema writeRecordSchema, final FlowFile inputFlowFile, final FlowFile outputFlowFile,
+    Optional<Record> processRecord(final ProcessContext context, final MapperTable outputTable, RecordSchema writeRecordSchema, final FlowFile inputFlowFile, final FlowFile outputFlowFile,
             final Record readerRecord) {
+
         // FIXME, only support fixed "main" input flow
         final String mainPrefix = PRE_INPUT + DEFAULT_MAIN;
 
+        // TODO, need deal with the value of record path.
         final Map<String, String> inputRecordValuesMap = readerRecord.getSchema().getFields().stream()
                 .collect(Collectors.toMap(f -> (mainPrefix + '.' + f.getFieldName()), f -> readerRecord.getAsString(f.getFieldName())));
 
-        // process for expressions
-        final Record writeRecord = new MapRecord(writeRecordSchema, new HashMap<>());
-        List<String> processedFields = new ArrayList<String>();
-        for (MapperExpField f : outputTable.getExpressions()) {
+        // process the expression wit EL.
+        final Map<String, Object> pathValuesMap = new LinkedHashMap<>();
+        outputTable.getExpressions().stream().filter(f -> StringUtils.isNotBlank(f.getPath()) && StringUtils.isNotEmpty(f.getExp())).forEach(f -> {
             final String expression = f.getExp();
-            if (StringUtils.isNotEmpty(expression)) {
+
+            final PreparedQuery query = Query.prepare(expression);
+            if (query.isExpressionLanguagePresent()) { // only process EL
                 PropertyValue expPropValue = context.newPropertyValue(expression);
                 expPropValue = expPropValue.evaluateAttributeExpressions(inputFlowFile, inputRecordValuesMap);
-                String name = f.getPath();
-                if (name.startsWith("/")) { // TODO, currently, don't support record path yet.
-                    name = name.substring(1);
-                }
-                // TODO investigate if we need to (try) do type conversion here, if input is a csv, output is json and has non-string field
-                // the output field is not automatically converted
-                writeRecord.setValue(name, expPropValue);
-                processedFields.add(name);
-            }
-        }
+                String value = expPropValue.getValue();
 
-        // process left
-        writeRecordSchema.getFields().stream().filter(f -> !processedFields.contains(f.getFieldName())).forEach(f -> {
-            final String fieldName = f.getFieldName();
-            final Object value = readerRecord.getValue(fieldName);
-            writeRecord.setValue(fieldName, value);
+                final String path = this.recordPathsWriter.checkPath(f.getPath());
+                pathValuesMap.put(path, value);
+            }
         });
 
-        // process filter
-        final String filter = outputTable.getFilter();
-        if (StringUtils.isNotEmpty(filter)) {
-            final String outputPrefix = PRE_OUTPUT + outputTable.getName();
-            // add all output data, must be mapped via expression
-            final Map<String, String> recordValuesMap = new HashMap<>(inputRecordValuesMap);
-            writeRecordSchema.getFields().forEach(f -> {
-                final String value = writeRecord.getAsString(f.getFieldName());
-                recordValuesMap.put(outputPrefix + '.' + f.getFieldName(), value);
-                // support default key without prefix for output, means the key is field of current output table.
-                recordValuesMap.put(f.getFieldName(), value);
-            });
+        // write record via record path
+        final Optional<Record> writeRecordOp = this.recordPathsWriter.write(context, readerRecord, outputTable, outputRecordPathsMap.get(outputTable.getName()), pathValuesMap);
 
-            PropertyValue filterPropValue = context.newPropertyValue(filter);
-            filterPropValue = filterPropValue.evaluateAttributeExpressions(inputFlowFile, recordValuesMap);
-            if (filterPropValue.isExpressionLanguagePresent()) { // still some vars not eval
-                // TODO
-            } else if (!filterPropValue.asBoolean()) {
-                return null; // if filtered, will be null
+        if (writeRecordOp.isPresent()) {
+            Record writeRecord = writeRecordOp.get();
+
+            // process filter
+            final String filter = outputTable.getFilter();
+            if (StringUtils.isNotEmpty(filter)) {
+                final String outputPrefix = PRE_OUTPUT + outputTable.getName();
+                // add all output data, must be mapped via expression
+                final Map<String, String> recordValuesMap = new HashMap<>(inputRecordValuesMap);
+                writeRecordSchema.getFields().forEach(f -> {
+                    // TODO, need deal with the value of record path
+                    final String value = writeRecord.getAsString(f.getFieldName());
+                    recordValuesMap.put(outputPrefix + '.' + f.getFieldName(), value);
+                    // support default key without prefix for output, means the key is field of current output table.
+                    recordValuesMap.put(f.getFieldName(), value);
+                });
+
+                PropertyValue filterPropValue = context.newPropertyValue(filter);
+                filterPropValue = filterPropValue.evaluateAttributeExpressions(inputFlowFile, recordValuesMap);
+                if (filterPropValue.isExpressionLanguagePresent()) { // still some vars not eval
+                    // TODO
+                } else if (!filterPropValue.asBoolean()) {
+                    return Optional.empty(); // if filtered
+                }
             }
         }
-        return writeRecord;
+        return writeRecordOp;
     }
 
 }
