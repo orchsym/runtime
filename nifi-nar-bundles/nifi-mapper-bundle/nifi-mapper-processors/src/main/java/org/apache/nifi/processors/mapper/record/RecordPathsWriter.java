@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +68,7 @@ public class RecordPathsWriter {
         final Map<String, Object> expPathValuesMap = new LinkedHashMap<>(additionalPathValuesMap);
         final List<String> processedPathsMap = new ArrayList<>(additionalPathValuesMap.keySet());
 
-        // process the record path in expression field.
+        // process the record path for output expression field.
         outputTable.getExpressions().stream().filter(f -> !processedPathsMap.contains(checkPath(f.getPath()))).forEach(f -> {
             final String path = checkPath(f.getPath());
             processedPathsMap.add(path);
@@ -82,10 +83,12 @@ public class RecordPathsWriter {
             result.getSelectedFields().filter(fv -> fv.getValue() != null).forEach(fv -> expPathValuesMap.put(path, fv.getValue()));
         });
 
-        // create
         Record writeRecord = null;
 
+        // create the record with default values.
         final Optional<Object> defaultRecord = createDefaultValue(outputTable);
+
+        // set the values via record paths.
         if (defaultRecord.isPresent()) {
             final Object object = defaultRecord.get();
             if (object instanceof Record) {
@@ -106,12 +109,13 @@ public class RecordPathsWriter {
             }
         }
 
+        // make sure no NPE
         if (writeRecord == null) {
             final RecordSchema writeRecordSchema = AvroTypeUtil.createSchema(outputTable.getSchema());
             writeRecord = new MapRecord(writeRecordSchema, new LinkedHashMap<>());
         }
 
-        // FIXME, only for first level currently.
+        // FIXME, only deal with first level simply
         final Record outputRecord = writeRecord;
         outputTable.getSchema().getFields().stream().filter(f -> !processedPathsMap.contains(checkPath(f.name()))).forEach(f -> {
             final String fieldName = f.name();
@@ -125,10 +129,13 @@ public class RecordPathsWriter {
                 outputRecord.setValue(fieldName, value);
             }
         });
-        if (writeRecord.getRawFieldNames().isEmpty()) {
-            return Optional.empty();
+
+        // need remove the null values, else will have NPE for output to write in flowfile
+        Optional<Object> recordOp = cleanupValue(outputRecord);
+        if (recordOp.isPresent()) {
+            return Optional.of((Record) recordOp.get());
         }
-        return Optional.of(writeRecord);
+        return Optional.empty();
 
     }
 
@@ -165,7 +172,7 @@ public class RecordPathsWriter {
     }
 
     Optional<Object> createDefaultValue(final DataType dataType, final Object defaultValue) {
-        final Optional<RecordSchema> childRecordSchemaOp = getChildRecordSchema(dataType);
+        final Optional<RecordSchema> childRecordSchemaOp = RecordUtil.getChildSchema(dataType);
         if (childRecordSchemaOp.isPresent()) {
             final RecordSchema childRecordSchema = childRecordSchemaOp.get();
             return createDefaultValue(childRecordSchema, dataType);
@@ -231,26 +238,6 @@ public class RecordPathsWriter {
         return Optional.empty();
     }
 
-    Optional<RecordSchema> getChildRecordSchema(final DataType parentDataType) {
-        if (parentDataType instanceof RecordDataType) {
-            RecordSchema childSchema = ((RecordDataType) parentDataType).getChildSchema();
-            return Optional.of(childSchema);
-        } else if (parentDataType instanceof ArrayDataType) {
-            DataType typeOfArray = ((ArrayDataType) parentDataType).getElementType();
-            return getChildRecordSchema(typeOfArray);
-        } else if (parentDataType instanceof MapDataType) {
-            DataType typeOfMap = ((MapDataType) parentDataType).getValueType();
-            return getChildRecordSchema(typeOfMap);
-        } else if (parentDataType instanceof ChoiceDataType) {
-            final List<DataType> possibleSubTypes = ((ChoiceDataType) parentDataType).getPossibleSubTypes();
-            // TODO
-        } else {
-            // others without schema
-        }
-
-        return Optional.empty();
-    }
-
     void setArrayValue(final RecordPathsMap recordPathsMap, final ArrayIndexPath recordPath, final Record writeRecord, final Object value) {
         try {
             final Field indexField = ArrayIndexPath.class.getDeclaredField("index"); //$NON-NLS-1$
@@ -290,5 +277,62 @@ public class RecordPathsWriter {
         } catch (Exception e) {
             // nothing to do
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    Optional<Object> cleanupValue(final Object value) {
+        if (value instanceof Record) {
+            final Record record = (Record) value;
+
+            Map<String, Object> fieldValues = new LinkedHashMap<String, Object>();
+
+            record.getRawFieldNames().stream().filter(fn -> record.getValue(fn) != null).forEach(fn -> {
+                Object rValue = record.getValue(fn);
+                Optional<Object> valueOp = cleanupValue(rValue);
+                if (valueOp.isPresent())
+                    fieldValues.put(fn, valueOp.get());
+            });
+            if (!fieldValues.isEmpty()) {
+                Record newRecord = new MapRecord(record.getSchema(), fieldValues, record.isTypeChecked(), record.isDropUnknownFields());
+                return Optional.of(newRecord);
+            }
+        } else if (value instanceof Map) {
+            Map<String, Object> newMap = new LinkedHashMap<String, Object>();
+            for (Entry<String, Object> entry : ((Map<String, Object>) value).entrySet()) {
+                Object eValue = entry.getValue();
+                if (eValue != null) {
+                    Optional<Object> valueOp = cleanupValue(eValue);
+                    if (valueOp.isPresent())
+                        newMap.put(entry.getKey(), valueOp.get());
+                }
+            }
+            if (!newMap.isEmpty()) {
+                return Optional.of(newMap);
+            }
+        } else if (value instanceof List) {
+            List<Object> newList = new ArrayList<>();
+            for (Object obj : (List) value) {
+                Optional<Object> valueOp = cleanupValue(obj);
+                if (valueOp.isPresent())
+                    newList.add(valueOp.get());
+            }
+            if (!newList.isEmpty()) {
+                return Optional.of(newList);
+            }
+        } else if (value instanceof Object[]) {
+            List<Object> newList = new ArrayList<>();
+            for (Object obj : (Object[]) value) {
+                Optional<Object> valueOp = cleanupValue(obj);
+                if (valueOp.isPresent())
+                    newList.add(valueOp.get());
+            }
+            if (!newList.isEmpty()) {
+                return Optional.of(newList.toArray());
+            }
+
+        } else if (value != null) {
+            return Optional.of(value);
+        }
+        return Optional.empty();
     }
 }

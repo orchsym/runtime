@@ -11,8 +11,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -33,6 +33,7 @@ import org.apache.nifi.attribute.expression.language.Query;
 import org.apache.nifi.avro.AvroTypeUtil;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
+import org.apache.nifi.components.Validator;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.flowfile.attributes.CoreAttributes;
@@ -46,9 +47,13 @@ import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.processor.io.OutputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.apache.nifi.processors.mapper.exp.ExpVarTable;
 import org.apache.nifi.processors.mapper.exp.MapperTable;
+import org.apache.nifi.processors.mapper.exp.MapperTableType;
 import org.apache.nifi.processors.mapper.record.RecordPathsMap;
 import org.apache.nifi.processors.mapper.record.RecordPathsWriter;
+import org.apache.nifi.processors.mapper.record.RecordUtil;
+import org.apache.nifi.record.path.util.RecordPathCache;
 import org.apache.nifi.schema.access.SchemaNotFoundException;
 import org.apache.nifi.serialization.MalformedRecordException;
 import org.apache.nifi.serialization.RecordReader;
@@ -68,18 +73,24 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 @Tags({ "map", "avro", "json", "xml", "flow" })
 @InputRequirement(Requirement.INPUT_REQUIRED)
 @CapabilityDescription("Enable to map the flows to another one.")
-@DynamicProperty(name = "The name of a flow for output.", value = "the value is json format, which contained the settings for expression fields, avro schema, writer controller, etc.", expressionLanguageScope = ExpressionLanguageScope.FLOWFILE_ATTRIBUTES, description = "enable to customize multi-output flows and do mapping with expression for each fields.")
+@DynamicProperty(name = "The name of a flow for input or output.", //
+        value = "the value is json format, which contained the settings for expression fields, avro schema, writer controller, expression vars, etc.", //
+        expressionLanguageScope = ExpressionLanguageScope.FLOWFILE_ATTRIBUTES, description = "enable to customize multi-flows and do mapping with expression for each fields.")
 public class RecordMapper extends AbstractProcessor {
     static final String OP_SLASH = "/";
 
-    static final String DEFAULT_MAIN = "main";
-    static final String PRE_INPUT = "input.";
-    static final String PRE_OUTPUT = "output.";
+    public static final String DEFAULT_MAIN = "main";
+    public static final String PRE_INPUT = MapperTableType.INPUT.getPrefix();
+    public static final String PRE_OUTPUT = MapperTableType.OUTPUT.getPrefix();
 
     static final PropertyDescriptor RECORD_READER = new PropertyDescriptor.Builder().name("record-reader").displayName("Record Reader")
             .description("Specifies the Controller Service to use for reading incoming data").identifiesControllerService(RecordReaderFactory.class).required(true).build();
     static final PropertyDescriptor RECORD_WRITER = new PropertyDescriptor.Builder().name("record-writer").displayName("Record Writer")
             .description("Specifies the Controller Service to use for writing out the records").identifiesControllerService(RecordSetWriterFactory.class).required(true).build();
+
+    static final PropertyDescriptor RECORD_GLOBAL_VARS = new PropertyDescriptor.Builder().name("record-global-vars").displayName("Global Expression Vars")
+            .description("Specifies the expressions of the records to be as variables. If want to deal with the value of record path, just extract to one variable, then can use expression way.")
+            .required(false).addValidator(Validator.VALID).expressionLanguageSupported(ExpressionLanguageScope.NONE).build();
 
     static final Relationship REL_ORIGINAL = new Relationship.Builder().name("original")
             .description("The original FlowFile that was mapped. If the FlowFile fails processing, nothing will be sent to " + "this relationship").build();
@@ -87,16 +98,25 @@ public class RecordMapper extends AbstractProcessor {
     static final Relationship REL_FAILURE = new Relationship.Builder().name("failure").description("A FlowFile is routed to this relationship when do map with some reasons").build();
 
     private List<PropertyDescriptor> descriptors;
+
+    private Map<String, MapperTable> inputTables;
+
+    private ExpVarTable globalVarTable;
+    private RecordPathCache globalVarRecordPaths;
+
     private Map<String, MapperTable> outputTables;
     private Map<String, Relationship> relationships;
 
     /**
      * Cache of dynamic collections set during {@link #onScheduled(ProcessContext)} for quick access in {@link #onTrigger(ProcessContext, ProcessSession)}
      */
+    private volatile Map<String, RecordPathsMap> inputRecordPathsMap;
+
     private volatile Map<String, Map<String, String>> outputFlowAttributesMap;
     private volatile Map<String, RecordSchema> outputRecordSchemasMap;
     private volatile Map<String, AtomicLong> writeCountsMap;
     private volatile Map<String, RecordPathsMap> outputRecordPathsMap;
+
     private volatile RecordPathsWriter recordPathsWriter;
 
     @Override
@@ -107,8 +127,11 @@ public class RecordMapper extends AbstractProcessor {
         final List<PropertyDescriptor> properties = new ArrayList<>();
         properties.add(RECORD_READER);
         properties.add(RECORD_WRITER);
+        properties.add(RECORD_GLOBAL_VARS);
         this.descriptors = Collections.unmodifiableList(properties);
 
+        // input tables
+        this.inputTables = Collections.unmodifiableMap(Collections.emptyMap());
         // output tables
         this.outputTables = Collections.unmodifiableMap(Collections.emptyMap());
 
@@ -141,6 +164,8 @@ public class RecordMapper extends AbstractProcessor {
 
         final String descriptorName = descriptor.getName();
 
+        final Map<String, MapperTable> newDynamicInputTables = new HashMap<>(this.inputTables);
+
         final Map<String, MapperTable> newDynamicOutputTables = new HashMap<>(this.outputTables);
         final Map<String, Relationship> newDynamicRelationships = new HashMap<>(this.relationships);
 
@@ -148,7 +173,11 @@ public class RecordMapper extends AbstractProcessor {
 
             if (newValue == null) { // remove?
                 if (descriptor.isDynamic()) {
-                    if (descriptorName.startsWith(PRE_OUTPUT)) { // output table
+                    if (descriptorName.startsWith(PRE_INPUT)) { // input table
+                        String inputTableName = descriptorName.substring(PRE_INPUT.length());
+                        newDynamicInputTables.remove(inputTableName);
+
+                    } else if (descriptorName.startsWith(PRE_OUTPUT)) { // output table
                         String outputTableName = descriptorName.substring(PRE_OUTPUT.length());
                         newDynamicOutputTables.remove(outputTableName);
                         newDynamicRelationships.remove(outputTableName);
@@ -159,32 +188,50 @@ public class RecordMapper extends AbstractProcessor {
                 //
             }
 
-            // if change the output schema, need update the relationships
-            if (descriptor.isDynamic() && StringUtils.isNotEmpty(newValue) && !newValue.equals(oldValue)) {
-                if (descriptorName.startsWith(PRE_OUTPUT)) { // output table
-                    final MapperTable mappingTable = new MapperTable.Parser().parseTable(newValue);
-                    final Schema schema = mappingTable.getSchema();
-                    if (schema == null) {
-                        throw new IllegalArgumentException("The schema is missing for table " + descriptorName);
+            if (StringUtils.isNotEmpty(newValue) && !newValue.equals(oldValue)) {
+                if (RECORD_GLOBAL_VARS.equals(descriptor)) {
+                    this.globalVarTable = new ExpVarTable.Parser().parse(newValue);
+                    this.globalVarRecordPaths = new RecordPathCache(globalVarTable.getVars().size());
+                }
+
+                // if change the output schema, need update the relationships
+                if (descriptor.isDynamic()) {
+                    if (descriptorName.startsWith(PRE_INPUT) || descriptorName.startsWith(PRE_OUTPUT)) {
+                        MapperTable mappingTable = new MapperTable.Parser().parseTable(newValue);
+                        final Schema schema = mappingTable.getSchema();
+                        if (schema == null) {
+                            throw new IllegalArgumentException("The schema is missing for table " + descriptorName);
+                        }
+                        final String tableName = mappingTable.getName();
+
+                        String schemaName = schema.getName();
+                        if (!tableName.equals(schemaName)) {
+                            throw new JsonMappingException(null, MessageFormat.format("The mapping table name {0} is different with schema name {1}", tableName, schemaName));
+                        }
+
+                        if (descriptorName.startsWith(PRE_INPUT)) { // input table
+                            String inputTableName = descriptorName.substring(PRE_INPUT.length());
+                            if (!inputTableName.equals(tableName)) {
+                                throw new JsonMappingException(null, MessageFormat.format("The mapping table name {0} is different with property setting name {1}", tableName, inputTableName));
+                            }
+
+                            newDynamicInputTables.put(schemaName, mappingTable);
+
+                        } else if (descriptorName.startsWith(PRE_OUTPUT)) { // output table
+                            String outputTableName = descriptorName.substring(PRE_OUTPUT.length());
+                            if (!outputTableName.equals(tableName)) {
+                                throw new JsonMappingException(null, MessageFormat.format("The mapping table name {0} is different with property setting name {1}", tableName, outputTableName));
+                            }
+
+                            newDynamicOutputTables.put(schemaName, mappingTable);
+
+                            // the relationship is output.xxx
+                            final Relationship relationship = new Relationship.Builder().name(descriptorName)
+                                    .description(MessageFormat.format("A FlowFile is mapped to this \"{0}\" relationship", schemaName)).build();
+                            newDynamicRelationships.put(schemaName, relationship);
+
+                        }
                     }
-                    final String tableName = mappingTable.getName();
-                    final String schemaName = schema.getName();
-
-                    String outputTableName = descriptorName.substring(PRE_OUTPUT.length());
-                    if (!outputTableName.equals(tableName)) {
-                        throw new JsonMappingException(null, MessageFormat.format("The mapping table name {0} is different with property setting name {1}", tableName, outputTableName));
-                    }
-                    if (!tableName.equals(schemaName)) {
-                        throw new JsonMappingException(null, MessageFormat.format("The mapping table name {0} is different with schema name {1}", tableName, schemaName));
-                    }
-
-                    newDynamicOutputTables.put(schemaName, mappingTable);
-
-                    // the relationship is output.xxx
-                    final Relationship relationship = new Relationship.Builder().name(descriptorName).description(MessageFormat.format("A FlowFile is mapped to this \"{0}\" relationship", schemaName))
-                            .build();
-                    newDynamicRelationships.put(schemaName, relationship);
-
                 }
             }
 
@@ -192,6 +239,7 @@ public class RecordMapper extends AbstractProcessor {
             getLogger().error("Cannot create the map flow via new settings {} - {}", new Object[] { newValue, descriptorName, e });
         }
 
+        this.inputTables = Collections.unmodifiableMap(newDynamicInputTables);
         //
         this.outputTables = Collections.unmodifiableMap(newDynamicOutputTables);
         this.relationships = Collections.unmodifiableMap(newDynamicRelationships);
@@ -203,6 +251,10 @@ public class RecordMapper extends AbstractProcessor {
         recordPathsWriter = new RecordPathsWriter();
         // recordPathsWriter.setTypeChecked(true);
 
+        inputRecordPathsMap = new HashMap<>();
+        inputRecordPathsMap.put(DEFAULT_MAIN, new RecordPathsMap(100)); // TODO, not sure the main input size.
+
+        // output
         final Set<String> outputTablesKeyset = outputTables.keySet();
         final Collection<MapperTable> outputTablesValues = outputTables.values();
 
@@ -210,6 +262,7 @@ public class RecordMapper extends AbstractProcessor {
         outputRecordSchemasMap = outputTablesValues.stream().collect(Collectors.toMap(MapperTable::getName, t -> AvroTypeUtil.createSchema(t.getSchema())));
         writeCountsMap = outputTablesKeyset.stream().collect(Collectors.toMap(Function.identity(), n -> new AtomicLong()));
         outputRecordPathsMap = outputTablesValues.stream().collect(Collectors.toMap(MapperTable::getName, t -> new RecordPathsMap(t)));
+
     }
 
     @Override
@@ -329,23 +382,31 @@ public class RecordMapper extends AbstractProcessor {
 
     Optional<Record> processRecord(final ProcessContext context, final MapperTable outputTable, RecordSchema writeRecordSchema, final FlowFile inputFlowFile, final FlowFile outputFlowFile,
             final Record readerRecord) {
+        final Map<String, String> expValuesMap = new HashMap<>();
 
-        // FIXME, only support fixed "main" input flow
-        final String mainPrefix = PRE_INPUT + DEFAULT_MAIN;
+        /*
+         * FIXME, only support fixed "main" input flow currently, should only work for flat schema and the first level of simple field. if tree schema, better use input var way always.
+         */
+        RecordUtil.calcRecordValues(expValuesMap, readerRecord, MapperTableType.INPUT.getPrefix(DEFAULT_MAIN), false);
 
-        // TODO, need deal with the value of record path.
-        final Map<String, String> inputRecordValuesMap = readerRecord.getSchema().getFields().stream()
-                .collect(Collectors.toMap(f -> (mainPrefix + '.' + f.getFieldName()), f -> readerRecord.getAsString(f.getFieldName())));
+        // input var
+        final MapperTable inputTable = inputTables.get(DEFAULT_MAIN);
+        if (inputTable != null) {
+            RecordUtil.calcRecordVarValues(context, expValuesMap, readerRecord, inputRecordPathsMap.get(DEFAULT_MAIN), inputTable.getExpVarTable());
+        }
 
-        // process the expression wit EL.
+        // global var
+        RecordUtil.calcRecordVarValues(context, expValuesMap, readerRecord, globalVarRecordPaths, globalVarTable);
+
+        // process the expression for EL.
         final Map<String, Object> pathValuesMap = new LinkedHashMap<>();
         outputTable.getExpressions().stream().filter(f -> StringUtils.isNotBlank(f.getPath()) && StringUtils.isNotEmpty(f.getExp())).forEach(f -> {
             final String expression = f.getExp();
 
             final PreparedQuery query = Query.prepare(expression);
-            if (query.isExpressionLanguagePresent()) { // only process EL
+            if (query.isExpressionLanguagePresent()) { // only process EL, if have record path, will be false.
                 PropertyValue expPropValue = context.newPropertyValue(expression);
-                expPropValue = expPropValue.evaluateAttributeExpressions(inputFlowFile, inputRecordValuesMap);
+                expPropValue = expPropValue.evaluateAttributeExpressions(inputFlowFile, expValuesMap);
                 String value = expPropValue.getValue();
 
                 final String path = this.recordPathsWriter.checkPath(f.getPath());
@@ -353,30 +414,28 @@ public class RecordMapper extends AbstractProcessor {
             }
         });
 
-        // write record via record path
-        final Optional<Record> writeRecordOp = this.recordPathsWriter.write(context, readerRecord, outputTable, outputRecordPathsMap.get(outputTable.getName()), pathValuesMap);
+        final String outputName = outputTable.getName();
+        final RecordPathsMap outputRecordPaths = outputRecordPathsMap.get(outputName);
+
+        // write output record via record path
+        final Optional<Record> writeRecordOp = this.recordPathsWriter.write(context, readerRecord, outputTable, outputRecordPaths, pathValuesMap);
 
         if (writeRecordOp.isPresent()) {
             Record writeRecord = writeRecordOp.get();
 
-            // process filter
+            // process filter of output table
             final String filter = outputTable.getFilter();
             if (StringUtils.isNotEmpty(filter)) {
-                final String outputPrefix = PRE_OUTPUT + outputTable.getName();
-                // add all output data, must be mapped via expression
-                final Map<String, String> recordValuesMap = new HashMap<>(inputRecordValuesMap);
-                writeRecordSchema.getFields().forEach(f -> {
-                    // TODO, need deal with the value of record path
-                    final String value = writeRecord.getAsString(f.getFieldName());
-                    recordValuesMap.put(outputPrefix + '.' + f.getFieldName(), value);
-                    // support default key without prefix for output, means the key is field of current output table.
-                    recordValuesMap.put(f.getFieldName(), value);
-                });
+                // FIXME, add all output data for first level
+                RecordUtil.calcRecordValues(expValuesMap, writeRecord, MapperTableType.OUTPUT.getPrefix(outputName), true);
+
+                // output var
+                RecordUtil.calcRecordVarValues(context, expValuesMap, readerRecord, outputRecordPaths, outputTable.getExpVarTable());
 
                 PropertyValue filterPropValue = context.newPropertyValue(filter);
-                filterPropValue = filterPropValue.evaluateAttributeExpressions(inputFlowFile, recordValuesMap);
-                if (filterPropValue.isExpressionLanguagePresent()) { // still some vars not eval
-                    // TODO
+                filterPropValue = filterPropValue.evaluateAttributeExpressions(inputFlowFile, expValuesMap);
+                if (filterPropValue.isExpressionLanguagePresent()) {
+                    // shouldn't still have some vars, so set valid for filter currently.
                 } else if (!filterPropValue.asBoolean()) {
                     return Optional.empty(); // if filtered
                 }
