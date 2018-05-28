@@ -430,7 +430,7 @@ public class RecordMapper extends AbstractProcessor {
                 RecordUtil.calcRecordValues(expValuesMap, writeRecord, MapperTableType.OUTPUT.getPrefix(outputName), true);
 
                 // output var
-                RecordUtil.calcRecordVarValues(context, expValuesMap, readerRecord, outputRecordPaths, outputTable.getExpVarTable());
+                RecordUtil.calcRecordVarValues(context, expValuesMap, writeRecord, outputRecordPaths, outputTable.getExpVarTable());
 
                 PropertyValue filterPropValue = context.newPropertyValue(filter);
                 filterPropValue = filterPropValue.evaluateAttributeExpressions(inputFlowFile, expValuesMap);
