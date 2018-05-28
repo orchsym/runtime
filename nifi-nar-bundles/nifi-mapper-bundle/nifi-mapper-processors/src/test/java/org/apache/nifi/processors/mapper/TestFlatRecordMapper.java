@@ -11,7 +11,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -26,6 +29,7 @@ import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.processors.mapper.exp.MapperExpField;
 import org.apache.nifi.processors.mapper.exp.MapperTable;
 import org.apache.nifi.processors.mapper.exp.MapperTableType;
+import org.apache.nifi.processors.mapper.exp.VarTableType;
 import org.apache.nifi.reporting.InitializationException;
 import org.apache.nifi.serialization.record.MockRecordParser;
 import org.apache.nifi.serialization.record.MockRecordWriter;
@@ -39,14 +43,20 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestRecordMapper {
+/**
+ * 
+ * @author GU Guoqiang
+ * 
+ */
+public class TestFlatRecordMapper {
     private static final int TEST_NUM = 100;
+    final static String PRE_INPUT_MAIN_VAR = MapperTableType.INPUT.getPrefix(RecordMapper.DEFAULT_MAIN);
+
     private static Schema mainStaffSchema;
 
     private TestRunner runner;
     private MockRecordParser readerService;
     private MockRecordWriter writerService;
-    final String PRE_MAIN_INPUT_EXP = RecordMapper.PRE_INPUT + RecordMapper.DEFAULT_MAIN;
 
     @BeforeClass
     public static void init() throws IOException {
@@ -210,7 +220,7 @@ public class TestRecordMapper {
         final List<MapperExpField> expFields = mainStaffSchema.getFields().stream().map(f -> {
             MapperExpField ef = new MapperExpField();
             ef.setPath('/' + f.name());
-            ef.setExp("${" + PRE_MAIN_INPUT_EXP + '.' + f.name() + "}");
+            ef.setExp("${" + PRE_INPUT_MAIN_VAR + '.' + f.name() + "}");
             return ef;
         }).collect(Collectors.toList());
         table.getExpressions().addAll(expFields);
@@ -234,7 +244,7 @@ public class TestRecordMapper {
         // expression
         MapperExpField ef = new MapperExpField();
         ef.setPath("/" + newName);
-        ef.setExp("${" + PRE_MAIN_INPUT_EXP + "." + oldName + "}");
+        ef.setExp("${" + PRE_INPUT_MAIN_VAR + '.' + oldName + "}");
         table.getExpressions().add(ef);
 
         // schema
@@ -264,22 +274,10 @@ public class TestRecordMapper {
         // expression for first name and last name to merge
         MapperExpField ef = new MapperExpField();
         ef.setPath("/full_name");
-        ef.setExp("${" + PRE_MAIN_INPUT_EXP + ".first_name:append('-'):append(${" + PRE_MAIN_INPUT_EXP + ".last_name})}");
+        ef.setExp("${" + PRE_INPUT_MAIN_VAR + ".first_name:append('-'):append(${" + PRE_INPUT_MAIN_VAR + ".last_name})}");
         table.getExpressions().add(ef);
 
-        // schema for id name
-        Schema schema = Schema.createRecord(outSchemaName, outSchemaName + " schema", mainStaffSchema.getNamespace(), false);
-
-        List<Field> fields = new ArrayList<>();
-        Field idf = mainStaffSchema.getField("id");
-        idf = new Field(idf.name(), idf.schema(), idf.doc(), idf.defaultVal());
-        fields.add(idf);
-
-        Field namef = mainStaffSchema.getField("first_name");
-        namef = new Field("full_name", namef.schema(), "full_name", (Object) null);
-        fields.add(namef);
-
-        schema.setFields(fields);
+        Schema schema = AvroCreator.createSchema(outSchemaName, AvroCreator.createField("id", Type.INT), AvroCreator.createField("full_name", Type.STRING));
         table.setSchema(schema);
 
         //
@@ -298,7 +296,7 @@ public class TestRecordMapper {
         // expression
         MapperExpField ef = new MapperExpField();
         ef.setPath("/" + newName);
-        ef.setExp("${literal(2018):minus(${" + PRE_MAIN_INPUT_EXP + "." + oldName + ":toDate('yyyy-MM-dd'):format('yyyy'):toNumber()})}");
+        ef.setExp("${literal(2018):minus(${" + PRE_INPUT_MAIN_VAR + '.' + oldName + ":toDate('yyyy-MM-dd'):format('yyyy'):toNumber()})}");
         table.getExpressions().add(ef);
 
         // schema
@@ -332,7 +330,7 @@ public class TestRecordMapper {
         // expression
         MapperExpField ef = new MapperExpField();
         ef.setPath("/" + newName);
-        ef.setExp("${literal(2018):minus(${" + PRE_MAIN_INPUT_EXP + "." + oldName + ":toDate('yyyy-MM-dd'):format('yyyy'):toNumber()})}");
+        ef.setExp("${literal(2018):minus(${" + PRE_INPUT_MAIN_VAR + '.' + oldName + ":toDate('yyyy-MM-dd'):format('yyyy'):toNumber()})}");
         table.getExpressions().add(ef);
 
         // schema
@@ -385,7 +383,7 @@ public class TestRecordMapper {
         // expression
         MapperExpField ef = new MapperExpField();
         ef.setPath("/" + newName);
-        ef.setExp("${literal(2018):minus(${" + PRE_MAIN_INPUT_EXP + "." + oldName + ":toDate('yyyy-MM-dd'):format('yyyy'):toNumber()})}");
+        ef.setExp("${literal(2018):minus(${" + PRE_INPUT_MAIN_VAR + '.' + oldName + ":toDate('yyyy-MM-dd'):format('yyyy'):toNumber()})}");
         table.getExpressions().add(ef);
 
         // schema
@@ -471,7 +469,7 @@ public class TestRecordMapper {
         final List<MapperExpField> expFields = mainStaffSchema.getFields().stream().map(f -> {
             MapperExpField ef = new MapperExpField();
             ef.setPath('/' + f.name());
-            ef.setExp("${" + PRE_MAIN_INPUT_EXP + '.' + f.name() + "}");
+            ef.setExp("${" + PRE_INPUT_MAIN_VAR + '.' + f.name() + "}");
             return ef;
         }).collect(Collectors.toList());
         table1.getExpressions().addAll(expFields);

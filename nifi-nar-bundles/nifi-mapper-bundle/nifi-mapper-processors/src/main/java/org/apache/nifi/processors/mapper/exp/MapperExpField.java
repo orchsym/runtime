@@ -17,6 +17,15 @@ public class MapperExpField {
     @JsonProperty("default")
     private String defaultValue;
 
+    public MapperExpField() {
+        super();
+    }
+
+    public MapperExpField(String path, String exp) {
+        this.path = path;
+        this.exp = exp;
+    }
+
     public String getPath() {
         return path;
     }

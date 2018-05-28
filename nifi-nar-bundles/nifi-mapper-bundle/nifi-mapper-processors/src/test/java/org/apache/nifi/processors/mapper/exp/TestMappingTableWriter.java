@@ -30,6 +30,11 @@ import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
 
+/**
+ * 
+ * @author GU Guoqiang
+ * 
+ */
 public class TestMappingTableWriter {
     private MapperTable.Writer writer;
 

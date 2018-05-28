@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.processors.mapper.avro.DelegateJsonGenerator;
 import org.apache.nifi.serialization.record.RecordSchema;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -76,6 +77,12 @@ public class MapperTable {
     @JsonDeserialize(using = SchemaDeserializer.class)
     @JsonProperty("avro_schema")
     private Schema schema;
+
+    @JsonIgnoreProperties
+    @JsonIgnore
+    private ExpVarTable varTable;
+
+    private List<ExpVar> vars;
 
     public String getId() {
         return id;
@@ -160,6 +167,30 @@ public class MapperTable {
         this.schema = schema;
     }
 
+    public List<ExpVar> getVars() {
+        if (vars == null) {
+            vars = new ArrayList<>();
+        }
+        return vars;
+    }
+
+    public void setVars(List<ExpVar> vars) {
+        this.vars = vars;
+    }
+
+    public ExpVarTable getExpVarTable() {
+        ExpVarTable t = varTable;
+        if (t == null) {
+            synchronized (MapperTable.class) {
+                if (t == null) {
+                    t = new ExpVarTable(getName(), VarTableType.matchTableType(getType()), getVars().toArray(new ExpVar[0]));
+                    varTable = t;
+                }
+            }
+        }
+        return varTable;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -241,10 +272,6 @@ public class MapperTable {
                 return null;
             }
             final ObjectMapper mapper = new ObjectMapper();
-            // SimpleModule module = new SimpleModule();
-            // module.addDeserializer(Schema.class, new SchemaDeserializer() );
-            // mapper.registerModule(module);
-
             return mapper.readValue(value, MapperTable.class);
         }
 
@@ -265,7 +292,6 @@ public class MapperTable {
             final String arrStr = (StringUtils.isBlank(values)) ? EMPTY_ARR : values;
 
             final ObjectMapper mapper = new ObjectMapper();
-            // JavaType javaType = mapper.getTypeFactory().constructParametricType(List.class, ExpTable.class, ExpField.class, ExpTableType.class);
             List<MapperTable> tables = mapper.readValue(arrStr, new TypeReference<List<MapperTable>>() {
             });
             return tables;
@@ -285,11 +311,6 @@ public class MapperTable {
                 return null;
             }
             final ObjectMapper mapper = new ObjectMapper();
-
-            // SimpleModule module = new SimpleModule();
-            // module.addSerializer(Schema.class, new SchemaSerializer() );
-            // mapper.registerModule(module);
-
             return mapper.writeValueAsString(table);
         }
 
