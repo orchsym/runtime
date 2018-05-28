@@ -35,7 +35,6 @@ import org.apache.nifi.serialization.record.type.RecordDataType;
 import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
-import org.apache.nifi.util.Tuple;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -853,5 +852,84 @@ public class TestTreeRecordMapper {
         //
         final String testContents = "\n";
         doRunnerTest(runner, outputTable, 3, testContents);
+    }
+
+    @Test
+    public void testMapRecord_outputAvroRecord_output_filter() throws Exception {
+        final String outSchemaName = "out_output_filter";
+
+        final MapperTable outputTable = createOutputTable(outSchemaName);
+
+        // filter male, female left
+        // outputTable.getVars().addAll(Arrays.asList(new ExpVar("sex", "/sex"))); //because flat, so no need define the var
+        outputTable.setFilter("${output." + outSchemaName + ".sex:equals('female')}");
+
+        doTest_output_var_filter(outputTable);
+    }
+
+    @Test
+    public void testMapRecord_outputAvroRecord_output_var_filter() throws Exception {
+        final String outSchemaName = "out_output_var_filter";
+
+        final MapperTable outputTable = createOutputTable(outSchemaName);
+
+        // filter male, female left
+        outputTable.getVars().addAll(Arrays.asList(new ExpVar("sex", "/sex")));
+        outputTable.setFilter("${output." + outSchemaName + "._var_.sex:equals('female')}");
+
+        doTest_output_var_filter(outputTable);
+    }
+
+    @Test
+    public void testMapRecord_outputAvroRecord_output_shortVar_filter() throws Exception {
+        final String outSchemaName = "out_output_shortvar_filter";
+
+        final MapperTable outputTable = createOutputTable(outSchemaName);
+
+        // filter male, female left
+        outputTable.getVars().addAll(Arrays.asList(new ExpVar("sex", "/sex")));
+        outputTable.setFilter("${sex:equals('female')}");
+
+        doTest_output_var_filter(outputTable);
+    }
+
+    private void doTest_output_var_filter(final MapperTable outputTable) throws Exception {
+        final List<MapperExpField> expressions = outputTable.getExpressions();
+        // expressions.add(new MapperExpField("/id", "${input.main.id}")); //implicitly
+        expressions.add(new MapperExpField("/user", "${" + PRE_INPUT_MAIN + ".name}")); // use expression directly
+        expressions.add(new MapperExpField("/user_id", "${" + PRE_INPUT_MAIN_VAR + ".user_id}"));
+        expressions.add(new MapperExpField("/sex", "${" + PRE_INPUT_MAIN_VAR + ".sex}"));
+        expressions.add(new MapperExpField("/address", "${" + PRE_INPUT_MAIN_VAR + ".address}"));
+
+        Schema schema = AvroCreator.createSchema(outputTable.getName(), AvroCreator.createField("id", Type.INT), AvroCreator.createField("user", Type.STRING),
+                AvroCreator.createField("user_id", Type.INT), AvroCreator.createField("sex", Type.STRING), AvroCreator.createField("address", Type.STRING));
+        outputTable.setSchema(schema);
+
+        // input
+        MapperTable inputTable = createInputTable(INPUT_SCHEMA_NAME);
+        final Schema fakeSchema = Schema.createRecord(inputTable.getName(), null, "junit.test", false, Arrays.asList(new Field("fake", Schema.create(Type.STRING), null, (Object) null)));
+        inputTable.setSchema(fakeSchema);
+        // var
+        ExpVarTable varTable = new ExpVarTable(inputTable.getName(), new ExpVar("user_id", "substringAfter(/name,' ')"), // function of record path
+                new ExpVar("flag", "/flag"), new ExpVar("sex", "${flag:toLower():replace('true', 'male'):replace('false', 'female')}"), // re-use var for expression
+                new ExpVar("country", "/home/address/country"), new ExpVar("city", "/home/address/city"), new ExpVar("street", "/home/address/street"), new ExpVar("post", "/home/post"),
+                new ExpVar("street", "/home/address/street"), // record path
+                new ExpVar("address", "${street:append(' '):append(${city}):append(' '):append(${country}):append(' '):append(${post})}")); // expression inner
+        inputTable.getVars().addAll(varTable.getVars());
+
+        PropertyDescriptor inputTableSettings = new PropertyDescriptor.Builder().name(RecordMapper.PRE_INPUT + inputTable.getName()).description(inputTable.getName())
+                .addValidator(StandardValidators.NON_EMPTY_VALIDATOR).expressionLanguageSupported(ExpressionLanguageScope.NONE).dynamic(true).build();
+        runner.setProperty(inputTableSettings, new MapperTable.Writer().write(inputTable));
+
+        //
+        writerService = new MockTreeRecordWriter("junit", schema);
+        runner.addControllerService("treeWriter", writerService);
+        runner.enableControllerService(writerService);
+        runner.setProperty(RecordMapper.RECORD_WRITER, "treeWriter");
+
+        //
+        final String testContents = "junit\n" + //
+                "{\"id\": 1, \"user\": \"World 1\", \"user_id\": 1, \"sex\": \"female\", \"address\": \"world Beijing China 123451\"}\n";
+        doRunnerTest(runner, outputTable, 3, 1, testContents);
     }
 }
