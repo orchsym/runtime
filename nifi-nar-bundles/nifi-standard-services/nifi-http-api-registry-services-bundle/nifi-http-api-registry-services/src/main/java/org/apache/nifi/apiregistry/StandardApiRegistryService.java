@@ -184,10 +184,12 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                         }
                     }
                 }catch(Exception e) {
-
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                    response.getWriter().flush();
+                    return;
                 }
                 
-                if (queryGroupID != null) {
+                if (queryGroupID != null && this.service != null) {
                     Iterator<ApiInfo> infoItr = this.service.apiInfos.iterator();
                     while (infoItr.hasNext()) {
                         ApiInfo apiInfo = (ApiInfo) infoItr.next();
@@ -198,6 +200,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                     }
                 }          
                 apis.put("apis", collectApis);
+
                 Gson gson = new Gson();
                 String json = gson.toJson(apis);
 
