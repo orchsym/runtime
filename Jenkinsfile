@@ -4,11 +4,6 @@ pipeline {
   environment {
     PROJECT_NAME = 'runtime'
     BUILD_OUTPUT_FILE = "${WORKSPACE}/build.output"
-    RUNTIME_DEV_VERSION = 'dev'
-    RUNTIME_TEST_VERSION = 'master'
-    RUNTIME_STAGE_VERSION = 'master'
-    RUNTIME_PROD_VERSION = 'master'
-    // compile_target = 'runtime-1.7.0-SNAPSHOT-bin.tar.gz'
   }
 
   tools {
@@ -51,10 +46,30 @@ pipeline {
         script {
           env.compile_target = readFile("compile_target").trim()
         }
+        // compile_target = 'runtime-1.7.0-SNAPSHOT-bin.tar.gz'
 
         slackSend (
           color: 'good',
           message: "${env.EMOJI_SERVICE_RUNTIME} *Compile Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nGenerated `${env.compile_target}`"
+        )
+      }
+    }
+
+    stage('Copy to Ansible host') {
+      steps {
+        slackSend (
+          color: 'good',
+          message: "${env.EMOJI_SERVICE_RUNTIME} *Copy to Ansible host*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        )
+
+        // nifi-assembly/target/runtime-1.7.0-SNAPSHOT-bin.tar.gz
+        sh """
+          scp nifi-assembly/target/${env.compile_target} root@${env.ANSIBLE_DEPLOY_HOST}:${env.ANSIBLE_DEVOPS_PATH}/ansible/packages/services/
+        """
+
+        slackSend(
+          color: 'good',
+          message: "${env.EMOJI_SERVICE_RUNTIME} *Copy finished*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
         )
       }
     }
@@ -65,20 +80,16 @@ pipeline {
       steps {
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Updating the Orchsym runtime `Dev` Environment (`${env.RUNTIME_DEV_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_START}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+          message: "${env.EMOJI_SERVICE_RUNTIME} *Updating `Dev` (`${env.ORCHSYM_DEV_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_START}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
         )
 
-        // nifi-assembly/target/runtime-1.7.0-SNAPSHOT-bin.tar.gz
         sh """
-          ssh root@${env.RUNTIME_DEV_ENVIRONMENT} "mkdir -p /data/packages/services"
-          scp nifi-assembly/target/${env.compile_target} root@${env.RUNTIME_DEV_ENVIRONMENT}:/data/packages/services/
-          ssh root@${env.RUNTIME_DEV_ENVIRONMENT} "tar -xzvf /data/packages/services/${env.compile_target} -C ${env.ORCHSYM_INSTALL_BASE_DIR}/"
-          ssh root@${env.RUNTIME_DEV_ENVIRONMENT} "cd ${env.ORCHSYM_INSTALL_BASE_DIR}/runtime && bash bin/nifi.sh restart"
+          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name orchsym-dev --service ${env.PROJECT_NAME}/${env.RUNTIME_DEV_VERSION}"
         """
 
         slackSend(
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Orchsym runtime `Dev` Environment (`${env.RUNTIME_DEV_ENVIRONMENT}`) has been updated! ${env.EMOJI_DEPLOY_SUCCESS}*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+          message: "${env.EMOJI_SERVICE_RUNTIME} *Updated `Dev` (`${env.ORCHSYM_DEV_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_SUCCESS}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
         )
       }
     }
@@ -87,32 +98,27 @@ pipeline {
       when { branch "${env.RUNTIME_TEST_VERSION}" }
 
       steps {
-        slackSend (
-          color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Updating the Orchsym runtime `Test` Environment (`${env.RUNTIME_TEST_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_START}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
-        )
-
-        // nifi-assembly/target/runtime-1.7.0-SNAPSHOT-bin.tar.gz
-        sh """
-          ssh root@${env.RUNTIME_TEST_ENVIRONMENT} "mkdir -p /data/packages/services"
-          scp nifi-assembly/target/${env.compile_target} root@${env.RUNTIME_TEST_ENVIRONMENT}:/data/packages/services/
-          ssh root@${env.RUNTIME_TEST_ENVIRONMENT} "tar -xzvf /data/packages/services/${env.compile_target} -C ${env.ORCHSYM_INSTALL_BASE_DIR}/"
-          ssh root@${env.RUNTIME_TEST_ENVIRONMENT} "cd ${env.ORCHSYM_INSTALL_BASE_DIR}/runtime && bash bin/nifi.sh restart"
-        """
-
-        slackSend(
-          color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Orchsym runtime `Test` Environment (`${env.RUNTIME_TEST_ENVIRONMENT}`) has been updated! ${env.EMOJI_DEPLOY_SUCCESS}*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
-        )
+        echo "TODO"
       }
     }
-
 
     stage('Deploy to Stage') {
       when { branch "${env.RUNTIME_STAGE_VERSION}" }
 
       steps {
-        echo "TODO"
+        slackSend (
+          color: 'good',
+          message: "${env.EMOJI_SERVICE_RUNTIME} *Updating `Stage` (`${env.ORCHSYM_STAGE_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_START}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        )
+
+        sh """
+          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name orchsym-stage --service ${env.PROJECT_NAME}/${env.RUNTIME_STAGE_VERSION}"
+        """
+
+        slackSend(
+          color: 'good',
+          message: "${env.EMOJI_SERVICE_RUNTIME} *Updated `Stage` (`${env.ORCHSYM_STAGE_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_SUCCESS}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        )
       }
     }
 
@@ -128,7 +134,7 @@ pipeline {
       steps {
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Uploading to Samba*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`"
+          message: "${env.EMOJI_SERVICE_RUNTIME} *Upload to Samba*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`"
         )
 
         sh """
@@ -146,7 +152,7 @@ pipeline {
       steps {
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME}*Uploading to S2*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`"
+          message: "${env.EMOJI_SERVICE_RUNTIME}*Upload to S2*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`"
         )
 
         sh """
