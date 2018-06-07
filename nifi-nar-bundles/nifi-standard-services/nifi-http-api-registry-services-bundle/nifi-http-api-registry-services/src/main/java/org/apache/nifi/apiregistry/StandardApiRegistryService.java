@@ -126,9 +126,8 @@ public class StandardApiRegistryService extends AbstractControllerService implem
 
             this.server = server;
             server.start();
-            } catch(Exception exception){
-        }
-        
+        } catch(Exception exception){
+        }   
     }
 
     @OnDisabled
@@ -159,32 +158,42 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                 //get groupid, uri:/apis?groupid=123
                 String query = request.getQueryString();
                 String queryGroupID = null;
-                
-                try {
-                    Map<String, String> query_pairs = splitQuery(query);
-                    for (Map.Entry<String, String> entry : query_pairs.entrySet()) {  
-                        if (entry.getKey().equals("groupid")) {
-                            if (!entry.getValue().equals("")) {
-                                queryGroupID = entry.getValue();
-                            }
-                        }
-                    }
-                }catch(Exception e) {
-                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                    response.getWriter().flush();
-                    return;
-                }
-                
-                if (queryGroupID != null && this.service != null) {
+
+                if (query == null) {
                     Iterator<ApiInfo> infoItr = this.service.apiInfos.iterator();
                     while (infoItr.hasNext()) {
                         ApiInfo apiInfo = (ApiInfo) infoItr.next();
-                        String groupID = apiInfo.groupID;
-                        if (groupID.equals(queryGroupID)) {
-                            collectApis.add(apiInfo);
-                        }
+                        collectApis.add(apiInfo);
                     }
-                }          
+                } else {
+
+                    try {
+                        Map<String, String> query_pairs = splitQuery(query);
+                        for (Map.Entry<String, String> entry : query_pairs.entrySet()) {  
+                            if (entry.getKey().equals("groupid")) {
+                                if (!entry.getValue().equals("")) {
+                                    queryGroupID = entry.getValue();
+                                }
+                            }
+                        }
+                    }catch(Exception e) {
+                        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                        response.getWriter().flush();
+                        return;
+                    }
+                    
+                    if (queryGroupID != null && this.service != null) {
+                        Iterator<ApiInfo> infoItr = this.service.apiInfos.iterator();
+                        while (infoItr.hasNext()) {
+                            ApiInfo apiInfo = (ApiInfo) infoItr.next();
+                            String groupID = apiInfo.groupID;
+                            if (groupID.equals(queryGroupID)) {
+                                collectApis.add(apiInfo);
+                            }
+                        }
+                    } 
+                }
+                         
                 apis.put("apis", collectApis);
 
                 Gson gson = new Gson();
