@@ -30,6 +30,7 @@ import org.apache.nifi.controller.ConfigurationContext;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.reporting.InitializationException;
+import org.apache.nifi.util.NiFiProperties;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -68,7 +69,12 @@ import java.io.InputStreamReader;
 
 @Tags({ "api registry"})
 @CapabilityDescription("This service is for api registry")
-public class StandardApiRegistryService extends AbstractControllerService implements ApiRegisterService {
+public class StandardApiRegistryService extends AbstractControllerService implements ApiRegistryService {
+
+    private static final String PROPERTIES_NIFI_WEB_HTTP_HOST = "nifi.web.http.host";
+    private static final String PROPERTIES_NIFI_WEB_HTTP_PORT = "nifi.web.http.port";
+    private static final String PROPERTIES_NIFI_WEB_HTTPS_HOST = "nifi.web.https.host";
+    private static final String PROPERTIES_NIFI_WEB_HTTPS_PORT = "nifi.web.https.port";
 
     public static final PropertyDescriptor REQ_PATH = new PropertyDescriptor
             .Builder().name("Req_Path")
@@ -107,7 +113,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
     }
 
     @OnEnabled
-    public void onConfigured(final ConfigurationContext context) {
+    public void onConfigured(final ConfigurationContext context) throws Exception{
 
         requestPath = context.getProperty(REQ_PATH).getValue();
         port = context.getProperty(REQ_PORT).asInteger();
@@ -126,13 +132,14 @@ public class StandardApiRegistryService extends AbstractControllerService implem
 
             this.server = server;
             server.start();
-        } catch(Exception exception){
+        } catch(Exception e){
+            getLogger().error("start api resistry serverice failed");
+            throw new Exception("start api resistry serverice failed ", e);
         }   
     }
 
     @OnDisabled
     public void onDisabled() throws Exception{
-
         server.stop();
         server.destroy();
         server.join();
@@ -200,7 +207,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                 String json = gson.toJson(apis);
 
                 response.setStatus(HttpServletResponse.SC_OK);
-                response.setContentType("application/json");
+                response.setContentType("application/json; charset=utf-8");
                 response.getWriter().write(json);
                 response.getWriter().flush();
             } else {
@@ -287,13 +294,10 @@ public class StandardApiRegistryService extends AbstractControllerService implem
     private String getProcessorGroupID(String processorID){
 
         String groupID = "";
-        String url = "http://127.0.0.1:8080/nifi-api/processors/" + processorID; 
-
+        String url = getUrlInfo(processorID);
         HttpClient client = new DefaultHttpClient();
         HttpGet request = new HttpGet(url);
-
         try {
-
             HttpResponse response = client.execute(request);
             BufferedReader rd = new BufferedReader(
                     new InputStreamReader(response.getEntity().getContent()));
@@ -304,9 +308,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                 result.append(line);
             }
             JsonObject jsonObject = new JsonParser().parse(result.toString()).getAsJsonObject();
-
             JsonObject statusObj = jsonObject.getAsJsonObject("status");
-
             for (Entry<String, JsonElement> entry : statusObj.entrySet())
             {
                 if (entry.getKey().equals("groupId")) {
@@ -315,11 +317,47 @@ public class StandardApiRegistryService extends AbstractControllerService implem
             }
             
         } catch (IOException except){
+            getLogger().error("parse response failed");
         } finally {
             request.releaseConnection();
         }
         
         return groupID;
+    }
+
+    private String getUrlInfo(String processorID) {
+
+        String host;
+        String port;
+        String scheme;
+
+        final NiFiProperties properties = NiFiProperties.createBasicNiFiProperties(null, null);
+        String httpHost = properties.getProperty(PROPERTIES_NIFI_WEB_HTTP_HOST);
+        String httpPort = properties.getProperty(PROPERTIES_NIFI_WEB_HTTP_PORT);
+        String httpsHost = properties.getProperty(PROPERTIES_NIFI_WEB_HTTPS_HOST);
+        String httpsPort = properties.getProperty(PROPERTIES_NIFI_WEB_HTTPS_PORT);
+
+        if (!httpPort.equals("")) {
+            //http
+            scheme = "http";
+            port = httpPort;
+            if (httpHost.equals("")) {
+                host = "127.0.0.1";
+            } else {
+                host = httpHost;
+            }
+        } else {
+            //https
+            scheme = "https";
+            port = httpsPort;
+            if (httpsHost.equals("")) {
+                host = "127.0.0.1";
+            } else {
+                host = httpsHost;
+            }
+        }
+        String url = scheme + "://" + host + ":" + port + "/nifi-api/processors/" + processorID;
+        return url;
     }
 
     private Map<String, String> splitQuery(String query) throws UnsupportedEncodingException{
