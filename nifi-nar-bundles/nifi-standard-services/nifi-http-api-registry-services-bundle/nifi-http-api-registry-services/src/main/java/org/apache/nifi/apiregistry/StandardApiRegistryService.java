@@ -133,7 +133,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
             this.server = server;
             server.start();
         } catch(Exception e){
-            getLogger().error("start api resistry serverice failed");
+            getLogger().error("start api resistry serverice failed: " + e);
             throw new Exception("start api resistry serverice failed ", e);
         }   
     }
@@ -309,15 +309,13 @@ public class StandardApiRegistryService extends AbstractControllerService implem
             }
             JsonObject jsonObject = new JsonParser().parse(result.toString()).getAsJsonObject();
             JsonObject statusObj = jsonObject.getAsJsonObject("status");
-            for (Entry<String, JsonElement> entry : statusObj.entrySet())
-            {
+            for (Entry<String, JsonElement> entry : statusObj.entrySet()) {
                 if (entry.getKey().equals("groupId")) {
                     groupID = ((JsonElement)entry.getValue()).getAsString();
                 }
             }
-            
-        } catch (IOException except){
-            getLogger().error("parse response failed");
+        } catch (IOException e){
+            getLogger().error("parse response failed " + e);
         } finally {
             request.releaseConnection();
         }
@@ -337,11 +335,11 @@ public class StandardApiRegistryService extends AbstractControllerService implem
         String httpsHost = properties.getProperty(PROPERTIES_NIFI_WEB_HTTPS_HOST);
         String httpsPort = properties.getProperty(PROPERTIES_NIFI_WEB_HTTPS_PORT);
 
-        if (!httpPort.equals("")) {
+        if (!httpPort.trim().equals("")) {
             //http
             scheme = "http";
             port = httpPort;
-            if (httpHost.equals("")) {
+            if (httpHost.trim().equals("")) {
                 host = "127.0.0.1";
             } else {
                 host = httpHost;
@@ -350,7 +348,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
             //https
             scheme = "https";
             port = httpsPort;
-            if (httpsHost.equals("")) {
+            if (httpsHost.trim().equals("")) {
                 host = "127.0.0.1";
             } else {
                 host = httpsHost;

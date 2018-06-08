@@ -780,7 +780,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         try {
             apiInfo = getApiInfo(context);
         } catch (Exception exc) {
-            getLogger().debug("Failed to get the Api Info");
+            getLogger().error("Failed to get the Api Info: " + exc);
             throw new ProcessException("Failed to getApiInfo", exc);
         }
 
