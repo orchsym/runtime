@@ -133,7 +133,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
             this.server = server;
             server.start();
         } catch(Exception e){
-            getLogger().error("start api resistry serverice failed: " + e);
+            getLogger().error("start api resistry serverice failed ", e);
             throw new Exception("start api resistry serverice failed ", e);
         }   
     }
@@ -315,7 +315,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                 }
             }
         } catch (IOException e){
-            getLogger().error("parse response failed " + e);
+            getLogger().error("parse response failed", e);
         } finally {
             request.releaseConnection();
         }
