@@ -96,6 +96,7 @@
         <module>nifi-saphana-bundle</module>
         <module>nifi-soap-bundle</module>
         <module>nifi-mapper-bundle</module>
+        <module>nifi-dubbo-bundle</module>
   </modules>
 
     <build>

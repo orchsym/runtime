@@ -1,0 +1,42 @@
+{
+	"persons": {
+		"class": "java.util.List",
+		"persons": [
+			{
+				"class": "com.baishancloud.orchsym.processors.dubbo.it.Person",
+				"id": 1,
+				"name": "Zhang",
+				"age": 28
+			},
+			{
+				"class": "com.baishancloud.orchsym.processors.dubbo.it.Person",
+				"id": 2,
+				"name": "Wang",
+				"age": 26
+			},
+			{
+				"class": "com.baishancloud.orchsym.processors.dubbo.it.Person",
+				"id": 3,
+				"name": "Li",
+				"age": 22
+			}
+		]
+	},
+	"dogs": {
+		"class": "java.util.List",
+		"dogs": [
+			{
+				"class": "com.baishancloud.orchsym.processors.dubbo.it.Dog",
+				"id": 21,
+				"name": "kemi",
+				"color": 123
+			},
+			{
+				"class": "com.baishancloud.orchsym.processors.dubbo.it.Dog",
+				"id": 22,
+				"name": "nick",
+				"color": 456
+			}
+		]
+	}
+}
