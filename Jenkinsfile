@@ -38,6 +38,8 @@ pipeline {
     stage('Build') {
       steps {
         sh """
+          mvn build-helper:parse-version versions:set -DnewVersion=${env.BRANCH_NAME}
+
           mvn -T 4 install -Dmaven.test.failure.ignore=true
 
           echo `ls nifi-assembly/target/ | grep '.tar.gz\$'` > compile_target
@@ -84,7 +86,7 @@ pipeline {
         )
 
         sh """
-          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name orchsym-dev --service ${env.PROJECT_NAME}/${env.RUNTIME_DEV_VERSION}"
+          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name orchsym-dev --service ${env.PROJECT_NAME}/${env.RUNTIME_DEV_VERSION} --skip-download"
         """
 
         slackSend(
@@ -112,7 +114,7 @@ pipeline {
         )
 
         sh """
-          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name orchsym-stage --service ${env.PROJECT_NAME}/${env.RUNTIME_STAGE_VERSION}"
+          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name orchsym-stage --service ${env.PROJECT_NAME}/${env.RUNTIME_STAGE_VERSION} --skip-download"
         """
 
         slackSend(
@@ -197,7 +199,7 @@ pipeline {
     success {
       slackSend (
         color: 'good',
-        message: "${env.EMOJI_SERVICE_RUNTIME} *Build Succceed* ${env.EMOJI_BUILD_SUCCESS} Jenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}\n${env.build_output}"
+        message: "${env.EMOJI_SERVICE_RUNTIME} *Build Succeed* ${env.EMOJI_BUILD_SUCCESS} Jenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}\n${env.build_output}"
       )
     }
 
