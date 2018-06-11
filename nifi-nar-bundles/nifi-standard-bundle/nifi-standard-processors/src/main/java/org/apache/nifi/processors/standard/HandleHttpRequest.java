@@ -84,7 +84,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
-import org.apache.nifi.apiregistry.ApiRegisterService;
+import org.apache.nifi.apiregistry.ApiRegistryService;
 import org.apache.nifi.apiregistry.ApiInfo;
 
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
@@ -243,19 +243,19 @@ public class HandleHttpRequest extends AbstractProcessor {
     public static final PropertyDescriptor HTTP_API_REGISTRY = new PropertyDescriptor.Builder()
             .name("HTTP API Registry Service")
             .description("this is service is for api registry")
-            .required(true)
-            .identifiesControllerService(ApiRegisterService.class)
+            .required(false)
+            .identifiesControllerService(ApiRegistryService.class)
             .build();
 
     private static final List<PropertyDescriptor> propertyDescriptors;
 
     static {
         List<PropertyDescriptor> descriptors = new ArrayList<>();
-        descriptors.add(HTTP_API_REGISTRY);
         descriptors.add(PORT);
         descriptors.add(HOSTNAME);
         descriptors.add(SSL_CONTEXT);
         descriptors.add(HTTP_CONTEXT_MAP);
+        descriptors.add(HTTP_API_REGISTRY);
         descriptors.add(PATH_REGEX);
         descriptors.add(URL_CHARACTER_SET);
         descriptors.add(ALLOW_GET);
@@ -275,7 +275,7 @@ public class HandleHttpRequest extends AbstractProcessor {
     private volatile BlockingQueue<HttpRequestContainer> containerQueue;
 
     private String schema;
-    private ApiRegisterService apiRegistryService;
+    private ApiRegistryService apiRegistryService;
 
     //processor state, init running stopped?
     private String state;
@@ -301,9 +301,9 @@ public class HandleHttpRequest extends AbstractProcessor {
         if (descriptor.getName().equals("HTTP API Registry Service")) {
 
             ControllerServiceLookup serviceLookup = getControllerServiceLookup();
-            ApiRegisterService service;
+            ApiRegistryService service;
             if (newValue != null) {
-                service = (ApiRegisterService)serviceLookup.getControllerService(newValue);
+                service = (ApiRegistryService)serviceLookup.getControllerService(newValue);
                 if (service != null && serviceLookup.isControllerServiceEnabled(service)) {
                     
                     this.apiRegistryService = service;
@@ -319,7 +319,7 @@ public class HandleHttpRequest extends AbstractProcessor {
     }
 
     @OnScheduled
-    public void onScheduled(final ProcessContext context) {
+    public void onScheduled(final ProcessContext context) throws Exception{
         initialized.set(false);
 
         this.state = "running";
@@ -780,13 +780,14 @@ public class HandleHttpRequest extends AbstractProcessor {
         try {
             apiInfo = getApiInfo(context);
         } catch (Exception exc) {
-            return;
+            getLogger().error("Failed to get the Api Info", exc);
+            throw new ProcessException("Failed to getApiInfo", exc);
         }
 
-        ApiRegisterService apiRegisterService = context.getProperty(HTTP_API_REGISTRY).asControllerService(ApiRegisterService.class);
-        this.apiRegistryService = apiRegisterService;
+        ApiRegistryService apiRegistryService = context.getProperty(HTTP_API_REGISTRY).asControllerService(ApiRegistryService.class);
+        this.apiRegistryService = apiRegistryService;
         
-        apiRegisterService.registerApiInfo(apiInfo, shouldHandleGroupID);
+        apiRegistryService.registerApiInfo(apiInfo, shouldHandleGroupID);
     }
 
     private ApiInfo getApiInfo(final ProcessContext context) throws Exception{

@@ -24,9 +24,9 @@ import org.apache.nifi.processor.exception.ProcessException;
 
 import java.util.HashMap;
 
-@Tags({"register Service"})
-@CapabilityDescription("Api Regigter Service.")
-public interface ApiRegisterService extends ControllerService {
+@Tags({"Regitstry Service"})
+@CapabilityDescription("Api Regitstry Service.")
+public interface ApiRegistryService extends ControllerService {
 
     public void registerApiInfo(ApiInfo apiInfo, Boolean shouldHandleGroupID);
 
