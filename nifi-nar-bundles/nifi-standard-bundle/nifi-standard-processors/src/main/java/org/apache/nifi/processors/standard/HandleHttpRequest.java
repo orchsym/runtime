@@ -26,6 +26,7 @@ import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
+import org.apache.nifi.annotation.lifecycle.OnRemoved;
 import org.apache.nifi.components.AllowableValue;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.expression.ExpressionLanguageScope;
@@ -51,6 +52,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.apache.nifi.controller.ControllerServiceLookup;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
@@ -81,6 +83,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
+
+import org.apache.nifi.apiregistry.ApiRegistryService;
+import org.apache.nifi.apiregistry.ApiInfo;
 
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
 @Tags({"http", "https", "request", "listen", "ingress", "web service"})
@@ -235,6 +240,13 @@ public class HandleHttpRequest extends AbstractProcessor {
             .description("All content that is received is routed to the 'success' relationship")
             .build();
 
+    public static final PropertyDescriptor HTTP_API_REGISTRY = new PropertyDescriptor.Builder()
+            .name("HTTP API Registry Service")
+            .description("this is service is for api registry")
+            .required(false)
+            .identifiesControllerService(ApiRegistryService.class)
+            .build();
+
     private static final List<PropertyDescriptor> propertyDescriptors;
 
     static {
@@ -243,6 +255,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         descriptors.add(HOSTNAME);
         descriptors.add(SSL_CONTEXT);
         descriptors.add(HTTP_CONTEXT_MAP);
+        descriptors.add(HTTP_API_REGISTRY);
         descriptors.add(PATH_REGEX);
         descriptors.add(URL_CHARACTER_SET);
         descriptors.add(ALLOW_GET);
@@ -261,6 +274,12 @@ public class HandleHttpRequest extends AbstractProcessor {
     private AtomicBoolean initialized = new AtomicBoolean(false);
     private volatile BlockingQueue<HttpRequestContainer> containerQueue;
 
+    private String schema;
+    private ApiRegistryService apiRegistryService;
+
+    //processor state, init running stopped?
+    private String state;
+
     @Override
     protected List<PropertyDescriptor> getSupportedPropertyDescriptors() {
         return propertyDescriptors;
@@ -271,9 +290,62 @@ public class HandleHttpRequest extends AbstractProcessor {
         return Collections.singleton(REL_SUCCESS);
     }
 
+    @Override
+    public void onPropertyModified(final PropertyDescriptor descriptor, final String oldValue, final String newValue) {
+        if (this.apiRegistryService != null) {
+            modifyApiInfoFromService(descriptor.getName(), newValue);
+            return;
+        }
+
+        //fresh
+        if (descriptor.getName().equals("HTTP API Registry Service")) {
+
+            ControllerServiceLookup serviceLookup = getControllerServiceLookup();
+            ApiRegistryService service;
+            if (newValue != null) {
+                service = (ApiRegistryService)serviceLookup.getControllerService(newValue);
+                if (service != null && serviceLookup.isControllerServiceEnabled(service)) {
+                    
+                    this.apiRegistryService = service;
+
+                    ApiInfo apiInfo = new ApiInfo();
+                    apiInfo.id = this.getIdentifier();
+
+                    //pre register api info to server
+                    this.apiRegistryService.registerApiInfo(apiInfo, false);
+                }
+            }         
+        }
+    }
+
     @OnScheduled
-    public void clearInit(){
+    public void onScheduled(final ProcessContext context) throws Exception{
         initialized.set(false);
+
+        this.state = "running";
+
+        //register api info to api registery service
+        registerApiInfoToService(context, true);
+    }
+
+    @OnStopped
+    public void shutdown() throws Exception{
+
+        this.state = "stopped";
+        modifyApiInfoFromService("state", this.state);
+
+        if (server != null) {
+            getLogger().debug("Shutting down server");
+            server.stop();
+            server.destroy();
+            server.join();
+            getLogger().info("Shut down {}", new Object[]{server});
+        }
+    }
+
+    @OnRemoved
+    public void onRemoved(ProcessContext processContext) {
+        unregisterApiInfoFromService(this.getIdentifier());
     }
 
     private synchronized void initializeServer(final ProcessContext context) throws Exception {
@@ -469,17 +541,6 @@ public class HandleHttpRequest extends AbstractProcessor {
         }
 
         return sslFactory;
-    }
-
-    @OnStopped
-    public void shutdown() throws Exception {
-        if (server != null) {
-            getLogger().debug("Shutting down server");
-            server.stop();
-            server.destroy();
-            server.join();
-            getLogger().info("Shut down {}", new Object[]{server});
-        }
     }
 
     @Override
@@ -712,4 +773,75 @@ public class HandleHttpRequest extends AbstractProcessor {
             return context;
         }
     }
+
+    private void registerApiInfoToService(final ProcessContext context, Boolean shouldHandleGroupID) {
+
+        ApiInfo apiInfo;
+        try {
+            apiInfo = getApiInfo(context);
+        } catch (Exception exc) {
+            getLogger().error("Failed to get the Api Info", exc);
+            throw new ProcessException("Failed to getApiInfo", exc);
+        }
+
+        ApiRegistryService apiRegistryService = context.getProperty(HTTP_API_REGISTRY).asControllerService(ApiRegistryService.class);
+        if (apiRegistryService != null) {
+            this.apiRegistryService = apiRegistryService;
+            apiRegistryService.registerApiInfo(apiInfo, shouldHandleGroupID);   
+        }
+    }
+
+    private ApiInfo getApiInfo(final ProcessContext context) throws Exception{
+
+        ApiInfo apiInfo = new ApiInfo();
+        
+        String name = context.getName();
+        apiInfo.name = name;
+
+        apiInfo.id = this.getIdentifier();
+
+        String host = context.getProperty(HOSTNAME).getValue();
+        apiInfo.host = host;
+
+        int port = context.getProperty(PORT).asInteger();
+        apiInfo.port = port;
+
+        final HttpContextMap httpContextMap = context.getProperty(HTTP_CONTEXT_MAP).asControllerService(HttpContextMap.class);
+        long requestTimeout = httpContextMap.getRequestTimeout(TimeUnit.MILLISECONDS);
+        apiInfo.requestTimeout = requestTimeout;
+
+        apiInfo.allowGet = context.getProperty(ALLOW_GET).asBoolean();
+        apiInfo.allowPost = context.getProperty(ALLOW_POST).asBoolean();
+        apiInfo.allowPut = context.getProperty(ALLOW_PUT).asBoolean();
+        apiInfo.allowDelete = context.getProperty(ALLOW_DELETE).asBoolean();
+        apiInfo.allowHead = context.getProperty(ALLOW_HEAD).asBoolean();
+        apiInfo.allowOptions = context.getProperty(ALLOW_OPTIONS).asBoolean();
+
+        String charset = context.getProperty(URL_CHARACTER_SET).getValue();
+        apiInfo.charset = charset;
+
+        String path = context.getProperty(PATH_REGEX).getValue();
+        apiInfo.path = path;
+
+        apiInfo.schema = this.schema;
+
+        apiInfo.state = this.state;
+
+        return apiInfo;
+    }
+
+    private void modifyApiInfoFromService(String key, String value) {
+
+        if (this.apiRegistryService != null) {
+            this.apiRegistryService.modifyApiInfo(this.getIdentifier(), key, value);
+        }
+    }
+
+    private void unregisterApiInfoFromService(String id) {
+
+        if (this.apiRegistryService != null) {
+            this.apiRegistryService.unregisterApiInfo(id);   
+        }
+    }
+
 }

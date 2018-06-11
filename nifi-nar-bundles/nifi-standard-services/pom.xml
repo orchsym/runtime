@@ -23,6 +23,8 @@
     <artifactId>nifi-standard-services</artifactId>
     <packaging>pom</packaging>
     <modules>
+        <module>nifi-http-api-registry-service-api</module>
+        <module>nifi-http-api-registry-services-bundle</module>
         <module>nifi-distributed-cache-client-service-api</module>
         <module>nifi-distributed-cache-services-bundle</module>
         <module>nifi-load-distribution-service-api</module>
