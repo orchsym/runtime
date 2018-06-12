@@ -785,9 +785,10 @@ public class HandleHttpRequest extends AbstractProcessor {
         }
 
         ApiRegistryService apiRegistryService = context.getProperty(HTTP_API_REGISTRY).asControllerService(ApiRegistryService.class);
-        this.apiRegistryService = apiRegistryService;
-        
-        apiRegistryService.registerApiInfo(apiInfo, shouldHandleGroupID);
+        if (apiRegistryService != null) {
+            this.apiRegistryService = apiRegistryService;
+            apiRegistryService.registerApiInfo(apiInfo, shouldHandleGroupID);   
+        }
     }
 
     private ApiInfo getApiInfo(final ProcessContext context) throws Exception{
