@@ -274,7 +274,7 @@ public class HandleHttpRequest extends AbstractProcessor {
     private AtomicBoolean initialized = new AtomicBoolean(false);
     private volatile BlockingQueue<HttpRequestContainer> containerQueue;
 
-    private String schema;
+    private String scheme;
     private ApiRegistryService apiRegistryService;
 
     //processor state, init running stopped?
@@ -823,7 +823,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         String path = context.getProperty(PATH_REGEX).getValue();
         apiInfo.path = path;
 
-        apiInfo.schema = this.schema;
+        apiInfo.scheme = this.scheme;
 
         apiInfo.state = this.state;
 

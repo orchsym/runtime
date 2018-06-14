@@ -14,7 +14,7 @@ public class ApiInfo {
 
 	public String charset = "UTF-8";
 
-	public String schema;
+	public String scheme;
 
 	public int port = 80;
 

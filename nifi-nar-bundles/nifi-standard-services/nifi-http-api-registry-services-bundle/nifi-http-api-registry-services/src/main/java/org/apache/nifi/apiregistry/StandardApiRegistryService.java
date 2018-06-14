@@ -175,7 +175,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
             if (pathInfo.equals(this.service.getRequestPath())) {
                 HashMap<String, ArrayList<ApiInfo>> apis = new HashMap();
                 ArrayList<ApiInfo> collectApis = new ArrayList();
-
                 //get groupid, uri:/apis?groupid=123
                 String query = request.getQueryString();
                 String queryGroupID = null;
@@ -187,7 +186,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                         collectApis.add(apiInfo);
                     }
                 } else {
-
                     try {
                         Map<String, String> query_pairs = splitQuery(query);
                         for (Map.Entry<String, String> entry : query_pairs.entrySet()) {  
@@ -202,7 +200,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                         response.getWriter().flush();
                         return;
                     }
-                    
                     if (queryGroupID != null && this.service != null) {
                         Iterator<ApiInfo> infoItr = this.service.apiInfos.iterator();
                         while (infoItr.hasNext()) {
@@ -214,9 +211,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                         }
                     } 
                 }
-                         
                 apis.put("apis", collectApis);
-
                 Gson gson = new Gson();
                 String json = gson.toJson(apis);
 
@@ -227,7 +222,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                 return;
 
             } else if(pathInfo.equals("/apis/swagger")){
-
                 ///apis/swagger?processorid=123
                 String query = request.getQueryString();
                 String processorId = null;
@@ -239,22 +233,22 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                             processorId = entry.getValue();
                         }
                     }
-                }catch(Exception e) {
+                    if (processorId != null) {
+                        String swaggerInfo = getSwaggerinfo(processorId);
+                        if (swaggerInfo != null) {
+                            response.setStatus(HttpServletResponse.SC_OK);
+                            response.setContentType("application/json");
+                            response.getWriter().write(swaggerInfo);
+                            response.getWriter().flush();
+                            return;
+                        }
+                    }
 
-                }
-                if (processorId != null) {
-                    //String swaggerInfo = getSwaggerinfo(processorId);
-                    String swaggerInfo = getSwaggerSpec2(processorId);
-                    if (swaggerInfo != null) {
-                        response.setStatus(HttpServletResponse.SC_OK);
-                        response.setContentType("application/json");
-                        response.getWriter().write(swaggerInfo);
-                        response.getWriter().flush();
-                        return;
-                    } 
+                } catch(Exception e) {
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                    response.getWriter().flush();
                 }
             } 
-
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             response.getWriter().flush();
         }
@@ -278,10 +272,8 @@ public class StandardApiRegistryService extends AbstractControllerService implem
 
         ListIterator<ApiInfo> infoItr = this.apiInfos.listIterator();
         while (infoItr.hasNext()) {
-
             ApiInfo apiInfo = (ApiInfo) infoItr.next();
             String apiId = apiInfo.id;
-
             if (apiId.equals(id)) {
                 //modify key value
                 if (key.equals("Hostname")) {
@@ -310,9 +302,9 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                     apiInfo.groupID = value;
                 }else if (key.equals("SSL Context Service")) {
                     if (value.equals("null")) {
-                        apiInfo.schema = "http";
+                        apiInfo.scheme = "http";
                     } else {
-                        apiInfo.schema = "https";
+                        apiInfo.scheme = "https";
                     }
                 }
             }
@@ -321,12 +313,9 @@ public class StandardApiRegistryService extends AbstractControllerService implem
 
     @Override
     public void unregisterApiInfo(String id) {
-
         Iterator<ApiInfo> infoItr = this.apiInfos.iterator();
         while (infoItr.hasNext()) {
-
             ApiInfo apiInfo = (ApiInfo) infoItr.next();
-
             String apiId = apiInfo.id;
             if (apiId.equals(id)) {
                 this.apiInfos.remove(apiInfo);
@@ -366,18 +355,14 @@ public class StandardApiRegistryService extends AbstractControllerService implem
         return groupID;
     }
     
-    private String getSwaggerinfo(String processorId) {
+    private String getSwaggerinfo(String processorId) throws Exception{
 
-        //get package version
-        String version =  this.getClass().getPackage().getImplementationVersion();
-        processorId = "43880da4-0163-1000-0f41-40e0223a3578";
-        String url = "http://127.0.0.1:8080/nifi-handle-http-request-ui-" + version +"/api/property/info?processorId=" + processorId;
+        String url = getPropertyUrl(processorId);
 
         HttpClient client = new DefaultHttpClient();
         HttpGet request = new HttpGet(url);
         String swaggerInfo = null;
         try {
-
             HttpResponse response = client.execute(request);
             BufferedReader rd = new BufferedReader(
                     new InputStreamReader(response.getEntity().getContent()));
@@ -387,13 +372,9 @@ public class StandardApiRegistryService extends AbstractControllerService implem
             while ((line = rd.readLine()) != null) {
                 info.append(line);
             }
-            swaggerInfo = getSwaggerSpec(info.toString());
-
-            System.out.println("1111 get info: " + swaggerInfo);
-            // JsonObject jsonObject = new JsonParser().parse(result.toString()).getAsJsonObject();
-
-            
-    } catch (IOException except){
+            swaggerInfo = getSwaggerSpec(info.toString(), processorId);
+        } catch (IOException except){
+            throw new Exception("get processor's property failed ", except);
         } finally {
             request.releaseConnection();
         }
@@ -401,70 +382,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
         return swaggerInfo;
     }
 
-    private String getSwaggerSpec(String info) {
-
-        String spec = null;
-        APISpec apiSpec = new APISpec();
-
-        InfoSpec infoSpec = new InfoSpec();
-        infoSpec.title = "procucts swagger info";
-        infoSpec.description = "this is description";
-        infoSpec.version = "1.0.0";
-        apiSpec.info = infoSpec;
-
-        apiSpec.host = "localhost";
-
-        ArrayList<String> schemes = new ArrayList();
-        schemes.add("http");
-        apiSpec.schemes = schemes;
-
-        apiSpec.basePath = "/v1";
-
-        ArrayList<String> consumes = new ArrayList();
-        ArrayList<String> produces = new ArrayList();
-        consumes.add("application/json");
-        produces.add("application/json");
-        apiSpec.consumes = consumes;
-        apiSpec.produces = produces;
-
-        ArrayList<ParamSpec> parameters = new ArrayList();
-        ParamSpec parameterSpec = new ParamSpec();
-        parameterSpec.name = "latitude";
-        parameterSpec.in = "query";
-        parameterSpec.description = "Latitude component of location.";
-        parameterSpec.type = "number";
-        parameterSpec.required = true;
-        parameters.add(parameterSpec);
-
-        RespSpec respSpec = new RespSpec();
-        respSpec.description = "An array of products";
-        // Map<String, Object> schema = new HashMap();
-        // schema.put("type","array");
-        // Map<String,String> items = new HashMap();
-        // items.put("$ref","#/definitions/Error");
-        // schema.put("items", items);
-        // respSpec.schema = schema;
-
-        PathSpec pathSpec = new PathSpec();
-        pathSpec.summary = "Product Types";
-        pathSpec.description = "The Products Infos";
-        pathSpec.parameters = parameters;
-        pathSpec.responses = new HashMap<String, RespSpec>();
-        pathSpec.responses.put("200", respSpec);
-        Map<String, Map<String, PathSpec>> paths = new HashMap();
-        Map<String, PathSpec> pathSpecMap = new HashMap();
-        pathSpecMap.put("get", pathSpec);
-        paths.put("/products", pathSpecMap);
-
-        apiSpec.paths = paths;
-
-        Gson gson = new Gson();
-        spec = gson.toJson(apiSpec);
-
-        return spec;
-    }
-
-    private String getSwaggerSpec2(String info) {
+    private String getSwaggerSpec(String info, String apiID) {
 
         info = "{\"method\":\"get\",\"version\":\"1.0\",\"title\":\"test tittle\",\"host\":\"localhost\",\"path\":\"/test\",\"basePath\":\"/v1\",\"description\":\"this is description\",\"summary\":\"this is summary\",\"parameters\":[{\"name\":\"longitude\",\"position\":\"query\",\"required\":true,\"type\":\"string\",\"description\":\"Latitude component of location\"},{\"name\":\"latitude\",\"position\":\"query\",\"required\":true,\"type\":\"string\",\"description\":\"Longitude component of location\"}],\"respInfos\":[{\"code\":\"200\",\"description\":\"response description\",\"type\":\"array\",\"ref\":\"#/definitions/Product\"},{\"code\":\"404\",\"description\":\"response description\",\"type\":\"object\",\"ref\":\"#/definitions/Error\"}],\"respModels\":[{\"name\":\"Product\",\"properties\":{\"product_id\":{\"type\":\"string\",\"description\":\"Unique identifier representing a specific product\"},\"url\":{\"type\":\"string\",\"description\":\"url of a specific product\"}}},{\"name\":\"Error\",\"properties\":{\"message\":{\"type\":\"string\",\"description\":\"message of an error\"}}}]}";
         Gson gson = new Gson();
@@ -481,7 +399,8 @@ public class StandardApiRegistryService extends AbstractControllerService implem
         apiSpec.host = infoObject.get("host").getAsString();
         //schemes
         ArrayList<String> schemes = new ArrayList();
-        schemes.add("http");
+        String scheme = getApiScheme(apiID);
+        schemes.add(scheme);
         apiSpec.schemes = schemes;
         //basePath
         apiSpec.basePath = infoObject.get("basePath").getAsString();
@@ -580,6 +499,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
 
         return spec;
     }
+
     private String getUrlInfo(String processorID) {
 
         String host;
@@ -615,6 +535,56 @@ public class StandardApiRegistryService extends AbstractControllerService implem
         return url;
     }
 
+    private String getPropertyUrl(String processorID) {
+
+        String host;
+        String port;
+        String scheme;
+        String version =  this.getClass().getPackage().getImplementationVersion(); //get package version
+
+        final NiFiProperties properties = NiFiProperties.createBasicNiFiProperties(null, null);
+        String httpHost = properties.getProperty(PROPERTIES_NIFI_WEB_HTTP_HOST);
+        String httpPort = properties.getProperty(PROPERTIES_NIFI_WEB_HTTP_PORT);
+        String httpsHost = properties.getProperty(PROPERTIES_NIFI_WEB_HTTPS_HOST);
+        String httpsPort = properties.getProperty(PROPERTIES_NIFI_WEB_HTTPS_PORT);
+
+        if (!httpPort.trim().equals("")) {
+            //http
+            scheme = "http";
+            port = httpPort;
+            if (httpHost.trim().equals("")) {
+                host = "127.0.0.1";
+            } else {
+                host = httpHost;
+            }
+        } else {
+            //https
+            scheme = "https";
+            port = httpsPort;
+            if (httpsHost.trim().equals("")) {
+                host = "127.0.0.1";
+            } else {
+                host = httpsHost;
+            }
+        }
+        String url = scheme + "://" + host + ":" + port + "/nifi-handle-http-request-ui-" + version +"/api/property/info?processorId="  + processorID;
+        System.out.println("11111 property URL: " + url);
+        return url;
+    }
+
+    private String getApiScheme(String id) {
+        String scheme = "";
+        Iterator<ApiInfo> infoItr = this.apiInfos.iterator();
+        while (infoItr.hasNext()) {
+            ApiInfo apiInfo = (ApiInfo) infoItr.next();
+            String apiId = apiInfo.id;
+            if (apiId.equals(id)) {
+                scheme = apiInfo.scheme;
+            }
+        }
+        return scheme;
+    }
+
     private Map<String, String> splitQuery(String query) throws UnsupportedEncodingException{
         Map<String, String> query_pairs = new HashMap();
         String[] pairs = query.split("&");
@@ -628,5 +598,4 @@ public class StandardApiRegistryService extends AbstractControllerService implem
     public String getRequestPath() {
         return this.requestPath;
     }
-
 }
