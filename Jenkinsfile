@@ -42,17 +42,12 @@ pipeline {
 
           mvn -T 4 install -Dmaven.test.failure.ignore=true
 
-          echo `ls nifi-assembly/target/ | grep '.tar.gz\$'` > compile_target
+          echo runtime-${env.BRANCH_NAME}.tar.gz >> ${env.BUILD_OUTPUT_FILE}
         """
-
-        script {
-          env.compile_target = readFile("compile_target").trim()
-        }
-        // compile_target = 'runtime-1.7.0-SNAPSHOT-bin.tar.gz'
 
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Compile Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nGenerated `${env.compile_target}`"
+          message: "${env.EMOJI_SERVICE_RUNTIME} *Compile Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nGenerated `runtime-${env.BRANCH_NAME}.tar.gz`"
         )
       }
     }
@@ -64,9 +59,8 @@ pipeline {
           message: "${env.EMOJI_SERVICE_RUNTIME} *Copy to Ansible host*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
         )
 
-        // nifi-assembly/target/runtime-1.7.0-SNAPSHOT-bin.tar.gz
         sh """
-          scp nifi-assembly/target/${env.compile_target} root@${env.ANSIBLE_DEPLOY_HOST}:${env.ANSIBLE_DEVOPS_PATH}/ansible/packages/services/
+          scp nifi-assembly/target/runtime-${env.BRANCH_NAME}.tar.gz root@${env.ANSIBLE_DEPLOY_HOST}:${env.ANSIBLE_DEVOPS_PATH}/ansible/packages/services/
         """
 
         slackSend(
@@ -140,12 +134,12 @@ pipeline {
         )
 
         sh """
-          sudo rsync --progress ${env.WORKSPACE}/nifi-assembly/target/${env.compile_target} ${env.SAMBA_LOCAL_MOUNT_PATH}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/
+          sudo rsync --progress ${env.WORKSPACE}/nifi-assembly/target/runtime-${env.BRANCH_NAME}.tar.gz ${env.SAMBA_LOCAL_MOUNT_PATH}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/
         """
 
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Upload to Samba Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can get it from Samba Server `//${env.SAMBA_SERVER}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/${env.compile_target}`"
+          message: "${env.EMOJI_SERVICE_RUNTIME} *Upload to Samba Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can get it from Samba Server `//${env.SAMBA_SERVER}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/runtime-${env.BRANCH_NAME}.tar.gz`"
         )
       }
     }
@@ -158,12 +152,12 @@ pipeline {
         )
 
         sh """
-          s3cmd put --acl-public ${env.WORKSPACE}/nifi-assembly/target/${env.compile_target} ${env.S3_PACKAGES_URL}/services/
+          s3cmd put --acl-public ${env.WORKSPACE}/nifi-assembly/target/runtime-${env.BRANCH_NAME}.tar.gz ${env.S3_PACKAGES_URL}/services/
         """
 
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Upload to S2 Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can download it from ${env.DOWNLOAD_PACKAGES_URL_BASE}/services/${env.compile_target}"
+          message: "${env.EMOJI_SERVICE_RUNTIME} *Upload to S2 Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can download it from ${env.DOWNLOAD_PACKAGES_URL_BASE}/services/runtime-${env.BRANCH_NAME}.tar.gz"
         )
       }
     }
