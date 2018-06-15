@@ -17,6 +17,7 @@
 package org.apache.nifi.processors.standard;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.behavior.TriggerWhenEmpty;
@@ -24,8 +25,10 @@ import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.components.ValidationContext;
+import org.apache.nifi.components.ValidationResult;
+import org.apache.nifi.components.Validator;
 import org.apache.nifi.flowfile.FlowFile;
-import org.apache.nifi.flowfile.attributes.CoreAttributes;
 import org.apache.nifi.logging.ComponentLog;
 import org.apache.nifi.processor.DataUnit;
 import org.apache.nifi.processor.ProcessContext;
@@ -113,17 +116,26 @@ public class PutTCP extends AbstractPutEventProcessor {
     public static final PropertyDescriptor RECEIVE_BUFFER_SIZE = new PropertyDescriptor.Builder()
             .name("receive-buffer-size")
             .displayName("Receive Buffer Size")
-            .description("The size of the buffer to receive data in. Default 16384 (16MB).")
+            .description("The size of the buffer to receive data in. Can set like 2048 B(2 KB), if not set, then response message will not be handled.")
             .required(false)
-            .defaultValue("2048B")
-            .addValidator(StandardValidators.DATA_SIZE_VALIDATOR)
+            .addValidator(new Validator() {
+
+                @Override
+                public ValidationResult validate(String subject, String input, ValidationContext context) {
+                    if (StringUtils.isEmpty(input)) {
+                        return new ValidationResult.Builder().subject(subject).input(input).explanation("Expression Language Present").valid(true).build();
+                    }
+                    return StandardValidators.DATA_SIZE_VALIDATOR.validate(subject, input, context);
+                }
+            })
             .build();
 
     public static final PropertyDescriptor END_OF_MESSAGE_BYTE = new PropertyDescriptor.Builder()
             .name("end-of-message-byte")
             .displayName("End of message delimiter byte")
             .description("Byte value which denotes end of message. Must be specified as integer within "
-                    + "the valid byte range (-128 thru 127). For example, '13' = Carriage return and '10' = New line. Default '13'.")
+                    + "the valid byte range (-128 thru 127). For example, '13' = Carriage return and '10' = New line. Default '13'."
+                    + "Receive Buffer Size property must be set and should be greater than max message size")
             .required(true)
             .defaultValue("13")
             .addValidator(StandardValidators.createLongValidator(-128, 127, true))
@@ -160,7 +172,9 @@ public class PutTCP extends AbstractPutEventProcessor {
             sslContext = sslContextService.createSSLContext(SSLContextService.ClientAuth.REQUIRED);
         }
         
-        this.receiveBufferSize = context.getProperty(RECEIVE_BUFFER_SIZE).asDataSize(DataUnit.B).intValue();
+        if (context.getProperty(RECEIVE_BUFFER_SIZE).isSet()) {
+            this.receiveBufferSize = context.getProperty(RECEIVE_BUFFER_SIZE).asDataSize(DataUnit.B).intValue();
+        }
         this.endOfMessageByte = ((byte) context.getProperty(END_OF_MESSAGE_BYTE).asInteger().intValue());
 
         return createSender(protocol, hostname, port, timeout, bufferSize, sslContext);
@@ -256,7 +270,7 @@ public class PutTCP extends AbstractPutEventProcessor {
                     out.write(delimiter.getBytes(charSet), 0, delimiter.length());
                 }
                 out.flush();
-                if(receiveBufferSize > 0 || endOfMessageByte > 0 ) {
+                if(receiveBufferSize > 0 && endOfMessageByte > 0 ) {
                     SocketChannel socketChannel = ((SocketChannelSender)sender).getOpenChannel();
                     SocketChannelInputStream sockIn = new SocketChannelInputStream(socketChannel);
                     int count = 0;
@@ -285,7 +299,7 @@ public class PutTCP extends AbstractPutEventProcessor {
             }
 
             session.getProvenanceReporter().send(flowFile, transitUri, stopWatch.getElapsed(TimeUnit.MILLISECONDS));
-            if(response != null && (receiveBufferSize > 0 || endOfMessageByte > 0) ) {
+            if(response != null && (receiveBufferSize > 0 && endOfMessageByte > 0) ) {
                 // transfer to response relationship
                 FlowFile ff = processResponse(session, response, charSet);
                 ff = session.putAllAttributes(ff, flowFile.getAttributes());
