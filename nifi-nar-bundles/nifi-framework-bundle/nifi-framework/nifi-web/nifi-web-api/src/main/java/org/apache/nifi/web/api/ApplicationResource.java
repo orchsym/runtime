@@ -1084,6 +1084,10 @@ public abstract class ApplicationResource {
         this.flowController = flowController;
     }
 
+    public FlowController getFlowController() {
+        return this.flowController;
+    }
+
     protected NiFiProperties getProperties() {
         return properties;
     }

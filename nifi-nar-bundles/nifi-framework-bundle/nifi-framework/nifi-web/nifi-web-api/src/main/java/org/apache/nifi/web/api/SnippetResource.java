@@ -34,6 +34,10 @@ import org.apache.nifi.web.Revision;
 import org.apache.nifi.web.api.dto.SnippetDTO;
 import org.apache.nifi.web.api.entity.ComponentEntity;
 import org.apache.nifi.web.api.entity.SnippetEntity;
+import org.apache.nifi.controller.service.ControllerServiceNode;
+import org.apache.nifi.controller.ControllerService;
+import org.apache.nifi.controller.Snippet;
+import org.apache.nifi.apiregistry.ApiRegistryService;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -52,6 +56,11 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import java.lang.reflect.Method;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * RESTful endpoint for querying dataflow snippets.
  */
@@ -62,6 +71,7 @@ import java.util.stream.Collectors;
 )
 public class SnippetResource extends ApplicationResource {
 
+    private static final Logger logger = LoggerFactory.getLogger(SnippetResource.class);
     private NiFiServiceFacade serviceFacade;
     private Authorizer authorizer;
 
@@ -262,6 +272,10 @@ public class SnippetResource extends ApplicationResource {
 
         // get the revision from this snippet
         final Set<Revision> requestRevisions = serviceFacade.getRevisionsFromSnippet(snippetId);
+
+        //reset handlehttprequest's group id
+        handleProcessorRegistryInfo(requestSnippetDTO);
+
         return withWriteLock(
                 serviceFacade,
                 requestSnippetEntity,
@@ -360,5 +374,32 @@ public class SnippetResource extends ApplicationResource {
 
     public void setAuthorizer(Authorizer authorizer) {
         this.authorizer = authorizer;
+    }
+
+    /* change each processor's group id */
+    private void handleProcessorRegistryInfo(SnippetDTO snippetDTO) {
+
+        String parentGroupId = snippetDTO.getParentGroupId();
+        String snippetId = snippetDTO.getId();
+        for (final ControllerServiceNode serviceNode : this.getFlowController().getAllControllerServices()) {
+            final ControllerService service = serviceNode.getControllerServiceImplementation();
+            String className = service.getClass().getSimpleName();
+            if (className.equals("StandardApiRegistryService") && this.getFlowController().isControllerServiceEnabled(service)) {
+                Set<Revision> processorRevisions = serviceFacade.getRevisionsFromSnippet(snippetId);
+                for (Revision revision : processorRevisions) {
+                    //get processor's id
+                    String componentId = revision.getComponentId();
+                    //must call by reflect
+                    try {
+                        Class cls = service.getClass();  
+                        Method setMethod = cls.getDeclaredMethod("modifyApiInfo", String.class, String.class, String.class);
+                        //if not handlehttprequst processor, will ignore
+                        setMethod.invoke(service, componentId, "groupID", parentGroupId);  
+                    } catch (Exception e) {
+                        logger.error("Unable to call modifyApiInfo method ", e);
+                    }
+                }
+            }
+        }
     }
 }
