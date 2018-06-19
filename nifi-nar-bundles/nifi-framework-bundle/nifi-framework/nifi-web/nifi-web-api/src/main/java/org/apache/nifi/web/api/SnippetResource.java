@@ -366,16 +366,6 @@ public class SnippetResource extends ApplicationResource {
         );
     }
 
-    /* setters */
-
-    public void setServiceFacade(NiFiServiceFacade serviceFacade) {
-        this.serviceFacade = serviceFacade;
-    }
-
-    public void setAuthorizer(Authorizer authorizer) {
-        this.authorizer = authorizer;
-    }
-
     /* change each processor's group id */
     private void handleProcessorRegistryInfo(SnippetDTO snippetDTO) {
 
@@ -389,8 +379,8 @@ public class SnippetResource extends ApplicationResource {
                 for (Revision revision : processorRevisions) {
                     //get processor's id
                     String componentId = revision.getComponentId();
-                    //must call by reflect
                     try {
+                        //must call the method by reflect
                         Class cls = service.getClass();  
                         Method setMethod = cls.getDeclaredMethod("modifyApiInfo", String.class, String.class, String.class);
                         //if not handlehttprequst processor, will ignore
@@ -401,5 +391,15 @@ public class SnippetResource extends ApplicationResource {
                 }
             }
         }
+    }
+
+    /* setters */
+
+    public void setServiceFacade(NiFiServiceFacade serviceFacade) {
+        this.serviceFacade = serviceFacade;
+    }
+
+    public void setAuthorizer(Authorizer authorizer) {
+        this.authorizer = authorizer;
     }
 }
