@@ -109,4 +109,13 @@
         <property name="Authentication Expiration">12 hours</property>
     </provider>
     To enable the kerberos-provider remove 2 lines. This is 2 of 2. -->
+    <!-- To enable the orchsym-provider remove 2 lines. This is 1 of 2.
+    <provider>
+        <identifier>orchsym-provider</identifier>
+        <class>org.apache.nifi.orchsym.OrchsymLoginIdentityProvider</class>
+        <property name="Default User">admin@company.com</property>
+        <property name="Default Password">123456</property>
+        <property name="Url">http://localhost:16666/v1/auth/login</property>
+    </provider>
+    To enable the orchsym-provider remove 2 lines. This is 2 of 2. -->
 </loginIdentityProviders>

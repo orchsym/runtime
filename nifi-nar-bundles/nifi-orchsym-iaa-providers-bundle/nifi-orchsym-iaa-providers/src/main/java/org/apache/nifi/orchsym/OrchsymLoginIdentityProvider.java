@@ -16,6 +16,16 @@
  */
 package org.apache.nifi.orchsym;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.apache.nifi.authentication.AuthenticationResponse;
 import org.apache.nifi.authentication.LoginCredentials;
 import org.apache.nifi.authentication.LoginIdentityProvider;
@@ -25,39 +35,84 @@ import org.apache.nifi.authentication.exception.IdentityAccessException;
 import org.apache.nifi.authentication.exception.InvalidLoginCredentialsException;
 import org.apache.nifi.authentication.exception.ProviderCreationException;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- *
+ * @author Zhou Guoliang
  */
 public class OrchsymLoginIdentityProvider implements LoginIdentityProvider {
 
     private final Map<String, String> users;
+    private String authUrl;
 
     /**
-     * Creates a new FileAuthorizationProvider.
+     * Creates a new OrchsymLoginIdentityProvider.
      */
-    public NiFiTestLoginIdentityProvider() {
+    public OrchsymLoginIdentityProvider() {
         users = new HashMap<>();
-        users.put("user@nifi", "whatever");
-        users.put("unregistered-user@nifi", "password");
     }
 
-    private void checkUser(final String user, final String password) {
-        if (!users.containsKey(user)) {
-            throw new InvalidLoginCredentialsException("Unknown user");
+    private boolean checkDefaultUser(final String user, final String password) {
+        if (users.containsKey(user)) {
+            if (users.get(user).equals(password)) {
+                return true;
+            }
         }
-
-        if (!users.get(user).equals(password)) {
-            throw new InvalidLoginCredentialsException("Invalid password");
+        return false;
+    }
+    
+    private void checkOrchsymUser(final String user, final String password) {
+        if(checkDefaultUser(user, password)) {
+            return;
+        }
+        CloseableHttpClient httpclient = HttpClients.createDefault();
+        
+        try {
+            final URI url = new URI(authUrl);
+            final HttpPost post = new HttpPost(url);
+            String json = "{\"email\":\"" + user + "\",\"password\":\"" + password + "\", \"remember\": false}";
+            StringEntity entity = new StringEntity(json);
+            post.setEntity(entity);
+            post.setHeader("Accept", "application/json");
+            post.setHeader("Content-type", "application/json");
+            // Create a custom response handler
+            ResponseHandler<String> responseHandler = new ResponseHandler<String>() {
+    
+                @Override
+                public String handleResponse(
+                        final HttpResponse response) throws ClientProtocolException, IOException {
+                    int status = response.getStatusLine().getStatusCode();
+                    if (status >= 200 && status < 300) {
+                        HttpEntity entity = response.getEntity();
+                        return entity != null ? EntityUtils.toString(entity) : null;
+                    } else if(status == 400 || status == 401) {
+                        throw new InvalidLoginCredentialsException("Invalid username or password");
+                    } else {
+                        throw new ClientProtocolException("Unexpected response status: " + status);
+                    }
+                }
+    
+            };
+            String responseBody = httpclient.execute(post, responseHandler);
+        } catch (IOException | URISyntaxException e) {
+            throw new IdentityAccessException("The Orchsym authentication provider is not initialized.");
+        } finally {
+            try {
+                httpclient.close();
+            } catch (IOException e) {
+                // ignore exception
+            }
         }
     }
 
     @Override
     public AuthenticationResponse authenticate(LoginCredentials credentials) throws InvalidLoginCredentialsException, IdentityAccessException {
-        checkUser(credentials.getUsername(), credentials.getPassword());
+        checkOrchsymUser(credentials.getUsername(), credentials.getPassword());
         return new AuthenticationResponse(credentials.getUsername(), credentials.getUsername(), TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS), getClass().getSimpleName());
     }
 
@@ -67,6 +122,20 @@ public class OrchsymLoginIdentityProvider implements LoginIdentityProvider {
 
     @Override
     public void onConfigured(LoginIdentityProviderConfigurationContext configurationContext) throws ProviderCreationException {
+        // built in user
+        final String username = configurationContext.getProperty("Default User");
+        final String password = configurationContext.getProperty("Default Password");
+        if (!StringUtils.isBlank(username) && !StringUtils.isBlank(password)) {
+            users.put(username, password);
+        }
+        // remote auth url
+        final String url = configurationContext.getProperty("Url");
+
+        if (StringUtils.isBlank(url)) {
+            throw new ProviderCreationException("Orchsym identity provider 'Url' must be specified.");
+        }
+        
+        this.authUrl = url;
     }
 
     @Override
