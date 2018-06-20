@@ -270,11 +270,11 @@ public class SnippetResource extends ApplicationResource {
             return replicate(HttpMethod.PUT, requestSnippetEntity);
         }
 
-        // get the revision from this snippet
-        final Set<Revision> requestRevisions = serviceFacade.getRevisionsFromSnippet(snippetId);
-
         //reset handlehttprequest's group id
         handleProcessorRegistryInfo(requestSnippetDTO);
+
+        // get the revision from this snippet
+        final Set<Revision> requestRevisions = serviceFacade.getRevisionsFromSnippet(snippetId);
 
         return withWriteLock(
                 serviceFacade,
@@ -375,16 +375,16 @@ public class SnippetResource extends ApplicationResource {
             final ControllerService service = serviceNode.getControllerServiceImplementation();
             String className = service.getClass().getSimpleName();
             if (className.equals("StandardApiRegistryService") && this.getFlowController().isControllerServiceEnabled(service)) {
-                Set<Revision> processorRevisions = serviceFacade.getRevisionsFromSnippet(snippetId);
+                Set<Revision> processorRevisions = serviceFacade.getProcessorRevisionsFromSnippet(snippetId);
                 for (Revision revision : processorRevisions) {
                     //get processor's id
                     String componentId = revision.getComponentId();
                     try {
                         //must call the method by reflect
                         Class cls = service.getClass();  
-                        Method setMethod = cls.getDeclaredMethod("modifyApiInfo", String.class, String.class, String.class);
+                        Method method = cls.getDeclaredMethod("modifyApiInfo", String.class, String.class, String.class);
                         //if not handlehttprequst processor, will ignore
-                        setMethod.invoke(service, componentId, "groupID", parentGroupId);  
+                        method.invoke(service, componentId, "groupID", parentGroupId);  
                     } catch (Exception e) {
                         logger.error("Unable to call modifyApiInfo method ", e);
                     }
