@@ -37,7 +37,6 @@ import org.apache.nifi.web.api.entity.SnippetEntity;
 import org.apache.nifi.controller.service.ControllerServiceNode;
 import org.apache.nifi.controller.ControllerService;
 import org.apache.nifi.controller.Snippet;
-import org.apache.nifi.apiregistry.ApiRegistryService;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
