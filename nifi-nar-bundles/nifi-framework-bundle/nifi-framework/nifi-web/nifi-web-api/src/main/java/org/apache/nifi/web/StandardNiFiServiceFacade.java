@@ -406,14 +406,6 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
         return componentIds.stream().map(id -> revisionManager.getRevision(id)).collect(Collectors.toSet());
     }
 
-    @Override
-    public Set<Revision> getProcessorRevisionsFromSnippet(final String snippetId) {
-        final Snippet snippet = snippetDAO.getSnippet(snippetId);
-        final Set<String> componentIds = new HashSet<>();
-        componentIds.addAll(snippet.getProcessors().keySet());
-        return componentIds.stream().map(id -> revisionManager.getRevision(id)).collect(Collectors.toSet());
-    }
-
     // -----------------------------------------
     // Verification Operations
     // -----------------------------------------

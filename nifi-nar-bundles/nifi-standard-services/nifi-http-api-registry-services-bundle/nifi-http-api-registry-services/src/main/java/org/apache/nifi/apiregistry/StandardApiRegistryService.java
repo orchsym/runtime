@@ -218,16 +218,10 @@ public class StandardApiRegistryService extends AbstractControllerService implem
     }  
 
     @Override
-    public void registerApiInfo(ApiInfo apiInfo, Boolean shouldHandleGroupID) {
-
+    public void registerApiInfo(ApiInfo apiInfo) {
         unregisterApiInfo(apiInfo.id);
 
         this.apiInfos.add(apiInfo);
-
-        if (shouldHandleGroupID) {
-            String groupID = getProcessorGroupID(apiInfo.id);
-            modifyApiInfo(apiInfo.id, "groupID", groupID);
-        }
     }
 
     @Override
@@ -263,7 +257,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                     apiInfo.allowOptions = Boolean.valueOf(value);
                 } else if (key.equals("state")) {
                     apiInfo.state = value;
-                } else if (key.equals("groupID")) {
+                } else if (key.equals(GROUP_ID)) {
                     apiInfo.groupID = value;
                 }else if (key.equals("SSL Context Service")) {
                     if (value.equals("null")) {
@@ -271,6 +265,8 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                     } else {
                         apiInfo.schema = "https";
                     }
+                } else if (key.equals(REQUEST_TIMEOUT)) {
+                    apiInfo.requestTimeout = Long.parseLong(value);
                 }
             }
         }
@@ -289,73 +285,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                 this.apiInfos.remove(apiInfo);
             }
         }
-    }
-
-    private String getProcessorGroupID(String processorID){
-
-        String groupID = "";
-        String url = getUrlInfo(processorID);
-        HttpClient client = new DefaultHttpClient();
-        HttpGet request = new HttpGet(url);
-        try {
-            HttpResponse response = client.execute(request);
-            BufferedReader rd = new BufferedReader(
-                    new InputStreamReader(response.getEntity().getContent()));
-
-            StringBuffer result = new StringBuffer();
-            String line = "";
-            while ((line = rd.readLine()) != null) {
-                result.append(line);
-            }
-            JsonObject jsonObject = new JsonParser().parse(result.toString()).getAsJsonObject();
-            JsonObject statusObj = jsonObject.getAsJsonObject("status");
-            for (Entry<String, JsonElement> entry : statusObj.entrySet()) {
-                if (entry.getKey().equals("groupId")) {
-                    groupID = ((JsonElement)entry.getValue()).getAsString();
-                }
-            }
-        } catch (IOException e){
-            getLogger().error("parse response failed", e);
-        } finally {
-            request.releaseConnection();
-        }
-        
-        return groupID;
-    }
-
-    private String getUrlInfo(String processorID) {
-
-        String host;
-        String port;
-        String scheme;
-
-        final NiFiProperties properties = NiFiProperties.createBasicNiFiProperties(null, null);
-        String httpHost = properties.getProperty(PROPERTIES_NIFI_WEB_HTTP_HOST);
-        String httpPort = properties.getProperty(PROPERTIES_NIFI_WEB_HTTP_PORT);
-        String httpsHost = properties.getProperty(PROPERTIES_NIFI_WEB_HTTPS_HOST);
-        String httpsPort = properties.getProperty(PROPERTIES_NIFI_WEB_HTTPS_PORT);
-
-        if (!httpPort.trim().equals("")) {
-            //http
-            scheme = "http";
-            port = httpPort;
-            if (httpHost.trim().equals("")) {
-                host = "127.0.0.1";
-            } else {
-                host = httpHost;
-            }
-        } else {
-            //https
-            scheme = "https";
-            port = httpsPort;
-            if (httpsHost.trim().equals("")) {
-                host = "127.0.0.1";
-            } else {
-                host = httpsHost;
-            }
-        }
-        String url = scheme + "://" + host + ":" + port + "/nifi-api/processors/" + processorID;
-        return url;
     }
 
     private Map<String, String> splitQuery(String query) throws UnsupportedEncodingException{

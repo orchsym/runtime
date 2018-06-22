@@ -27,8 +27,10 @@ import java.util.HashMap;
 @Tags({"Regitstry Service"})
 @CapabilityDescription("Api Regitstry Service.")
 public interface ApiRegistryService extends ControllerService {
+    String GROUP_ID = "groupID";
+    String REQUEST_TIMEOUT = "requestTimeout";
 
-    public void registerApiInfo(ApiInfo apiInfo, Boolean shouldHandleGroupID);
+    public void registerApiInfo(ApiInfo apiInfo);
 
     public void modifyApiInfo(String id, String key, String value);
 

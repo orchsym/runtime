@@ -16,6 +16,38 @@
  */
 package org.apache.nifi.processors.standard;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.security.Principal;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
+
+import javax.servlet.AsyncContext;
+import javax.servlet.DispatcherType;
+import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.Response.Status;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
@@ -24,11 +56,14 @@ import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.annotation.lifecycle.OnRemoved;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
-import org.apache.nifi.annotation.lifecycle.OnRemoved;
+import org.apache.nifi.apiregistry.ApiInfo;
+import org.apache.nifi.apiregistry.ApiRegistryService;
 import org.apache.nifi.components.AllowableValue;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.controller.ControllerServiceLookup;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.http.HttpContextMap;
@@ -52,40 +87,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.apache.nifi.controller.ControllerServiceLookup;
-
-import javax.servlet.AsyncContext;
-import javax.servlet.DispatcherType;
-import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.Response.Status;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URLDecoder;
-import java.security.Principal;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
-
-import org.apache.nifi.apiregistry.ApiRegistryService;
-import org.apache.nifi.apiregistry.ApiInfo;
 
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
 @Tags({"http", "https", "request", "listen", "ingress", "web service"})
@@ -274,8 +275,8 @@ public class HandleHttpRequest extends AbstractProcessor {
     private AtomicBoolean initialized = new AtomicBoolean(false);
     private volatile BlockingQueue<HttpRequestContainer> containerQueue;
 
-    private String schema;
     private ApiRegistryService apiRegistryService;
+    private Map<String, String> allProperties = new HashMap<>();
 
     //processor state, init running stopped?
     private String state;
@@ -292,29 +293,48 @@ public class HandleHttpRequest extends AbstractProcessor {
 
     @Override
     public void onPropertyModified(final PropertyDescriptor descriptor, final String oldValue, final String newValue) {
-        if (this.apiRegistryService != null) {
-            modifyApiInfoFromService(descriptor.getName(), newValue);
-            return;
-        }
-
-        //fresh
-        if (descriptor.getName().equals("HTTP API Registry Service")) {
-
+        if (descriptor.equals(HTTP_API_REGISTRY)) {
             ControllerServiceLookup serviceLookup = getControllerServiceLookup();
-            ApiRegistryService service;
             if (newValue != null) {
-                service = (ApiRegistryService)serviceLookup.getControllerService(newValue);
-                if (service != null && serviceLookup.isControllerServiceEnabled(service)) {
-                    
-                    this.apiRegistryService = service;
+                ApiRegistryService apiService = (ApiRegistryService) serviceLookup.getControllerService(newValue);
+                if (apiService != null && serviceLookup.isControllerServiceEnabled(apiService)) {
+
+                    this.apiRegistryService = apiService;
 
                     ApiInfo apiInfo = new ApiInfo();
                     apiInfo.id = this.getIdentifier();
 
-                    //pre register api info to server
-                    this.apiRegistryService.registerApiInfo(apiInfo, false);
+                    // pre register api info to server
+                    this.apiRegistryService.registerApiInfo(apiInfo);
                 }
-            }         
+            }
+        }
+
+        if (descriptor.equals(HTTP_CONTEXT_MAP)) {
+            ControllerServiceLookup serviceLookup = getControllerServiceLookup();
+            if (newValue != null) {
+                HttpContextMap httpContextService = (HttpContextMap) serviceLookup.getControllerService(newValue);
+                if (httpContextService != null && serviceLookup.isControllerServiceEnabled(httpContextService)) {
+                    long requestTimeout = httpContextService.getRequestTimeout(TimeUnit.MILLISECONDS);
+                    allProperties.put(ApiRegistryService.REQUEST_TIMEOUT, String.valueOf(requestTimeout));
+                }
+            }
+        }
+
+        // put all properties
+        if (newValue == null) { // when delete property
+            allProperties.remove(descriptor.getName());
+        } else {
+            allProperties.put(descriptor.getName(), newValue);
+        }
+
+        if (this.apiRegistryService != null) { // update all always
+            /*
+             * Make sure to get right and full info. don't know when do register for service, so must update all.
+             */
+            for (Entry<String, String> entry : allProperties.entrySet()) {
+                modifyApiInfoFromService(entry.getKey(), entry.getValue());
+            }
         }
     }
 
@@ -325,7 +345,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         this.state = "running";
 
         //register api info to api registery service
-        registerApiInfoToService(context, true);
+        updateApiInfoToService(context); //maybe no need
     }
 
     @OnStopped
@@ -774,7 +794,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         }
     }
 
-    private void registerApiInfoToService(final ProcessContext context, Boolean shouldHandleGroupID) {
+    private void updateApiInfoToService(final ProcessContext context) {
 
         ApiInfo apiInfo;
         try {
@@ -787,7 +807,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         ApiRegistryService apiRegistryService = context.getProperty(HTTP_API_REGISTRY).asControllerService(ApiRegistryService.class);
         if (apiRegistryService != null) {
             this.apiRegistryService = apiRegistryService;
-            apiRegistryService.registerApiInfo(apiInfo, shouldHandleGroupID);   
+            apiRegistryService.registerApiInfo(apiInfo);   
         }
     }
 
@@ -799,6 +819,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         apiInfo.name = name;
 
         apiInfo.id = this.getIdentifier();
+        apiInfo.groupID = allProperties.get(ApiRegistryService.GROUP_ID);
 
         String host = context.getProperty(HOSTNAME).getValue();
         apiInfo.host = host;
@@ -822,8 +843,6 @@ public class HandleHttpRequest extends AbstractProcessor {
 
         String path = context.getProperty(PATH_REGEX).getValue();
         apiInfo.path = path;
-
-        apiInfo.schema = this.schema;
 
         apiInfo.state = this.state;
 

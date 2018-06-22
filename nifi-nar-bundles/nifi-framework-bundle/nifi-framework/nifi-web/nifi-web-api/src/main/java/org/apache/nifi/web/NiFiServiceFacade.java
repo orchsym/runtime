@@ -175,9 +175,6 @@ public interface NiFiServiceFacade {
      * @return component revisions from the snippet
      */
     Set<Revision> getRevisionsFromSnippet(String snippetId);
-    Set<Revision> getProcessorRevisionsFromSnippet(final String snippetId);
-
-
 
     // ----------------------------------------
     // Controller methods

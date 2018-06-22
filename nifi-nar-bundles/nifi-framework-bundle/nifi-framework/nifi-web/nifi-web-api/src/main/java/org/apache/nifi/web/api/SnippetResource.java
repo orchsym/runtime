@@ -269,9 +269,6 @@ public class SnippetResource extends ApplicationResource {
             return replicate(HttpMethod.PUT, requestSnippetEntity);
         }
 
-        //reset handlehttprequest's group id
-        handleProcessorRegistryInfo(requestSnippetDTO);
-
         // get the revision from this snippet
         final Set<Revision> requestRevisions = serviceFacade.getRevisionsFromSnippet(snippetId);
 
@@ -365,35 +362,7 @@ public class SnippetResource extends ApplicationResource {
         );
     }
 
-    /* change each processor's group id */
-    private void handleProcessorRegistryInfo(SnippetDTO snippetDTO) {
-
-        String parentGroupId = snippetDTO.getParentGroupId();
-        String snippetId = snippetDTO.getId();
-        for (final ControllerServiceNode serviceNode : this.getFlowController().getAllControllerServices()) {
-            final ControllerService service = serviceNode.getControllerServiceImplementation();
-            String className = service.getClass().getSimpleName();
-            if (className.equals("StandardApiRegistryService") && this.getFlowController().isControllerServiceEnabled(service)) {
-                Set<Revision> processorRevisions = serviceFacade.getProcessorRevisionsFromSnippet(snippetId);
-                for (Revision revision : processorRevisions) {
-                    //get processor's id
-                    String componentId = revision.getComponentId();
-                    try {
-                        //must call the method by reflect
-                        Class cls = service.getClass();  
-                        Method method = cls.getDeclaredMethod("modifyApiInfo", String.class, String.class, String.class);
-                        //if not handlehttprequst processor, will ignore
-                        method.invoke(service, componentId, "groupID", parentGroupId);  
-                    } catch (Exception e) {
-                        logger.error("Unable to call modifyApiInfo method ", e);
-                    }
-                }
-            }
-        }
-    }
-
     /* setters */
-
     public void setServiceFacade(NiFiServiceFacade serviceFacade) {
         this.serviceFacade = serviceFacade;
     }
