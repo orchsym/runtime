@@ -164,6 +164,30 @@
     };
 
     /**
+     * Determines whether the components in the specified selection can be terminated.
+     *
+     * @param {selection} selection         The selections of currently selected components
+     */
+    var canTerminate = function (selection) {
+        if (selection.size() !== 1) {
+            return false;
+        }
+
+        if (nfCanvasUtils.canModify(selection) === false) {
+            return false;
+        }
+
+        var terminatable = false;
+        if (nfCanvasUtils.isProcessor(selection)) {
+            var selectionData = selection.datum();
+            var aggregateSnapshot = selectionData.status.aggregateSnapshot;
+            terminatable = aggregateSnapshot.runStatus !== 'Running' && aggregateSnapshot.activeThreadCount > 0;
+        }
+
+        return terminatable;
+    };
+
+    /**
      * Determines whether the components in the specified selection support stats.
      *
      * @param {selection} selection         The selection of currently selected components
@@ -759,18 +783,19 @@
         {id: 'version-menu-item', groupMenuItem: {clazz: 'fa', text: nf._.msg('nf-context-menu.Version')}, menuItems: [
             {id: 'start-version-control-menu-item', condition: supportsStartFlowVersioning, menuItem: {clazz: 'fa fa-upload', text: nf._.msg('nf-context-menu.StartVersionControl'), action: 'saveFlowVersion'}},
             {separator: true},
-            {id: 'commit-menu-item', condition: supportsCommitFlowVersion, menuItem: {clazz: 'fa fa-upload', text: 'Commit local changes', action: 'saveFlowVersion'}},
-            {id: 'local-changes-menu-item', condition: hasLocalChanges, menuItem: {clazz: 'fa', text: 'Show local changes', action: 'showLocalChanges'}},
-            {id: 'revert-menu-item', condition: hasLocalChanges, menuItem: {clazz: 'fa fa-undo', text: 'Revert local changes', action: 'revertLocalChanges'}},
-            {id: 'change-version-menu-item', condition: supportsChangeFlowVersion, menuItem: {clazz: 'fa', text: 'Change version', action: 'changeFlowVersion'}},
+            {id: 'commit-menu-item', condition: supportsCommitFlowVersion, menuItem: {clazz: 'fa fa-upload', text: nf._.msg('nf-context-menu.CommitLocalChange'), action: 'saveFlowVersion'}},
+            {id: 'local-changes-menu-item', condition: hasLocalChanges, menuItem: {clazz: 'fa', text: nf._.msg('nf-context-menu.ShowLocalChange'), action: 'showLocalChanges'}},
+            {id: 'revert-menu-item', condition: hasLocalChanges, menuItem: {clazz: 'fa fa-undo', text: nf._.msg('nf-context-menu.RevertLocalChange'), action: 'revertLocalChanges'}},
+            {id: 'change-version-menu-item', condition: supportsChangeFlowVersion, menuItem: {clazz: 'fa', text: nf._.msg('nf-context-menu.ChangeVersion'), action: 'changeFlowVersion'}},
             {separator: true},
-            {id: 'stop-version-control-menu-item', condition: supportsStopFlowVersioning, menuItem: {clazz: 'fa', text: 'Stop version control', action: 'stopVersionControl'}}
+            {id: 'stop-version-control-menu-item', condition: supportsStopFlowVersioning, menuItem: {clazz: 'fa', text: nf._.msg('nf-context-menu.StopVersionControl'), action: 'stopVersionControl'}}
         ]},
         {separator: true},
         {id: 'enter-group-menu-item', condition: isProcessGroup, menuItem: {clazz: 'fa fa-sign-in', text: nf._.msg('nf-context-menu.EnterGroup'), action: 'enterGroup'}},
         {separator: true},
         {id: 'start-menu-item', condition: isRunnable, menuItem: {clazz: 'fa fa-play', text: nf._.msg('nf-context-menu.Start'), action: 'start'}},
         {id: 'stop-menu-item', condition: isStoppable, menuItem: {clazz: 'fa fa-stop', text: nf._.msg('nf-context-menu.Stop'), action: 'stop'}},
+        {id: 'terminate-menu-item', condition: canTerminate, menuItem: {clazz: 'fa fa-hourglass-end', text: nf._.msg('nf-context-menu.Terminate'), action: 'terminate'}},
         {id: 'enable-menu-item', condition: canEnable, menuItem: {clazz: 'icon icon-enable', text: nf._.msg('nf-context-menu.canEnable'), action: 'enable'}},
         {id: 'disable-menu-item', condition: canDisable, menuItem: {clazz: 'icon icon-enable-false', text: nf._.msg('nf-context-menu.canDisable'), action: 'disable'}},
         {id: 'enable-transmission-menu-item', condition: canStartTransmission, menuItem: {clazz: 'fa fa-bullseye', text: nf._.msg('nf-context-menu.EnableTransmission'), action: 'enableTransmission'}},

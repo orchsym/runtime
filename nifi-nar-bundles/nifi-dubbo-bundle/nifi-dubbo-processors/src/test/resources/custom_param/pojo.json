@@ -1,0 +1,17 @@
+{
+    "class": "com.baishancloud.orchsym.processors.dubbo.it.Person",
+    "value": {
+        "class": "com.baishancloud.orchsym.processors.dubbo.it.Person",
+        "id": 123,
+        "name": "Test",
+        "age": 20,
+        "children": [
+            {
+                "class": "com.baishancloud.orchsym.processors.dubbo.it.Person",
+                "id": 456,
+                "name": "ABC",
+                "age": 5
+            }
+        ]
+    }
+}

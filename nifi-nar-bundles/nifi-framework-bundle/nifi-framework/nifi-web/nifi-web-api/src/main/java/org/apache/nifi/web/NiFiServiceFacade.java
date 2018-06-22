@@ -176,6 +176,8 @@ public interface NiFiServiceFacade {
      */
     Set<Revision> getRevisionsFromSnippet(String snippetId);
 
+
+
     // ----------------------------------------
     // Controller methods
     // ----------------------------------------
@@ -1025,6 +1027,8 @@ public interface NiFiServiceFacade {
      * @return snapshot
      */
     ActivateControllerServicesEntity activateControllerServices(String processGroupId, ControllerServiceState state, Map<String, Revision> serviceRevisions);
+
+    ScheduleComponentsEntity enableComponents(String processGroupId, ScheduledState state, Map<String, Revision> componentRevisions);
 
     /**
      * Schedules all applicable components under the specified ProcessGroup on behalf of the currently logged in user.

@@ -17,6 +17,7 @@
 package org.apache.nifi.processors.standard;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.behavior.TriggerWhenEmpty;
@@ -24,15 +25,23 @@ import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.components.ValidationContext;
+import org.apache.nifi.components.ValidationResult;
+import org.apache.nifi.components.Validator;
 import org.apache.nifi.flowfile.FlowFile;
+import org.apache.nifi.logging.ComponentLog;
 import org.apache.nifi.processor.DataUnit;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessSessionFactory;
+import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
+import org.apache.nifi.processor.io.OutputStreamCallback;
+import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.processor.util.put.AbstractPutEventProcessor;
 import org.apache.nifi.processor.util.put.sender.ChannelSender;
 import org.apache.nifi.processor.util.put.sender.SocketChannelSender;
+import org.apache.nifi.remote.io.socket.SocketChannelInputStream;
 import org.apache.nifi.ssl.SSLContextService;
 import org.apache.nifi.util.StopWatch;
 
@@ -41,9 +50,17 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -95,6 +112,43 @@ import java.util.concurrent.TimeUnit;
 @Tags({ "remote", "egress", "put", "tcp" })
 @TriggerWhenEmpty // trigger even when queue is empty so that the processor can check for idle senders to prune.
 public class PutTCP extends AbstractPutEventProcessor {
+    
+    public static final PropertyDescriptor RECEIVE_BUFFER_SIZE = new PropertyDescriptor.Builder()
+            .name("receive-buffer-size")
+            .displayName("Receive Buffer Size")
+            .description("The size of the buffer to receive data in. Can set like 2048 B(2 KB), if not set, then response message will not be handled.")
+            .required(false)
+            .addValidator(new Validator() {
+
+                @Override
+                public ValidationResult validate(String subject, String input, ValidationContext context) {
+                    if (StringUtils.isEmpty(input)) {
+                        return new ValidationResult.Builder().subject(subject).input(input).explanation("Expression Language Present").valid(true).build();
+                    }
+                    return StandardValidators.DATA_SIZE_VALIDATOR.validate(subject, input, context);
+                }
+            })
+            .build();
+
+    public static final PropertyDescriptor END_OF_MESSAGE_BYTE = new PropertyDescriptor.Builder()
+            .name("end-of-message-byte")
+            .displayName("End of message delimiter byte")
+            .description("Byte value which denotes end of message. Must be specified as integer within "
+                    + "the valid byte range (-128 thru 127). For example, '13' = Carriage return and '10' = New line. Default '13'."
+                    + "Receive Buffer Size property must be set and should be greater than max message size")
+            .required(true)
+            .defaultValue("13")
+            .addValidator(StandardValidators.createLongValidator(-128, 127, true))
+            .build();
+    
+    public static final Relationship REL_RESPONSE = new Relationship.Builder()
+            .name("response")
+            .description("FlowFiles that are received successfully from the destination are sent out this relationship.")
+            .build();
+    
+    private volatile int receiveBufferSize;
+    
+    private volatile byte endOfMessageByte;
 
     /**
      * Creates a concrete instance of a ChannelSender object to use for sending messages over a TCP stream.
@@ -117,8 +171,17 @@ public class PutTCP extends AbstractPutEventProcessor {
         if (sslContextService != null) {
             sslContext = sslContextService.createSSLContext(SSLContextService.ClientAuth.REQUIRED);
         }
+        
+        if (context.getProperty(RECEIVE_BUFFER_SIZE).isSet()) {
+            this.receiveBufferSize = context.getProperty(RECEIVE_BUFFER_SIZE).asDataSize(DataUnit.B).intValue();
+        }
+        this.endOfMessageByte = ((byte) context.getProperty(END_OF_MESSAGE_BYTE).asInteger().intValue());
 
         return createSender(protocol, hostname, port, timeout, bufferSize, sslContext);
+    }
+    
+    protected List<Relationship> getAdditionalRelationships() {
+        return  Arrays.asList(REL_RESPONSE);
     }
 
     /**
@@ -150,6 +213,8 @@ public class PutTCP extends AbstractPutEventProcessor {
                 OUTGOING_MESSAGE_DELIMITER,
                 TIMEOUT,
                 SSL_CONTEXT_SERVICE,
+                RECEIVE_BUFFER_SIZE,
+                END_OF_MESSAGE_BYTE,
                 CHARSET);
     }
 
@@ -194,22 +259,53 @@ public class PutTCP extends AbstractPutEventProcessor {
             // We might keep the connection open across invocations of the processor so don't auto-close this
             final OutputStream out = ((SocketChannelSender)sender).getOutputStream();
             final String delimiter = getOutgoingMessageDelimiter(context, flowFile);
+            String response = null;
+            final Charset charSet = Charset.forName(context.getProperty(CHARSET).getValue());
 
             final StopWatch stopWatch = new StopWatch(true);
             try (final InputStream rawIn = session.read(flowFile);
                  final BufferedInputStream in = new BufferedInputStream(rawIn)) {
                 IOUtils.copy(in, out);
                 if (delimiter != null) {
-                    final Charset charSet = Charset.forName(context.getProperty(CHARSET).getValue());
                     out.write(delimiter.getBytes(charSet), 0, delimiter.length());
                 }
                 out.flush();
+                if(receiveBufferSize > 0 && endOfMessageByte > 0 ) {
+                    SocketChannel socketChannel = ((SocketChannelSender)sender).getOpenChannel();
+                    SocketChannelInputStream sockIn = new SocketChannelInputStream(socketChannel);
+                    int count = 0;
+                    sockIn.setTimeout(100);
+                    byte[] buf = new byte[receiveBufferSize];
+                    byte[] bufByte = new byte[1];
+                    boolean finished = false;
+                    while (!finished) {
+                        int n;
+                        while (IOUtils.EOF != (n = sockIn.read(bufByte))) {
+                            buf[count] = bufByte[0];
+                            count ++;
+                            if (count >= receiveBufferSize || bufByte[0] == endOfMessageByte) {
+                                finished = true;
+                                break;
+                            }
+                        }
+                    }
+                    byte ar[] = new String(buf).replaceAll("\0", "").getBytes();
+                    response = new String(ar,charSet);
+                }
+                
             } catch (final Exception e) {
                 closeSender = true;
                 throw e;
             }
 
             session.getProvenanceReporter().send(flowFile, transitUri, stopWatch.getElapsed(TimeUnit.MILLISECONDS));
+            if(response != null && (receiveBufferSize > 0 && endOfMessageByte > 0) ) {
+                // transfer to response relationship
+                FlowFile ff = processResponse(session, response, charSet);
+                ff = session.putAllAttributes(ff, flowFile.getAttributes());
+                session.transfer(ff, REL_RESPONSE);
+                
+            }
             session.transfer(flowFile, REL_SUCCESS);
             session.commit();
         } catch (Exception e) {
@@ -224,6 +320,28 @@ public class PutTCP extends AbstractPutEventProcessor {
                 relinquishSender(sender);
             }
         }
+    }
+    
+    FlowFile processResponse(ProcessSession session, final String result, final Charset charSet) {
+
+        FlowFile intermediateFlowFile = session.create();
+
+        intermediateFlowFile = session.write(intermediateFlowFile, new OutputStreamCallback() {
+            @Override
+            public void process(final OutputStream out) throws IOException {
+                try {
+                    out.write(result.getBytes(charSet));
+                } catch (Exception e) {
+                    final ComponentLog logger = getLogger();
+                    if (null != logger)
+                        logger.error("Failed write response data", e);
+                    throw new ProcessException(e);
+                }
+            }
+        });
+
+        final Map<String, String> attributes = new HashMap<>();
+        return session.putAllAttributes(intermediateFlowFile, attributes);
     }
 
     /**

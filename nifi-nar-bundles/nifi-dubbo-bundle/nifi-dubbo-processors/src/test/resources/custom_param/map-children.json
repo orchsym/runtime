@@ -1,0 +1,34 @@
+{
+    "desc": "Bean",
+    "class": "x.y.Bean",
+    "value": {
+        "class": "x.y.P",
+        "id": 123,
+        "name": "Hello",
+        "age": 28,
+        "children": [
+            {
+                "class": "x.y.Cat",
+                "id": 1001,
+                "name": "Cat",
+                "age": 3,
+                "children": [
+                    {
+                        "class": "x.y.Cat",
+                        "id": 10011,
+                        "name": "Cat2",
+                        "age": 0,
+                        "children": []
+                    }
+                ]
+            },
+            {
+                "class": "x.y.Dog",
+                "id": 1002,
+                "name": "Dog",
+                "age": 5,
+                "children": []
+            }
+        ]
+    }
+}

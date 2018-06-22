@@ -87,6 +87,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.apache.nifi.controller.ControllerServiceLookup;
 
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
 @Tags({"http", "https", "request", "listen", "ingress", "web service"})
@@ -257,6 +258,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         descriptors.add(HOSTNAME);
         descriptors.add(SSL_CONTEXT);
         descriptors.add(HTTP_CONTEXT_MAP);
+        descriptors.add(HTTP_API_REGISTRY);
         descriptors.add(PATH_REGEX);
         descriptors.add(URL_CHARACTER_SET);
         descriptors.add(ALLOW_GET);
@@ -339,13 +341,13 @@ public class HandleHttpRequest extends AbstractProcessor {
     }
 
     @OnScheduled
-    public void onScheduled(final ProcessContext context) throws Exception{
+    public void onScheduled(final ProcessContext context) throws Exception {
         initialized.set(false);
 
         this.state = "running";
 
-        //register api info to api registery service
-        updateApiInfoToService(context); //maybe no need
+        // register api info to api registery service
+        updateApiInfoToService(context);
     }
 
     @OnStopped
@@ -795,7 +797,6 @@ public class HandleHttpRequest extends AbstractProcessor {
     }
 
     private void updateApiInfoToService(final ProcessContext context) {
-
         ApiInfo apiInfo;
         try {
             apiInfo = getApiInfo(context);
@@ -807,7 +808,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         ApiRegistryService apiRegistryService = context.getProperty(HTTP_API_REGISTRY).asControllerService(ApiRegistryService.class);
         if (apiRegistryService != null) {
             this.apiRegistryService = apiRegistryService;
-            apiRegistryService.registerApiInfo(apiInfo);   
+            apiRegistryService.registerApiInfo(apiInfo);
         }
     }
 

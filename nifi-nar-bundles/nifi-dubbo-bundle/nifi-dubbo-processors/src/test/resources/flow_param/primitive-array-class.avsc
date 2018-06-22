@@ -1,0 +1,153 @@
+{
+    "namespace": "junit.param",
+    "type": "record",
+    "name": "primitive_array_objects",
+    "fields": [
+        {
+            "name": "arg1",
+            "type": {
+                "name": "arg1",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "[B"
+                    },
+                    {
+                        "name": "arg1",
+                        "type": {
+                            "type": "array",
+                            "items": "bytes"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg2",
+            "type": {
+                "name": "arg2",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "[I"
+                    },
+                    {
+                        "name": "arg2",
+                        "type": {
+                            "type": "array",
+                            "items": "int"
+                        }
+                    }
+                ]
+            }
+        },       
+        {
+            "name": "arg3",
+            "type": {
+                "name": "arg3",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "[J"
+                    },
+                    {
+                        "name": "arg3",
+                        "type": {
+                            "type": "array",
+                            "items": "long"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg4",
+            "type": {
+                "name": "arg4",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "[F"
+                    },
+                    {
+                        "name": "arg4",
+                        "type": {
+                            "type": "array",
+                            "items": "float"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg5",
+            "type": {
+                "name": "arg5",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "[D"
+                    },
+                    {
+                        "name": "arg5",
+                        "type": {
+                            "type": "array",
+                            "items": "double"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg6",
+            "type": {
+                "name": "arg6",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "[Z"
+                    },
+                    {
+                        "name": "arg6",
+                        "type": {
+                            "type": "array",
+                            "items": "boolean"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg7",
+            "type": {
+                "name": "arg7",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string"
+                    },
+                    {
+                        "name": "arg7",
+                        "type": {
+                            "type": "array",
+                            "items": "string"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

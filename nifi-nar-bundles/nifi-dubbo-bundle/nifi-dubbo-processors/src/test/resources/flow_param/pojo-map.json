@@ -1,0 +1,35 @@
+{
+	"person_dog": {
+		"class": "java.util.Map",
+		"person_dog": [
+			{
+				"key": {
+					"class": "com.baishancloud.orchsym.processors.dubbo.it.Person",
+					"id": 1,
+					"name": "Zhang",
+					"age": 22
+				},
+				"value": {
+					"class": "com.baishancloud.orchsym.processors.dubbo.it.Dog",
+					"id": 21,
+					"name": "kemi",
+					"color": 123
+				}
+			},
+			{
+				"key": {
+					"class": "com.baishancloud.orchsym.processors.dubbo.it.Person",
+					"id": 2,
+					"name": "Wang",
+					"age": 26
+				},
+				"value": {
+					"class": "com.baishancloud.orchsym.processors.dubbo.it.Dog",
+					"id": 22,
+					"name": "nick",
+					"color": 456
+				}
+			}
+		]
+	}
+}

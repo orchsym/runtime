@@ -16,7 +16,26 @@
  */
 package org.apache.nifi.processors.standard;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import javax.net.ssl.SSLContext;
+
 import org.apache.commons.io.IOUtils;
+import org.apache.nifi.lookup.CommonKeyValueLookupService;
+import org.apache.nifi.lookup.KeyValueLookupService;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSessionFactory;
 import org.apache.nifi.reporting.InitializationException;
@@ -31,25 +50,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import javax.net.ssl.SSLContext;
-import java.io.IOException;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.util.ArrayList;
-import java.util.List;
-
 public class TestListenTCP {
 
     private ListenTCP proc;
     private TestRunner runner;
 
     @Before
-    public void setup() {
+    public void setup() throws Exception {
         proc = new ListenTCP();
         runner = TestRunners.newTestRunner(proc);
         runner.setProperty(ListenTCP.PORT, "0");
@@ -80,7 +87,7 @@ public class TestListenTCP {
         runTCP(messages, messages.size(), null);
 
         List<MockFlowFile> mockFlowFiles = runner.getFlowFilesForRelationship(ListenTCP.REL_SUCCESS);
-        for (int i=0; i < mockFlowFiles.size(); i++) {
+        for (int i = 0; i < mockFlowFiles.size(); i++) {
             mockFlowFiles.get(i).assertContentEquals("This is message " + (i + 1));
         }
     }
@@ -108,8 +115,8 @@ public class TestListenTCP {
     }
 
     @Test
-    public void testTLSClientAuthRequiredAndClientCertProvided() throws InitializationException, IOException, InterruptedException,
-            UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+    public void testTLSClientAuthRequiredAndClientCertProvided()
+            throws InitializationException, IOException, InterruptedException, UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
 
         runner.setProperty(ListenTCP.CLIENT_AUTH, SSLContextService.ClientAuth.REQUIRED.name());
         configureProcessorSslContextService();
@@ -122,27 +129,20 @@ public class TestListenTCP {
         messages.add("This is message 5\n");
 
         // Make an SSLContext with a key and trust store to send the test messages
-        final SSLContext clientSslContext = SslContextFactory.createSslContext(
-                "src/test/resources/localhost-ks.jks",
-                "localtest".toCharArray(),
-                "jks",
-                "src/test/resources/localhost-ts.jks",
-                "localtest".toCharArray(),
-                "jks",
-                org.apache.nifi.security.util.SslContextFactory.ClientAuth.valueOf("NONE"),
-                "TLS");
+        final SSLContext clientSslContext = SslContextFactory.createSslContext("src/test/resources/localhost-ks.jks", "localtest".toCharArray(), "jks", "src/test/resources/localhost-ts.jks",
+                "localtest".toCharArray(), "jks", org.apache.nifi.security.util.SslContextFactory.ClientAuth.valueOf("NONE"), "TLS");
 
         runTCP(messages, messages.size(), clientSslContext);
 
         List<MockFlowFile> mockFlowFiles = runner.getFlowFilesForRelationship(ListenTCP.REL_SUCCESS);
-        for (int i=0; i < mockFlowFiles.size(); i++) {
+        for (int i = 0; i < mockFlowFiles.size(); i++) {
             mockFlowFiles.get(i).assertContentEquals("This is message " + (i + 1));
         }
     }
 
     @Test
-    public void testTLSClientAuthRequiredAndClientCertNotProvided() throws InitializationException, IOException, InterruptedException,
-            UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+    public void testTLSClientAuthRequiredAndClientCertNotProvided()
+            throws InitializationException, IOException, InterruptedException, UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
 
         runner.setProperty(ListenTCP.CLIENT_AUTH, SSLContextService.ClientAuth.REQUIRED.name());
         configureProcessorSslContextService();
@@ -155,11 +155,7 @@ public class TestListenTCP {
         messages.add("This is message 5\n");
 
         // Make an SSLContext that only has the trust store, this should not work since the processor has client auth REQUIRED
-        final SSLContext clientSslContext = SslContextFactory.createTrustSslContext(
-                "src/test/resources/localhost-ts.jks",
-                "localtest".toCharArray(),
-                "jks",
-                "TLS");
+        final SSLContext clientSslContext = SslContextFactory.createTrustSslContext("src/test/resources/localhost-ts.jks", "localtest".toCharArray(), "jks", "TLS");
 
         try {
             runTCP(messages, messages.size(), clientSslContext);
@@ -170,8 +166,8 @@ public class TestListenTCP {
     }
 
     @Test
-    public void testTLSClientAuthNoneAndClientCertNotProvided() throws InitializationException, IOException, InterruptedException,
-            UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+    public void testTLSClientAuthNoneAndClientCertNotProvided()
+            throws InitializationException, IOException, InterruptedException, UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
 
         runner.setProperty(ListenTCP.CLIENT_AUTH, SSLContextService.ClientAuth.NONE.name());
         configureProcessorSslContextService();
@@ -184,22 +180,17 @@ public class TestListenTCP {
         messages.add("This is message 5\n");
 
         // Make an SSLContext that only has the trust store, this should not work since the processor has client auth REQUIRED
-        final SSLContext clientSslContext = SslContextFactory.createTrustSslContext(
-                "src/test/resources/localhost-ts.jks",
-                "localtest".toCharArray(),
-                "jks",
-                "TLS");
+        final SSLContext clientSslContext = SslContextFactory.createTrustSslContext("src/test/resources/localhost-ts.jks", "localtest".toCharArray(), "jks", "TLS");
 
         runTCP(messages, messages.size(), clientSslContext);
 
         List<MockFlowFile> mockFlowFiles = runner.getFlowFilesForRelationship(ListenTCP.REL_SUCCESS);
-        for (int i=0; i < mockFlowFiles.size(); i++) {
+        for (int i = 0; i < mockFlowFiles.size(); i++) {
             mockFlowFiles.get(i).assertContentEquals("This is message " + (i + 1));
         }
     }
 
-    protected void runTCP(final List<String> messages, final int expectedTransferred, final SSLContext sslContext)
-            throws IOException, InterruptedException {
+    protected void runTCP(final List<String> messages, final int expectedTransferred, final SSLContext sslContext) throws IOException, InterruptedException {
 
         Socket socket = null;
         try {
@@ -232,8 +223,7 @@ public class TestListenTCP {
             // number of messages ready before proceeding, we want to guarantee they are all there
             // before onTrigger gets a chance to run
             long startTimeQueueSizeCheck = System.currentTimeMillis();
-            while (proc.getQueueSize() < messages.size()
-                    && (System.currentTimeMillis() - startTimeQueueSizeCheck < responseTimeout)) {
+            while (proc.getQueueSize() < messages.size() && (System.currentTimeMillis() - startTimeQueueSizeCheck < responseTimeout)) {
                 Thread.sleep(100);
             }
 
@@ -243,7 +233,7 @@ public class TestListenTCP {
             // call onTrigger until we processed all the frames, or a certain amount of time passes
             int numTransferred = 0;
             long startTime = System.currentTimeMillis();
-            while (numTransferred < expectedTransferred  && (System.currentTimeMillis() - startTime < responseTimeout)) {
+            while (numTransferred < expectedTransferred && (System.currentTimeMillis() - startTime < responseTimeout)) {
                 proc.onTrigger(context, processSessionFactory);
                 numTransferred = runner.getFlowFilesForRelationship(ListenTCP.REL_SUCCESS).size();
                 Thread.sleep(100);
@@ -271,6 +261,37 @@ public class TestListenTCP {
 
         runner.setProperty(ListenTCP.SSL_CONTEXT_SERVICE, "ssl-context");
         return sslContextService;
+    }
+
+    @Test
+    public void test_FlowAttributes() throws Exception {
+        final CommonKeyValueLookupService contextMap = new CommonKeyValueLookupService();
+        
+        runner.addControllerService("tcp-context-map", contextMap);
+        runner.enableControllerService(contextMap);
+        runner.setProperty(ListenTCP.RESPONDER_CONTEXT_MAP, "tcp-context-map");
+
+        final List<String> messages = new ArrayList<>();
+        messages.add("This is message 1\n");
+        messages.add("This is message 2\n");
+        messages.add("This is message 3\n");
+        messages.add("This is message 4\n");
+        messages.add("This is message 5\n");
+
+        runTCP(messages, messages.size(), null);
+
+        List<MockFlowFile> mockFlowFiles = runner.getFlowFilesForRelationship(ListenTCP.REL_SUCCESS);
+        for (int i = 0; i < mockFlowFiles.size(); i++) {
+            MockFlowFile mockFlowFile = mockFlowFiles.get(i);
+            mockFlowFile.assertContentEquals("This is message " + (i + 1));
+            mockFlowFile.assertAttributeExists(ListenTCP.TCP_CONTEXT_ID);
+            mockFlowFile.assertAttributeEquals(ListenTCP.TCP_CONTEXT_CHARSET, "UTF-8");
+        }
+
+        KeyValueLookupService lookupService = runner.getProcessContext().getProperty(ListenTCP.RESPONDER_CONTEXT_MAP).asControllerService(KeyValueLookupService.class);
+        assertNotNull(lookupService);
+        Optional<Object> optional = lookupService.get(mockFlowFiles.get(0).getAttribute(ListenTCP.TCP_CONTEXT_ID));
+        assertTrue(optional.isPresent());
     }
 
 }

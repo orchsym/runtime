@@ -1,0 +1,98 @@
+{
+    "namespace": "junit.param",
+    "type": "record",
+    "name": "pojo_map",
+    "fields": [
+        {
+            "name": "arg1",
+            "type": {
+                "name": "arg1",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string"
+                    },
+                    {
+                        "name": "arg1",
+                        "type": {
+                            "type": "array",
+                            "items": {
+                                "name": "person_dog_elem",
+                                "type": "record",
+                                "fields": [
+                                    {
+                                        "name": "key",
+                                        "type": {
+                                            "name": "person",
+                                            "type": "record",
+                                            "fields": [
+                                                {
+                                                    "name": "class",
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "name": "id",
+                                                    "type": "int"
+                                                },
+                                                {
+                                                    "name": "name",
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "name": "age",
+                                                    "type": "int"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "value",
+                                        "type": {
+                                            "name": "dog_array",
+                                            "type": "record",
+                                            "fields": [
+                                                {
+                                                    "name": "class",
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "name": "arg1",
+                                                    "type": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "name": "dog",
+                                                            "type": "record",
+                                                            "fields": [
+                                                                {
+                                                                    "name": "class",
+                                                                    "type": "string"
+                                                                },
+                                                                {
+                                                                    "name": "id",
+                                                                    "type": "int"
+                                                                },
+                                                                {
+                                                                    "name": "name",
+                                                                    "type": "string"
+                                                                },
+                                                                {
+                                                                    "name": "color",
+                                                                    "type": "int"
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -1,0 +1,211 @@
+{
+    "namespace": "junit.param",
+    "type": "record",
+    "name": "object_dates",
+    "fields": [
+        {
+            "name": "arg1",
+            "type": {
+                "name": "arg1",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default":"java.time.LocalDate"
+                    },
+                    {
+                        "name": "arg1",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg2",
+            "type": {
+                "name": "arg2",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default":"java.time.LocalDate"
+                    },
+                    {
+                        "name": "time_pattern",
+                        "type": "string"
+                    },
+                    {
+                        "name": "arg2",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg3",
+            "type": {
+                "name": "arg3",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default":"java.time.LocalTime"
+                    },
+                    {
+                        "name": "arg3",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg4",
+            "type": {
+                "name": "arg4",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default":"java.time.LocalTime"
+                    },
+                    {
+                        "name": "arg4",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg5",
+            "type": {
+                "name": "arg5",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default":"java.time.LocalTime"
+                    },
+                    {
+                        "name": "time_pattern",
+                        "type": "string"
+                    },
+                    {
+                        "name": "arg5",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg6",
+            "type": {
+                "name": "arg6",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default":"java.time.LocalDateTime"
+                    },
+                    {
+                        "name": "arg6",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg7",
+            "type": {
+                "name": "arg7",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default":"java.time.LocalDateTime"
+                    },
+                    {
+                        "name": "time_pattern",
+                        "type": "string"
+                    },
+                    {
+                        "name": "arg7",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg8",
+            "type": {
+                "name": "arg8",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default":"java.time.Date"
+                    },
+                    {
+                        "name": "time_pattern",
+                        "type": "string"
+                    },
+                    {
+                        "name": "arg8",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg9",
+            "type": {
+                "name": "arg9",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default":"java.time.Date"
+                    },
+                    {
+                        "name": "time_pattern",
+                        "type": "string"
+                    },
+                    {
+                        "name": "arg9",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg10",
+            "type": {
+                "name": "arg10",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default":"java.time.Date"
+                    },
+                    {
+                        "name": "time_pattern",
+                        "type": "string"
+                    },
+                    {
+                        "name": "arg10",
+                        "type": "string"
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -1,0 +1,155 @@
+{
+	"arg1": {
+		"class": "[Ljava.lang.Character;",
+		"arg1": [
+			{
+				"class": "java.lang.Character",
+				"arg1": "A"
+			},
+			{
+				"class": "java.lang.Character",
+				"arg1": "B"
+			},
+			{
+				"class": "java.lang.Character",
+				"arg1": "C"
+			}
+		]
+	},
+	"arg2": {
+		"class": "[Ljava.lang.Byte;",
+		"arg2": [
+			{
+				"class": "java.lang.Byte",
+				"arg2": "\u0041"
+			},
+			{
+				"class": "java.lang.Byte",
+				"arg2": "\u0042"
+			},
+			{
+				"class": "java.lang.Byte",
+				"arg2": "\u0043"
+			}
+		]
+	},
+	"arg3": {
+		"class": "[Ljava.lang.Short;",
+		"arg3": [
+			{
+				"class": "java.lang.Short",
+				"arg3": 1
+			},
+			{
+				"class": "java.lang.Short",
+				"arg3": 2
+			},
+			{
+				"class": "java.lang.Short",
+				"arg3": 3
+			}
+		]
+	},
+	"arg4": {
+		"class": "[Ljava.lang.Integer;",
+		"arg4": [
+			{
+				"class": "java.lang.Integer",
+				"arg4": 1
+			},
+			{
+				"class": "java.lang.Integer",
+				"arg4": 2
+			},
+			{
+				"class": "java.lang.Integer",
+				"arg4": 3
+			}
+		]
+	},
+	"arg5": {
+		"class": "[Ljava.lang.Long;",
+		"arg5": [
+			{
+				"class": "java.lang.Long",
+				"arg5": 9
+			},
+			{
+				"class": "java.lang.Long",
+				"arg5": 8
+			},
+			{
+				"class": "java.lang.Long",
+				"arg5": 7
+			}
+		]
+	},
+	"arg6": {
+		"class": "[Ljava.lang.Float;",
+		"arg6": [
+			{
+				"class": "java.lang.Float",
+				"arg6": 1.1
+			},
+			{
+				"class": "java.lang.Float",
+				"arg6": 2.2
+			},
+			{
+				"class": "java.lang.Float",
+				"arg6": 3.3
+			}
+		]
+	},
+	"arg7": {
+		"class": "[Ljava.lang.Double;",
+		"arg7": [
+			{
+				"class": "java.lang.Double",
+				"arg7": 9.9
+			},
+			{
+				"class": "java.lang.Double",
+				"arg7": 8.8
+			},
+			{
+				"class": "java.lang.Double",
+				"arg7": 7.7
+			}
+		]
+	},
+	"arg8": {
+		"class": "[Ljava.lang.Boolean;",
+		"arg8": [
+			{
+				"class": "java.lang.Boolean",
+				"arg8": true
+			},
+			{
+				"class": "java.lang.Boolean",
+				"arg8": false
+			},
+			{
+				"class": "java.lang.Boolean",
+				"arg8": true
+			}
+		]
+	},
+	"arg9": {
+		"class": "[Ljava.lang.String;",
+		"arg9": [
+			{
+				"class": "java.lang.String",
+				"arg9": "A"
+			},
+			{
+				"class": "java.lang.String",
+				"arg9": "B"
+			},
+			{
+				"class": "java.lang.String",
+				"arg9": "C"
+			}
+		]
+	}
+}

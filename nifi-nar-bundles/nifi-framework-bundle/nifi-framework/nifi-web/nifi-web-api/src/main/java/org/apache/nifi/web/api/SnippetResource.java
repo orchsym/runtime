@@ -34,9 +34,6 @@ import org.apache.nifi.web.Revision;
 import org.apache.nifi.web.api.dto.SnippetDTO;
 import org.apache.nifi.web.api.entity.ComponentEntity;
 import org.apache.nifi.web.api.entity.SnippetEntity;
-import org.apache.nifi.controller.service.ControllerServiceNode;
-import org.apache.nifi.controller.ControllerService;
-import org.apache.nifi.controller.Snippet;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -55,11 +52,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import java.lang.reflect.Method;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * RESTful endpoint for querying dataflow snippets.
  */
@@ -70,7 +62,6 @@ import org.slf4j.LoggerFactory;
 )
 public class SnippetResource extends ApplicationResource {
 
-    private static final Logger logger = LoggerFactory.getLogger(SnippetResource.class);
     private NiFiServiceFacade serviceFacade;
     private Authorizer authorizer;
 
@@ -271,7 +262,6 @@ public class SnippetResource extends ApplicationResource {
 
         // get the revision from this snippet
         final Set<Revision> requestRevisions = serviceFacade.getRevisionsFromSnippet(snippetId);
-
         return withWriteLock(
                 serviceFacade,
                 requestSnippetEntity,
@@ -363,6 +353,7 @@ public class SnippetResource extends ApplicationResource {
     }
 
     /* setters */
+
     public void setServiceFacade(NiFiServiceFacade serviceFacade) {
         this.serviceFacade = serviceFacade;
     }

@@ -1,0 +1,39 @@
+[
+    {
+        "class": "java.util.List",
+        "value": [
+            {
+                "class": "com.baishancloud.orchsym.processors.dubbo.it.Person",
+                "id": 123,
+                "name": "Test",
+                "age": 20,
+                "children": [
+                    {
+                        "class": "com.baishancloud.orchsym.processors.dubbo.it.Person",
+                        "id": 456,
+                        "name": "ABC",
+                        "age": 5
+                    }
+                ]
+            },
+            {
+                "class": "com.baishancloud.orchsym.processors.dubbo.it.Person",
+                "id": 124,
+                "name": "Mock",
+                "age": 28,
+                "children": [
+                    {
+                        "class": "com.baishancloud.orchsym.processors.dubbo.it.Person",
+                        "id": 457,
+                        "name": "XYZ",
+                        "age": 12
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "class": "boolean",
+        "value": false
+    }
+]
