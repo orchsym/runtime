@@ -88,6 +88,7 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.apache.nifi.controller.ControllerServiceLookup;
+import org.apache.nifi.util.NiFiProperties;
 
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
 @Tags({"http", "https", "request", "listen", "ingress", "web service"})
@@ -253,7 +254,6 @@ public class HandleHttpRequest extends AbstractProcessor {
 
     static {
         List<PropertyDescriptor> descriptors = new ArrayList<>();
-        descriptors.add(HTTP_API_REGISTRY);
         descriptors.add(PORT);
         descriptors.add(HOSTNAME);
         descriptors.add(SSL_CONTEXT);
@@ -820,7 +820,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         apiInfo.name = name;
 
         apiInfo.id = this.getIdentifier();
-        apiInfo.groupID = allProperties.get(ApiRegistryService.GROUP_ID);
+        apiInfo.groupID = allProperties.get(NiFiProperties.GROUP_ID);
 
         String host = context.getProperty(HOSTNAME).getValue();
         apiInfo.host = host;

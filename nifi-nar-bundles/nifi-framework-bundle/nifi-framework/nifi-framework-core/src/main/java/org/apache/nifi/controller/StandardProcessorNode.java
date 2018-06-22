@@ -1701,7 +1701,7 @@ public class StandardProcessorNode extends ProcessorNode implements Connectable 
     protected void updateProcessGroup(final String oldProcessGroupIdentifier, final String newProcessGroupIdentifier) {
         if (StringUtils.isNotEmpty(newProcessGroupIdentifier)) {
             // create one fake property for groupID
-            final PropertyDescriptor groupDescriptor = new PropertyDescriptor.Builder().name("groupID").addValidator(Validator.INVALID).dynamic(true).build();
+            final PropertyDescriptor groupDescriptor = new PropertyDescriptor.Builder().name(NiFiProperties.GROUP_ID).addValidator(Validator.INVALID).dynamic(true).build();
             onPropertyModified(groupDescriptor, oldProcessGroupIdentifier, newProcessGroupIdentifier);
         }
     }
