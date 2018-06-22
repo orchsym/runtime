@@ -251,11 +251,11 @@ public class HandleHttpRequest extends AbstractProcessor {
 
     static {
         List<PropertyDescriptor> descriptors = new ArrayList<>();
+        descriptors.add(HTTP_API_REGISTRY);
         descriptors.add(PORT);
         descriptors.add(HOSTNAME);
         descriptors.add(SSL_CONTEXT);
         descriptors.add(HTTP_CONTEXT_MAP);
-        descriptors.add(HTTP_API_REGISTRY);
         descriptors.add(PATH_REGEX);
         descriptors.add(URL_CHARACTER_SET);
         descriptors.add(ALLOW_GET);
