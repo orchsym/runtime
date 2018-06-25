@@ -16,9 +16,21 @@
  */
 package org.apache.nifi.apiregistry;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Tags;
@@ -27,11 +39,7 @@ import org.apache.nifi.annotation.lifecycle.OnEnabled;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.controller.AbstractControllerService;
 import org.apache.nifi.controller.ConfigurationContext;
-import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
-import org.apache.nifi.reporting.InitializationException;
-import org.apache.nifi.util.NiFiProperties;
-
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -40,32 +48,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonElement;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 
 @Tags({ "api registry"})
 @CapabilityDescription("This service is for api registry")
@@ -218,16 +201,10 @@ public class StandardApiRegistryService extends AbstractControllerService implem
     }  
 
     @Override
-    public void registerApiInfo(ApiInfo apiInfo, Boolean shouldHandleGroupID) {
-
+    public void registerApiInfo(ApiInfo apiInfo) {
         unregisterApiInfo(apiInfo.id);
 
         this.apiInfos.add(apiInfo);
-
-        if (shouldHandleGroupID) {
-            String groupID = getProcessorGroupID(apiInfo.id);
-            modifyApiInfo(apiInfo.id, "groupID", groupID);
-        }
     }
 
     @Override
@@ -263,7 +240,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                     apiInfo.allowOptions = Boolean.valueOf(value);
                 } else if (key.equals("state")) {
                     apiInfo.state = value;
-                } else if (key.equals("groupID")) {
+                } else if (key.equals(GROUP_ID)) {
                     apiInfo.groupID = value;
                 }else if (key.equals("SSL Context Service")) {
                     if (value.equals("null")) {
@@ -271,6 +248,8 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                     } else {
                         apiInfo.schema = "https";
                     }
+                } else if (key.equals(REQUEST_TIMEOUT)) {
+                    apiInfo.requestTimeout = Long.parseLong(value);
                 }
             }
         }
@@ -291,73 +270,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
         }
     }
 
-    private String getProcessorGroupID(String processorID){
-
-        String groupID = "";
-        String url = getUrlInfo(processorID);
-        HttpClient client = new DefaultHttpClient();
-        HttpGet request = new HttpGet(url);
-        try {
-            HttpResponse response = client.execute(request);
-            BufferedReader rd = new BufferedReader(
-                    new InputStreamReader(response.getEntity().getContent()));
-
-            StringBuffer result = new StringBuffer();
-            String line = "";
-            while ((line = rd.readLine()) != null) {
-                result.append(line);
-            }
-            JsonObject jsonObject = new JsonParser().parse(result.toString()).getAsJsonObject();
-            JsonObject statusObj = jsonObject.getAsJsonObject("status");
-            for (Entry<String, JsonElement> entry : statusObj.entrySet()) {
-                if (entry.getKey().equals("groupId")) {
-                    groupID = ((JsonElement)entry.getValue()).getAsString();
-                }
-            }
-        } catch (IOException e){
-            getLogger().error("parse response failed", e);
-        } finally {
-            request.releaseConnection();
-        }
-        
-        return groupID;
-    }
-
-    private String getUrlInfo(String processorID) {
-
-        String host;
-        String port;
-        String scheme;
-
-        final NiFiProperties properties = NiFiProperties.createBasicNiFiProperties(null, null);
-        String httpHost = properties.getProperty(PROPERTIES_NIFI_WEB_HTTP_HOST);
-        String httpPort = properties.getProperty(PROPERTIES_NIFI_WEB_HTTP_PORT);
-        String httpsHost = properties.getProperty(PROPERTIES_NIFI_WEB_HTTPS_HOST);
-        String httpsPort = properties.getProperty(PROPERTIES_NIFI_WEB_HTTPS_PORT);
-
-        if (!httpPort.trim().equals("")) {
-            //http
-            scheme = "http";
-            port = httpPort;
-            if (httpHost.trim().equals("")) {
-                host = "127.0.0.1";
-            } else {
-                host = httpHost;
-            }
-        } else {
-            //https
-            scheme = "https";
-            port = httpsPort;
-            if (httpsHost.trim().equals("")) {
-                host = "127.0.0.1";
-            } else {
-                host = httpsHost;
-            }
-        }
-        String url = scheme + "://" + host + ":" + port + "/nifi-api/processors/" + processorID;
-        return url;
-    }
-
     private Map<String, String> splitQuery(String query) throws UnsupportedEncodingException{
         Map<String, String> query_pairs = new HashMap();
         String[] pairs = query.split("&");
@@ -367,8 +279,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
         }
         return query_pairs;
     }
-
-
 
     public String getRequestPath() {
         return this.requestPath;

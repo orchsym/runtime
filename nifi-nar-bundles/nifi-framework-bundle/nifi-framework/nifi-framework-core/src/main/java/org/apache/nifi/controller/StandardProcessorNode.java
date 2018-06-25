@@ -45,6 +45,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
@@ -64,8 +65,10 @@ import org.apache.nifi.authorization.resource.ResourceFactory;
 import org.apache.nifi.authorization.resource.ResourceType;
 import org.apache.nifi.bundle.BundleCoordinate;
 import org.apache.nifi.components.ConfigurableComponent;
+import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.ValidationContext;
 import org.apache.nifi.components.ValidationResult;
+import org.apache.nifi.components.Validator;
 import org.apache.nifi.connectable.Connectable;
 import org.apache.nifi.connectable.ConnectableType;
 import org.apache.nifi.connectable.Connection;
@@ -93,8 +96,8 @@ import org.apache.nifi.util.CharacterFilterUtils;
 import org.apache.nifi.util.FormatUtils;
 import org.apache.nifi.util.NiFiProperties;
 import org.apache.nifi.util.ReflectionUtils;
-import org.apache.nifi.util.file.classloader.ClassLoaderUtils;
 import org.apache.nifi.util.ThreadUtils;
+import org.apache.nifi.util.file.classloader.ClassLoaderUtils;
 import org.quartz.CronExpression;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1134,8 +1137,13 @@ public class StandardProcessorNode extends ProcessorNode implements Connectable 
 
     @Override
     public synchronized void setProcessGroup(final ProcessGroup group) {
+        final String oldProcessGroupIdentifier = this.getProcessGroupIdentifier();
+
         this.processGroup.set(group);
         invalidateValidationContext();
+
+        // update new groupID
+        updateProcessGroup(oldProcessGroupIdentifier, group.getIdentifier());
     }
 
     @Override
@@ -1679,6 +1687,22 @@ public class StandardProcessorNode extends ProcessorNode implements Connectable 
             } else {
                 throw new IllegalStateException(this + " is already under version control");
             }
+        }
+    }
+
+    @Override
+    public void setProperties(Map<String, String> properties, boolean allowRemovalOfRequiredProperties) {
+        super.setProperties(properties, allowRemovalOfRequiredProperties);
+
+        // when init/load
+        updateProcessGroup(null, getProcessGroupIdentifier());
+    }
+
+    protected void updateProcessGroup(final String oldProcessGroupIdentifier, final String newProcessGroupIdentifier) {
+        if (StringUtils.isNotEmpty(newProcessGroupIdentifier)) {
+            // create one fake property for groupID
+            final PropertyDescriptor groupDescriptor = new PropertyDescriptor.Builder().name(NiFiProperties.GROUP_ID).addValidator(Validator.INVALID).dynamic(true).build();
+            onPropertyModified(groupDescriptor, oldProcessGroupIdentifier, newProcessGroupIdentifier);
         }
     }
 }
