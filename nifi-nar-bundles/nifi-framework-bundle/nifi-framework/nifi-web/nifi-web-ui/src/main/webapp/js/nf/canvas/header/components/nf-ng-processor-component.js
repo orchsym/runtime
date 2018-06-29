@@ -617,7 +617,7 @@
                                     icon: 'search.svg',
                                     classification: [
                                         {
-                                            name: '所有数据',
+                                            name: '所有组件',
                                             open: true,
                                             components: allComponents,
                                             icon: 'search.svg'
