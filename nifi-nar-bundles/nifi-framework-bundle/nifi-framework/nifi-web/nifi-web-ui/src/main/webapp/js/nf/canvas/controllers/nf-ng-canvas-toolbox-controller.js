@@ -80,7 +80,8 @@
                 urls: {
                     api: '../nifi-api',
                     controller: '../nifi-api/controller',
-                    processorTypes: '../nifi-api/flow/processor-types'
+                    processorTypes: '../nifi-api/flow/processor-types',
+                    classification: 'json/classification.json',
                 }
             };
         }
@@ -99,6 +100,62 @@
                 groupComponent.modal.init();
                 remoteGroupComponent.modal.init();
                 templateComponent.modal.init();
+            },
+
+            draggableRightComponentConfig: function (component,icon) {
+                var scrolltop = 0
+                return {
+                    zIndex: 1011,
+                    revert: true,
+                    revertDuration: 0,
+                    cancel: false,
+                    containment: 'body',
+                    cursor: '-webkit-grabbing',
+                    start: function (e, ui) {
+                        var ele = e.target;
+                        ele.style.borderLeft = "2px solid #1976d2";
+                        scrolltop = $('#component-list').scrollTop();
+                        $('#component-list').css('overflow-y','visible');
+                        $('#component-list').css('top',(100-scrolltop)+'px');
+                        $('#selected-processor-name').text(component.name);
+                        $('#selected-processor-type').text(component.type).data('bundle', component.bundle);
+                    },
+                    stop: function (e, ui) {
+                        var ele = e.target;
+                        ele.style.borderLeft = "2px solid #F7F9FB";
+                        $('#component-list').css('overflow-y','auto');
+                        $('#component-list').scrollTop(scrolltop);
+                        $('#component-list').css('top','100px');
+                        var name = $('#selected-processor-name').text();
+                        var processorType = $('#selected-processor-type').text();
+                        var bundle = $('#selected-processor-type').data('bundle');
+
+                        var translate = nfCanvasUtils.getCanvasTranslate();
+                        var scale = nfCanvasUtils.getCanvasScale();
+
+                        var mouseX = e.originalEvent.pageX;
+                        var mouseY = e.originalEvent.pageY - nfCanvasUtils.getCanvasOffset();
+
+                        if (mouseX >= 0 && mouseY >= 0) {
+                            // adjust the x and y coordinates accordingly
+                            var x = (mouseX / scale) - (translate[0] / scale);
+                            var y = (mouseY / scale) - (translate[1] / scale);
+
+                            var pt = {
+                                x: x,
+                                y: y
+                            }
+
+                            processorComponent.createProcessor(name, processorType, bundle, pt);
+                        }
+
+                    },
+                    helper: function (event) {
+                        var marginTop = $('#component-list').scrollTop()+15;
+                        var marginLeft = event.originalEvent.pageX-document.getElementById('component-panel').offsetLeft-22;
+                        return $('<div style="width:44px;height:44px;border-radius:50%;margin-left:'+marginLeft+'px;margin-top:'+marginTop+'px"><img src="images/'+icon+'" style="width:100%;height:100%;border-radius:50%"></div>');
+                    }
+                }
             },
 
             /**

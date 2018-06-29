@@ -20,9 +20,9 @@
     <div id="navigation-control" class="graph-control">
     	<fmt:message key="partials.canvas.navigation.Navigate" var="navigate"/>
         <div class="graph-control-docked pointer fa fa-compass" title="${navigate}"
-             ng-click="appCtrl.serviceProvider.graphControlsCtrl.undock($event)">
+             ng-click="appCtrl.serviceProvider.graphControlsCtrl.expand($event)">
         </div>
-        <div class="graph-control-header-container hidden pointer"
+        <div class="graph-control-header-container pointer"
              ng-click="appCtrl.serviceProvider.graphControlsCtrl.expand($event)">
             <div class="graph-control-header-icon fa fa-compass">
             </div>
@@ -65,9 +65,9 @@
     <div id="operation-control" class="graph-control">
     	<fmt:message key="partials.canvas.navigation.Operate" var="operate"/>
         <div class="graph-control-docked pointer fa fa-hand-o-up" title="${operate}"
-             ng-click="appCtrl.serviceProvider.graphControlsCtrl.undock($event)">
+             ng-click="appCtrl.serviceProvider.graphControlsCtrl.expand($event)">
         </div>
-        <div class="graph-control-header-container hidden pointer"
+        <div class="graph-control-header-container pointer"
              ng-click="appCtrl.serviceProvider.graphControlsCtrl.expand($event)">
             <div class="graph-control-header-icon fa fa-hand-o-up">
             </div>

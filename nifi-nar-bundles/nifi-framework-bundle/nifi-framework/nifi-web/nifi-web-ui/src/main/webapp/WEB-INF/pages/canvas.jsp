@@ -137,6 +137,7 @@
             <div id="remote-process-group-tooltips"></div>
         </div>
         <jsp:include page="/WEB-INF/partials/canvas/navigation.jsp"/>
+        <jsp:include page="/WEB-INF/partials/canvas/component-panel.jsp"/>
         <jsp:include page="/WEB-INF/partials/canvas/settings-content.jsp"/>
         <jsp:include page="/WEB-INF/partials/canvas/shell.jsp"/>
         <jsp:include page="/WEB-INF/partials/canvas/controller-service-configuration.jsp"/>

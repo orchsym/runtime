@@ -139,6 +139,23 @@
              * Initialize the graph controls.
              */
             init: function () {
+
+                var tooltipHtml1 = '<div class="component-info" id="component-info1">'+
+                                      '<div class="shang-caret"></div>'+
+                                      '<span class="component-info-title" id="component-info-title1"></span>'+
+                                      '<span class="component-info-content" id="component-info-content1"></span>'+
+                                    '</div>';
+                $('body').append(tooltipHtml1);
+
+                var tooltipHtml2 = '<div class="component-info" id="component-info2">'+
+                                      '<div class="xia-caret"></div>'+
+                                      '<span class="component-info-title" id="component-info-title2"></span>'+
+                                      '<span class="component-info-content" id="component-info-content2"></span>'+
+                                    '</div>';
+                $('body').append(tooltipHtml2);
+
+
+                this.filterText = ""
                 this.operateCtrl.init();
                 // initial the graph control visibility
                 var graphControlVisibility = nfStorage.getItem('graph-control-visibility');
@@ -178,6 +195,109 @@
                 } else {
                     hideGraphControl(icon.closest('div.graph-control'));
                 }
+            },
+
+            toggleClassification: function (classification) {
+                this.bigClassificationName = classification.name
+                this.backupComponentList = JSON.parse(JSON.stringify(classification.classification))
+                var el = document.getElementById('component-list')
+                el.scrollTop = 0
+                this.filter()
+            },
+
+            inputFocus: function() {
+                // since the context menu event propagated back to the canvas, clear the selection
+                nfCanvasUtils.getSelection().classed('selected', false);
+                // update URL deep linking params
+                nfCanvasUtils.setURLParameters();
+            },
+
+            filter: function ($event) {
+
+                this.componentList = JSON.parse(JSON.stringify(this.backupComponentList))
+
+                var filterText = this.filterText
+
+                var arr = []
+
+                this.componentList.map(function(item){
+                    item.components = item.components.filter(function(doc){
+                        return doc.name.toLowerCase().indexOf(filterText.toLowerCase()) != -1
+                    })
+                    if(item.components.length > 0){
+                        arr.push(item)
+                    }
+                })
+
+                this.componentList = arr
+
+            },
+
+            showTooltip: function ($event, name, content) {
+                    var $v = $($event.target)
+
+                    var e = $event.target
+
+                    if($v.hasClass('component-item')){
+                        
+                    }else if(e.tagName == 'IMG') {
+                        e = e.parentNode.parentNode
+                    } else {
+                        e = e.parentNode
+                    }
+
+                    var e1 = document.getElementById('component-info1')
+                    var e2 = document.getElementById('component-info2')
+
+                    $('#component-info-title1').text(name)
+                    $('#component-info-content1').text(content)
+
+                    var offsetTop = e.offsetTop
+                    var clientHeight = document.body.clientHeight 
+                    var eHeight = e1.offsetHeight
+                    var scrolltop = $('#component-list').scrollTop();
+
+                    var fixedTop = offsetTop-scrolltop + 245
+
+                    if(clientHeight - fixedTop - eHeight >= 35 ){
+                        e1.style.right = '68px'
+                        // e1.style.bottom = (clientHeight - (offsetTop-scrolltop) - eHeight - 273) + 'px'
+                        e1.style.top = fixedTop + 'px'
+                    } else {
+                        e2.style.right = '68px'
+                        $('#component-info-title2').text(name)
+                        $('#component-info-content2').text(content)
+                        e2.style.top = (fixedTop-eHeight-60) + 'px'
+                    }
+
+            },
+
+            hiddenTootip: function() {
+                document.getElementById('component-info1').style.right = '-200px'
+                document.getElementById('component-info2').style.right = '-200px'
+
+            },
+
+            changeDomStatus: function (item) {
+                item.open = !item.open
+            },
+
+            openComponent: function () {
+                this.isComponentOpen = true
+            },
+
+            closeComponent: function () {
+                this.isComponentOpen = false
+            },
+
+            toggleDom: function () {
+                this.isComponentOpen = !this.isComponentOpen
+            },
+            /**
+             * component group open or close
+             */
+            toggleGroup: function (item) {
+                item.open = !item.open
             },
 
             /**

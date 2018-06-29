@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="50px" height="51px" viewBox="0 0 50 51" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 50.2 (55047) - http://www.bohemiancoding.com/sketch -->
+    <title>36线路</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="图标" transform="translate(-411.000000, -104.000000)">
+            <g id="36线路" transform="translate(412.000000, 105.845492)">
+                <circle id="Oval-8" stroke="#00B5D1" stroke-width="2" cx="24" cy="24" r="24"></circle>
+                <path d="M30.1875,23.625 L18.878125,23.625 C17.303125,23.625 15.925,22.4875 15.75,20.9125 C15.553125,19.075 16.996875,17.5 18.8125,17.5 L30.428125,17.5 L30.428125,19.25 L34.978125,16.625 L30.428125,14 L30.428125,15.75 L18.8125,15.75 C16.14375,15.75 14,17.89375 14,20.5625 C14,23.23125 16.14375,25.375 18.8125,25.375 L30.121875,25.375 C31.696875,25.375 33.075,26.5125 33.25,28.0875 C33.46875,29.925 32.003125,31.5 30.209375,31.5 L18.615625,31.5 L18.615625,29.75 L14.021875,32.440625 L18.615625,35 L18.615625,33.25 L30.1875,33.25 C32.85625,33.25 35,31.10625 35,28.4375 C35,25.76875 32.85625,23.625 30.1875,23.625 Z" id="Shape" fill="#506773" fill-rule="nonzero"></path>
+            </g>
+        </g>
+    </g>
+</svg>
