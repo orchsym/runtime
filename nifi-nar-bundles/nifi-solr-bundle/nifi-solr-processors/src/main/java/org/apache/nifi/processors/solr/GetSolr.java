@@ -33,6 +33,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.nifi.annotation.behavior.InputRequirement;
@@ -46,7 +47,6 @@ import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.ValidationContext;
 import org.apache.nifi.components.ValidationResult;
 import org.apache.nifi.components.state.Scope;
-import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.flowfile.attributes.CoreAttributes;
 import org.apache.nifi.logging.ComponentLog;
@@ -62,6 +62,7 @@ import org.apache.nifi.serialization.RecordSetWriter;
 import org.apache.nifi.serialization.RecordSetWriterFactory;
 import org.apache.nifi.serialization.record.RecordSchema;
 import org.apache.nifi.serialization.record.RecordSet;
+import org.apache.nifi.util.StopWatch;
 import org.apache.nifi.util.StringUtils;
 
 import org.apache.solr.client.solrj.SolrQuery;
@@ -85,6 +86,7 @@ import static org.apache.nifi.processors.solr.SolrUtils.ZK_CONNECTION_TIMEOUT;
 import static org.apache.nifi.processors.solr.SolrUtils.SOLR_LOCATION;
 import static org.apache.nifi.processors.solr.SolrUtils.BASIC_USERNAME;
 import static org.apache.nifi.processors.solr.SolrUtils.BASIC_PASSWORD;
+import static org.apache.nifi.processors.solr.SolrUtils.RECORD_WRITER;
 
 @Tags({"Apache", "Solr", "Get", "Pull", "Records"})
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
@@ -104,15 +106,6 @@ public class GetSolr extends SolrProcessor {
             .required(true)
             .allowableValues(MODE_XML, MODE_REC)
             .defaultValue(MODE_XML.getValue())
-            .build();
-
-    public static final PropertyDescriptor RECORD_WRITER = new PropertyDescriptor
-            .Builder().name("Record Writer")
-            .displayName("Record Writer")
-            .description("The Record Writer to use in order to write Solr documents to FlowFiles. Must be set if \"Records\" is used as return type.")
-            .identifiesControllerService(RecordSetWriterFactory.class)
-            .expressionLanguageSupported(ExpressionLanguageScope.NONE)
-            .required(false)
             .build();
 
     public static final PropertyDescriptor SOLR_QUERY = new PropertyDescriptor
@@ -345,6 +338,8 @@ public class GetSolr extends SolrProcessor {
             solrQuery.setParam("sort", sortClause.toString());
 
             while (continuePaging.get()) {
+                StopWatch timer = new StopWatch(true);
+
                 final QueryRequest req = new QueryRequest(solrQuery);
                 if (isBasicAuthEnabled()) {
                     req.setBasicAuthCredentials(getUsername(), getPassword());
@@ -376,7 +371,8 @@ public class GetSolr extends SolrProcessor {
                         flowFile = session.putAttribute(flowFile, CoreAttributes.MIME_TYPE.key(), "application/xml");
 
                     } else {
-                        final RecordSetWriterFactory writerFactory = context.getProperty(RECORD_WRITER).asControllerService(RecordSetWriterFactory.class);
+                        final RecordSetWriterFactory writerFactory = context.getProperty(RECORD_WRITER).evaluateAttributeExpressions()
+                                .asControllerService(RecordSetWriterFactory.class);
                         final RecordSchema schema = writerFactory.getSchema(null, null);
                         final RecordSet recordSet = SolrUtils.solrDocumentsToRecordSet(response.getResults(), schema);
                         final StringBuffer mimeType = new StringBuffer();
@@ -393,8 +389,19 @@ public class GetSolr extends SolrProcessor {
                                 }
                             }
                         });
+
                         flowFile = session.putAttribute(flowFile, CoreAttributes.MIME_TYPE.key(), mimeType.toString());
                     }
+
+                    timer.stop();
+                    StringBuilder transitUri = new StringBuilder("solr://");
+                    transitUri.append(getSolrLocation());
+                    if (getSolrLocation().equals(SolrUtils.SOLR_TYPE_CLOUD.getValue())) {
+                        transitUri.append(":").append(context.getProperty(COLLECTION).evaluateAttributeExpressions().getValue());
+                    }
+                    final long duration = timer.getDuration(TimeUnit.MILLISECONDS);
+                    session.getProvenanceReporter().receive(flowFile, transitUri.toString(), duration);
+
                     session.transfer(flowFile, REL_SUCCESS);
                 }
                 continuePaging.set(response.getResults().size() == Integer.parseInt(context.getProperty(BATCH_SIZE).getValue()));

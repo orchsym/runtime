@@ -1,0 +1,38 @@
+{
+	"arg1": {
+		"class": "java.lang.Character",
+		"arg1": "X"
+	},
+	"arg2": {
+		"class": "java.lang.Byte",
+		"arg2": "\u0041"
+	},
+	"arg3": {
+		"class": "java.lang.Short",
+		"arg3": 123
+	},
+	"arg4": {
+		"class": "java.lang.Integer",
+		"arg4": 1234
+	},
+	"arg5": {
+		"class": "java.lang.Long",
+		"arg5": 12345
+	},
+	"arg6": {
+		"class": "java.lang.Float",
+		"arg6": 1.11
+	},
+	"arg7": {
+		"class": "java.lang.Double",
+		"arg7": 1.1111
+	},
+	"arg8": {
+		"class": "java.lang.Boolean",
+		"arg8": true
+	},
+	"arg9": {
+		"class": "java.lang.String",
+		"arg9": "ABC"
+	}
+}

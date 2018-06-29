@@ -92,7 +92,7 @@
     <body ng-controller="ngCanvasAppCtrl" id="canvas-body">
         <div id="splash" layout="column" layout-align="center center">
                 <div id="splash-logo" layout="column" layout-align="end center" style="width:50%;height:40%">
-                    <img src="./images/splash-logo.png"/>
+                    <img src="./images/logo.svg" style="width:50%"/>
                     <div id="splash-progress" layout="column" layout-align="end center" style="height:10%;width:85%">
                         <md-progress-linear md-mode="indeterminate" class="md-warn md-hue-1"></md-progress-linear>
                     </div>

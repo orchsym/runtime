@@ -57,6 +57,7 @@ org.apache.nifi.processors.standard.ListenHTTP
 org.apache.nifi.processors.standard.ListenRELP
 org.apache.nifi.processors.standard.ListenSyslog
 org.apache.nifi.processors.standard.ListenTCP
+org.apache.nifi.processors.standard.HandleTCPResponse
 org.apache.nifi.processors.standard.ListenTCPRecord
 org.apache.nifi.processors.standard.ListenUDP
 org.apache.nifi.processors.standard.ListenUDPRecord

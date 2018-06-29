@@ -97,6 +97,13 @@ public class SocketChannelSender extends ChannelSender {
     protected void write(byte[] data) throws IOException {
         socketChannelOutput.write(data);
     }
+    
+    public SocketChannel getOpenChannel() {
+        if(isConnected())
+            return channel;
+        else 
+            return null;
+    }
 
     @Override
     public boolean isConnected() {

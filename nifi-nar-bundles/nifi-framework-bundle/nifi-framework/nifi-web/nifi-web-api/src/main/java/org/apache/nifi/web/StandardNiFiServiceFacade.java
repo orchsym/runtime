@@ -406,14 +406,6 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
         return componentIds.stream().map(id -> revisionManager.getRevision(id)).collect(Collectors.toSet());
     }
 
-    @Override
-    public Set<Revision> getProcessorRevisionsFromSnippet(final String snippetId) {
-        final Snippet snippet = snippetDAO.getSnippet(snippetId);
-        final Set<String> componentIds = new HashSet<>();
-        componentIds.addAll(snippet.getProcessors().keySet());
-        return componentIds.stream().map(id -> revisionManager.getRevision(id)).collect(Collectors.toSet());
-    }
-
     // -----------------------------------------
     // Verification Operations
     // -----------------------------------------
@@ -974,6 +966,38 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
         if (processGroupDAO.hasProcessGroup(processGroupDTO.getId())) {
             processGroupDAO.verifyUpdate(processGroupDTO);
         }
+    }
+
+    @Override
+    public ScheduleComponentsEntity enableComponents(String processGroupId, ScheduledState state, Map<String, Revision> componentRevisions) {
+        final NiFiUser user = NiFiUserUtils.getNiFiUser();
+
+        final RevisionUpdate<ScheduleComponentsEntity> updatedComponent = revisionManager.updateRevision(new StandardRevisionClaim(componentRevisions.values()), user, new
+                UpdateRevisionTask<ScheduleComponentsEntity>() {
+                    @Override
+                    public RevisionUpdate<ScheduleComponentsEntity> update() {
+                        // schedule the components
+                        processGroupDAO.enableComponents(processGroupId, state, componentRevisions.keySet());
+
+                        // update the revisions
+                        final Map<String, Revision> updatedRevisions = new HashMap<>();
+                        for (final Revision revision : componentRevisions.values()) {
+                            final Revision currentRevision = revisionManager.getRevision(revision.getComponentId());
+                            updatedRevisions.put(revision.getComponentId(), currentRevision.incrementRevision(revision.getClientId()));
+                        }
+
+                        // save
+                        controllerFacade.save();
+
+                        // gather details for response
+                        final ScheduleComponentsEntity entity = new ScheduleComponentsEntity();
+                        entity.setId(processGroupId);
+                        entity.setState(state.name());
+                        return new StandardRevisionUpdate<>(entity, null, new HashSet<>(updatedRevisions.values()));
+                    }
+                });
+
+        return updatedComponent.getComponent();
     }
 
     @Override

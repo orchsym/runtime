@@ -1,0 +1,48 @@
+{
+	"arg1": {
+		"class": "java.time.LocalDate",
+		"arg1": "2018-06-04"
+	},
+	"arg2": {
+		"class": "java.time.LocalDate",
+		"time_pattern": "MM-dd-yyyy",
+		"arg2": "06-04-2018"
+	},
+	"arg3": {
+		"class": "java.time.LocalTime",
+		"arg3": "13:03"
+	},
+	"arg4": {
+		"class": "java.time.LocalTime",
+		"arg4": "11:45:30.123456789"
+	},
+	"arg5": {
+		"class": "java.time.LocalTime",
+		"time_pattern": "HH:mm:ss",
+		"arg5": "11:45:30"
+	},
+	"arg6": {
+		"class": "java.time.LocalDateTime",
+		"arg6": "2018-06-04T11:45:30"
+	},
+	"arg7": {
+		"class": "java.time.LocalDateTime",
+		"time_pattern": "MM-dd-yyyy'T'HH:mm:ss",
+		"arg7": "06-04-2018T11:45:30"
+	},
+	"arg8": {
+		"class": "java.util.Date",
+		"time_pattern": "yyyy/MM/dd",
+		"arg8": "2018/06/04"
+	},
+	"arg9": {
+		"class": "java.util.Date",
+		"time_pattern": "yyyy/MM/dd",
+		"arg9": "2018/6/4"
+	},
+	"arg10": {
+		"class": "java.util.Date",
+		"time_pattern": "EEE, MMM d, ''yy",
+		"arg10": "Mon, Jun 4, '18"
+	}
+}

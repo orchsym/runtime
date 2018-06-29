@@ -16,11 +16,21 @@
  */
 package org.apache.nifi.apiregistry;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Tags;
@@ -29,11 +39,7 @@ import org.apache.nifi.annotation.lifecycle.OnEnabled;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.controller.AbstractControllerService;
 import org.apache.nifi.controller.ConfigurationContext;
-import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
-import org.apache.nifi.reporting.InitializationException;
-import org.apache.nifi.util.NiFiProperties;
-
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -70,15 +76,15 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
+import com.google.gson.Gson;
+
+import org.apache.nifi.util.NiFiProperties;
 import org.apache.nifi.apiregistry.spec.APISpec;
 import org.apache.nifi.apiregistry.spec.InfoSpec;
 import org.apache.nifi.apiregistry.spec.PathSpec;
 import org.apache.nifi.apiregistry.spec.PropertySpec;
 import org.apache.nifi.apiregistry.spec.ParamSpec;
 import org.apache.nifi.apiregistry.spec.RespSpec;
-
-
-
 
 @Tags({ "api registry"})
 @CapabilityDescription("This service is for api registry")
@@ -222,14 +228,14 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                 return;
 
             } else if(pathInfo.equals("/apis/swagger")){
-                ///apis/swagger?processorid=123
+                ///apis/swagger?id=123
                 String query = request.getQueryString();
                 String processorId = null;
 
                 try {
                     Map<String, String> query_pairs = splitQuery(query);
                     for (Map.Entry<String, String> entry : query_pairs.entrySet()) {  
-                        if (entry.getKey().equals("processorid")) {
+                        if (entry.getKey().equals("id")) {
                             processorId = entry.getValue();
                         }
                     }
@@ -255,16 +261,10 @@ public class StandardApiRegistryService extends AbstractControllerService implem
     }  
 
     @Override
-    public void registerApiInfo(ApiInfo apiInfo, Boolean shouldHandleGroupID) {
-
+    public void registerApiInfo(ApiInfo apiInfo) {
         unregisterApiInfo(apiInfo.id);
 
         this.apiInfos.add(apiInfo);
-
-        if (shouldHandleGroupID) {
-            String groupID = getProcessorGroupID(apiInfo.id);
-            modifyApiInfo(apiInfo.id, "groupID", groupID);
-        }
     }
 
     @Override
@@ -298,7 +298,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                     apiInfo.allowOptions = Boolean.valueOf(value);
                 } else if (key.equals("state")) {
                     apiInfo.state = value;
-                } else if (key.equals("groupID")) {
+                } else if (key.equals(GROUP_ID)) {
                     apiInfo.groupID = value;
                 }else if (key.equals("SSL Context Service")) {
                     if (value.equals("null")) {
@@ -306,6 +306,8 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                     } else {
                         apiInfo.scheme = "https";
                     }
+                } else if (key.equals(REQUEST_TIMEOUT)) {
+                    apiInfo.requestTimeout = Long.parseLong(value);
                 }
             }
         }
@@ -321,38 +323,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                 this.apiInfos.remove(apiInfo);
             }
         }
-    }
-
-    private String getProcessorGroupID(String processorId){
-
-        String groupID = "";
-        String url = getUrlInfo(processorId);
-        HttpClient client = new DefaultHttpClient();
-        HttpGet request = new HttpGet(url);
-        try {
-            HttpResponse response = client.execute(request);
-            BufferedReader rd = new BufferedReader(
-                    new InputStreamReader(response.getEntity().getContent()));
-
-            StringBuffer result = new StringBuffer();
-            String line = "";
-            while ((line = rd.readLine()) != null) {
-                result.append(line);
-            }
-            JsonObject jsonObject = new JsonParser().parse(result.toString()).getAsJsonObject();
-            JsonObject statusObj = jsonObject.getAsJsonObject("status");
-            for (Entry<String, JsonElement> entry : statusObj.entrySet()) {
-                if (entry.getKey().equals("groupId")) {
-                    groupID = ((JsonElement)entry.getValue()).getAsString();
-                }
-            }
-        } catch (IOException e){
-            getLogger().error("parse response failed", e);
-        } finally {
-            request.releaseConnection();
-        }
-        
-        return groupID;
     }
     
     private String getSwaggerinfo(String processorId) throws Exception{
@@ -384,7 +354,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
 
     private String getSwaggerSpec(String info, String apiID) {
 
-        info = "{\"method\":\"get\",\"version\":\"1.0\",\"title\":\"test tittle\",\"host\":\"localhost\",\"path\":\"/test\",\"basePath\":\"/v1\",\"description\":\"this is description\",\"summary\":\"this is summary\",\"parameters\":[{\"name\":\"longitude\",\"position\":\"query\",\"required\":true,\"type\":\"string\",\"description\":\"Latitude component of location\"},{\"name\":\"latitude\",\"position\":\"query\",\"required\":true,\"type\":\"string\",\"description\":\"Longitude component of location\"}],\"respInfos\":[{\"code\":\"200\",\"description\":\"response description\",\"type\":\"array\",\"ref\":\"#/definitions/Product\"},{\"code\":\"404\",\"description\":\"response description\",\"type\":\"object\",\"ref\":\"#/definitions/Error\"}],\"respModels\":[{\"name\":\"Product\",\"properties\":{\"product_id\":{\"type\":\"string\",\"description\":\"Unique identifier representing a specific product\"},\"url\":{\"type\":\"string\",\"description\":\"url of a specific product\"}}},{\"name\":\"Error\",\"properties\":{\"message\":{\"type\":\"string\",\"description\":\"message of an error\"}}}]}";
+        // info = "{\"contentType\":[\"application/json\"],\"method\":[\"get\"],\"version\":\"1.0\",\"title\":\"test tittle\",\"host\":\"localhost\",\"path\":\"/test\",\"basePath\":\"/v1\",\"description\":\"this is description\",\"summary\":\"this is summary\",\"parameters\":[{\"name\":\"longitude\",\"position\":\"query\",\"required\":true,\"type\":\"string\",\"description\":\"Latitude component of location\"},{\"name\":\"latitude\",\"position\":\"query\",\"required\":true,\"type\":\"string\",\"description\":\"Longitude component of location\"}],\"respInfos\":[{\"code\":\"200\",\"description\":\"response description\",\"type\":\"array\",\"ref\":\"Product\"},{\"code\":\"404\",\"description\":\"response description\",\"type\":\"object\",\"ref\":\"Error\"}],\"respModels\":[{\"name\":\"Product\",\"properties\":{\"product_id\":{\"type\":\"string\",\"description\":\"Unique identifier representing a specific product\"},\"url\":{\"type\":\"string\",\"description\":\"url of a specific product\"}}},{\"name\":\"Error\",\"properties\":{\"message\":{\"type\":\"string\",\"description\":\"message of an error\"}}}]}";
         Gson gson = new Gson();
         JsonObject infoObject = new JsonParser().parse(info).getAsJsonObject();
 
@@ -404,12 +374,13 @@ public class StandardApiRegistryService extends AbstractControllerService implem
         apiSpec.schemes = schemes;
         //basePath
         apiSpec.basePath = infoObject.get("basePath").getAsString();
-        //consumes、produces
-        ArrayList<String> consumes = new ArrayList();
+        //produces
         ArrayList<String> produces = new ArrayList();
-        consumes.add("application/json");
-        produces.add("application/json");
-        apiSpec.consumes = consumes;
+        JsonArray jsonContentTypeArr = infoObject.getAsJsonArray("contentType");
+        for (int i=0; i<jsonContentTypeArr.size(); i++) {
+            String type = jsonContentTypeArr.get(i).getAsString();
+            produces.add(type);
+        }
         apiSpec.produces = produces;
 
         PathSpec pathSpec = new PathSpec();
@@ -437,23 +408,28 @@ public class StandardApiRegistryService extends AbstractControllerService implem
             respSpec.description = object.get("description").getAsString();
             Map<String, Object> schema = new HashMap();
             Map<String,String> items = new HashMap();
+            String reference = "#/definitions/" + object.get("ref").getAsString();
             if (object.get("type").getAsString().equals("array")) {
                 schema.put("type","array");
-                items.put("$ref",object.get("ref").getAsString());
+                items.put("$ref",reference);
                 schema.put("items", items); 
             } else{
-                schema.put("$ref", object.get("ref").getAsString());
+                schema.put("$ref", reference);
             }
             respSpec.schema = schema;
             pathSpec.responses.put(object.get("code").getAsString(), respSpec);
 
         }
-
+        //response produces,summary,description
+        pathSpec.produces = new ArrayList();
         pathSpec.summary = infoObject.get("summary").getAsString();
         pathSpec.description = infoObject.get("description").getAsString();
         Map<String, Map<String, PathSpec>> paths = new HashMap();
         Map<String, PathSpec> pathSpecMap = new HashMap();
-        pathSpecMap.put(infoObject.get("method").getAsString(), pathSpec);
+        //method
+        JsonArray jsonMethodArr = infoObject.getAsJsonArray("method");
+        String method = jsonMethodArr.size() > 0 ? jsonMethodArr.get(0).getAsString() : "GET";
+        pathSpecMap.put(method, pathSpec);
         paths.put(infoObject.get("path").getAsString(), pathSpecMap);
         apiSpec.paths = paths;
 
@@ -463,8 +439,15 @@ public class StandardApiRegistryService extends AbstractControllerService implem
         for (int i=0; i<jsondefArr.size(); i++) {
             //model level
             JsonObject object = (JsonObject) jsondefArr.get(i).getAsJsonObject();
-            
             String modelName = object.get("name").getAsString();
+            JsonArray typeArr = object.getAsJsonArray("contentType"); //content-type
+            for (int j=0; j<typeArr.size(); j++) {
+                String type = typeArr.get(j).getAsString();
+                if (!pathSpec.produces.contains(type)) {
+                    pathSpec.produces.add(type);
+                }   
+            }
+
             String respModelJson = object.get("properties").toString();
 
             Map<String, Map<String, String>> respModelMap = gson.fromJson(respModelJson, new TypeToken<Map<String, Map<String, String>>>(){}.getType());
@@ -500,41 +483,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
         return spec;
     }
 
-    private String getUrlInfo(String processorID) {
-
-        String host;
-        String port;
-        String scheme;
-
-        final NiFiProperties properties = NiFiProperties.createBasicNiFiProperties(null, null);
-        String httpHost = properties.getProperty(PROPERTIES_NIFI_WEB_HTTP_HOST);
-        String httpPort = properties.getProperty(PROPERTIES_NIFI_WEB_HTTP_PORT);
-        String httpsHost = properties.getProperty(PROPERTIES_NIFI_WEB_HTTPS_HOST);
-        String httpsPort = properties.getProperty(PROPERTIES_NIFI_WEB_HTTPS_PORT);
-
-        if (!httpPort.trim().equals("")) {
-            //http
-            scheme = "http";
-            port = httpPort;
-            if (httpHost.trim().equals("")) {
-                host = "127.0.0.1";
-            } else {
-                host = httpHost;
-            }
-        } else {
-            //https
-            scheme = "https";
-            port = httpsPort;
-            if (httpsHost.trim().equals("")) {
-                host = "127.0.0.1";
-            } else {
-                host = httpsHost;
-            }
-        }
-        String url = scheme + "://" + host + ":" + port + "/nifi-api/processors/" + processorID;
-        return url;
-    }
-
     private String getPropertyUrl(String processorID) {
 
         String host;
@@ -568,7 +516,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
             }
         }
         String url = scheme + "://" + host + ":" + port + "/nifi-handle-http-request-ui-" + version +"/api/property/info?processorId="  + processorID;
-        System.out.println("11111 property URL: " + url);
         return url;
     }
 

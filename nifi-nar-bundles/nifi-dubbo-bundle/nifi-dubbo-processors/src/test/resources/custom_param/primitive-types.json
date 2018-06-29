@@ -1,0 +1,38 @@
+[
+	{
+		"class": "java.lang.Character",
+		"value": "A"
+	},
+	{
+		"class": "java.lang.Character",
+		"value": 65
+	},
+	{
+		"class": "java.lang.Byte",
+		"value": 66
+	},
+	{
+		"class": "java.lang.Byte",
+		"value": "66"
+	},
+	{
+		"class": "java.lang.Short",
+		"value": "67"
+	},
+	{
+		"class": "java.lang.Long",
+		"value": "69"
+	},
+	{
+		"class": "java.lang.Double",
+		"value": "2.2"
+	},
+	{
+		"class": "java.lang.Boolean",
+		"value": "test"
+	},
+	{
+		"class": "java.lang.String",
+		"value": "test"
+	}
+]

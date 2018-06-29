@@ -53,6 +53,7 @@
         <module>nifi-azure-bundle</module>
         <module>nifi-ldap-iaa-providers-bundle</module>
         <module>nifi-kerberos-iaa-providers-bundle</module>
+        <module>nifi-orchsym-iaa-providers-bundle</module>
         <module>nifi-riemann-bundle</module>
         <module>nifi-html-bundle</module>
         <module>nifi-scripting-bundle</module>
@@ -93,6 +94,10 @@
         <module>nifi-spark-bundle</module>
         <module>nifi-atlas-bundle</module>
         <module>nifi-druid-bundle</module>
+        <module>nifi-saphana-bundle</module>
+        <module>nifi-soap-bundle</module>
+        <module>nifi-mapper-bundle</module>
+        <module>nifi-dubbo-bundle</module>
   </modules>
 
     <build>

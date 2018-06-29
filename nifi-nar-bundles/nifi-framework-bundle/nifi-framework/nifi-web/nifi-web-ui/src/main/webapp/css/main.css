@@ -184,7 +184,7 @@ div.valid {
     background-color: transparent;
 }
 
-div.has-bulletins {
+div.has-bulletins, div.warning {
     color: #ba554a !important;
 }
 

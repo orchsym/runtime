@@ -50,6 +50,8 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -92,7 +94,6 @@ public class PropertyResource {
 
         Gson gson = new Gson();
         String json = gson.toJson(propertyInfoEntity);
-        System.out.println("1111 getAnnotationData: " + json);
         final ResponseBuilder response = Response.ok(json);
         return noCache(response).build();
     }
@@ -105,7 +106,6 @@ public class PropertyResource {
             @Context final UriInfo uriInfo,
             final PropertyInfoEntity properties) {
 
-        System.out.println("1111 processorId: " + properties.processorId + " datas: " + properties.parameters);
         // get the web context
         final NiFiWebConfigurationContext configurationContext = (NiFiWebConfigurationContext) servletContext.getAttribute("nifi-web-configuration-context");
 
@@ -113,7 +113,7 @@ public class PropertyResource {
         final NiFiWebConfigurationRequestContext requestContext = getConfigurationRequestContext(properties.processorId, properties.revision, properties.clientId);
 
         savePropertyInfos(requestContext, properties);
-        final ResponseBuilder response = Response.ok("{'status':'ok'}");
+        final ResponseBuilder response = Response.ok("保存成功!");
         return noCache(response).build();
     }
 
@@ -132,7 +132,6 @@ public class PropertyResource {
         try {
             // load the processor configuration
             processorDetails = configurationContext.getComponentDetails(requestContext);
-            System.out.println("1111 processorDetails: " + processorDetails.getProperties() + " getDescriptors: " + processorDetails.getDescriptors());
         } catch (final Exception e) {
             final String message = String.format("Unable to get UpdateAttribute[id=%s] criteria: %s", requestContext.getId(), e);
             logger.error(message, e);
@@ -142,11 +141,9 @@ public class PropertyResource {
         PropertyInfoEntity propertyInfoEntity = null;
         if (processorDetails != null) {
             try {
-
                 String annotation = processorDetails.getAnnotationData();
                 Gson gson = new Gson();
                 propertyInfoEntity = gson.fromJson(annotation, new TypeToken<PropertyInfoEntity>(){}.getType());
-
             } catch (final IllegalArgumentException iae) {
                 final String message = String.format("Unable to deserialize existing rules for UpdateAttribute[id=%s]. Deserialization error: %s", requestContext.getId(), iae);
                 logger.error(message, iae);
@@ -158,8 +155,33 @@ public class PropertyResource {
             propertyInfoEntity = new PropertyInfoEntity();
         }
 
-        //add path
-        propertyInfoEntity.path = processorDetails.getProperties().get("Allowed Paths");
+        //get properties
+        if (processorDetails != null) {
+            Map<String, String> properties = processorDetails.getProperties();
+            String path = properties.get("Allowed Paths");
+            propertyInfoEntity.path = path != null ? path : "";
+
+            String port = properties.get("Listening Port");
+            propertyInfoEntity.host = "localhost:" + port;
+
+            propertyInfoEntity.method.clear();
+            Boolean allowed = properties.get("Allow GET").equals("true");
+            if (allowed) {
+                propertyInfoEntity.method.add("get");
+            }
+            allowed = properties.get("Allow POST").equals("true");
+            if (allowed) {
+                propertyInfoEntity.method.add("post");
+            }
+            allowed = properties.get("Allow DELETE").equals("true");
+            if (allowed) {
+                propertyInfoEntity.method.add("delete");
+            }
+            allowed = properties.get("Allow PUT").equals("true");
+            if (allowed) {
+                propertyInfoEntity.method.add("put");
+            }
+        }
 
         return propertyInfoEntity;
     }
@@ -168,13 +190,42 @@ public class PropertyResource {
 
         Gson gson = new Gson();
         String annotationData = gson.toJson(parameter);
-        System.out.println("1111 savePropertyInfos annotation: " + annotationData);
         // get the web context
         final NiFiWebConfigurationContext configurationContext = (NiFiWebConfigurationContext) servletContext.getAttribute("nifi-web-configuration-context");
 
         try {
+            //get eddited component properties
+            Map<String, String> properties = new HashMap();
+            PropertyInfoEntity propertyInfoEntity = gson.fromJson(annotationData, new TypeToken<PropertyInfoEntity>(){}.getType());
+            if (propertyInfoEntity != null) {
+                String path = !propertyInfoEntity.path.equals("") ? propertyInfoEntity.path : null;
+                properties.put("Allowed Paths", path);
+
+                if (propertyInfoEntity.method.contains("get")) {
+                    properties.put("Allow GET", "true");
+                } else {
+                    properties.put("Allow GET", "false");
+                }
+                if (propertyInfoEntity.method.contains("post")) {
+                    properties.put("Allow POST", "true");
+                } else {
+                    properties.put("Allow POST", "false");
+                }
+                if (propertyInfoEntity.method.contains("put")) {
+                    properties.put("Allow PUT", "true");
+                } else {
+                    properties.put("Allow PUT", "false");
+                }
+                if (propertyInfoEntity.method.contains("delete")) {
+                    properties.put("Allow DELETE", "true");
+                } else {
+                    properties.put("Allow DELETE", "false");
+                }
+            }
+
             // save the annotation data
-            configurationContext.updateComponent(requestContext, annotationData, null);
+            configurationContext.updateComponent(requestContext, annotationData, properties);
+
         } catch (final Exception e) {
             final String message = String.format("Unable to save parameter[id=%s] in: %s", requestContext.getId(), e);
             logger.error(message, e);

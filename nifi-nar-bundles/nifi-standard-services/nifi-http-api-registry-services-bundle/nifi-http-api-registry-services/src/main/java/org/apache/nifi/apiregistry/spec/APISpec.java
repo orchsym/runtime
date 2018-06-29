@@ -10,7 +10,7 @@ public class APISpec {
  	public String host;
  	public ArrayList<String> schemes;
  	public String basePath;
- 	public ArrayList<String> consumes;
+ 	// public ArrayList<String> consumes;
  	public ArrayList<String> produces;
 
  	/*          uri        method         */

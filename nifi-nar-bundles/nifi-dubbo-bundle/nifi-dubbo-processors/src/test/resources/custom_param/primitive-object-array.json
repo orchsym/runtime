@@ -1,0 +1,74 @@
+[
+	{
+		"class": "[Ljava.lang.Character;",
+		"value": [
+			"A",
+			"B",
+			"C"
+		]
+	},
+	{
+		"class": "[Ljava.lang.Byte;",
+		"value": [
+			65,
+			66,
+			67
+		]
+	},
+	{
+		"class": "[Ljava.lang.Short;",
+		"value": [
+			65,
+			66,
+			67
+		]
+	},
+	{
+		"class": "[Ljava.lang.Integer;",
+		"value": [
+			65,
+			66,
+			67
+		]
+	},
+	{
+		"class": "[Ljava.lang.Long;",
+		"value": [
+			65,
+			66,
+			67
+		]
+	},
+	{
+		"class": "[Ljava.lang.Float;",
+		"value": [
+			1.1,
+			2.2,
+			3.3
+		]
+	},
+	{
+		"class": "[Ljava.lang.Double;",
+		"value": [
+			1.1,
+			2.2,
+			3.3
+		]
+	},
+	{
+		"class": "[Ljava.lang.Boolean;",
+		"value": [
+			true,
+			false,
+			true
+		]
+	},
+	{
+		"class": "[Ljava.lang.String;",
+		"value": [
+			"A",
+			"B",
+			"C"
+		]
+	}
+]

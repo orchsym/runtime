@@ -20,10 +20,10 @@
     <div id="nf-about-pic-container">
         <div id="nf-about-pic" layout="column" layout-align="center center">
             <div id="about-logo" layout="column" layout-align="end center" style="width:50%;height:40%">
-                <img src="./images/logo.png"/>
+                <img src="./images/logo.svg"/>
             </div>
             <div id="about-version" layout="row" layout-align="end end" style="width:100%;height:40%">
-                <p style="font-size:12px; color:white; padding-right: 10px">版本： 1.0.0 &nbsp;&nbsp;更新时间：2018/4/13</p>
+                <p style="font-size:12px; color:white; padding-right: 10px">版本： 2.0.1 &nbsp;&nbsp;更新时间：2018/5/11</p>
             </div>
         </div>
     </div>

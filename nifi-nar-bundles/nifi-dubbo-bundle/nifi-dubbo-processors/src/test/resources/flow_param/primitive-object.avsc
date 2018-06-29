@@ -1,0 +1,169 @@
+{
+    "namespace": "junit.param",
+    "type": "record",
+    "name": "primitive_object",
+    "fields": [
+        {
+            "name": "arg1",
+            "type": {
+                "name": "arg1",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "java.lang.Character"
+                    },
+                    {
+                        "name": "arg1",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg2",
+            "type": {
+                "name": "arg2",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "java.lang.Byte"
+                    },
+                    {
+                        "name": "arg2",
+                        "type": "bytes"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg3",
+            "type": {
+                "name": "arg3",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "java.lang.Short"
+                    },
+                    {
+                        "name": "arg3",
+                        "type": "int"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg4",
+            "type": {
+                "name": "arg4",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "java.lang.Integer"
+                    },
+                    {
+                        "name": "arg4",
+                        "type": "int"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg5",
+            "type": {
+                "name": "arg5",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "java.lang.Long"
+                    },
+                    {
+                        "name": "arg5",
+                        "type": "long"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg6",
+            "type": {
+                "name": "arg6",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "java.lang.Float"
+                    },
+                    {
+                        "name": "arg6",
+                        "type": "float"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg7",
+            "type": {
+                "name": "arg7",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "java.lang.Double"
+                    },
+                    {
+                        "name": "arg7",
+                        "type": "double"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg8",
+            "type": {
+                "name": "arg8",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "java.lang.Boolean"
+                    },
+                    {
+                        "name": "arg8",
+                        "type": "boolean"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg9",
+            "type": {
+                "name": "arg9",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "java.lang.String"
+                    },
+                    {
+                        "name": "arg9",
+                        "type": "string"
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -628,7 +628,7 @@
         var localChangesColumns = [
             {
                 id: 'componentName',
-                name: 'Component Name',
+                name: nf._.msg('nf-flow-version.local-change-table.ComponentName'),
                 field: 'componentName',
                 formatter: valueFormatter,
                 sortable: true,
@@ -636,7 +636,7 @@
             },
             {
                 id: 'differenceType',
-                name: 'Change Type',
+                name: nf._.msg('nf-flow-version.local-change-table.ChangeType'),
                 field: 'differenceType',
                 formatter: valueFormatter,
                 sortable: true,
@@ -644,7 +644,7 @@
             },
             {
                 id: 'difference',
-                name: 'Difference',
+                name: nf._.msg('nf-flow-version.local-change-table.Difference'),
                 field: 'difference',
                 formatter: valueFormatter,
                 sortable: true,
@@ -839,7 +839,7 @@
             } else {
                 nfDialog.showOkDialog({
                     headerText: 'Flow Versions',
-                    dialogContent: 'This flow does not have any versions available.'
+                    dialogContent: nf._.msg('nf-flow-version.NoVersionAvailableMessage')
                 });
             }
         }).fail(nfErrorHandler.handleAjaxError).always(function () {
@@ -1066,7 +1066,7 @@
 
         // update the button model of the change version status dialog
         $('#change-version-status-dialog').modal('setButtonModel', [{
-            buttonText: 'Stop',
+            buttonText: nf._.msg('nf-actions.Stop'),
             color: {
                 base: '#728E9B',
                 hover: '#004849',
@@ -1143,7 +1143,7 @@
 
                 // update the button model
                 $('#change-version-status-dialog').modal('setButtonModel', [{
-                    buttonText: 'Close',
+                    buttonText: nf._.msg('nf-dialog.Close'),
                     color: {
                         base: '#728E9B',
                         hover: '#004849',
@@ -1173,7 +1173,7 @@
                         $('#change-version-status-dialog').modal('hide');
 
                         nfDialog.showOkDialog({
-                            headerText: 'Change Version',
+                            headerText: nf._.msg('nf-context-menu.ChangeVersion'),
                             dialogContent: nfCommon.escapeHtml(changeRequest.failureReason)
                         });
                     } else {
@@ -1181,11 +1181,11 @@
                         updateProgress(changeRequest.percentCompleted);
 
                         // update the message to indicate successful completion
-                        $('#change-version-status-message').text('This Process Group version has changed.');
+                        $('#change-version-status-message').text(nf._.msg('nf-flow-version.VersionChangedMessage'));
 
                         // update the button model
                         $('#change-version-status-dialog').modal('setButtonModel', [{
-                            buttonText: 'Close',
+                            buttonText: nf._.msg('nf-dialog.Close'),
                             color: {
                                 base: '#728E9B',
                                 hover: '#004849',
@@ -1350,11 +1350,11 @@
         var loadMessage = getVersionControlInformation(processGroupId).done(function (response) {
             if (nfCommon.isDefinedAndNotNull(response.versionControlInformation)) {
                 var vci = response.versionControlInformation;
-                localChangesMessage.text('The following changes have been made to ' + vci.flowName + ' (Version ' + vci.version + ').');
+                localChangesMessage.text(nf._.msg('nf-flow-version.LocalChangeDescription') + vci.flowName + ' (Version ' + vci.version + ').');
             } else {
                 nfDialog.showOkDialog({
-                    headerText: 'Change Version',
-                    dialogContent: 'This Process Group is not currently under version control.'
+                    headerText: nf._.msg('nf-context-menu.ChangeVersion'),
+                    dialogContent: nf._.msg('nf-flow-version.NotUnderVersionControlMessage')
                 });
             }
         });
@@ -1391,7 +1391,7 @@
             } else {
                 nfDialog.showOkDialog({
                     headerText: 'Local Changes',
-                    dialogContent: 'This Process Group does not have any local changes.'
+                    dialogContent: nf._.msg('nf-flow-version.NoLocalChangeMessage')
                 });
             }
         }).fail(nfErrorHandler.handleAjaxError);
@@ -1413,7 +1413,7 @@
 
                 // update the button model of the revert status dialog
                 $('#change-version-status-dialog').modal('setButtonModel', [{
-                    buttonText: 'Stop',
+                    buttonText: nf._.msg('nf-actions.Stop'),
                     color: {
                         base: '#728E9B',
                         hover: '#004849',
@@ -1484,7 +1484,7 @@
 
                         // update the button model
                         $('#change-version-status-dialog').modal('setButtonModel', [{
-                            buttonText: 'Close',
+                            buttonText: nf._.msg('nf-dialog.Close'),
                             color: {
                                 base: '#728E9B',
                                 hover: '#004849',
@@ -1514,7 +1514,7 @@
                                 $('#change-version-status-dialog').modal('hide');
 
                                 nfDialog.showOkDialog({
-                                    headerText: 'Revert Local Changes',
+                                    headerText: nf._.msg('nf-context-menu.RevertLocalChange'),
                                     dialogContent: nfCommon.escapeHtml(revertRequest.failureReason)
                                 });
                             } else {
@@ -1522,11 +1522,11 @@
                                 updateProgress(revertRequest.percentCompleted);
 
                                 // update the message to indicate successful completion
-                                $('#change-version-status-message').text('This Process Group version has changed.');
+                                $('#change-version-status-message').text(nf._.msg('nf-flow-version.VersionChangedMessage'));
 
                                 // update the button model
                                 $('#change-version-status-dialog').modal('setButtonModel', [{
-                                    buttonText: 'Close',
+                                    buttonText: nf._.msg('nf-dialog.Close'),
                                     color: {
                                         base: '#728E9B',
                                         hover: '#004849',
@@ -1569,7 +1569,7 @@
             } else {
                 nfDialog.showOkDialog({
                     headerText: 'Revert Changes',
-                    dialogContent: 'This Process Group is not currently under version control.'
+                    dialogContent: nf._.msg('nf-flow-version.NotUnderVersionControlMessage')
                 });
             }
         }).fail(nfErrorHandler.handleAjaxError);
@@ -1659,9 +1659,9 @@
             // init the revert local changes dialog
             $('#revert-local-changes-dialog').modal({
                 scrollableContentStyle: 'scrollable',
-                headerText: 'Revert Local Changes',
+                headerText: nf._.msg('nf-context-menu.RevertLocalChange'),
                 buttons: [{
-                    buttonText: 'Revert',
+                    buttonText: nf._.msg('nf-dialog.Revert'),
                     color: {
                         base: '#728E9B',
                         hover: '#004849',
@@ -1676,7 +1676,7 @@
                         }
                     }
                 }, {
-                    buttonText: 'Cancel',
+                    buttonText: nf._.msg('nf-actions.Cancel'),
                     color: {
                         base: '#E3E8EB',
                         hover: '#C7D2D7',
@@ -1698,9 +1698,9 @@
             // init the show local changes dialog
             $('#show-local-changes-dialog').modal({
                 scrollableContentStyle: 'scrollable',
-                headerText: 'Show Local Changes',
+                headerText: nf._.msg('nf-context-menu.ShowLocalChange'),
                 buttons: [{
-                    buttonText: 'Close',
+                    buttonText: nf._.msg('nf-dialog.Close'),
                     color: {
                         base: '#728E9B',
                         hover: '#004849',
@@ -1864,16 +1864,16 @@
                             deferred.resolve();
                         }).fail(function () {
                             nfDialog.showOkDialog({
-                                headerText: 'Change Version',
-                                dialogContent: 'Unable to load available versions for this Process Group.'
+                                headerText: nf._.msg('nf-context-menu.ChangeVersion'),
+                                dialogContent: nf._.msg('nf-flow-version.LoadVersionErrorMessage')
                             });
 
                             deferred.reject();
                         });
                     } else {
                         nfDialog.showOkDialog({
-                            headerText: 'Change Version',
-                            dialogContent: 'This Process Group is not currently under version control.'
+                            headerText: nf._.msg('nf-context-menu.ChangeVersion'),
+                            dialogContent: nf._.msg('nf-flow-version.NotUnderVersionControlMessage')
                         });
 
                         deferred.reject();
@@ -1881,8 +1881,8 @@
                 }).fail(nfErrorHandler.handleAjaxError);
             }).done(function () {
                 // show the dialog
-                $('#import-flow-version-dialog').modal('setHeaderText', 'Change Version').modal('setButtonModel', [{
-                    buttonText: 'Change',
+                $('#import-flow-version-dialog').modal('setHeaderText', nf._.msg('nf-context-menu.ChangeVersion')).modal('setButtonModel', [{
+                    buttonText: nf._.msg('nf-dialog.Change'),
                     color: {
                         base: '#728E9B',
                         hover: '#004849',
@@ -1895,7 +1895,7 @@
                         }
                     }
                 }, {
-                    buttonText: 'Cancel',
+                    buttonText: nf._.msg('nf-actions.Cancel'),
                     color: {
                         base: '#E3E8EB',
                         hover: '#C7D2D7',
@@ -1918,10 +1918,10 @@
         stopVersionControl: function (processGroupId) {
             // prompt the user before disconnecting
             nfDialog.showYesNoDialog({
-                headerText: 'Stop Version Control',
-                dialogContent: 'Are you sure you want to stop version control?',
-                noText: 'Cancel',
-                yesText: 'Disconnect',
+                headerText: nf._.msg('nf-context-menu.StopVersionControl'),
+                dialogContent: nf._.msg('nf-flow-version.StopVersionControlMessage'),
+                noText: nf._.msg('nf-actions.Cancel'),
+                yesText: nf._.msg('nf-dialog.Disconnect'),
                 yesHandler: function () {
                     $.ajax({
                         type: 'GET',
@@ -1944,14 +1944,14 @@
                                 updateVersionControlInformation(processGroupId, undefined);
 
                                 nfDialog.showOkDialog({
-                                    headerText: 'Disconnect',
-                                    dialogContent: 'This Process Group is no longer under version control.'
+                                    headerText: nf._.msg('nf-dialog.Disconnect'),
+                                    dialogContent: nf._.msg('nf-flow-version.NoLongerVersionControlMessage')
                                 });
                             }).fail(nfErrorHandler.handleAjaxError);
                         } else {
                             nfDialog.showOkDialog({
-                                headerText: 'Disconnect',
-                                dialogContent: 'This Process Group is not currently under version control.'
+                                headerText: nf._.msg('nf-dialog.Disconnect'),
+                                dialogContent: nf._.msg('nf-flow-version.NotUnderVersionControlMessage')
                             })
                         }
                     }).fail(nfErrorHandler.handleAjaxError);

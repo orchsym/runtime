@@ -1,0 +1,131 @@
+{
+    "namespace": "junit.param",
+    "type": "record",
+    "name": "primitive_object_map",
+    "fields": [
+        {
+            "name": "arg1",
+            "type": {
+                "name": "arg1",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "java.util.Map"
+                    },
+                    {
+                        "name": "arg1",
+                        "type": {
+                            "type": "array",
+                            "items": {
+                                "name": "arg1_elem",
+                                "type": "record",
+                                "fields": [
+                                    {
+                                        "name": "key",
+                                        "type": {
+                                            "name": "arg1_key",
+                                            "type": "record",
+                                            "fields": [
+                                                {
+                                                    "name": "class",
+                                                    "type": "string",
+                                                    "default": "java.lang.String"
+                                                },
+                                                {
+                                                    "name": "arg1",
+                                                    "type": "string"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "value",
+                                        "type": {
+                                            "name": "arg1_value",
+                                            "type": "record",
+                                            "fields": [
+                                                {
+                                                    "name": "class",
+                                                    "type": "string",
+                                                    "default": "java.lang.Boolean"
+                                                },
+                                                {
+                                                    "name": "arg1",
+                                                    "type": "boolean"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "arg2",
+            "type": {
+                "name": "arg2",
+                "type": "record",
+                "fields": [
+                    {
+                        "name": "class",
+                        "type": "string",
+                        "default": "java.util.Map"
+                    },
+                    {
+                        "name": "arg2",
+                        "type": {
+                            "type": "array",
+                            "items": {
+                                "name": "arg2_elem",
+                                "type": "record",
+                                "fields": [
+                                    {
+                                        "name": "key",
+                                        "type": {
+                                            "name": "arg2_key",
+                                            "type": "record",
+                                            "fields": [
+                                                {
+                                                    "name": "class",
+                                                    "type": "string",
+                                                    "default": "java.lang.Float"
+                                                },
+                                                {
+                                                    "name": "arg2",
+                                                    "type": "float"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "value",
+                                        "type": {
+                                            "name": "arg2_value",
+                                            "type": "record",
+                                            "fields": [
+                                                {
+                                                    "name": "class",
+                                                    "type": "string",
+                                                    "default": "java.lang.Boolean"
+                                                },
+                                                {
+                                                    "name": "arg2",
+                                                    "type": "boolean"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

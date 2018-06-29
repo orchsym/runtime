@@ -10,6 +10,8 @@ public class PathSpec {
 	public String description;
 	public ArrayList<ParamSpec> parameters;
 
+	public ArrayList<String> produces;
+
 	/*          code           */
 	public Map<String, RespSpec> responses;
 }

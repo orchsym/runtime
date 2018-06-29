@@ -1,0 +1,34 @@
+[
+	{
+		"class": "char",
+		"value": "A"
+	},
+	{
+		"class": "byte",
+		"value": 66
+	},
+	{
+		"class": "short",
+		"value": 67
+	},
+	{
+		"class": "int",
+		"value": 68
+	},
+	{
+		"class": "long",
+		"value": 69
+	},
+	{
+		"class": "float",
+		"value": 1.1
+	},
+	{
+		"class": "double",
+		"value": 2.2
+	},
+	{
+		"class": "boolean",
+		"value": true
+	}
+]

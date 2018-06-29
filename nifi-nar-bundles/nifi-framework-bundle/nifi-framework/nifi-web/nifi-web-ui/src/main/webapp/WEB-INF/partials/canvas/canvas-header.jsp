@@ -17,7 +17,7 @@
 <%@ page contentType="text/html" pageEncoding="UTF-8" session="false" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <md-toolbar id="header" layout-align="space-between center" layout="row" class="md-small md-accent md-hue-1">
-    <img id="nifi-logo" src="images/logo.png">
+    <img id="nifi-logo" src="images/logo.svg">
     <div flex layout="row" layout-align="space-between center">
         <div id="component-container">
             <button title="{{appCtrl.serviceProvider.headerCtrl.toolboxCtrl.config.type.processor}}"
