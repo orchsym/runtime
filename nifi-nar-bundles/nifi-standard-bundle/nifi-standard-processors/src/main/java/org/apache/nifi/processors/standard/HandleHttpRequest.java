@@ -326,6 +326,14 @@ public class HandleHttpRequest extends AbstractProcessor {
         // put all properties
         if (newValue == null) { // when delete property
             allProperties.remove(descriptor.getName());
+            if (descriptor.equals(SSL_CONTEXT)) {
+                //update scheme
+                allProperties.put(descriptor.getName(), "null");
+            } else if (descriptor.equals(HTTP_API_REGISTRY)) {
+                //unregister api
+                unregisterApiInfoFromService(this.getIdentifier());
+                this.apiRegistryService = null;
+            }
         } else {
             allProperties.put(descriptor.getName(), newValue);
         }
@@ -346,8 +354,7 @@ public class HandleHttpRequest extends AbstractProcessor {
 
         this.state = "running";
 
-        // register api info to api registery service
-        updateApiInfoToService(context);
+        modifyApiInfoFromService("state", this.state);
     }
 
     @OnStopped
@@ -843,6 +850,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         apiInfo.charset = charset;
 
         String path = context.getProperty(PATH_REGEX).getValue();
+       
         apiInfo.path = path;
 
         apiInfo.state = this.state;

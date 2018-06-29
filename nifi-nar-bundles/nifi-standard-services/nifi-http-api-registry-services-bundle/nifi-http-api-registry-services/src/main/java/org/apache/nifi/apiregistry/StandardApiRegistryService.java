@@ -48,7 +48,43 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonArray;
+import com.google.gson.reflect.TypeToken;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+
+import com.google.gson.Gson;
+
+import org.apache.nifi.util.NiFiProperties;
+import org.apache.nifi.apiregistry.spec.APISpec;
+import org.apache.nifi.apiregistry.spec.InfoSpec;
+import org.apache.nifi.apiregistry.spec.PathSpec;
+import org.apache.nifi.apiregistry.spec.PropertySpec;
+import org.apache.nifi.apiregistry.spec.ParamSpec;
+import org.apache.nifi.apiregistry.spec.RespSpec;
 
 @Tags({ "api registry"})
 @CapabilityDescription("This service is for api registry")
@@ -76,6 +112,8 @@ public class StandardApiRegistryService extends AbstractControllerService implem
             .defaultValue("7878")
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
+
+
 
     private static final List<PropertyDescriptor> properties;
     private String requestPath;
@@ -111,7 +149,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
             // add this connector
             server.setConnectors(new Connector[]{http});
 
-            server.setHandler(new MyHandler(this));
+            server.setHandler(new ReqHandler(this));
 
             this.server = server;
             server.start();
@@ -128,13 +166,12 @@ public class StandardApiRegistryService extends AbstractControllerService implem
         server.join();
     }
 
-    public class MyHandler extends AbstractHandler { 
+    public class ReqHandler extends AbstractHandler { 
 
         private StandardApiRegistryService service;
 
-        public  MyHandler(StandardApiRegistryService standardApiRegistryService) {
+        public  ReqHandler(StandardApiRegistryService standardApiRegistryService) {
             this.service = standardApiRegistryService;
-
         } 
   
         @Override
@@ -144,7 +181,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
             if (pathInfo.equals(this.service.getRequestPath())) {
                 HashMap<String, ArrayList<ApiInfo>> apis = new HashMap();
                 ArrayList<ApiInfo> collectApis = new ArrayList();
-
                 //get groupid, uri:/apis?groupid=123
                 String query = request.getQueryString();
                 String queryGroupID = null;
@@ -156,7 +192,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                         collectApis.add(apiInfo);
                     }
                 } else {
-
                     try {
                         Map<String, String> query_pairs = splitQuery(query);
                         for (Map.Entry<String, String> entry : query_pairs.entrySet()) {  
@@ -171,7 +206,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                         response.getWriter().flush();
                         return;
                     }
-                    
                     if (queryGroupID != null && this.service != null) {
                         Iterator<ApiInfo> infoItr = this.service.apiInfos.iterator();
                         while (infoItr.hasNext()) {
@@ -183,9 +217,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                         }
                     } 
                 }
-                         
                 apis.put("apis", collectApis);
-
                 Gson gson = new Gson();
                 String json = gson.toJson(apis);
 
@@ -193,10 +225,38 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                 response.setContentType("application/json; charset=utf-8");
                 response.getWriter().write(json);
                 response.getWriter().flush();
-            } else {
-                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                response.getWriter().flush();
-            }
+                return;
+
+            } else if(pathInfo.equals("/apis/swagger")){
+                ///apis/swagger?id=123
+                String query = request.getQueryString();
+                String processorId = null;
+
+                try {
+                    Map<String, String> query_pairs = splitQuery(query);
+                    for (Map.Entry<String, String> entry : query_pairs.entrySet()) {  
+                        if (entry.getKey().equals("id")) {
+                            processorId = entry.getValue();
+                        }
+                    }
+                    if (processorId != null) {
+                        String swaggerInfo = getSwaggerinfo(processorId);
+                        if (swaggerInfo != null) {
+                            response.setStatus(HttpServletResponse.SC_OK);
+                            response.setContentType("application/json");
+                            response.getWriter().write(swaggerInfo);
+                            response.getWriter().flush();
+                            return;
+                        }
+                    }
+
+                } catch(Exception e) {
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                    response.getWriter().flush();
+                }
+            } 
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            response.getWriter().flush();
         }
     }  
 
@@ -212,10 +272,8 @@ public class StandardApiRegistryService extends AbstractControllerService implem
 
         ListIterator<ApiInfo> infoItr = this.apiInfos.listIterator();
         while (infoItr.hasNext()) {
-
             ApiInfo apiInfo = (ApiInfo) infoItr.next();
             String apiId = apiInfo.id;
-
             if (apiId.equals(id)) {
                 //modify key value
                 if (key.equals("Hostname")) {
@@ -244,9 +302,9 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                     apiInfo.groupID = value;
                 }else if (key.equals("SSL Context Service")) {
                     if (value.equals("null")) {
-                        apiInfo.schema = "http";
+                        apiInfo.scheme = "http";
                     } else {
-                        apiInfo.schema = "https";
+                        apiInfo.scheme = "https";
                     }
                 } else if (key.equals(REQUEST_TIMEOUT)) {
                     apiInfo.requestTimeout = Long.parseLong(value);
@@ -257,17 +315,221 @@ public class StandardApiRegistryService extends AbstractControllerService implem
 
     @Override
     public void unregisterApiInfo(String id) {
-
         Iterator<ApiInfo> infoItr = this.apiInfos.iterator();
         while (infoItr.hasNext()) {
-
             ApiInfo apiInfo = (ApiInfo) infoItr.next();
-
             String apiId = apiInfo.id;
             if (apiId.equals(id)) {
                 this.apiInfos.remove(apiInfo);
             }
         }
+    }
+    
+    private String getSwaggerinfo(String processorId) throws Exception{
+
+        String url = getPropertyUrl(processorId);
+
+        HttpClient client = new DefaultHttpClient();
+        HttpGet request = new HttpGet(url);
+        String swaggerInfo = null;
+        try {
+            HttpResponse response = client.execute(request);
+            BufferedReader rd = new BufferedReader(
+                    new InputStreamReader(response.getEntity().getContent()));
+
+            StringBuffer info = new StringBuffer();
+            String line = "";
+            while ((line = rd.readLine()) != null) {
+                info.append(line);
+            }
+            swaggerInfo = getSwaggerSpec(info.toString(), processorId);
+        } catch (IOException except){
+            throw new Exception("get processor's property failed ", except);
+        } finally {
+            request.releaseConnection();
+        }
+        
+        return swaggerInfo;
+    }
+
+    private String getSwaggerSpec(String info, String apiID) {
+
+        // info = "{\"contentType\":[\"application/json\"],\"method\":[\"get\"],\"version\":\"1.0\",\"title\":\"test tittle\",\"host\":\"localhost\",\"path\":\"/test\",\"basePath\":\"/v1\",\"description\":\"this is description\",\"summary\":\"this is summary\",\"parameters\":[{\"name\":\"longitude\",\"position\":\"query\",\"required\":true,\"type\":\"string\",\"description\":\"Latitude component of location\"},{\"name\":\"latitude\",\"position\":\"query\",\"required\":true,\"type\":\"string\",\"description\":\"Longitude component of location\"}],\"respInfos\":[{\"code\":\"200\",\"description\":\"response description\",\"type\":\"array\",\"ref\":\"Product\"},{\"code\":\"404\",\"description\":\"response description\",\"type\":\"object\",\"ref\":\"Error\"}],\"respModels\":[{\"name\":\"Product\",\"properties\":{\"product_id\":{\"type\":\"string\",\"description\":\"Unique identifier representing a specific product\"},\"url\":{\"type\":\"string\",\"description\":\"url of a specific product\"}}},{\"name\":\"Error\",\"properties\":{\"message\":{\"type\":\"string\",\"description\":\"message of an error\"}}}]}";
+        Gson gson = new Gson();
+        JsonObject infoObject = new JsonParser().parse(info).getAsJsonObject();
+
+        String spec = null;
+        APISpec apiSpec = new APISpec();
+        //info
+        InfoSpec infoSpec = new InfoSpec();
+        infoSpec.title = infoObject.get("title").getAsString();
+        infoSpec.version = infoObject.get("version").getAsString();
+        apiSpec.info = infoSpec;
+        //host
+        apiSpec.host = infoObject.get("host").getAsString();
+        //schemes
+        ArrayList<String> schemes = new ArrayList();
+        String scheme = getApiScheme(apiID);
+        schemes.add(scheme);
+        apiSpec.schemes = schemes;
+        //basePath
+        apiSpec.basePath = infoObject.get("basePath").getAsString();
+        //produces
+        ArrayList<String> produces = new ArrayList();
+        JsonArray jsonContentTypeArr = infoObject.getAsJsonArray("contentType");
+        for (int i=0; i<jsonContentTypeArr.size(); i++) {
+            String type = jsonContentTypeArr.get(i).getAsString();
+            produces.add(type);
+        }
+        apiSpec.produces = produces;
+
+        PathSpec pathSpec = new PathSpec();
+        //parameters
+        ArrayList<ParamSpec> parameters = new ArrayList();
+        JsonArray jsonParamArr = infoObject.getAsJsonArray("parameters");
+        for (int i=0; i<jsonParamArr.size(); i++) {
+            JsonObject object = (JsonObject) jsonParamArr.get(i).getAsJsonObject();
+            ParamSpec parameterSpec = new ParamSpec();
+            parameterSpec.name = object.get("name").getAsString();
+            parameterSpec.in = object.get("position").getAsString();
+            parameterSpec.description = object.get("description").getAsString();
+            parameterSpec.type = object.get("type").getAsString();
+            parameterSpec.required = object.get("required").getAsBoolean();
+            parameters.add(parameterSpec);
+
+        }
+        pathSpec.parameters = parameters;
+        //responses
+        JsonArray jsonRespArr = infoObject.getAsJsonArray("respInfos");
+        pathSpec.responses = new HashMap<String, RespSpec>();
+        for (int i=0; i<jsonRespArr.size(); i++) {
+            JsonObject object = (JsonObject) jsonRespArr.get(i).getAsJsonObject();
+            RespSpec respSpec = new RespSpec();
+            respSpec.description = object.get("description").getAsString();
+            Map<String, Object> schema = new HashMap();
+            Map<String,String> items = new HashMap();
+            String reference = "#/definitions/" + object.get("ref").getAsString();
+            if (object.get("type").getAsString().equals("array")) {
+                schema.put("type","array");
+                items.put("$ref",reference);
+                schema.put("items", items); 
+            } else{
+                schema.put("$ref", reference);
+            }
+            respSpec.schema = schema;
+            pathSpec.responses.put(object.get("code").getAsString(), respSpec);
+
+        }
+        //response produces,summary,description
+        pathSpec.produces = new ArrayList();
+        pathSpec.summary = infoObject.get("summary").getAsString();
+        pathSpec.description = infoObject.get("description").getAsString();
+        Map<String, Map<String, PathSpec>> paths = new HashMap();
+        Map<String, PathSpec> pathSpecMap = new HashMap();
+        //method
+        JsonArray jsonMethodArr = infoObject.getAsJsonArray("method");
+        String method = jsonMethodArr.size() > 0 ? jsonMethodArr.get(0).getAsString() : "GET";
+        pathSpecMap.put(method, pathSpec);
+        paths.put(infoObject.get("path").getAsString(), pathSpecMap);
+        apiSpec.paths = paths;
+
+        //definitions
+        Map<String, Map<String, Map<String, PropertySpec>>> definitions = new HashMap();
+        JsonArray jsondefArr = infoObject.getAsJsonArray("respModels");
+        for (int i=0; i<jsondefArr.size(); i++) {
+            //model level
+            JsonObject object = (JsonObject) jsondefArr.get(i).getAsJsonObject();
+            String modelName = object.get("name").getAsString();
+            JsonArray typeArr = object.getAsJsonArray("contentType"); //content-type
+            for (int j=0; j<typeArr.size(); j++) {
+                String type = typeArr.get(j).getAsString();
+                if (!pathSpec.produces.contains(type)) {
+                    pathSpec.produces.add(type);
+                }   
+            }
+
+            String respModelJson = object.get("properties").toString();
+
+            Map<String, Map<String, String>> respModelMap = gson.fromJson(respModelJson, new TypeToken<Map<String, Map<String, String>>>(){}.getType());
+
+            Iterator propertyEntries = respModelMap.entrySet().iterator(); 
+
+            Map<String, Map<String, PropertySpec>> map1 = new HashMap();
+            Map<String, PropertySpec> map2 = new HashMap();
+            while (propertyEntries.hasNext()) {
+                //property level
+                Map.Entry entry = (Map.Entry) propertyEntries.next();  
+                String propertyName = (String)entry.getKey();  
+                Map<String, String> propertyDesc = (Map<String, String>)entry.getValue();
+
+                PropertySpec propertySpec = new PropertySpec();
+                for (Map.Entry<String, String> proEntry : propertyDesc.entrySet()) {
+                    if (proEntry.getKey().equals("type")) {
+                        propertySpec.type = proEntry.getValue();
+                    } else if (proEntry.getKey().equals("description")) {
+                        propertySpec.description = proEntry.getValue();
+                    }
+                }
+                map2.put(propertyName, propertySpec);
+            }
+
+            map1.put("properties", map2);
+            definitions.put(modelName, map1);
+        }
+        apiSpec.definitions = definitions;
+
+        spec = gson.toJson(apiSpec);
+
+        return spec;
+    }
+
+    private String getPropertyUrl(String processorID) {
+
+        String host;
+        String port;
+        String scheme;
+        String version =  this.getClass().getPackage().getImplementationVersion(); //get package version
+
+        final NiFiProperties properties = NiFiProperties.createBasicNiFiProperties(null, null);
+        String httpHost = properties.getProperty(PROPERTIES_NIFI_WEB_HTTP_HOST);
+        String httpPort = properties.getProperty(PROPERTIES_NIFI_WEB_HTTP_PORT);
+        String httpsHost = properties.getProperty(PROPERTIES_NIFI_WEB_HTTPS_HOST);
+        String httpsPort = properties.getProperty(PROPERTIES_NIFI_WEB_HTTPS_PORT);
+
+        if (!httpPort.trim().equals("")) {
+            //http
+            scheme = "http";
+            port = httpPort;
+            if (httpHost.trim().equals("")) {
+                host = "127.0.0.1";
+            } else {
+                host = httpHost;
+            }
+        } else {
+            //https
+            scheme = "https";
+            port = httpsPort;
+            if (httpsHost.trim().equals("")) {
+                host = "127.0.0.1";
+            } else {
+                host = httpsHost;
+            }
+        }
+        String url = scheme + "://" + host + ":" + port + "/nifi-handle-http-request-ui-" + version +"/api/property/info?processorId="  + processorID;
+        return url;
+    }
+
+    private String getApiScheme(String id) {
+        String scheme = "";
+        Iterator<ApiInfo> infoItr = this.apiInfos.iterator();
+        while (infoItr.hasNext()) {
+            ApiInfo apiInfo = (ApiInfo) infoItr.next();
+            String apiId = apiInfo.id;
+            if (apiId.equals(id)) {
+                scheme = apiInfo.scheme;
+            }
+        }
+        return scheme;
     }
 
     private Map<String, String> splitQuery(String query) throws UnsupportedEncodingException{
@@ -283,5 +545,4 @@ public class StandardApiRegistryService extends AbstractControllerService implem
     public String getRequestPath() {
         return this.requestPath;
     }
-
 }

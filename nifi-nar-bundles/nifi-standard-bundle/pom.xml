@@ -29,6 +29,7 @@
         <module>nifi-standard-content-viewer</module>
         <module>nifi-standard-nar</module>
         <module>nifi-jolt-transform-json-ui</module>
+        <module>nifi-handle-http-request-ui</module>
         <module>nifi-standard-utils</module>
     </modules>
     <properties>
@@ -58,6 +59,12 @@
             <dependency>
                 <groupId>org.apache.nifi</groupId>
                 <artifactId>nifi-jolt-transform-json-ui</artifactId>
+                <type>war</type>
+                <version>1.7.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.nifi</groupId>
+                <artifactId>nifi-handle-http-request-ui</artifactId>
                 <type>war</type>
                 <version>1.7.0-SNAPSHOT</version>
             </dependency>
