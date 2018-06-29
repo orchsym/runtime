@@ -166,11 +166,11 @@
                     "PutWebSocket",
                     "StoreInKiteDataset"
                 ],
-                "icon":"02.svg"
+                "icon":"03.svg"
             },
             {
                 "name":"消息事件",
-                "icon":"03.svg",
+                "icon":"02.svg",
                 "components":[
                     "ConsumeAMQP",
                     "ConsumeAzureEventHub",
@@ -596,6 +596,7 @@
                     "PutSplunk",
                     "QueryElasticsearchHttp",
                     "ScrollElasticsearchHttp",
+                    "SelectHiveQL",
                     "StoreInKiteDataset"
                 ]
             }
