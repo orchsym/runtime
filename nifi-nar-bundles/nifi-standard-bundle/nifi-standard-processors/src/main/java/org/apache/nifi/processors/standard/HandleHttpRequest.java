@@ -354,9 +354,7 @@ public class HandleHttpRequest extends AbstractProcessor {
 
         this.state = "running";
 
-        // register api info to api registery service
         modifyApiInfoFromService("state", this.state);
-        // updateApiInfoToService(context);
     }
 
     @OnStopped
@@ -854,7 +852,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         String path = context.getProperty(PATH_REGEX).getValue();
        
         apiInfo.path = path;
-    
+
         apiInfo.state = this.state;
 
         return apiInfo;
