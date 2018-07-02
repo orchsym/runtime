@@ -901,6 +901,7 @@
                                 views/*,
                                 fonts/**/*,
                                 images/*,
+                                json/*,
                                 resources/*,
                                 images/*,
                                 WEB-INF/**/*
