@@ -1020,7 +1020,7 @@ public class PutDatabaseRecord extends AbstractSessionFactoryProcessor {
                                        final boolean translateColumnNames, final boolean includePrimaryKeys) throws SQLException {
             final DatabaseMetaData dmd = conn.getMetaData();
 
-            try (final ResultSet colrs = dmd.getColumns(catalog, schema, tableName, "%")) {
+            try (final ResultSet colrs = dmd.getColumns(catalog, schema, tableName, "Oracle".equalsIgnoreCase(dmd.getDatabaseProductName())? null :"%")) {
                 final List<ColumnDescription> cols = new ArrayList<>();
                 while (colrs.next()) {
                     final ColumnDescription col = ColumnDescription.from(colrs);
@@ -1086,11 +1086,16 @@ public class PutDatabaseRecord extends AbstractSessionFactoryProcessor {
 
             final String nullableValue = resultSet.getString("IS_NULLABLE");
             final boolean isNullable = "YES".equalsIgnoreCase(nullableValue) || nullableValue.isEmpty();
-            final String defaultValue = resultSet.getString("COLUMN_DEF");
+            
+            String defaultValue = null;
             String autoIncrementValue = "NO";
-
-            if (columns.contains("IS_AUTOINCREMENT")) {
-                autoIncrementValue = resultSet.getString("IS_AUTOINCREMENT");
+            try {
+                defaultValue = resultSet.getString("COLUMN_DEF");
+                if (columns.contains("IS_AUTOINCREMENT")) {
+                    autoIncrementValue = resultSet.getString("IS_AUTOINCREMENT");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
 
             final boolean isAutoIncrement = "YES".equalsIgnoreCase(autoIncrementValue);
