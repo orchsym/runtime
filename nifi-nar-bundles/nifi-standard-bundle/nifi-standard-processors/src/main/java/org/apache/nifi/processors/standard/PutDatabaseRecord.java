@@ -75,6 +75,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 
 import static java.lang.String.format;
 
@@ -1095,7 +1096,7 @@ public class PutDatabaseRecord extends AbstractSessionFactoryProcessor {
                     autoIncrementValue = resultSet.getString("IS_AUTOINCREMENT");
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Logger.getLogger(ColumnDescription.class.getName()).warning("Could not get column default value or autoincrement define from metadata.");
             }
 
             final boolean isAutoIncrement = "YES".equalsIgnoreCase(autoIncrementValue);
