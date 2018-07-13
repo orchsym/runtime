@@ -60,7 +60,7 @@ public class RecordPathsWriter {
     }
 
     public Optional<Record> write(final ProcessContext context, final Record readerRecord, final MapperTable outputTable, final RecordPathsMap recordPathsMap,
-            Map<String, Object> additionalPathValuesMap) {
+            Map<String, String> additionalPathValuesMap) {
         if (additionalPathValuesMap == null) {
             additionalPathValuesMap = Collections.emptyMap();
         }
@@ -139,7 +139,7 @@ public class RecordPathsWriter {
 
     }
 
-    public String checkPath(String path) {
+    public static String checkPath(String path) {
         if (!path.startsWith(OP_SLASH)) {
             path = OP_SLASH + path; // if not standard record path, force adding the operator: slash character (/)
         }

@@ -66,6 +66,13 @@ public class ExpVarTable {
         this.vars = vars;
     }
 
+    public String getVarPrefix() {
+        final VarTableType varTableType = getType();
+        // global without the table name
+        final String varPrefix = (varTableType == VarTableType.GLOBAL) ? varTableType.getPrefix() : varTableType.getPrefix(getName());
+        return varPrefix;
+    }
+
     /**
      * parse the value to ExpVarTable
      */

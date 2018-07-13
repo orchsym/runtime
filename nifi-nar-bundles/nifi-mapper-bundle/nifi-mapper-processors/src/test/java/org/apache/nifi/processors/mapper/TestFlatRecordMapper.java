@@ -3,18 +3,14 @@ package org.apache.nifi.processors.mapper;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -26,22 +22,24 @@ import org.apache.nifi.avro.AvroTypeUtil;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.apache.nifi.processors.mapper.exp.ExpVar;
+import org.apache.nifi.processors.mapper.exp.ExpVarTable;
 import org.apache.nifi.processors.mapper.exp.MapperExpField;
 import org.apache.nifi.processors.mapper.exp.MapperTable;
 import org.apache.nifi.processors.mapper.exp.MapperTableType;
-import org.apache.nifi.processors.mapper.exp.VarTableType;
 import org.apache.nifi.reporting.InitializationException;
 import org.apache.nifi.serialization.record.MockRecordParser;
 import org.apache.nifi.serialization.record.MockRecordWriter;
 import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * 
@@ -58,17 +56,17 @@ public class TestFlatRecordMapper {
     private MockRecordParser readerService;
     private MockRecordWriter writerService;
 
-    @BeforeClass
+    @BeforeAll
     public static void init() throws IOException {
         mainStaffSchema = new Schema.Parser().parse(new File("src/test/resources/staff.avsc"));
     }
 
-    @AfterClass
+    @AfterAll
     public static void cleanup() {
         mainStaffSchema = null;
     }
 
-    @Before
+    @BeforeEach
     public void setup() throws IOException, InitializationException {
 
         readerService = new MockRecordParser();
@@ -85,7 +83,7 @@ public class TestFlatRecordMapper {
 
     }
 
-    @After
+    @AfterEach
     public void clean() throws IOException {
         runner = null;
         readerService = null;
@@ -522,9 +520,110 @@ public class TestFlatRecordMapper {
 
     }
 
-    // @Test
-    public void testMapRecord_1vs1_withVar() throws IOException {
-        Assert.fail("Not impl yet!");
+    @Test
+    public void testVar_1vs1_globalVar() throws Exception {
+        // global var
+        ExpVarTable globalVarTable = new ExpVarTable("global", new ExpVar("yearOfBirth", "${" + PRE_INPUT_MAIN_VAR + ".birth" + ":toDate('yyyy-MM-dd'):format('yyyy')}"),
+                new ExpVar("g_age", "${literal(2018):minus(${yearOfBirth:toNumber()})}"));
+        runner.setProperty(RecordMapper.RECORD_GLOBAL_VARS, new ExpVarTable.Writer().write(globalVarTable));
+
+        final String outSchemaName = "out_global_var";
+
+        final MapperTable table = createOutputTable(outSchemaName);
+
+        // output var
+        table.getVars().add(new ExpVar("out_id", "/id")); // out id
+
+        // filter with var
+        table.setFilter("${out_id:mod(2):equals(1)}");
+
+        // expression
+        MapperExpField ef = new MapperExpField();
+        ef.setPath("/age");
+        ef.setExp("${global._var_.g_age}");
+        table.getExpressions().add(ef);
+
+        // schema
+        Schema schema = Schema.createRecord(outSchemaName, outSchemaName + " schema", mainStaffSchema.getNamespace(), false);
+        List<Field> fields = mainStaffSchema.getFields().stream().filter(f -> !f.name().equals("birth")).map(f -> new Field(f.name(), f.schema(), f.doc(), f.defaultVal()))
+                .collect(Collectors.toList());
+
+        // create new age
+        Field agef = new Field("age", Schema.create(Type.INT), "", -1);
+        fields.add(agef);
+
+        schema.setFields(fields);
+        table.setSchema(schema);
+
+        //
+        final int dataNum = 6;
+        final String testContents = "header\n" + "1,Hello,World 1,No. 1, Beijing,98\n" + "3,Hello,World 3,No. 3, Beijing,96\n" + "5,Hello,World 5,No. 5, Beijing,94\n";
+        doRunnerTest(runner, table, dataNum, 3, testContents);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "${in_age}", "${output.out_inner_var._var_.in_age}" })
+    public void testVar_1vs1_innerVar(String ageVar) throws Exception {
+        final String outSchemaName = "out_inner_var";
+
+        final MapperTable table = createOutputTable(outSchemaName);
+
+        // output var
+        table.getVars().add(new ExpVar("out_id", "/id")); // out id
+        table.getVars().add(new ExpVar("yearOfBirth", "${" + PRE_INPUT_MAIN_VAR + ".birth" + ":toDate('yyyy-MM-dd'):format('yyyy')}"));
+        table.getVars().add(new ExpVar("in_age", "${literal(2018):minus(${yearOfBirth:toNumber()})}")); // use inner var
+
+        // filter with var
+        table.setFilter("${out_id:mod(2):equals(1)}");
+
+        // expression
+        MapperExpField ef = new MapperExpField();
+        ef.setPath("/age");
+        ef.setExp(ageVar);
+        table.getExpressions().add(ef);
+
+        // schema
+        Schema schema = Schema.createRecord(outSchemaName, outSchemaName + " schema", mainStaffSchema.getNamespace(), false);
+        List<Field> fields = mainStaffSchema.getFields().stream().filter(f -> !f.name().equals("birth")).map(f -> new Field(f.name(), f.schema(), f.doc(), f.defaultVal()))
+                .collect(Collectors.toList());
+
+        // create new age
+        Field agef = new Field("age", Schema.create(Type.INT), "", -1);
+        fields.add(agef);
+
+        schema.setFields(fields);
+        table.setSchema(schema);
+
+        //
+        final int dataNum = 6;
+        final String testContents = "header\n" + "1,Hello,World 1,No. 1, Beijing,98\n" + "3,Hello,World 3,No. 3, Beijing,96\n" + "5,Hello,World 5,No. 5, Beijing,94\n";
+        doRunnerTest(runner, table, dataNum, 3, testContents);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "id_mod", "output.out_inner_rp_var._var_.id_mod" })
+    public void testVar_1vs1_innerRecordPathVar(String idVar) throws Exception {
+        final String outSchemaName = "out_inner_rp_var";
+
+        final MapperTable table = createOutputTable(outSchemaName);
+
+        // output var
+        table.getVars().add(new ExpVar("out_id", "/id")); // make sure will check for filter
+        table.getVars().add(new ExpVar("id_mod", "${out_id:mod(2)}"));
+
+        // filter with var
+        table.setFilter("${" + idVar + ":equals(1)}");
+
+        // schema
+        Schema schema = Schema.createRecord(outSchemaName, outSchemaName + " schema", mainStaffSchema.getNamespace(), false);
+        List<Field> fields = mainStaffSchema.getFields().stream().map(f -> new Field(f.name(), f.schema(), f.doc(), f.defaultVal())).collect(Collectors.toList());
+        schema.setFields(fields);
+        table.setSchema(schema);
+
+        //
+        final int dataNum = 6;
+        final String testContents = "header\n" + "1,Hello,World 1,1920-01-01,No. 1, Beijing\n" + "3,Hello,World 3,1922-01-01,No. 3, Beijing\n" + "5,Hello,World 5,1924-01-01,No. 5, Beijing\n";
+        doRunnerTest(runner, table, dataNum, 3, testContents);
     }
 
 }

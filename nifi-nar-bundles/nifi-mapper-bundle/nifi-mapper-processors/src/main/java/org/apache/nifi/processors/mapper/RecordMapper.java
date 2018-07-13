@@ -28,8 +28,6 @@ import org.apache.nifi.annotation.behavior.SupportsBatching;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
-import org.apache.nifi.attribute.expression.language.PreparedQuery;
-import org.apache.nifi.attribute.expression.language.Query;
 import org.apache.nifi.avro.AvroTypeUtil;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
@@ -47,13 +45,14 @@ import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.processor.io.OutputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.apache.nifi.processors.mapper.exp.ExpVar;
 import org.apache.nifi.processors.mapper.exp.ExpVarTable;
 import org.apache.nifi.processors.mapper.exp.MapperTable;
 import org.apache.nifi.processors.mapper.exp.MapperTableType;
 import org.apache.nifi.processors.mapper.record.RecordPathsMap;
 import org.apache.nifi.processors.mapper.record.RecordPathsWriter;
 import org.apache.nifi.processors.mapper.record.RecordUtil;
-import org.apache.nifi.record.path.util.RecordPathCache;
+import org.apache.nifi.processors.mapper.var.VarUtil;
 import org.apache.nifi.schema.access.SchemaNotFoundException;
 import org.apache.nifi.serialization.MalformedRecordException;
 import org.apache.nifi.serialization.RecordReader;
@@ -102,7 +101,6 @@ public class RecordMapper extends AbstractProcessor {
     private Map<String, MapperTable> inputTables;
 
     private ExpVarTable globalVarTable;
-    private RecordPathCache globalVarRecordPaths;
 
     private Map<String, MapperTable> outputTables;
     private Map<String, Relationship> relationships;
@@ -191,7 +189,6 @@ public class RecordMapper extends AbstractProcessor {
             if (StringUtils.isNotEmpty(newValue) && !newValue.equals(oldValue)) {
                 if (RECORD_GLOBAL_VARS.equals(descriptor)) {
                     this.globalVarTable = new ExpVarTable.Parser().parse(newValue);
-                    this.globalVarRecordPaths = new RecordPathCache(globalVarTable.getVars().size());
                 }
 
                 // if change the output schema, need update the relationships
@@ -382,37 +379,17 @@ public class RecordMapper extends AbstractProcessor {
 
     Optional<Record> processRecord(final ProcessContext context, final MapperTable outputTable, RecordSchema writeRecordSchema, final FlowFile inputFlowFile, final FlowFile outputFlowFile,
             final Record readerRecord) {
-        final Map<String, String> expValuesMap = new HashMap<>();
-
-        /*
-         * FIXME, only support fixed "main" input flow currently, should only work for flat schema and the first level of simple field. if tree schema, better use input var way always.
-         */
-        RecordUtil.calcRecordValues(expValuesMap, readerRecord, MapperTableType.INPUT.getPrefix(DEFAULT_MAIN), false);
-
-        // input var
-        final MapperTable inputTable = inputTables.get(DEFAULT_MAIN);
-        if (inputTable != null) {
-            RecordUtil.calcRecordVarValues(context, expValuesMap, readerRecord, inputRecordPathsMap.get(DEFAULT_MAIN), inputTable.getExpVarTable());
-        }
+        final Map<String, String> expValuesMap = RecordUtil.calcInputVars(context, readerRecord, inputTables.get(DEFAULT_MAIN), DEFAULT_MAIN, inputRecordPathsMap.get(DEFAULT_MAIN));
 
         // global var
-        RecordUtil.calcRecordVarValues(context, expValuesMap, readerRecord, globalVarRecordPaths, globalVarTable);
+        VarUtil.calcVarValues(context, expValuesMap, globalVarTable, null, false);
 
-        // process the expression for EL.
-        final Map<String, Object> pathValuesMap = new LinkedHashMap<>();
-        outputTable.getExpressions().stream().filter(f -> StringUtils.isNotBlank(f.getPath()) && StringUtils.isNotEmpty(f.getExp())).forEach(f -> {
-            final String expression = f.getExp();
+        // output var with pure EL only, if the expression contain record path, won't do here
+        final Map<String, ExpVar> unCalcExpVars = new LinkedHashMap<>(); // keep the order
+        VarUtil.calcVarValues(context, expValuesMap, outputTable.getExpVarTable(), unCalcExpVars, true);
 
-            final PreparedQuery query = Query.prepare(expression);
-            if (query.isExpressionLanguagePresent()) { // only process EL, if have record path, will be false.
-                PropertyValue expPropValue = context.newPropertyValue(expression);
-                expPropValue = expPropValue.evaluateAttributeExpressions(inputFlowFile, expValuesMap);
-                String value = expPropValue.getValue();
-
-                final String path = this.recordPathsWriter.checkPath(f.getPath());
-                pathValuesMap.put(path, value);
-            }
-        });
+        // expressions
+        Map<String, String> pathValuesMap = RecordUtil.calcOutputExpressionsValues(context, inputFlowFile, outputTable, expValuesMap);
 
         final String outputName = outputTable.getName();
         final RecordPathsMap outputRecordPaths = outputRecordPathsMap.get(outputName);
@@ -426,14 +403,10 @@ public class RecordMapper extends AbstractProcessor {
             // process filter of output table
             final String filter = outputTable.getFilter();
             if (StringUtils.isNotEmpty(filter)) {
-                // FIXME, add all output data for first level
-                RecordUtil.calcRecordValues(expValuesMap, writeRecord, MapperTableType.OUTPUT.getPrefix(outputName), true);
-
-                // output var
-                RecordUtil.calcRecordVarValues(context, expValuesMap, writeRecord, outputRecordPaths, outputTable.getExpVarTable());
+                Map<String, String> outputVars = RecordUtil.calcOutputVars(context, writeRecord, outputTable, outputRecordPaths, expValuesMap, unCalcExpVars);
 
                 PropertyValue filterPropValue = context.newPropertyValue(filter);
-                filterPropValue = filterPropValue.evaluateAttributeExpressions(inputFlowFile, expValuesMap);
+                filterPropValue = filterPropValue.evaluateAttributeExpressions(inputFlowFile, outputVars);
                 if (filterPropValue.isExpressionLanguagePresent()) {
                     // shouldn't still have some vars, so set valid for filter currently.
                 } else if (!filterPropValue.asBoolean()) {
