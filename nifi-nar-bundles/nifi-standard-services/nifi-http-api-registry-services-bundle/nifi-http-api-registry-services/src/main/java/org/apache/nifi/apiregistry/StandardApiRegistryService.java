@@ -231,7 +231,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                 ///apis/swagger?id=123
                 String query = request.getQueryString();
                 String processorId = null;
-                System.out.println("111 pathInfo:" + pathInfo);
                 try {
                     Map<String, String> query_pairs = splitQuery(query);
                     for (Map.Entry<String, String> entry : query_pairs.entrySet()) {  
@@ -239,7 +238,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                             processorId = entry.getValue();
                         }
                     }
-                    System.out.println("111 processorId:" + processorId);
                     if (processorId != null) {
                         String swaggerInfo = getSwaggerinfo(processorId);
                         if (swaggerInfo != null) {
