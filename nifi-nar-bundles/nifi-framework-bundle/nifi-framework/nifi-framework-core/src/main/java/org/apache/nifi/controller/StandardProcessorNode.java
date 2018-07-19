@@ -1699,7 +1699,7 @@ public class StandardProcessorNode extends ProcessorNode implements Connectable 
     }
 
     protected void updateProcessGroup(final String oldProcessGroupIdentifier, final String newProcessGroupIdentifier) {
-        if (StringUtils.isNotEmpty(newProcessGroupIdentifier)) {
+        if (StringUtils.isNotEmpty(newProcessGroupIdentifier) && this.getComponent().getClass().getSimpleName().equals("HandleHttpRequest")) { // only set for HandleHttpRequest
             // create one fake property for groupID
             final PropertyDescriptor groupDescriptor = new PropertyDescriptor.Builder().name(NiFiProperties.GROUP_ID).addValidator(Validator.INVALID).dynamic(true).build();
             onPropertyModified(groupDescriptor, oldProcessGroupIdentifier, newProcessGroupIdentifier);

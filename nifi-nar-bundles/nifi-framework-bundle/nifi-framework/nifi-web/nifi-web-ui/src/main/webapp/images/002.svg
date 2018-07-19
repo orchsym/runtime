@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="25px" height="25px" viewBox="0 0 25 25" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 50.2 (55047) - http://www.bohemiancoding.com/sketch -->
+    <title>36线路</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="图标" transform="translate(-312.000000, -305.000000)" fill="#506773" fill-rule="nonzero">
+            <g id="36线路" transform="translate(312.311272, 305.574788)">
+                <path d="M18.5,11 L5.575,11 C3.775,11 2.2,9.7 2,7.9 C1.775,5.8 3.425,4 5.5,4 L18.775,4 L18.775,6 L23.975,3 L18.775,0 L18.775,2 L5.5,2 C2.45,2 0,4.45 0,7.5 C0,10.55 2.45,13 5.5,13 L18.425,13 C20.225,13 21.8,14.3 22,16.1 C22.25,18.2 20.575,20 18.525,20 L5.275,20 L5.275,18 L0.025,21.075 L5.275,24 L5.275,22 L18.5,22 C21.55,22 24,19.55 24,16.5 C24,13.45 21.55,11 18.5,11 Z" id="Shape"></path>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -38,10 +38,9 @@ pipeline {
     stage('Build') {
       steps {
         sh """
-          mvn build-helper:parse-version versions:set -DnewVersion=${env.BRANCH_NAME}
-
+          mvn clean
+          mvn build-helper:parse-version versions:set -DgenerateBackupPoms=false -DnewVersion=${env.BRANCH_NAME}
           mvn -T 4 install -Dmaven.test.failure.ignore=true
-
           echo runtime-${env.BRANCH_NAME}.tar.gz >> ${env.BUILD_OUTPUT_FILE}
         """
 
@@ -80,7 +79,7 @@ pipeline {
         )
 
         sh """
-          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name orchsym-dev --service ${env.PROJECT_NAME}/${env.RUNTIME_DEV_VERSION} --skip-download"
+          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name orchsym-dev --service ${env.PROJECT_NAME}/${env.BRANCH_NAME} --skip-download"
         """
 
         slackSend(

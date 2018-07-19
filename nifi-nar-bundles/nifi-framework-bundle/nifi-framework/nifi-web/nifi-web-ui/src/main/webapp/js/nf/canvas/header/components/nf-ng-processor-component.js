@@ -473,9 +473,30 @@
                         });
 
                         var generalRestriction = nfCommon.getPolicyTypeListing('restricted-components');
-
+                        serviceProvider.graphControlsCtrl.isComponentOpen = false
+                        serviceProvider.graphControlsCtrl.bigClassificationName = '所有组件'
                         // load the available processor types, this select is shown in the
                         // new processor dialog when a processor is dragged onto the screen
+
+                        /**
+                 * 进行A-Z排序
+                 */
+                         var ysort = function(arr) {
+                        　　if (arr.length <= 1) { return arr; }
+                        　　var pivotIndex = Math.floor(arr.length / 2);
+                        　　var pivot = arr.splice(pivotIndex, 1)[0];
+                        　　var left = [];
+                        　　var right = [];
+                        　　for (var i = 0; i < arr.length; i++){
+                        　　　　if (arr[i]['name'].toLowerCase() < pivot['name'].toLowerCase()) {
+                        　　　　　　left.push(arr[i]);
+                        　　　　} else {
+                        　　　　　　right.push(arr[i]);
+                        　　　　}
+                        　　}
+                        　　return ysort(left).concat([pivot], ysort(right));
+                        }
+
                         $.ajax({
                             type: 'GET',
                             url: serviceProvider.headerCtrl.toolboxCtrl.config.urls.processorTypes,
@@ -488,6 +509,8 @@
 
                             // begin the update
                             processorTypesData.beginUpdate();
+
+                            serviceProvider.graphControlsCtrl.componentDict = {}
 
                             // go through each processor type
                             $.each(response.processorTypes, function (i, documentedType) {
@@ -533,6 +556,7 @@
                                     }
                                 }
 
+                                
                                 // record the group
                                 groups.add(documentedType.bundle.group);
 
@@ -549,12 +573,64 @@
                                     tags: documentedType.tags.join(', ')
                                 });
 
-                                // count the frequency of each tag for this type
-                                $.each(documentedType.tags, function (i, tag) {
-                                    tags.push(tag.toLowerCase());
-                                });
+
+                                documentedType.name = nfCommon.substringAfterLast(type, '.')
+
+                                serviceProvider.graphControlsCtrl.componentDict[documentedType.name] = documentedType
                             });
 
+                            $.ajax({
+                                type: 'GET',
+                                url: serviceProvider.headerCtrl.toolboxCtrl.config.urls.classification,
+                                dataType: 'json',
+                            }).done(function (response) {
+                                var allComponent = []
+                                response = response.map(function(item){
+                                    item.classification = item.classification.sort()
+
+                                    item.classification.map(function(doc){
+                                        doc.open = true
+                                        doc.components = doc.components.sort()
+                                        doc.components = doc.components.map(function(value){
+                                            var obj = {
+                                                name: value,
+                                                icon: doc.icon
+                                            }
+                                            allComponent.push(obj)
+                                            return obj
+                                        })
+                                        return doc
+                                    })
+                                    return item
+                                })
+                                var allComponents = ysort(allComponent)
+
+                                for(var i=1; i<allComponents.length; i++){
+                                    if(allComponents[i].name == allComponents[i-1].name){
+                                        allComponents.splice(i,1)
+                                        i--
+                                    }
+                                }
+
+                                var obj = {
+                                    name: '所有组件',
+                                    icon: 'search.svg',
+                                    classification: [
+                                        {
+                                            name: '所有组件',
+                                            open: true,
+                                            components: allComponents,
+                                            icon: 'search.svg'
+                                        }
+                                    ]
+                                }
+                                response.unshift(obj)
+                                serviceProvider.graphControlsCtrl.backupComponentList = obj.classification
+                                serviceProvider.graphControlsCtrl.componentList = obj.classification
+                                serviceProvider.graphControlsCtrl.componentDuanwuData = response
+                            })
+
+                            
                             // end the update
                             processorTypesData.endUpdate();
 
@@ -650,7 +726,7 @@
                  */
                 hide: function () {
                     this.getElement().modal('hide');
-                }
+                },
             };
         }
 
@@ -698,6 +774,8 @@
             dragIcon: function (event) {
                 return $('<div class="icon icon-processor-add"></div>');
             },
+
+            createProcessor: createProcessor,
 
             /**
              * Prompts the user to select the type of new processor to create.

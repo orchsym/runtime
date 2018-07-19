@@ -1,20 +1,23 @@
 package org.apache.nifi.processors.mapper.record;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.nifi.attribute.expression.language.PreparedQuery;
-import org.apache.nifi.attribute.expression.language.Query;
 import org.apache.nifi.components.PropertyValue;
+import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
-import org.apache.nifi.processors.mapper.RecordMapper;
 import org.apache.nifi.processors.mapper.exp.ExpVar;
 import org.apache.nifi.processors.mapper.exp.ExpVarTable;
+import org.apache.nifi.processors.mapper.exp.MapperTable;
+import org.apache.nifi.processors.mapper.exp.MapperTableType;
 import org.apache.nifi.processors.mapper.exp.VarTableType;
+import org.apache.nifi.processors.mapper.var.VarUtil;
 import org.apache.nifi.record.path.RecordPath;
 import org.apache.nifi.record.path.RecordPathResult;
 import org.apache.nifi.record.path.util.RecordPathCache;
@@ -34,6 +37,7 @@ import org.apache.nifi.serialization.record.util.DataTypeUtils;
  * 
  * @author GU Guoqiang
  */
+@SuppressWarnings({ "unchecked", "rawtypes" })
 public class RecordUtil {
 
     public static Optional<RecordSchema> getChildSchema(final DataType dataType) {
@@ -56,72 +60,87 @@ public class RecordUtil {
         return Optional.empty();
     }
 
-    public static void calcRecordVarValues(final ProcessContext context, final Map<String, String> expValuesMap, final Record record, final RecordPathCache varRecordPaths,
-            final ExpVarTable varTable) {
+    public static void calcRecordVarValues(final ProcessContext context, final Map<String, String> expValuesMap, final Map<String, String> shortExpValuesMap, final Record record,
+            final RecordPathCache varRecordPaths, final ExpVarTable varTable, boolean withInnerVar) {
         if (record == null || varRecordPaths == null || varTable == null) {
             return;
         }
-
-        final VarTableType varTableType = varTable.getType();
-        // global without the table name
-        final String varPrefix = (varTableType == VarTableType.GLOBAL) ? varTableType.getPrefix() : varTableType.getPrefix(varTable.getName());
+        final boolean isGlobal = varTable.getType().equals(VarTableType.GLOBAL);
+        final String varPrefix = varTable.getVarPrefix();
 
         final Map<String, String> innerVarValuesMap = new HashMap<>(expValuesMap);
+        if (shortExpValuesMap != null)
+            innerVarValuesMap.putAll(shortExpValuesMap);
 
         for (ExpVar var : varTable.getVars()) {
             final String innerVarName = var.getName();
             final String outerVarName = varPrefix + '.' + innerVarName;
             final String exp = var.getExp();
-            if (StringUtils.isEmpty(exp)) {
-                continue;
+
+            if (isGlobal && VarUtil.hasRP(exp)) {
+                continue;// can't support record path in global.
             }
-            final PreparedQuery query = Query.prepare(exp);
-            if (query.isExpressionLanguagePresent()) { // expression
+
+            if (VarUtil.hasEL(exp)) {
                 PropertyValue expPropValue = context.newPropertyValue(exp);
                 expPropValue = expPropValue.evaluateAttributeExpressions(innerVarValuesMap);
                 String value = expPropValue.getValue();
                 if (value != null) {
                     expValuesMap.put(outerVarName, value);
+                    if (withInnerVar) {
+                        expValuesMap.put(innerVarName, value);
+                    }
 
-                    // support inner and outer for table var only
                     innerVarValuesMap.put(outerVarName, value);
                     innerVarValuesMap.put(innerVarName, value);
+
                 }
-            } else if (varTableType != VarTableType.GLOBAL) {// record path shouldn't be in global
+            } else if (VarUtil.hasRP(exp)) {// record path
                 final RecordPath path = varRecordPaths.getCompiled(exp);
                 final RecordPathResult result = path.evaluate(record);
 
                 result.getSelectedFields().filter(f -> f.getValue() != null).forEach(f -> {
                     String value = f.getValue().toString();
                     expValuesMap.put(outerVarName, value);
-
+                    if (withInnerVar) {
+                        expValuesMap.put(innerVarName, value);
+                    }
                     // support inner and outer for table var only
                     innerVarValuesMap.put(outerVarName, value);
                     innerVarValuesMap.put(innerVarName, value);
                 });
+            } else { // literal value
+                expValuesMap.put(outerVarName, exp);
+                if (withInnerVar) {
+                    expValuesMap.put(innerVarName, exp);
+                }
+                innerVarValuesMap.put(outerVarName, exp);
+                innerVarValuesMap.put(innerVarName, exp);
             }
         }
 
     }
 
-    public static void calcRecordValues(final Map<String, String> expValuesMap, final Record record, final String prefix, final boolean shortPath) {
+    public static void calcRecordLongValues(final Map<String, String> expValuesMap, final Record record, final String prefix) {
         if (record == null) {
             return;
         }
-        // because don't support both expression and record path, so no use now
-        // record.getSchema().getFields().stream().forEach(f -> calcRecordValues(resultMap, inputPrefix, record, f));
-
-        // FIXME, in order to be compatible with old or simple flat schema, only deal with first level simple type.
-        // like, "input.main.<field>", if use font record path way, will be like "input.main./<field>",
+        /*
+         * will be like input.main.id=1 or output.out.id=10
+         */
         record.getSchema().getFields().stream().filter(f -> isSimpleType(record, f.getDataType(), f.getFieldName())).forEach(f -> {
             expValuesMap.put(prefix + '.' + f.getFieldName(), record.getAsString(f.getFieldName()));
+        });
 
-            /*
-             * FIXME, normally, without prefix for output, means the key is field of current output table.
-             */
-            if (shortPath) {
-                expValuesMap.put(f.getFieldName(), record.getAsString(f.getFieldName()));
-            }
+    }
+
+    public static void calcRecordShortValues(final Map<String, String> expValuesMap, final Record record) {
+        if (record == null) {
+            return;
+        }
+        // only the field name with value, like id=1,name=abc
+        record.getSchema().getFields().stream().filter(f -> isSimpleType(record, f.getDataType(), f.getFieldName())).forEach(f -> {
+            expValuesMap.put(f.getFieldName(), record.getAsString(f.getFieldName()));
         });
 
     }
@@ -232,5 +251,81 @@ public class RecordUtil {
             }
 
         }
+    }
+
+    /**
+     * 
+     * Calc the values of vars for input table from record and the vars of table too.
+     */
+    public static Map<String, String> calcInputVars(final ProcessContext context, final Record readerRecord, final MapperTable inputTable, final String inputTableName,
+            final RecordPathCache inputRecordPaths) {
+        final Map<String, String> expValuesMap = new HashMap<>();
+        /*
+         * FIXME, only support fixed "main" input flow currently, should only work for flat schema and the first level of simple field. if tree schema, better use input var way always.
+         */
+        calcRecordLongValues(expValuesMap, readerRecord, MapperTableType.INPUT.getPrefix(inputTableName));
+
+        // the inner vars of input table self.
+        final Map<String, String> inputFieldsValuesMap = new LinkedHashMap<>();
+        calcRecordShortValues(inputFieldsValuesMap, readerRecord);
+
+        // input var
+        if (inputTable != null) {
+            calcRecordVarValues(context, expValuesMap, inputFieldsValuesMap, readerRecord, inputRecordPaths, inputTable.getExpVarTable(), false);
+        }
+
+        return expValuesMap;
+    }
+
+    /**
+     * 
+     * Calc the values of path for expressions, the expression don't support record path, should only use expression language.
+     */
+    public static Map<String, String> calcOutputExpressionsValues(final ProcessContext context, final FlowFile inputFlowFile, final MapperTable outputTable, final Map<String, String> expValuesMap) {
+        if (outputTable == null) {
+            return Collections.emptyMap();
+        }
+
+        final Map<String, String> pathValuesMap = new LinkedHashMap<>();
+        outputTable.getExpressions().stream().filter(f -> StringUtils.isNotBlank(f.getPath()) && StringUtils.isNotEmpty(f.getExp())).forEach(f -> {
+            final String expression = f.getExp();
+
+            if (VarUtil.hasEL(expression)) { // only process EL, shouldn't set the record path
+                PropertyValue expPropValue = context.newPropertyValue(expression);
+                expPropValue = expPropValue.evaluateAttributeExpressions(inputFlowFile, expValuesMap);
+                String value = expPropValue.getValue();
+
+                final String path = RecordPathsWriter.checkPath(f.getPath());
+                pathValuesMap.put(path, value);
+            }
+        });
+        return pathValuesMap;
+    }
+
+    /**
+     * 
+     * Only calc the expression language for output, ignore the record path, even the inner var depend on record path also
+     */
+    public static Map<String, String> calcOutputVars(final ProcessContext context, final Record writeRecord, final MapperTable outputTable, final RecordPathsMap outputRecordPaths,
+            final Map<String, String> expValuesMap, final Map<String, ExpVar> unCalcExpVars) {
+        if (outputTable == null) {
+            return Collections.emptyMap();
+        }
+        final Map<String, String> outputValuesMap = new HashMap<>(expValuesMap);
+
+        // add all output data for first level
+        calcRecordLongValues(outputValuesMap, writeRecord, MapperTableType.OUTPUT.getPrefix(outputTable.getName()));
+
+        // the inner vars of output table self.
+        final Map<String, String> outputFieldsValuesMap = new LinkedHashMap<>();
+        calcRecordShortValues(outputFieldsValuesMap, writeRecord);
+        outputValuesMap.putAll(outputFieldsValuesMap); // add the inner vars for output also
+
+        // process the left output var for record path
+        if (!unCalcExpVars.isEmpty()) {
+            ExpVarTable rpVarsTable = new ExpVarTable(outputTable.getName(), VarTableType.matchTableType(outputTable.getType()), unCalcExpVars.values().toArray(new ExpVar[0]));
+            calcRecordVarValues(context, outputValuesMap, outputFieldsValuesMap, writeRecord, outputRecordPaths, rpVarsTable, true);
+        }
+        return outputValuesMap;
     }
 }

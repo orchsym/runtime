@@ -128,6 +128,11 @@ public class InvokeScriptedProcessor extends AbstractSessionFactoryProcessor {
         kerberosServicePrincipal = context.getKerberosServicePrincipal();
         kerberosConfigFile = context.getKerberosConfigurationFile();
         kerberosServiceKeytab = context.getKerberosServiceKeytab();
+        synchronized (scriptingComponentHelper.isInitialized) {
+            if (!scriptingComponentHelper.isInitialized.get()) {
+                scriptingComponentHelper.createResources();
+            }
+        }
     }
 
     /**
