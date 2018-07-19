@@ -23,23 +23,8 @@
         <input type="text" class="input" name="path" />
     </div>
     <div class="workbench-title">请求方法</div>
-    <div class="workbench-body">
-        <label style="line-height: 20px;" class="mda-checkbox">
-            <input type="checkbox" value="get" name="method"><em style="margin-right: 20px;"></em>
-            <span>GET</span>
-        </label>
-        <label style="line-height: 20px;" class="mda-checkbox">
-            <input type="checkbox" value="put" name="method"><em style="margin-right: 20px;"></em>
-            <span>PUT</span>
-        </label>
-        <label style="line-height: 20px;" class="mda-checkbox">
-            <input type="checkbox" value="post" name="method"><em style="margin-right: 20px;"></em>
-            <span>POST</span>
-        </label>
-        <label style="line-height: 20px;" class="mda-checkbox">
-            <input type="checkbox" value="delete" name="method"><em style="margin-right: 20px;"></em>
-            <span>DELETE</span>
-        </label>
+    <div class="workbench-body" id="methods">
+        <ul></ul>
     </div>
     <div class="workbench-title">描述信息</div>
     <div class="workbench-body">
@@ -72,6 +57,7 @@
                 <th>参数名</th>
                 <th width="80">位置</th>
                 <th width="80">类型</th>
+                <th width="90">格式化</th>
                 <th width="40">必填</th>
                 <th>注释</th>
                 <th width="40">删除</th>
@@ -80,8 +66,9 @@
             <tbody>
             <tr>
                 <td>
-                    <input type="text" name="parametersAddNew">
+                    <input type="text" name="parametersAddNew" placeholder="输入名称添加新参数">
                 </td>
+                <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -90,6 +77,81 @@
             </tr>
             </tbody>
         </table>
+    </div>
+    <div class="workbench-body" id="formBox">
+        <div class="workbench-title">BODY定义</div>
+        <div class="workbench-body" id="body">
+            <label style="line-height: 20px;" class="mda-radio">
+                <input type="radio" value="raw" name="body"><em style="margin-right: 20px;"></em>
+                <span>raw</span>
+            </label>
+            <label style="line-height: 20px;" class="mda-radio">
+                <input type="radio" value="form-data" name="body"><em style="margin-right: 20px;"></em>
+                <span>form-data</span>
+            </label>
+            <label style="line-height: 20px;" class="mda-radio">
+                <input type="radio" value="x-www-form-urlencoded" name="body"><em style="margin-right: 20px;"></em>
+                <span>x-www-form-urlencoded</span>
+            </label>
+            <!--<ul>
+                <li type="raw">raw</li>
+                <li type="form-data" select="true">form-data</li>
+                <li type="x-www-form-urlencoded">x-www-form-urlencoded</li>
+            </ul>-->
+        </div>
+        <div class="workbench-body" type="raw">
+            <table class="api-setup-box" name="body">
+                <thead>
+                <tr>
+                    <th>名称</th>
+                    <th>模型</th>
+                    <th>注释</th>
+                    <th width="40">删除</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>
+                        <input type="text" name="bodyName" placeholder="输入名称添加BODY定义">
+                    </td>
+                    <td>
+                        <select name="bodyRef"></select>
+                    </td>
+                    <td>
+                        <input type="text" name="bodyDescription">
+                    </td>
+                    <td class="text-center"><div class="icon-close"></div></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="workbench-body" type="form">
+            <table class="api-setup-box" name="form">
+                <thead>
+                <tr>
+                    <th>参数名</th>
+                    <th width="80">类型</th>
+                    <th width="90">格式化</th>
+                    <th width="40">必填</th>
+                    <th>注释</th>
+                    <th width="40">删除</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>
+                        <input type="text" name="formAddNew" placeholder="输入名称添加新参数">
+                    </td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
     <div class="workbench-title"><span>响应设置</span><div class="icon icon-add-big pull-right" id="respInfosAdd"></div></div>
     <div class="workbench-body api-setup-box" id="respInfos">

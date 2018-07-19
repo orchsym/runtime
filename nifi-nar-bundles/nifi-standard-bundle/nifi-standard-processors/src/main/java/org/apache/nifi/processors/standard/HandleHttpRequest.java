@@ -355,6 +355,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         this.state = "running";
 
         modifyApiInfoFromService("state", this.state);
+        //updateApiInfoToService(context);
     }
 
     @OnStopped

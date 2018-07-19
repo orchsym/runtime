@@ -19,17 +19,15 @@ $(function(){
     ApiTools.description = {
         node: $(".apiEdit input#root[name=description]")
     };
-    ApiTools.description.get = function(){
-        Swagger.description = ApiTools.description.node.input.val();
-    };
     ApiTools.description.set = function(){
-        ApiTools.description.node.val(Swagger.description);
+        ApiTools.description.node.val(Swagger.description[ApiTools.method.selectMethod]);
         twoWayBinding(ApiTools.description.node,Swagger,"description");
     };
 
     ApiTools.method = {
         node: $(".apiEdit input[type=checkbox][name=method]")
     };
+
     ApiTools.method.get = function(){
         var method = [];
         $(".apiEdit input[type=checkbox][name=method]:checked").each(function(){
@@ -37,29 +35,70 @@ $(function(){
         });
         Swagger.method = method;
     };
+
     ApiTools.method.set = function(){
-        var method = Swagger.method;
+        /*var method = Swagger.method;
         $(".apiEdit input[type=checkbox][name=method]:checked").each(function(){
             $(this)[0].checked = false;
         });
         method.forEach(function(item){
             $(".apiEdit input[type=checkbox][name=method][value='" + item + "']")[0].checked = true;
+        });*/
+        //$("#methods ul")
+        $("#methods ul").html("");
+        Swagger.methods.forEach(function(item){
+            var li = $('<li name="' + item + '">' + item + '</li>');
+            li.on("click",function(){
+                ApiTools.method.select($(this).attr("name"),true);
+            });
+            $("#methods ul").append(li);
         });
-        twoWayBinding(ApiTools.method.node,Swagger,"method");
+        ApiTools.method.selectMethod = ApiTools.method.selectMethod || Swagger.methods[0];
+        ApiTools.method.select(ApiTools.method.selectMethod);
+        if(ApiTools.method.selectMethod=="post" || ApiTools.method.selectMethod=="put")
+        {
+            $("#formBox").show();
+        }
+        else {
+            $("#formBox").hide();
+        }
+        //twoWayBinding(ApiTools.method.node,Swagger,"method");
+    };
+
+    ApiTools.method.select = function(method,boo){
+        ApiTools.method.selectMethod = method;
+        $("#methods ul li[select=true]").attr({
+            select: "false"
+        });
+        $("#methods ul li[name=" + method + "]").attr({
+            select: "true"
+        });
+        if(method=="post" || method=="put")
+        {
+            $("#formBox").show();
+        }
+        else {
+            $("#formBox").hide();
+        }
+        if(boo)
+        {
+            for(x in ApiTools) {
+                if(ApiTools[x]["set"]) {
+                    ApiTools[x]["set"]();
+                }
+            }
+        }
     };
 
     ApiTools.contentType = {
         node: $(".apiEdit input[type=checkbox][name=rootContentType]")
     };
-    ApiTools.contentType.get = function(){
-        var contentType = [];
-        $(".apiEdit input[type=checkbox][name=rootContentType]:checked").each(function(){
-            contentType.push($(this).val());
-        });
-        Swagger.contentType = contentType;
-    };
     ApiTools.contentType.set = function(){
-        var contentType = Swagger.contentType;
+        var contentType = Swagger.contentType[ApiTools.method.selectMethod];
+        if(!contentType)
+        {
+            contentType = Swagger.contentType[ApiTools.method.selectMethod] = ["application/json"];
+        }
         $(".apiEdit input[type=checkbox][name=rootContentType]:checked").each(function(){
             $(this)[0].checked = false;
         });
@@ -72,29 +111,93 @@ $(function(){
     ApiTools.parameters = {
         node: $(".apiEdit table[name=parameters]"),
         nodeTbody: $(".apiEdit table[name=parameters] tbody"),
+        nodeTbodyForm: $(".apiEdit #formBox table[name=form] tbody"),
         nodeTbodyTr: $(".apiEdit table[name=parameters] tbody tr[repeat]"),
         getTr: function(){
-            return $('<tr repeat><td><input type="text" name="name"></td><td><select name="position"><option value="query">query</option><option value="header">header</option><option value="cookie">cookie</option></select></td><td><select name="type"><option value="string">string</option><option value="boolean">boolean</option><option value="number">number</option></select></td><td class="text-center"><label style="line-height: 20px;" class="mda-checkbox"><input type="checkbox" value="true" name="required"><em style="margin-right: 20px;"></em></label></td><td><input type="text" name="description"></td><td class="text-center"><div class="icon-close"></div></td></tr>');
+            return $('<tr repeat><td><input type="text" name="name"></td><td><select name="position"><option value="query">query</option><option value="header">header</option></select></td><td><select name="type"><option value="string">string</option><option value="boolean">boolean</option><option value="number">number</option></select></td><td><select name="format"></select></td></td><td class="text-center"><label style="line-height: 20px;" class="mda-checkbox"><input type="checkbox" value="true" name="required"><em style="margin-right: 20px;"></em></label></td><td><input type="text" name="description"></td><td class="text-center"><div class="icon-close"></div></td></tr>');
         },
         getTr1: function(){
-            return $('<tr repeat><td><input type="text" name="name" readonly="readonly"></td><td><select name="position"><option value="path">path</option></select></td><td><select name="type"><option value="string">string</option><option value="boolean">boolean</option><option value="number">number</option></select></td><td class="text-center"><label style="line-height: 20px;" class="mda-checkbox"><input type="checkbox" value="true" name="required" disabled="disabled"><em style="margin-right: 20px;"></em></label></td><td><input type="text" name="description"></td><td class="text-center"></td></tr>');
+            return $('<tr repeat><td><input type="text" name="name" readonly="readonly"></td><td><select name="position"><option value="path">path</option></select></td><td><select name="type"><option value="string">string</option><option value="boolean">boolean</option><option value="number">number</option></select></td><td><select name="format"></select></td><td class="text-center"><label style="line-height: 20px;" class="mda-checkbox"><input type="checkbox" value="true" name="required" disabled="disabled"><em style="margin-right: 20px;"></em></label></td><td><input type="text" name="description"></td><td class="text-center"></td></tr>');
+        },
+        getTr2: function(){
+            return $('<tr repeat><td><input type="text" name="name"></td><td><select name="type"><option value="string">string</option><option value="boolean">boolean</option><option value="number">number</option></select></td><td><select name="format"></select></td><td class="text-center"><label style="line-height: 20px;" class="mda-checkbox"><input type="checkbox" value="true" name="required" disabled="disabled"><em style="margin-right: 20px;"></em></label></td><td><input type="text" name="description"></td><td class="text-center"><div class="icon-close"></div></td></tr>');
+        },
+        format:{//
+            string:[
+                {
+                    name:"无",
+                    value:""
+                },
+                {
+                    name:"date",
+                    value:"date"
+                },
+                {
+                    name:"date-titme",
+                    value:"date-titme"
+                },
+                {
+                    name:"password",
+                    value:"password"
+                },
+                {
+                    name:"byte",
+                    value:"byte"
+                },
+                {
+                    name:"binary",
+                    value:"binary"
+                }
+            ],
+            number:[
+                {
+                    name:"无",
+                    value:""
+                },
+                {
+                    name:"float",
+                    value:"float"
+                },
+                {
+                    name:"double",
+                    value:"double"
+                }
+            ]
         }
     };
-    ApiTools.parameters.get = function(){
-        Swagger.parameters = [];
-        ApiTools.parameters.nodeTbodyTr.forEach(function(){
-            var item = {};
-            item.name = $(this).find("input[name=name]").val();
-            item.position = $(this).find("select[name=position] option:selected").val();
-            item.required = $(this).find("input[type=checkbox][name=required]").checked;
-            item.type = $(this).find("select[name=type] option:selected").val();
-            item.description = $(this).find("input[name=description]").val();
-            Swagger.parameters.push(item);
-        });
+
+    ApiTools.parameters.formatSelect = function(val, item, select){
+    //<option value="">无</option><option value="date">date</option><option value="date-titme">date-titme</option><option value="password">password</option><option value="byte">byte</option><option value="binary">binary</option>
+        var arr = ApiTools.parameters["format"][val] || [{
+            name:"无",
+            value:""
+        }];
+        var x = false;
+        select.children().remove();
+        for(var i=0, n=arr.length; i<n; i++)
+        {
+            var option = $('<option value="' + arr[i]["value"] + '">' + arr[i]["name"] + '</option>');
+            if(arr[i]["value"] == item.format)
+            {
+                option.attr({selected:"selected"});
+                x = true;
+            }
+            select.append(option);
+        }
+        if(!x)
+        {
+            item.format = arr[0]["value"];
+        }
     };
+
     ApiTools.parameters.set = function(){
         $(".apiEdit table[name=parameters] tbody tr[repeat]").remove();
-        Swagger.parameters.forEach(function(item){
+        $(".apiEdit #formBox table[name=form] tbody tr[repeat]").remove();
+        if(!Swagger.parameters[ApiTools.method.selectMethod])
+        {
+            Swagger.parameters[ApiTools.method.selectMethod] = [];
+        }
+        Swagger.parameters[ApiTools.method.selectMethod].forEach(function(item){
             if(item.position=="path")
             {
                 var tr = ApiTools.parameters.getTr1();
@@ -107,13 +210,43 @@ $(function(){
                 tr.find(".icon-close").on("click",function(){
                     ApiTools.parameters.delete(item);
                 });
+                tr.find("select[name=type]").on("change",function(){
+                    var val = $(this).find("option:selected").attr("value");
+                    ApiTools.parameters.formatSelect(val, item, tr.find("select[name=format]"));
+                });
+                ApiTools.parameters.formatSelect(tr.find("select[name=type]").find("option:selected").attr("value"), item, tr.find("select[name=format]"));
                 twoWayBinding(tr.find("input[name=name]"),item,"name");
                 //twoWayBinding(tr.find("select[name=position]"),item,"position");
                 //twoWayBinding(tr.find("input[type=checkbox][name=required]"),item,"required");
+                twoWayBinding(tr.find("select[name=format]"),item,"format");
                 twoWayBinding(tr.find("select[name=type]"),item,"type");
                 twoWayBinding(tr.find("input[name=description]"),item,"description");
             }
-            else
+            else if(item.position=="form")
+            {
+                var tr = ApiTools.parameters.getTr2();
+                tr.find("input[name=name]").val(item.name);
+                tr.find("select[name=position] option[value=" + item.position + "]").attr({selected:"selected"});
+                item.required && (tr.find("input[type=checkbox][name=required]").attr({checked:"checked"}));
+                tr.find("select[name=type] option[value=" + item.type + "]").attr({selected:"selected"});
+                tr.find("input[name=description]").val(item.description);
+                ApiTools.parameters.nodeTbodyForm.prepend(tr);
+                tr.find(".icon-close").on("click",function(){
+                    ApiTools.parameters.delete(item);
+                });
+                tr.find("select[name=type]").on("change",function(){
+                    var val = $(this).find("option:selected").attr("value");
+                    ApiTools.parameters.formatSelect(val, item, tr.find("select[name=format]"));
+                });
+                ApiTools.parameters.formatSelect(tr.find("select[name=type]").find("option:selected").attr("value"), item, tr.find("select[name=format]"));
+                twoWayBinding(tr.find("input[name=name]"),item,"name");
+                //twoWayBinding(tr.find("select[name=position]"),item,"position");
+                //twoWayBinding(tr.find("input[type=checkbox][name=required]"),item,"required");
+                twoWayBinding(tr.find("select[name=format]"),item,"format");
+                twoWayBinding(tr.find("select[name=type]"),item,"type");
+                twoWayBinding(tr.find("input[name=description]"),item,"description");
+            }
+            else if(item.position=="query" || item.position=="header")
             {
                 var tr = ApiTools.parameters.getTr();
                 tr.find("input[name=name]").val(item.name);
@@ -125,9 +258,15 @@ $(function(){
                 tr.find(".icon-close").on("click",function(){
                     ApiTools.parameters.delete(item);
                 });
+                tr.find("select[name=type]").on("change",function(){
+                    var val = $(this).find("option:selected").attr("value");
+                    ApiTools.parameters.formatSelect(val, item, tr.find("select[name=format]"));
+                });
+                ApiTools.parameters.formatSelect(tr.find("select[name=type]").find("option:selected").attr("value"), item, tr.find("select[name=format]"));
                 twoWayBinding(tr.find("input[name=name]"),item,"name");
                 twoWayBinding(tr.find("select[name=position]"),item,"position");
                 twoWayBinding(tr.find("input[type=checkbox][name=required]"),item,"required");
+                twoWayBinding(tr.find("select[name=format]"),item,"format");
                 twoWayBinding(tr.find("select[name=type]"),item,"type");
                 twoWayBinding(tr.find("input[name=description]"),item,"description");
             }
@@ -135,8 +274,12 @@ $(function(){
     };
     ApiTools.parameters.addNew = function(val,position){
         if(!val) return;
-        var parameters = Swagger.parameters.filter(function(item){
-            return item.name == val;
+        if(!Swagger.parameters[ApiTools.method.selectMethod])
+        {
+            Swagger.parameters[ApiTools.method.selectMethod] = [];
+        }
+        var parameters = Swagger.parameters[ApiTools.method.selectMethod].filter(function(item){
+            return item.name == val && item.position != "form" && item.position != "path";
         });
         if(!parameters.length)
         {
@@ -147,26 +290,59 @@ $(function(){
                 "type":  "string",
                 "description":  "description"
             };
-            Swagger.parameters.push(item);
+            Swagger.parameters[ApiTools.method.selectMethod].push(item);
+            ApiTools.parameters.set();
+        }
+    };
+    ApiTools.parameters.addNewForm = function(val,position){
+        if(!val) return;
+        if(!Swagger.parameters[ApiTools.method.selectMethod])
+        {
+            Swagger.parameters[ApiTools.method.selectMethod] = [];
+        }
+        var parameters = Swagger.parameters[ApiTools.method.selectMethod].filter(function(item){
+            return item.name == val && item.position == "form";
+        });
+        if(!parameters.length)
+        {
+            var item = {
+                "name":  val,
+                "position":  "form",
+                "required":  true,
+                "type":  "string",
+                "description":  "description"
+            };
+            Swagger.parameters[ApiTools.method.selectMethod].push(item);
+
+            Swagger.parameters[ApiTools.method.selectMethod].forEach(function(item){
+                item.consumes = ApiTools.body.type;
+            });
             ApiTools.parameters.set();
         }
     };
     ApiTools.parameters.delete = function(item){
-        Swagger.parameters = Swagger.parameters.filter(function(_item){
-            return item.name != _item.name;
+        if(!Swagger.parameters[ApiTools.method.selectMethod])
+        {
+            Swagger.parameters[ApiTools.method.selectMethod] = [];
+        }
+        Swagger.parameters[ApiTools.method.selectMethod] = Swagger.parameters[ApiTools.method.selectMethod].filter(function(_item){
+            return !(item.name == _item.name && item.position == _item.position);
         });
-        console.log(Swagger.parameters);
         ApiTools.parameters.set();
     };
     ApiTools.parameters.addPath = function(){
+        if(!Swagger.parameters[ApiTools.method.selectMethod])
+        {
+            Swagger.parameters[ApiTools.method.selectMethod] = [];
+        }
         var pathList = getPathParameter(ApiTools.path.node.val());
-        Swagger.parameters = Swagger.parameters.filter(function(item){
+        Swagger.parameters[ApiTools.method.selectMethod] = Swagger.parameters[ApiTools.method.selectMethod].filter(function(item){
             return item.position != "path";
         });
         if(pathList.length)
         {
             pathList.map(function(item){
-                var parameters = Swagger.parameters.filter(function(_item){
+                var parameters = Swagger.parameters[ApiTools.method.selectMethod].filter(function(_item){
                     return item == _item.name && _item.position == "path";
                 });
                 if(!parameters.length)
@@ -178,13 +354,138 @@ $(function(){
                         "type":  "string",
                         "description":  "description"
                     };
-                    Swagger.parameters.push(item);
+                    Swagger.parameters[ApiTools.method.selectMethod].push(item);
                 }
                 ApiTools.parameters.set();
             });
         }
         else {
             ApiTools.parameters.set();
+        }
+    };
+
+    ApiTools.body = {
+        type: "raw",
+        getBodyParameters: function(){
+            if(!Swagger.parameters[ApiTools.method.selectMethod])
+            {
+                Swagger.parameters[ApiTools.method.selectMethod] = [];
+            }
+            for(var i=0,n=Swagger.parameters[ApiTools.method.selectMethod].length; i<n; i++)
+            {
+                if(Swagger.parameters[ApiTools.method.selectMethod][i]["position"]=="body")
+                {
+                    return Swagger.parameters[ApiTools.method.selectMethod][i];
+                }
+            }
+            return false;
+        },
+        getFormParameters: function(){
+            if(!Swagger.parameters[ApiTools.method.selectMethod])
+            {
+                Swagger.parameters[ApiTools.method.selectMethod] = [];
+            }
+            for(var i=0,n=Swagger.parameters[ApiTools.method.selectMethod].length; i<n; i++)
+            {
+                if(Swagger.parameters[ApiTools.method.selectMethod][i]["position"]=="form")
+                {
+                    return Swagger.parameters[ApiTools.method.selectMethod][i];
+                }
+            }
+            return false;
+        }
+    };
+
+    ApiTools.body.delete = function(){
+        Swagger.parameters[ApiTools.method.selectMethod] = Swagger.parameters[ApiTools.method.selectMethod].filter(function(item){
+            return item.position != "body";
+        });
+        ApiTools.body.set();
+    };
+
+    ApiTools.body.addNew = function(val,ref){
+        if(!val || !ref)
+        {
+            return;
+        }
+        if(!Swagger.parameters[ApiTools.method.selectMethod])
+        {
+            Swagger.parameters[ApiTools.method.selectMethod] = [];
+        }
+        Swagger.parameters[ApiTools.method.selectMethod].push({
+            "name": val,
+            "position": "body",
+            "required": true,
+            "description": val + " description",
+            "ref": ref
+        });
+        ApiTools.body.set();
+    };
+
+    ApiTools.body.set = function(){
+        var bodyParameters = ApiTools.body.getBodyParameters();
+        var formParameters = ApiTools.body.getFormParameters();
+        if(bodyParameters){
+            ApiTools.body.type = "raw";
+        }
+        else if(formParameters)
+        {
+            ApiTools.body.type = formParameters.consumes;
+        }
+        else {
+            ApiTools.body.type = "raw";
+        }
+        $('#body input[value="' + ApiTools.body.type + '"]').attr({checked:"checked"});
+        $('#body input[value="' + ApiTools.body.type + '"]')[0].checked = true;
+        if(ApiTools.body.type=="raw")
+        {
+            $(".workbench-body[type=raw]").show();
+            $(".workbench-body[type=form]").hide();
+        }
+        else {
+            $(".workbench-body[type=raw]").hide();
+            $(".workbench-body[type=form]").show();
+        }
+
+        var select = $('select[name=bodyRef]');
+        select.html("");
+        for(var i= 0,n=Swagger.respModels.length; i<n; i++)
+        {
+            var option = $('<option value="' + Swagger.respModels[i]["name"] + '">' + Swagger.respModels[i]["name"] + '</option>');
+            if(bodyParameters && Swagger.respModels[i]["name"] == bodyParameters.ref)
+            {
+                option.attr({selected:"selected"});
+            }
+            select.append(option);
+        }
+        if(bodyParameters)
+        {
+            $("#formBox input[name=bodyName]").off();
+            $("#formBox input[name=bodyDescription]").off();
+            select.off();
+            $("#formBox input[name=bodyName]").val(bodyParameters.name);
+            $("#formBox input[name=bodyDescription]").val(bodyParameters.description);
+            twoWayBinding($("#formBox input[name=bodyName]"),bodyParameters,"name");
+            twoWayBinding($("#formBox input[name=bodyDescription]"),bodyParameters,"description");
+            twoWayBinding(select,bodyParameters,"ref");
+            $(".apiEdit #formBox table[name=body] td .icon-close").off();
+            $(".apiEdit #formBox table[name=body] td .icon-close").show();
+            $(".apiEdit #formBox table[name=body] td .icon-close").on("click",function(){
+                ApiTools.body.delete();
+            });
+        }
+        else {
+            $("#formBox input[name=bodyName]").off();
+            $("#formBox input[name=bodyDescription]").off();
+            select.off();
+            $("#formBox input[name=bodyName]").val("");
+            $("#formBox input[name=bodyDescription]").val("");
+            $(".apiEdit #formBox table[name=body] td .icon-close").off();
+            $(".apiEdit #formBox table[name=body] td .icon-close").hide();
+            $("#formBox input[name=bodyName]").on("blur",function(){
+                var ref = select.find("option:selected").val();
+                ApiTools.body.addNew($(this).val(),ref);
+            });
         }
     };
 
@@ -263,7 +564,11 @@ $(function(){
         }
     };
     ApiTools.respInfos.delete = function(item){
-        Swagger.respInfos = Swagger.respInfos.filter(function(_item){
+        if(!Swagger.respInfos[ApiTools.method.selectMethod])
+        {
+            Swagger.respInfos[ApiTools.method.selectMethod] = [];
+        }
+        Swagger.respInfos[ApiTools.method.selectMethod] = Swagger.respInfos[ApiTools.method.selectMethod].filter(function(_item){
             return item.code != _item.code;
         });
         ApiTools.respInfos.set();
@@ -273,7 +578,11 @@ $(function(){
     };
     ApiTools.respInfos.set = function(){
         ApiTools.respInfos.node.html("");
-        Swagger.respInfos.forEach(function(item){
+        if(!Swagger.respInfos[ApiTools.method.selectMethod])
+        {
+            Swagger.respInfos[ApiTools.method.selectMethod] = [];
+        }
+        Swagger.respInfos[ApiTools.method.selectMethod].forEach(function(item){
             var response = ApiTools.respInfos.getResponse(item);
             ApiTools.respInfos.node.prepend(response);
         });
@@ -284,10 +593,10 @@ $(function(){
             var item = {
                 "code":  "code",
                 "description":  "description",
-                "type":  "array",
+                "type":  "object",
                 "ref":  Swagger.respModels[0]["name"]
             };
-            Swagger.respInfos.push(item);
+            Swagger.respInfos[ApiTools.method.selectMethod].push(item);
             ApiTools.respInfos.set();
         }
         else
@@ -319,10 +628,29 @@ $(function(){
     ModelTools.save = function(){
         var url = 'api/property/info';
         var httpMethod = 'POST';
+        if(ApiTools.method.selectMethod=="post"||ApiTools.method.selectMethod=="put")
+        {
+            if(ApiTools.body.type=="raw")
+            {
+                Swagger.parameters[ApiTools.method.selectMethod] = Swagger.parameters[ApiTools.method.selectMethod].filter(function(item){
+                    return item.position != "form";
+                });
+                ApiTools.parameters.set();
+            }
+            else {
+                Swagger.parameters[ApiTools.method.selectMethod] = Swagger.parameters[ApiTools.method.selectMethod].filter(function(item){
+                    return item.position != "body";
+                });
+                Swagger.parameters[ApiTools.method.selectMethod].forEach(function(item){
+                    item.consumes = ApiTools.body.type;
+                });
+                ApiTools.body.delete();
+            }
+        }
         Swagger.processorId = getProcessorId();
         Swagger.revision = getRevision(),
         Swagger.clientId = getClientId();
-
+        console.log("Swagger",JSON.stringify(Swagger));
         return $.ajax({
             type: httpMethod,
             url: url,
@@ -344,33 +672,35 @@ $(function(){
             "name":  randomWord(),
             "description": "description",
             "contentType": ["application/json"],
-            "properties":{}
+            "properties": {}
         };
         Swagger.respModels.push(item);
         ModelTools.model.showList();
         ModelTools.model.select(item.id);
     };
-
     ModelTools.model.delete = function(id){
         var respModels = Swagger.respModels.filter(function(item){
             return item.id == id;
         });
 
-        var respInfos = Swagger.respInfos.filter(function(item){
-            return item.ref == respModels[0]["name"];
-        });
-
-        if(respInfos.length)
+        for(x in Swagger.respInfos)
         {
-            alert("模型使用中，无法删除！");
-            return;
+            var respInfos = Swagger.respInfos[x].filter(function(item){
+                return item.ref == respModels[0]["name"];
+            });
+
+            if(respInfos.length)
+            {
+                alert("模型使用中，无法删除！");
+                return;
+            }
         }
+
         Swagger.respModels = Swagger.respModels.filter(function(item){
             return item.id != id;
         });
         ModelTools.model.showList();
     };
-
     ModelTools.model.select = function(id){
         if(ModelTools.select)
         {
@@ -457,6 +787,7 @@ $(function(){
             ModelTools.model.addNew();
         });
         $(".modelEdit button#saveModel").on("click",function(){
+            //Initialization(true);
             for(x in ApiTools) {
                 if(ApiTools[x]["set"]) {
                     ApiTools[x]["set"]();
@@ -557,6 +888,7 @@ $(function(){
     }
 
     (function(){
+        // ApiTools.method.selectMethod = Swagger.methods[0];
         $("#respInfosAdd").on("click",function(){
             ApiTools.respInfos.addNew();
         });
@@ -564,11 +896,27 @@ $(function(){
             ApiTools.parameters.addNew($(this).val());
             $(this).val("");
         });
+        $("input[name=formAddNew]").on("blur",function(){
+            ApiTools.parameters.addNewForm($(this).val());
+            $(this).val("");
+        });
         $("input[name=path]").on("input",function(){
             ApiTools.parameters.addPath();
         });
         $("button#saveAll").on("click",function(){
             ModelTools.save();
+        });
+        $("#body input").on("click",function(){
+            ApiTools.body.type = $(this).val();
+            if($(this).val()=="raw")
+            {
+                $(".workbench-body[type=raw]").show();
+                $(".workbench-body[type=form]").hide();
+            }
+            else {
+                $(".workbench-body[type=raw]").hide();
+                $(".workbench-body[type=form]").show();
+            }
         });
         autoInput();
         Initialization();
@@ -585,6 +933,11 @@ $(function(){
             Swagger.respModels.forEach(function(item){
                 item.id = randomWord();
             });
+
+            if (Swagger.methods.length > 0) {
+                ApiTools.method.selectMethod = Swagger.methods[0];
+            };
+            
             ModelTools.model.showList();
             for(x in ApiTools) {
                 if(ApiTools[x]["set"]) {
@@ -612,19 +965,51 @@ $(function(){
             formatJson();
         }
 
+        /*
+        ajax 请求
+         */
+        /*$.ajax({
+            type: 'GET',
+            url: 'http://jsonplaceholder.typicode.com/posts/1',
+            dataType: 'jsonp'
+        }).done(function (response) {
+            Swagger = {
+                "method":  ["GET"],
+                "title":  "test tittle",
+                "host":  "localhost",
+                "path":  "/testssss",
+                "basePath":  "/v1",
+                "description":  "this is description",
+                "summary":  "this is summary",
+                "contentType":["application/json"],
+                "parameters":  [],
+                "respInfos":  [],
+                "respModels":  []
+            };
+            console.log("response",response);
+            Swagger.respModels.forEach(function(item){
+                item.id = randomWord();
+            });
+            ModelTools.model.showList();
+            for(x in ApiTools) {
+                if(ApiTools[x]["set"]) {
+                    ApiTools[x]["set"]();
+                }
+            }
+        });*/
 
         /*
         静态模式
          */
-        /*Swagger.respModels.forEach(function(item){
-            item.id = randomWord();
-        });
-        ModelTools.model.showList();
-        for(x in ApiTools) {
-            if(ApiTools[x]["set"]) {
-                ApiTools[x]["set"]();
-            }
-        }*/
+        // Swagger.respModels.forEach(function(item){
+        //     item.id = randomWord();
+        // });
+        // ModelTools.model.showList();
+        // for(x in ApiTools) {
+        //     if(ApiTools[x]["set"]) {
+        //         ApiTools[x]["set"]();
+        //     }
+        // }
     }
 
     function twoWayBinding(input,obj,key){
@@ -641,34 +1026,70 @@ $(function(){
             else if(input.attr("type")=='checkbox')
             {
                 //input.off();
-                input.on("click",function(e){
-                    if(Array.isArray(obj[key]))
-                    {
-                        var val = [];
-                        var name = input.attr("name");
-                        $("[name=" + name + "]:checked").each(function(){
-                            val.push($(this).val());
-                        });
-                        obj[key] = val;
-                    }
-                    else
-                    {
-                        if(input[0].checked)
+                if(key=="contentType")
+                {
+                    input.on("click",function(e){
+                        if(Array.isArray(obj[key][ApiTools.method.selectMethod]))
                         {
-                            obj[key] = true;
+                            var val = [];
+                            var name = input.attr("name");
+                            $("[name=" + name + "]:checked").each(function(){
+                                val.push($(this).val());
+                            });
+                            obj[key][ApiTools.method.selectMethod] = val;
                         }
                         else
                         {
-                            obj[key] = false;
+                            if(input[0].checked)
+                            {
+                                obj[key][ApiTools.method.selectMethod] = true;
+                            }
+                            else
+                            {
+                                obj[key][ApiTools.method.selectMethod] = false;
+                            }
                         }
-                    }
-                });
+                    });
+                }
+                else {
+                    input.on("click",function(e){
+                        console.log();
+                        if(Array.isArray(obj[key]))
+                        {
+                            var val = [];
+                            var name = input.attr("name");
+                            $("[name=" + name + "]:checked").each(function(){
+                                val.push($(this).val());
+                            });
+                            obj[key] = val;
+                        }
+                        else
+                        {
+                            if(input[0].checked)
+                            {
+                                obj[key] = true;
+                            }
+                            else
+                            {
+                                obj[key] = false;
+                            }
+                        }
+                    });
+                }
             }
             else {
                 //input.off();
-                input.on("input",function(e){
-                    obj[key] = input.val();
-                });
+                if(key=="description")
+                {
+                    input.on("input",function(e){
+                        obj[key][ApiTools.method.selectMethod] = input.val();
+                    });
+                }
+                else {
+                    input.on("input",function(e){
+                        obj[key] = input.val();
+                    });
+                }
             }
         }
         else if(input[0].nodeName=="SELECT")

@@ -11,6 +11,7 @@ public class PathSpec {
 	public ArrayList<ParamSpec> parameters;
 
 	public ArrayList<String> produces;
+	public ArrayList<String> consumes;
 
 	/*          code           */
 	public Map<String, RespSpec> responses;
