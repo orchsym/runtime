@@ -404,7 +404,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                 if(object.has("format")) {
                     parameterSpec.format = object.get("format").getAsString();
                 }
-                if(object.has("consumes")) {
+                if(object.has("consumes") && (position.equals("form") || position.equals("body"))) {
                     String consumes = object.get("consumes").getAsString();
                     if (consumes.equals("form-data")) {
                         consumeContentType = "multipart/form-data";
