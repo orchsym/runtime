@@ -109,7 +109,7 @@ Orchsym Studio可以从下载link:http://Orchsym Studio.apache.org/download.html
 == 我开始使用Orchsym Studio.怎么办？ 
 
 现在Orchsym Studio已经启动，我们可以调出用户界面(UI)来创建和监控我们的数据流. 
-要开始使用，请打开Web浏览器并导航到 link:http://localhost:8080/Orchsym Studio[`http://localhost:8080/Orchsym Studio`^].可以通过
+要开始使用，请打开Web浏览器并导航到  link:http://localhost:8080/[`http://localhost:8080/`^].可以通过
 编辑来更改端口 `Orchsym Studio.properties` 在Orchsym Studio中存档 `conf` 目录，但默认端口是8080. 
 
 这将打开用户界面，此时这是一个用于编排数据流的空白画布: 
@@ -118,7 +118,7 @@ image:new-flow.png["New Flow"]
 
 用户界面有多种工具可用于创建和管理您的第一个数据流: 
 
-image:Orchsym Studio-toolbar-components.png["Toolbar Components"] 
+image:studio-toolbar-components.png["Toolbar Components"] 
 
 全局菜单包含以下选项: 
 
