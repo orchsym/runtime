@@ -52,6 +52,7 @@ import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -60,6 +61,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.apache.nifi.web.httprequestui.model.PropertyInfoEntity;
+import org.apache.nifi.web.httprequestui.model.ParameterInfo;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -150,7 +152,7 @@ public class PropertyResource {
                 throw new WebApplicationException(iae, error(message));
             }
         }
-        // ensure the parameters isn't null
+        // ensure the propertyInfoEntity isn't null
         if (propertyInfoEntity == null) {
             propertyInfoEntity = new PropertyInfoEntity();
         }
@@ -158,31 +160,57 @@ public class PropertyResource {
         //get properties
         if (processorDetails != null) {
             Map<String, String> properties = processorDetails.getProperties();
-            String path = properties.get("Allowed Paths");
-            propertyInfoEntity.path = path != null ? path : "";
+            // String path = properties.get("Allowed Paths");
+            // propertyInfoEntity.path = path != null ? path : "";
 
             String port = properties.get("Listening Port");
             propertyInfoEntity.host = "localhost:" + port;
 
-            propertyInfoEntity.method.clear();
+            propertyInfoEntity.methods.clear();
             Boolean allowed = properties.get("Allow GET").equals("true");
             if (allowed) {
-                propertyInfoEntity.method.add("get");
+                propertyInfoEntity.methods.add("get");
             }
             allowed = properties.get("Allow POST").equals("true");
             if (allowed) {
-                propertyInfoEntity.method.add("post");
+                propertyInfoEntity.methods.add("post");
             }
             allowed = properties.get("Allow DELETE").equals("true");
             if (allowed) {
-                propertyInfoEntity.method.add("delete");
+                propertyInfoEntity.methods.add("delete");
             }
             allowed = properties.get("Allow PUT").equals("true");
             if (allowed) {
-                propertyInfoEntity.method.add("put");
+                propertyInfoEntity.methods.add("put");
+            }
+            //remove unsupported method's parameter infos
+            Iterator<Map.Entry<String, ArrayList<ParameterInfo>>> it = propertyInfoEntity.parameters.entrySet().iterator();
+            while(it.hasNext()){  
+                Map.Entry<String, ArrayList<ParameterInfo>> entry=it.next();  
+                String key=entry.getKey();  
+                if(!propertyInfoEntity.methods.contains(key)){ 
+                    it.remove();  
+                }  
+            }
+            //remove unsupported method's decription infos
+            Iterator<Map.Entry<String, String>> itDesc = propertyInfoEntity.description.entrySet().iterator();
+            while(itDesc.hasNext()){  
+                Map.Entry<String, String> entry=itDesc.next();  
+                String key=entry.getKey();  
+                if(!propertyInfoEntity.methods.contains(key)){ 
+                    itDesc.remove();  
+                }  
+            }
+            //remove unsupported method's contentType infos
+            Iterator<Map.Entry<String, ArrayList<String>>> itContType = propertyInfoEntity.contentType.entrySet().iterator();
+            while(itContType.hasNext()){  
+                Map.Entry<String, ArrayList<String>> entry=itContType.next();  
+                String key=entry.getKey();  
+                if(!propertyInfoEntity.methods.contains(key)){ 
+                    itContType.remove();  
+                }  
             }
         }
-
         return propertyInfoEntity;
     }
 
@@ -194,37 +222,8 @@ public class PropertyResource {
         final NiFiWebConfigurationContext configurationContext = (NiFiWebConfigurationContext) servletContext.getAttribute("nifi-web-configuration-context");
 
         try {
-            //get eddited component properties
-            Map<String, String> properties = new HashMap();
-            PropertyInfoEntity propertyInfoEntity = gson.fromJson(annotationData, new TypeToken<PropertyInfoEntity>(){}.getType());
-            if (propertyInfoEntity != null) {
-                String path = !propertyInfoEntity.path.equals("") ? propertyInfoEntity.path : null;
-                properties.put("Allowed Paths", path);
-
-                if (propertyInfoEntity.method.contains("get")) {
-                    properties.put("Allow GET", "true");
-                } else {
-                    properties.put("Allow GET", "false");
-                }
-                if (propertyInfoEntity.method.contains("post")) {
-                    properties.put("Allow POST", "true");
-                } else {
-                    properties.put("Allow POST", "false");
-                }
-                if (propertyInfoEntity.method.contains("put")) {
-                    properties.put("Allow PUT", "true");
-                } else {
-                    properties.put("Allow PUT", "false");
-                }
-                if (propertyInfoEntity.method.contains("delete")) {
-                    properties.put("Allow DELETE", "true");
-                } else {
-                    properties.put("Allow DELETE", "false");
-                }
-            }
-
             // save the annotation data
-            configurationContext.updateComponent(requestContext, annotationData, properties);
+            configurationContext.updateComponent(requestContext, annotationData, null);
 
         } catch (final Exception e) {
             final String message = String.format("Unable to save parameter[id=%s] in: %s", requestContext.getId(), e);

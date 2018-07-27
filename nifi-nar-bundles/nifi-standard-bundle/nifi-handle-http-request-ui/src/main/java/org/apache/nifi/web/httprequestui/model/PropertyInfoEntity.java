@@ -1,6 +1,8 @@
 package org.apache.nifi.web.httprequestui.model;
 
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 public class PropertyInfoEntity {
 
@@ -10,27 +12,27 @@ public class PropertyInfoEntity {
 
 	public Long revision = 0L;
 
-	public ArrayList<String> method = new ArrayList();
+	public ArrayList<String> methods = new ArrayList();
 
 	public String version = "1.0.0";
 
 	public String title = "";
 
-	public String path = "";
+	public String path = "/";
 
 	public String host = "";
 
 	public String basePath = "/";
 
-	public String description = "";
-
 	public String summary = "";
 
-	public ArrayList<String> contentType = new ArrayList();
+	public Map<String, String> description = new HashMap();
 
-	public ArrayList<ParameterInfo> parameters = new ArrayList();
+	public Map<String, ArrayList<String>> contentType = new HashMap();
 
-	public ArrayList<RespInfo> respInfos = new ArrayList();
+	public Map<String, ArrayList<ParameterInfo>> parameters = new HashMap();;
+
+	public Map<String, ArrayList<RespInfo>> respInfos = new HashMap();;
 
 	public ArrayList<RespModel> respModels = new ArrayList();
 }
