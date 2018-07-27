@@ -231,7 +231,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
                 ///apis/swagger?id=123
                 String query = request.getQueryString();
                 String processorId = null;
-
                 try {
                     Map<String, String> query_pairs = splitQuery(query);
                     for (Map.Entry<String, String> entry : query_pairs.entrySet()) {  
@@ -354,7 +353,6 @@ public class StandardApiRegistryService extends AbstractControllerService implem
 
     private String getSwaggerSpec(String info, String apiID) {
 
-        // info = "{\"contentType\":[\"application/json\"],\"method\":[\"get\"],\"version\":\"1.0\",\"title\":\"test tittle\",\"host\":\"localhost\",\"path\":\"/test\",\"basePath\":\"/v1\",\"description\":\"this is description\",\"summary\":\"this is summary\",\"parameters\":[{\"name\":\"longitude\",\"position\":\"query\",\"required\":true,\"type\":\"string\",\"description\":\"Latitude component of location\"},{\"name\":\"latitude\",\"position\":\"query\",\"required\":true,\"type\":\"string\",\"description\":\"Longitude component of location\"}],\"respInfos\":[{\"code\":\"200\",\"description\":\"response description\",\"type\":\"array\",\"ref\":\"Product\"},{\"code\":\"404\",\"description\":\"response description\",\"type\":\"object\",\"ref\":\"Error\"}],\"respModels\":[{\"name\":\"Product\",\"properties\":{\"product_id\":{\"type\":\"string\",\"description\":\"Unique identifier representing a specific product\"},\"url\":{\"type\":\"string\",\"description\":\"url of a specific product\"}}},{\"name\":\"Error\",\"properties\":{\"message\":{\"type\":\"string\",\"description\":\"message of an error\"}}}]}";
         Gson gson = new Gson();
         JsonObject infoObject = new JsonParser().parse(info).getAsJsonObject();
 
@@ -374,86 +372,138 @@ public class StandardApiRegistryService extends AbstractControllerService implem
         apiSpec.schemes = schemes;
         //basePath
         apiSpec.basePath = infoObject.get("basePath").getAsString();
-        //produces
-        ArrayList<String> produces = new ArrayList();
-        JsonArray jsonContentTypeArr = infoObject.getAsJsonArray("contentType");
-        for (int i=0; i<jsonContentTypeArr.size(); i++) {
-            String type = jsonContentTypeArr.get(i).getAsString();
-            produces.add(type);
-        }
-        apiSpec.produces = produces;
-
-        PathSpec pathSpec = new PathSpec();
-        //parameters
-        ArrayList<ParamSpec> parameters = new ArrayList();
-        JsonArray jsonParamArr = infoObject.getAsJsonArray("parameters");
-        for (int i=0; i<jsonParamArr.size(); i++) {
-            JsonObject object = (JsonObject) jsonParamArr.get(i).getAsJsonObject();
-            ParamSpec parameterSpec = new ParamSpec();
-            parameterSpec.name = object.get("name").getAsString();
-            parameterSpec.in = object.get("position").getAsString();
-            parameterSpec.description = object.get("description").getAsString();
-            parameterSpec.type = object.get("type").getAsString();
-            parameterSpec.required = object.get("required").getAsBoolean();
-            parameters.add(parameterSpec);
-
-        }
-        pathSpec.parameters = parameters;
-        //responses
-        JsonArray jsonRespArr = infoObject.getAsJsonArray("respInfos");
-        pathSpec.responses = new HashMap<String, RespSpec>();
-        for (int i=0; i<jsonRespArr.size(); i++) {
-            JsonObject object = (JsonObject) jsonRespArr.get(i).getAsJsonObject();
-            RespSpec respSpec = new RespSpec();
-            respSpec.description = object.get("description").getAsString();
-            Map<String, Object> schema = new HashMap();
-            Map<String,String> items = new HashMap();
-            String reference = "#/definitions/" + object.get("ref").getAsString();
-            if (object.get("type").getAsString().equals("array")) {
-                schema.put("type","array");
-                items.put("$ref",reference);
-                schema.put("items", items); 
-            } else{
-                schema.put("$ref", reference);
-            }
-            respSpec.schema = schema;
-            pathSpec.responses.put(object.get("code").getAsString(), respSpec);
-
-        }
-        //response produces,summary,description
-        pathSpec.produces = new ArrayList();
-        pathSpec.summary = infoObject.get("summary").getAsString();
-        pathSpec.description = infoObject.get("description").getAsString();
+        //methods
+        JsonArray jsonMethodsArr = infoObject.getAsJsonArray("methods");
         Map<String, Map<String, PathSpec>> paths = new HashMap();
         Map<String, PathSpec> pathSpecMap = new HashMap();
-        //method
-        JsonArray jsonMethodArr = infoObject.getAsJsonArray("method");
-        String method = jsonMethodArr.size() > 0 ? jsonMethodArr.get(0).getAsString() : "GET";
-        pathSpecMap.put(method, pathSpec);
+        for (int i=0; jsonMethodsArr!=null && i<jsonMethodsArr.size(); i++) {
+            String method = jsonMethodsArr.get(i).getAsString();
+            PathSpec pathSpec = new PathSpec();
+            //parameters
+            ArrayList<ParamSpec> parameters = new ArrayList();
+            JsonObject parametersObject = infoObject.getAsJsonObject("parameters");
+            JsonArray jsonParamArr = parametersObject.getAsJsonArray(method);
+            
+            String consumeContentType = null;
+            String consumeRef = null;
+            for (int j=0; jsonParamArr!=null && j<jsonParamArr.size(); j++) {
+                JsonObject object = (JsonObject) jsonParamArr.get(j).getAsJsonObject();
+                ParamSpec parameterSpec = new ParamSpec();
+                parameterSpec.name = object.get("name").getAsString();
+                parameterSpec.description = object.get("description").getAsString();
+                parameterSpec.required = object.get("required").getAsBoolean();
+                if(object.has("type")){
+                    parameterSpec.type = object.get("type").getAsString();
+                }
+                String position = object.get("position").getAsString();
+                if (position.equals("form")) {
+                    parameterSpec.in = "formData";
+                } else {
+                    parameterSpec.in = position;
+                }
+                if(object.has("format")) {
+                    parameterSpec.format = object.get("format").getAsString();
+                }
+                if(object.has("consumes") && (position.equals("form") || position.equals("body"))) {
+                    String consumes = object.get("consumes").getAsString();
+                    if (consumes.equals("form-data")) {
+                        consumeContentType = "multipart/form-data";
+                    } else if (consumes.equals("x-www-form-urlencoded")) {
+                        consumeContentType = "application/x-www-form-urlencoded";
+                    }
+                }
+                if(object.has("ref")){
+                    Map<String, String> schema = new HashMap();
+                    consumeRef = object.get("ref").getAsString();
+                    String reference = "#/definitions/" + consumeRef;
+                    schema.put("$ref", reference);
+                    parameterSpec.schema = schema;
+                }
+                parameters.add(parameterSpec);
+            }
+            pathSpec.parameters = parameters;
+            pathSpec.consumes = new ArrayList();
+            pathSpec.produces = new ArrayList();
+            //consumes
+            if (consumeContentType != null) {
+                pathSpec.consumes.add(consumeContentType);
+            }
+            //produces
+            JsonObject contentTypeObject = infoObject.getAsJsonObject("contentType");
+            JsonArray contentTypeObjectArr = contentTypeObject.getAsJsonArray(method);
+            for (int x=0; contentTypeObjectArr!=null && x<contentTypeObjectArr.size(); x++) {
+                String type = contentTypeObjectArr.get(x).getAsString();
+                pathSpec.produces.add(type);
+            }
+            
+            //responses
+            JsonObject respinfosObject = infoObject.getAsJsonObject("respInfos");
+            JsonArray jsonRespArr = respinfosObject.getAsJsonArray(method);
+            pathSpec.responses = new HashMap<String, RespSpec>();
+            for (int k=0; jsonRespArr!=null && k<jsonRespArr.size(); k++) {
+                JsonObject object = (JsonObject) jsonRespArr.get(k).getAsJsonObject();
+                RespSpec respSpec = new RespSpec();
+                respSpec.description = object.get("description").getAsString();
+                Map<String, Object> schema = new HashMap();
+                Map<String,String> items = new HashMap();
+                String reference = null;
+                if(object.has("ref")){
+                    reference = object.get("ref").getAsString();
+                    if (object.get("type").getAsString().equals("array")) {
+                        schema.put("type","array");
+                        items.put("$ref","#/definitions/" + reference);
+                        schema.put("items", items); 
+                    } else{
+                        schema.put("$ref",  "#/definitions/" + reference);
+                    }
+                    respSpec.schema = schema;
+                }
+                pathSpec.responses.put(object.get("code").getAsString(), respSpec);
+                //handle produces consumes
+                JsonArray jsondefArr = infoObject.getAsJsonArray("respModels");
+                for (int m=0; jsondefArr!=null && m<jsondefArr.size(); m++) {
+                    JsonObject respModelObject = (JsonObject) jsondefArr.get(m).getAsJsonObject();
+                    String modelName = respModelObject.get("name").getAsString();
+                    if (modelName.equals(reference)) {
+                        JsonArray typeArr = respModelObject.getAsJsonArray("contentType");
+                        for (int n=0; typeArr!=null && n<typeArr.size(); n++) {
+                            String type = typeArr.get(n).getAsString();
+                            if (!pathSpec.produces.contains(type)) {
+                                pathSpec.produces.add(type);
+                            }
+                        }
+                    }
+                    if (consumeRef!=null && modelName.equals(consumeRef)) {
+                        JsonArray typeArr = respModelObject.getAsJsonArray("contentType");
+                        for (int n=0; typeArr!=null && n<typeArr.size(); n++) {
+                            String type = typeArr.get(n).getAsString();
+                            if (!pathSpec.consumes.contains(type)) {
+                                pathSpec.consumes.add(type);
+                            }
+                        }
+                    }
+                }
+            }
+            //description
+            JsonObject descriObject = infoObject.getAsJsonObject("description");
+            pathSpec.description = descriObject.has(method) ? descriObject.get(method).getAsString() : "";
+            pathSpecMap.put(method, pathSpec);
+        }
         paths.put(infoObject.get("path").getAsString(), pathSpecMap);
         apiSpec.paths = paths;
 
         //definitions
         Map<String, Map<String, Map<String, PropertySpec>>> definitions = new HashMap();
         JsonArray jsondefArr = infoObject.getAsJsonArray("respModels");
-        for (int i=0; i<jsondefArr.size(); i++) {
+        for (int i=0; jsondefArr!=null && i<jsondefArr.size(); i++) {
             //model level
             JsonObject object = (JsonObject) jsondefArr.get(i).getAsJsonObject();
             String modelName = object.get("name").getAsString();
-            JsonArray typeArr = object.getAsJsonArray("contentType"); //content-type
-            for (int j=0; j<typeArr.size(); j++) {
-                String type = typeArr.get(j).getAsString();
-                if (!pathSpec.produces.contains(type)) {
-                    pathSpec.produces.add(type);
-                }   
-            }
 
             String respModelJson = object.get("properties").toString();
-
             Map<String, Map<String, String>> respModelMap = gson.fromJson(respModelJson, new TypeToken<Map<String, Map<String, String>>>(){}.getType());
-
             Iterator propertyEntries = respModelMap.entrySet().iterator(); 
-
+            
             Map<String, Map<String, PropertySpec>> map1 = new HashMap();
             Map<String, PropertySpec> map2 = new HashMap();
             while (propertyEntries.hasNext()) {
@@ -477,9 +527,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
             definitions.put(modelName, map1);
         }
         apiSpec.definitions = definitions;
-
         spec = gson.toJson(apiSpec);
-
         return spec;
     }
 

@@ -4,13 +4,17 @@ public class ParameterInfo {
 
 	public String name;
 
-	// 参数位置: query, header, path, cookie
+	// 参数位置: query, header, path, cookie, formData etc
 	public String position;
 	public boolean required = true;
 
-	//参数类型: string, interger, boolean, number, array, object
+	//参数类型: string, number, boolean
 	public String type;
+	public String format;
+	public String consumes;
 
-	public String defaultValue;
+	public String ref;
+	
 	public String description;
+	
 }

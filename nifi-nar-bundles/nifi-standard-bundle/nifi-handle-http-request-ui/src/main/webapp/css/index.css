@@ -12,6 +12,7 @@
 input, select {
     outline: none;
 }
+
 body {
     font-family: Microsoft Jhenghei, STXihei, Microsoft Yahei, 微软雅黑, Tahoma, Arial, Helvetica, STHeiti;
     font-size: .8rem;
@@ -19,6 +20,9 @@ body {
     text-rendering: geometricPrecision;
     perspective: 1680px;
     padding: 20px;
+}
+::-webkit-input-placeholder {
+    color: rgba(0,0,0,0.2);
 }
 
 .hidden {
@@ -445,7 +449,31 @@ ul li .icon-close{
 ul li:hover .icon-close{
     display: block;
 }
-
+#methods ul{
+    list-style-type: none;
+    width: 100%;
+    height: 30px;
+    border-bottom: 1px solid #eeeeee;
+}
+#methods ul li{
+    width: auto;
+    height: 30px;
+    line-height: 30px;
+    cursor: pointer;
+    padding-left: 20px;
+    padding-right: 20px;
+    border: 1px solid #eeeeee;
+    border-bottom: 0px solid #eeeeee;
+    background-color: rgba(0,0,0,0.03);
+    float: left;
+    margin-left: -1px;
+    text-transform: uppercase;
+}
+#methods ul li[select=true]{
+    font-weight: 600;
+    color: #728e9b;
+    background-color: #ffffff;
+}
 .model-box .left .title-icon{
     position: absolute;
     background-repeat: no-repeat;
@@ -501,4 +529,120 @@ button.cancel:active {
     background-color: #ffffff;
     margin-bottom: 20px;
     float: left;
+}
+#body ul{
+    list-style-type: none;
+    width: 100%;
+    height: 30px;
+    border-bottom: 1px solid #eeeeee;
+}
+#body ul li{
+    width: auto;
+    height: 30px;
+    line-height: 30px;
+    cursor: pointer;
+    padding-left: 20px;
+    padding-right: 20px;
+    border-bottom: 2px solid rgba(0,0,0,0);
+    float: left;
+    margin-left: -1px;
+    text-transform: uppercase;
+}
+#body ul li[select=true]{
+    font-weight: 600;
+    color: #728e9b;
+    border-bottom: 2px solid #1890ff;
+    background-color: rgba(0,0,0,0.0);
+}
+
+.mda-radio {
+    position: relative;
+    display: inline-block;
+    padding-left: 20px;
+    margin: 0;
+    cursor: pointer;
+}
+.mda-radio input {
+    position: absolute;
+    z-index: 1;
+    width: 20px;
+    height: 20px;
+    margin-left: -20px;
+    cursor: pointer;
+    opacity: 0;
+}
+.mda-radio input:checked + em:before {
+    background-color: inherit;
+    border-width: 0;
+}
+.mda-radio input:checked + span .active {
+    display: inherit;
+}
+.mda-radio input[type="checkbox"]:checked + em:after {
+    position: absolute;
+    top: 2px;
+    left: 6px;
+    display: table;
+    width: 6px;
+    height: 12px;
+    border: 2px solid;
+    border-top: 0;
+    border-left: 0;
+    content: ' ';
+    -webkit-transform: rotate(45deg);
+    -ms-transform: rotate(45deg);
+    -o-transform: rotate(45deg);
+    transform: rotate(45deg);
+    border-color: #fff;
+}
+.mda-radio input[type="radio"]:checked + em:after {
+    content: ' ';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    display: table;
+    width: 12px;
+    height: 12px;
+    background: inherit;
+    border-radius: 50%;
+    border: 2px solid #fff;
+}
+.mda-radio input[type="radio"] + em,
+.mda-radio input[type="radio"] + em:before {
+    border-radius: 50%;
+}
+.mda-radio input[disabled] + em:before,
+fieldset[disabled] .mda-radio input + em:before {
+    border-color: rgba(0, 0, 0, 0.26);
+}
+.mda-radio input[disabled]:checked + em {
+    background-color: rgba(0, 0, 0, 0.26);
+}
+.mda-radio input[disabled]:checked + em:after {
+    background-color: transparent;
+}
+.mda-radio > em {
+    position: relative;
+    display: inline-block;
+    width: 0;
+    height: 18px;
+    margin-top: -2px;
+    margin-right: 28px;
+    margin-left: -20px;
+    line-height: 1;
+    vertical-align: middle;
+}
+.mda-radio > em:before {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 100%;
+    border: 2px solid rgba(162, 162, 162, 0.56);
+    border-radius: 2px;
+    -webkit-transition: all 0.2s;
+    -o-transition: all 0.2s;
+    transition: all 0.2s;
+}
+.mda-radio > em.empty:after {
+    display: none !important;
 }
