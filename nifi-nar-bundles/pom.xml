@@ -98,6 +98,8 @@
         <module>nifi-soap-bundle</module>
         <module>nifi-mapper-bundle</module>
         <module>nifi-dubbo-bundle</module>
+
+        <module>orchsym-sap-bundle</module>
   </modules>
 
     <build>

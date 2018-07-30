@@ -726,15 +726,27 @@ language governing permissions and limitations under the License. -->
 		<dependency>
 			<groupId>org.apache.nifi</groupId>
 			<artifactId>nifi-mapper-nar</artifactId>
-			<version>1.7.0-SNAPSHOT</version>
+			<version>${project.version}</version>
 			<type>nar</type>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.nifi</groupId>
 			<artifactId>nifi-dubbo-nar</artifactId>
-			<version>1.7.0-SNAPSHOT</version>
+			<version>${project.version}</version>
 			<type>nar</type>
 		</dependency>
+		<dependency>
+            <groupId>com.baishancloud.orchsym</groupId>
+            <artifactId>orchsym-sapcp-service-nar</artifactId>
+            <version>${project.version}</version>
+            <type>nar</type>
+        </dependency>
+        <dependency>
+            <groupId>com.baishancloud.orchsym</groupId>
+            <artifactId>orchsym-sap-nar</artifactId>
+            <version>${project.version}</version>
+            <type>nar</type>
+        </dependency>
     </dependencies>
     <profiles>
         <profile>
