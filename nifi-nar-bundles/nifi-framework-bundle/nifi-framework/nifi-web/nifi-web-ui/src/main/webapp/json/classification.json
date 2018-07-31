@@ -624,7 +624,8 @@
                     "ExecuteSparkInteractive",
                     "ExecuteSQL",
                     "ExecuteStreamCommand",
-                    "SpringContextProcessor"
+                    "SpringContextProcessor",
+                    "ExecuteStoreProcedure"
                 ]
             }
         ]

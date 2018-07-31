@@ -98,10 +98,9 @@
         <module>nifi-soap-bundle</module>
         <module>nifi-mapper-bundle</module>
         <module>nifi-dubbo-bundle</module>
-
+        <module>nifi-store-procedure-bundle</module>
         <module>orchsym-sap-bundle</module>
-  </modules>
-
+    </modules>
     <build>
         <plugins>
             <!-- Makes buildRevision and buildBranch available to the NAR Plugin so they can be populated in the MANIFEST -->
