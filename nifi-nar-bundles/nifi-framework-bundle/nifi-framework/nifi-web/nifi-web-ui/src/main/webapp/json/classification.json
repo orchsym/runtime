@@ -93,7 +93,8 @@
                     "QuerySolr",
                     "QueryWhois",
                     "ScrollElasticsearchHttp",
-                    "SelectHiveQL"
+                    "SelectHiveQL",
+                    "InvokeSAPRFC"
                 ],
                 "icon":"01.svg"
             },
@@ -164,7 +165,9 @@
                     "PutTCP",
                     "PutUDP",
                     "PutWebSocket",
-                    "StoreInKiteDataset"
+                    "StoreInKiteDataset",
+                    "ListenSAPTCP",
+                    "HandleSAPTCPResponse"
                 ],
                 "icon":"03.svg"
             },
@@ -440,7 +443,9 @@
                     "QueryElasticsearchHttp",
                     "QueryWhois",
                     "ScrollElasticsearchHttp",
-                    "SetSNMP"
+                    "SetSNMP",
+                    "ListenSAPTCP",
+                    "HandleSAPTCPResponse"
                 ]
             },
             {
@@ -619,7 +624,8 @@
                     "ExecuteSparkInteractive",
                     "ExecuteSQL",
                     "ExecuteStreamCommand",
-                    "SpringContextProcessor"
+                    "SpringContextProcessor",
+                    "ExecuteStoreProcedure"
                 ]
             }
         ]

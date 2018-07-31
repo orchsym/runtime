@@ -1,2571 +1,2561 @@
-//
-// Licensed to the Apache Software Foundation (ASF) under one or more
-// contributor license agreements.  See the NOTICE file distributed with
-// this work for additional information regarding copyright ownership.
-// The ASF licenses this file to You under the Apache License, Version 2.0
-// (the "License"); you may not use this file except in compliance with
-// the License.  You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-= NiFi Developer's Guide
-Apache NiFi Team <dev@nifi.apache.org>
-:homepage: http://nifi.apache.org
-:linkattrs:
+// 
+// Licensed to the Apache Software Foundation (ASF) under one or more 
+// contributor license agreements.  See the NOTICE file distributed with 
+// this work for additional information regarding copyright ownership. 
+// The ASF licenses this file to You under the Apache License, Version 2.0 
+// (the "License"); you may not use this file except in compliance with 
+// the License.  You may obtain a copy of the License at 
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0 
+// 
+// Unless required by applicable law or agreed to in writing, software 
+// distributed under the License is distributed on an "AS IS" BASIS, 
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+// See the License for the specific language governing permissions and 
+// limitations under the License. 
+// 
+= Orchsym Studio开发人员指南 
+Orchsym Studio团队<orchsym@baishancloud.com> 
+:homepage: https://www.baishancloud.com/ 
+:linkattrs: 
 
 
-== Introduction
+== 简介 
 
-The intent of this Developer Guide is to provide the reader with the information needed to understand how Apache NiFi
-extensions are developed and help to explain the thought process behind developing the components. It provides an introduction to
-and explanation of the API that is used to develop extensions. It does not, however, go into great detail about each
-of the methods in the API, as this guide is intended to supplement the JavaDocs of the API rather than replace them.
-This guide also assumes that the reader is familiar with Java 7 and Apache Maven.
+本开发人员指南的目的是为读者提供理解Orchsym Studio扩展如何开发所需的信息，并帮助解释开发元件背后的思考过程.它提供了
+用于开发扩展的API的介绍和说明。但是，它没有详细介绍API中的每个方法，因为本指南旨在补充API的JavaDoc而不是替换它们。 
+本指南还假定读者已经熟悉Java 7和Apache Maven。 
 
-This guide is written by developers for developers. It is expected that before reading this
-guide, you have a basic understanding of NiFi and the concepts of dataflow. If not, please see the link:overview.html[NiFi Overview]
-and the link:user-guide.html[NiFi User Guide] to familiarize yourself with the concepts of NiFi.
+本指南由开发人员为开发人员编写。在阅读本指南之前，您需要对Orchsym Studio和数据流概念有基本的了解。如果没有，请参阅 link:overview.html[Orchsym Studio Overview] 
+和 link:user-guide.html[Orchsym Studio User Guide] 并熟悉Orchsym Studio的相关概念. 
 
 
-[[components]]
-== NiFi Components
+[[components]] 
+== Orchsym Studio元件 
 
-NiFi provides several extension points to provide developers the
-ability to add functionality to the application to meet their needs. The following list provides a
-high-level description of the most common extension points:
+Orchsym Studio提供了几个扩展点，使开发人员能够为应用程序添加功能以满足他们的需求。以下列表提供了最常见扩展点的高级描述: 
 
-- Processor
-    * The Processor interface is the mechanism through which NiFi exposes access to
-      <<flowfile>>s, their attributes, and their content. The Processor is the basic building
-      block used to comprise a NiFi dataflow. This interface is used to accomplish
-      all of the following tasks:
+- 组件 
+    * 组件接口是Orchsym Studio公开访问<<flowfile>>属性及其内容的机制。组件是用于构成Orchsym Studio数据流的基本构建块。此接口用于完成以下所有任务: 
 
-        ** Create FlowFiles
-        ** Read FlowFile content
-        ** Write FlowFile content
-        ** Read FlowFile attributes
-        ** Update FlowFile attributes
-        ** Ingest data
-        ** Egress data
-        ** Route data
-        ** Extract data
-        ** Modify data
+        ** 创建FlowFiles 
+        ** 读取FlowFile内容 
+        ** 编写FlowFile内容 
+        ** 读取FlowFile属性 
+        ** 更新FlowFile属性 
+        ** 摄取数据 
+        ** 出口数据 
+        ** 路由数据 
+        ** 抽取数据 
+        ** 修改数据 
 
-- ReportingTask
-    * The ReportingTask interface is a mechanism that NiFi exposes to allow metrics,
-      monitoring information, and internal NiFi state to be published to external
-      endpoints, such as log files, e-mail, and remote web services.
+- ReportingTask 
+    * ReportingTask接口是Orchsym Studio公开的一种机制，允许将指标，监控信息和内部Orchsym Studio状态发布到外部端点，例如日志文件，电子邮件和远程Web服务。 
 
-- ControllerService
-    * A ControllerService provides shared state and functionality across Processors, other ControllerServices,
-      and ReportingTasks within a single JVM. An example use case may include loading a very
-      large dataset into memory. By performing this work in a ControllerService, the data
-      can be loaded once and be exposed to all Processors via this service, rather than requiring
-      many different Processors to load the dataset themselves.
+- ControllerService 
+    * ControllerService 
+      在单个JVM中，跨组件，其他ControllerServices和ReportingTasks提供共享状态和功能。示例用例可以包括将非常大的数据集加载到内存中。通过在ControllerService中执行此工作，数据可以加载一次并通过此服务公开给所有组件，而不是要求许多不同的组件自己加载数据集. 
 
-- FlowFilePrioritizer
-    * The FlowFilePrioritizer interface provides a mechanism by which <<flowfile>>s
-      in a queue can be prioritized, or sorted, so that the FlowFiles can be processed in an order
-      that is most effective for a particular use case.
+- FlowFilePrioritizer 
+    * FlowFilePrioritizer接口提供了一种机制，通过该机制可以对队列中的<<flowfile>>进行优先级区分或排序，以便可以按照对特定用例最有效的顺序处理FlowFiles. 
 
-- AuthorityProvider
-    * An AuthorityProvide is responsible for determining which privileges and roles, if any,
-      a given user should be granted.
+- AuthorityProvider 
+    * AuthorityProvide负责确定应授予给定用户的特权和角色. 
 
 
-[[processor_api]]
-== Processor API
+[[processor_api]] 
+== 组件API 
 
-The Processor is the most widely used Component available in NiFi.
-Processors are the only Component
-to which access is given to create, remove, modify, or inspect
-FlowFiles (data and attributes).
+组件是Orchsym Studio中使用最广泛的元件。组件是唯一可以访问以创建，删除，修改或检查FlowFiles(数据和属性)的元件. 
 
-All Processors are loaded and instantiated using Java's ServiceLoader
-mechanism. This means that all
-Processors must adhere to the following rules:
+Studio使用Java的ServiceLoader机制加载和实例化所有组件。这意味着所有组件必须遵守以下规则: 
 
-    - The Processor must have a default constructor.
-    - The Processor's JAR file must contain an entry in the META-INF/services directory named
-      `org.apache.nifi.processor.Processor`. This is a text file where each line contains the
-      fully-qualified class name of a Processor.
+    - 组件必须具有默认构造函数。 
+    - 组件的JAR文件必须包含META-INF/services目录下名为`org.apache.Orchsym Studio.processor.Processor`的条目。这是一个文本文件，其中每行包含一个组件的完全限定类名。
 
-While `Processor` is an interface that can be implemented directly, it
-will be extremely rare to do so, as
-the `org.apache.nifi.processor.AbstractProcessor` is the base class
-for almost all Processor implementations. The `AbstractProcessor` class provides a significant
-amount of functionality, which makes the task of developing a Processor much easier and more convenient.
-For the scope of this document, we will focus primarily on the `AbstractProcessor` class when dealing
-with the Processor API.
+而 `Processor` 是一个接口，你可以直接实现这个接口，但极少需要这样做，因为 `org.apache.Orchsym Studio.processor.AbstractProcessor`是几乎所有组件实现的基类。该 `AbstractProcessor`类提供了大量的功能，这使得开发组件的任务变得更加容易和方便。对于本文档的范围，我们将主要关注于 `AbstractProcessor` 处理Processor API时的类。
 
-.Concurrency Note
-NiFi is a highly concurrent framework. This means that all extensions
-must be thread-safe. If unfamiliar with writing concurrent software in Java, it is highly
-recommended that you familiarize yourself with the principles of Java concurrency.
+.并发性注意 
+Orchsym Studio是一个高度并发的框架.这意味着所有扩展必须是线程安全的。如果不熟悉用Java编写并发软件，强烈建议您熟悉Java并发原理。
 
 
-[[supporting_api]]
-=== Supporting API
+[[supporting_api]] 
+=== 支持API 
 
-In order to understand the Processor API, we must first understand -
-at least at a high level - several supporting classes and interfaces, which are discussed below.
+为了理解Processor API，我们必须先了解几个支持类和接口： 
 
-[[flowfile]]
-==== FlowFile
-A FlowFile is a logical notion that correlates a piece of data with a
-set of Attributes about that data.
-Such attributes include a FlowFile's unique identifier, as well as its
-name, size, and any number of other
-flow-specific values. While the contents and attributes of a FlowFile
-can change, the FlowFile object is
-immutable. Modifications to a FlowFile are made possible by the ProcessSession.
+[[flowfile]] 
+==== FlowFile 
+FlowFile是一种逻辑概念，它将一段数据与一组有关该数据的属性相关联。这些属性包括FlowFile的唯一标识符，以及其名称，大小和任何数量的其他特定于流的值。虽然FlowFile的内容和属性可以更改，但FlowFile对象是不可变的。ProcessSession可以对FlowFile进行修改。
 
-The core attributes for FlowFiles are defined in the `org.apache.nifi.flowfile.attributes.CoreAttributes` enum.
-The most common attributes you'll see are filename, path and uuid. The string in quotes is the value of the
-attribute within the `CoreAttributes` enum.
+FlowFiles的核心属性定义在`org.apache.Orchsym Studio.flowfile.attributes.CoreAttributes`枚举中。您将看到的最常见属性是filename，path和uuid.引号中的字符串是该 
+属性中的值 `CoreAttributes` 的枚举。 
+- Filename("filename”):FlowFile的文件名。文件名不应包含任何目录结构。
 
-- Filename ("filename"): The filename of the FlowFile. The filename should not contain any directory structure.
+- UUID("uuid”):分配给此FlowFile的唯一通用唯一标识符(UUID). 
 
-- UUID ("uuid"): A unique universally unique identifier (UUID) assigned to this FlowFile.
+- Path("path”):FlowFile的路径指示FlowFile所属的相对目录，不包含文件名。
 
-- Path ("path"): The FlowFile's path indicates the relative directory to which a FlowFile belongs and does not contain the filename.
+- 绝对路径(绝对路径.path"):FlowFile的绝对路径表示FlowFile所属的绝对目录，不包含文件名。 
 
-- Absolute Path ("absolute.path"): The FlowFile's absolute path indicates the absolute directory to which a FlowFile belongs and does not contain the filename.
+- 优先级("priority”):表示FlowFile优先级的数值. 
 
-- Priority ("priority"): A numeric value indicating the FlowFile priority.
+- MIME类型("mime.type"):此FlowFile的MIME类型. 
 
-- MIME Type ("mime.type"): The MIME Type of this FlowFile.
+- 放弃原因("丢弃.reason"):指定丢弃FlowFile的原因. 
 
-- Discard Reason ("discard.reason"): Specifies the reason that a FlowFile is being discarded.
+- 替代标识符("替代标识符”.identifier"):表示已知引用此FlowFile的FlowFile的UUID以外的标识符. 
 
-- Alternative Identifier ("alternate.identifier"): Indicates an identifier other than the FlowFile's UUID that is known to refer to this FlowFile.
+[[process_session]] 
+==== ProcessSession 
+ProcessSession(通常简称为"会话”)提供 
+了一种机制，通过该机制可以创建，销毁，检查，克隆FlowFiles并将其传输到其他 
+组件.此外，ProcessSession提供了
+通过添加或删除属性或通过修改FlowFile的内容来创建FlowFiles的修改版本的机制 .ProcessSession 
+还公开了一种用于发出<<provenance_events>>的机制，该机制提供了跟踪
+FlowFile 的 沿袭和历史的能力.在一个或多个FlowFiles上执行操作后， 
+可以提交或回滚ProcessSession. 
 
-[[process_session]]
-==== ProcessSession
-The ProcessSession, often referred to as simply a "session," provides
-a mechanism by which FlowFiles can be created, destroyed, examined, cloned, and transferred to other
-Processors. Additionally, a ProcessSession provides mechanism for creating modified versions of
-FlowFiles, by adding or removing attributes, or by modifying the FlowFile's content. The ProcessSession
-also exposes a mechanism for emitting <<provenance_events>> that provide for the ability to track the
-lineage and history of a FlowFile. After operations are performed on one or more FlowFiles, a
-ProcessSession can be either committed or rolled back.
-
-[[process_context]]
-==== ProcessContext
-The ProcessContext provides a bridge between a Processor and the framework. It provides information
-about how the Processor is currently configured and allows the Processor to perform
-Framework-specific tasks, such as yielding its resources so that the framework will schedule other
-Processors to run without consuming resources unnecessarily.
+[[process_context]] 
+==== ProcessContext 
+ProcessContext提供组件和框架之间的桥梁.它提供 
+有关组件当前如何配置的信息，并允许组件执行
+特定于 Framework的任务，例如产生其资源，以便框架将安排其他 
+组件运行而不会不必要地消耗资源. 
 
 
-[[property_descriptor]]
-==== PropertyDescriptor
-PropertyDescriptor defines a property that is to be used by a
-Processor, ReportingTask, or ControllerService.
-The definition of a property includes its name, a description of the
-property, an optional default value,
-validation logic, and an indicator as to whether or not the property
-is required in order for the Processor
-to be valid. PropertyDescriptors are created by instantiating an
-instance of the `PropertyDescriptor.Builder`
-class, calling the appropriate methods to fill in the details about
-the property, and finally calling
-the `build` method.
+[[property_descriptor]] 
+==== PropertyDescriptor 
+PropertyDescriptor定义将由
+Processor，ReportingTask或ControllerService 使用的属性 . 
+属性的定义包括其名称，属性的描述 
+，可选的默认值， 
+验证逻辑，以及
+关于组件
+是否有效是否需要 该属性的指示符 .PropertyDescriptors是通过实例化一个
+实例来创建 的 `PropertyDescriptor.Builder` 
+类，调用适当的方法来填写有关细节 
+的财产，最后调用 
+的 `build` 方法. 
 
 
-[[validator]]
-==== Validator
-A PropertyDescriptor MUST specify one or more Validators that can be
-used to ensure that the user-entered value
-for a property is valid. If a Validator indicates that a property
-value is invalid, the Component will not be
-able to be run or used until the property becomes valid. If a
-Validator is not specified, the Component will be assumed invalid and
-NiFi will report that the property is not supported.
+[[validator]] 
+==== 验证器 
+PropertyDescriptor必须指定一个或多个验证器，可 
+用于确保用户输入 
+的属性值有效.如果Validator指示属性 
+值无效，则
+在属性生效之前，将无法运行或使用Component .如果 
+未指定Validator，则假定Component无效， 
+Orchsym Studio将报告该属性不受支持. 
 
-[[validation_context]]
-==== ValidationContext
-When validating property values, a ValidationContext can be used to
-obtain ControllerServices,
-create PropertyValue objects, and compile and evaluate property values
-using the Expression Language.
-
-
-[[property_value]]
-==== PropertyValue
-All property values returned to a Processor are returned in the form
-of a PropertyValue object. This
-object has convenience methods for converting the value from a String
-to other forms, such as numbers
-and time periods, as well as providing an API for evaluating the
-Expression Language.
+[[validation_context]] 
+==== ValidationContext 
+验证属性值时，ValidationContext可用于 
+获取ControllerServices， 
+创建PropertyValue对象，以及
+使用表达式语言编译和评估属性值 . 
 
 
-[[relationship]]
-==== Relationship
-Relationships define the routes to which a FlowFile may be transfered
-from a Processor. Relationships
-are created by instantiating an instance of the `Relationship.Builder`
-class, calling the appropriate methods
-to fill in the details of the Relationship, and finally calling the
-`build` method.
+[[property_value]] 
+==== PropertyValue 
+返回给Processor的所有属性值都
+以PropertyValue对象的形式返回 .此 
+对象具有便捷方法，用于将值从String转换 
+为其他形式(如数字 
+和时间段)，以及提供用于评估
+表达式语言的API . 
 
-[[supporting_api_state_manager]]
-==== StateManager
-The StateManager provides Processors, Reporting Tasks, and Controller Services a mechanism
-for easily storing and retrieving state. The API is similar to that of ConcurrentHashMap
-but requires a Scope for each operation. The Scope indicates whether the state is to be
-retrieved/stored locally or in a cluster-wide manner. For more information, see the
-<<state_manager>> section.
 
-[[processor_initialization_context]]
-==== ProcessorInitializationContext
-After a Processor is created, its `initialize` method will be called
-with an `InitializationContext` object.
-This object exposes configuration to the Processor that will not
-change throughout the life of the Processor,
-such as the unique identifier of the Processor.
+[[relationship]] 
+==== 关系 
+关系定义FlowFile可以
+从组件传输到的路由 .
+通过实例化一个实例来创建关系 `Relationship.Builder` 
+class，调用相应的方法 
+来填写Relationship的细节，最后调用 
+`build` 方法. 
 
-[[ComponentLog]]
+[[supporting_api_state_manager]] 
+==== StateManager 
+StateManager为组件，报告任务和控制器服务提供了一种
+轻松存储和检索状态的机制 .API类似于ConcurrentHashMap， 
+但每个操作都需要一个Scope.范围指示是在
+本地检索/存储状态还是以群集范围的方式存储状态 .有关更多信息，请参阅 
+<<state_manager>>部分. 
+
+[[processor_initialization_context]] 
+==== ProcessorInitializationContext 
+创建组件 后，它的 `initialize` 方法将被调用 
+用 `InitializationContext` 目的. 
+此对象向组件公开配置，该配置在组件的
+整个生命周期内不会 更改，
+例如组件 的唯一标识符. 
+
+[[ComponentLog]] 
 ==== ComponentLog
-Processors are encouraged to perform their logging via the
-`ComponentLog` interface, rather than obtaining
-a direct instance of a third-party logger. This is because logging via
-the ComponentLog allows the framework
-to render log messages that exceeds a configurable severity level to
-the User Interface, allowing those who
-monitor the dataflow to be notified when important events occur.
-Additionally, it provides a consistent logging
-format for all Processors by logging stack traces when in DEBUG mode
-and providing the Processor's unique
-identifier in log messages.
-
-
-
-
-
-[[AbstractProcessor]]
-=== AbstractProcessor API
-
-Since the vast majority of Processors will be created by extending the
-AbstractProcessor, it is the
-abstract class that we will examine in this section. The
-AbstractProcessor provides several methods that
-will be of interest to Processor developers.
-
-
-==== Processor Initialization
-
-When a Processor is created, before any other methods are invoked, the
-`init` method of the
-AbstractProcessor will be invoked. The method takes a single argument,
-which is of type
-`ProcessorInitializationContext`. The context object supplies the
-Processor with a ComponentLog,
-the Processor's unique identifier, and a ControllerServiceLookup that
-can be used to interact with the
-configured ControllerServices. Each of these objects is stored by the
-AbstractProcessor and may be obtained by
-subclasses via the `getLogger`, `getIdentifier`, and
-`getControllerServiceLookup` methods, respectively.
-
-
-==== Exposing Processor's Relationships
-
-In order for a Processor to transfer a FlowFile to a new destination
-for follow-on processing, the
-Processor must first be able to expose to the Framework all of the
-Relationships that it currently supports.
-This allows users of the application to connect Processors to one
-another by creating
-Connections between Processors and assigning the appropriate
-Relationships to those Connections.
-
-A Processor exposes the valid set of Relationships by overriding the
-`getRelationships` method.
-This method takes no arguments and returns a `Set` of `Relationship`
-objects. For most Processors, this Set
-will be static, but other Processors will generate the Set
-dynamically, based on user configuration.
-For those Processors for which the Set is static, it is advisable to
-create an immutable Set in the Processor's
-constructor or init method and return that value, rather than
-dynamically generating the Set. This
-pattern lends itself to cleaner code and better performance.
-
-
-==== Exposing Processor Properties
-
-Most Processors will require some amount of user configuration before
-they are able to be used. The properties
-that a Processor supports are exposed to the Framework via the
-`getSupportedPropertyDescriptors` method.
-This method takes no arguments and returns a `List` of
-`PropertyDescriptor` objects. The order of the objects in the
-List is important in that it dictates the order in which the
-properties will be rendered in the User Interface.
-
-A `PropertyDescriptor` object is constructed by creating a new
-instance of the `PropertyDescriptor.Builder` object,
-calling the appropriate methods on the builder, and finally calling
-the `build` method.
-
-While this method covers most of the use cases, it is sometimes
-desirable to allow users to configure
-additional properties whose name are not known. This can be achieved
-by overriding the
-`getSupportedDynamicPropertyDescriptor` method. This method takes a
-`String` as its only argument, which
-indicates the name of the property. The method returns a
-`PropertyDescriptor` object that can be used to validate
-both the name of the property, as well as the value. Any
-PropertyDescriptor that is returned from this method
-should be built setting the value of `isDynamic` to true in the
-`PropertyDescriptor.Builder` class. The default
-behavior of AbstractProcessor is to not allow any dynamically created
-properties.
-
-
-==== Validating Processor Properties
-
-A Processor is not able to be started if its configuration is not
-valid. Validation of a Processor property can
-be achieved by setting a Validator on a PropertyDescriptor or by
-restricting the allowable values for a
-property via the PropertyDescriptor.Builder's `allowableValues` method
-or `identifiesControllerService` method.
-
-There are times, though, when validating a Processor's properties
-individually is not sufficient. For this purpose,
-the AbstractProcessor exposes a `customValidate` method. The method
-takes a single argument of type `ValidationContext`.
-The return value of this method is a `Collection` of
-`ValidationResult` objects that describe any problems that were
-found during validation. Only those ValidationResult objects whose
-`isValid` method returns `false` should be returned.
-This method will be invoked only if all properties are valid according
-to their associated Validators and Allowable Values.
-I.e., this method will be called only if all properties are valid
-in-and-of themselves, and this method allows for
-validation of a Processor's configuration as a whole.
-
-
-==== Responding to Changes in Configuration
-
-It is sometimes desirable to have a Processor eagerly react when its
-properties are changed. The `onPropertyModified`
-method allows a Processor to do just that. When a user changes the
-property values for a Processor, the
-`onPropertyModified` method will be called for each modified property.
-The method takes three arguments: the PropertyDescriptor that
-indicates which property was modified,
-the old value, and the new value. If the property had no previous
-value, the second argument will be `null`. If the property
-was removed, the third argument will be `null`. It is important to
-note that this method will be called regardless of whether
-or not the values are valid. This method will be called only when a
-value is actually modified, rather than being
-called when a user updates a Processor without changing its value. At
-the point that this method is invoked, it is guaranteed
-that the thread invoking this method is the only thread currently
-executing code in the Processor, unless the Processor itself
-creates its own threads.
-
-
-==== Performing the Work
-
-When a Processor has work to do, it is scheduled to do so by having
-its `onTrigger` method called by the framework.
-The method takes two arguments: a `ProcessContext` and a
-`ProcessSession`. The first step in the `onTrigger` method
-is often to obtain a FlowFile on which the work is to be performed by
-calling one of the `get` methods on the ProcessSession.
-For Processors that ingest data into NiFi from external sources, this
-step is skipped. The Processor is then free to examine
-FlowFile attributes; add, remove, or modify attributes; read or modify
-FlowFile content; and transfer FlowFiles to the appropriate
-Relationships.
-
-
-==== When Processors are Triggered
-
-A Processor's `onTrigger` method will be called only when it is
-scheduled to run and when work exists for the Processor.
-Work is said to exist for a Processor if any of the following conditions is met:
-
-- A Connection whose destination is the Processor has at least one
-FlowFile in its queue
-- The Processors has no incoming Connections
-- The Processor is annotated with the @TriggerWhenEmpty annotation
-
-Several factors exist that will contribute to when a Processor's
-`onTrigger` method is invoked. First, the Processor will not
-be triggered unless a user has configured the Processor to run. If a
-Processor is scheduled to run, the Framework periodically
-(the period is configured by users in the User Interface) checks if
-there is work for the Processor to do, as described above.
-If so, the Framework will check downstream destinations of the
-Processor. If any of the Processor's outbound Connections is full,
-by default, the Processor will not be scheduled to run.
-
-However, the `@TriggerWhenAnyDestinationAvailable` annotation may be
-added to the Processor's class. In this case, the requirement
-is changed so that only one downstream destination must be "available"
-(a destination is considered "available" if the Connection's
-queue is not full), rather than requiring that all downstream
-destinations be available.
-
-Also related to Processor scheduling is the `@TriggerSerially`
-annotation. Processors that use this Annotation will never have more
-than one thread running the `onTrigger` method simultaneously. It is
-crucial to note, though, that the thread executing the code
-may change from invocation to invocation. Therefore, care must still
-be taken to ensure that the Processor is thread-safe!
-
-
-
-=== Component Lifecycle
-
-The NiFi API provides lifecycle support through use of Java
-Annotations. The `org.apache.nifi.annotations.lifecycle` package
-contains
-several annotations for lifecycle management. The following
-Annotations may be applied to Java methods in a NiFi component to
-indicate to
-the framework when the methods should be called. For the discussion of
-Component Lifecycle, we will define a NiFi component as a
-Processor, ControllerServices, or ReportingTask.
-
-==== @OnAdded
-
-The `@OnAdded` annotation causes a method to be invoked as soon as a
-component is created. The
-component's `initialize` method (or `init` method, if subclasses
-`AbstractProcessor`) will be invoked after the component is
-constructed,
-followed by methods that are annotated with `@OnAdded`. If any method
-annotated with `@OnAdded` throws an Exception, an error will
-be returned to the user, and that component will not be added to the
-flow. Furthermore, other methods with this
-Annotation will not be invoked. This method will be called only once
-for the lifetime of a component.
-Methods with this Annotation must take zero arguments.
-
-==== @OnEnabled
-
-The `@OnEnabled` annotation can be used to indicate a method should be called
-whenever the Controller Service is enabled. Any method that has this annotation will be
-called every time a user enables the service. Additionally, each time that NiFi
-is restarted, if NiFi is configured to "auto-resume state" and the service
-is enabled, the method will be invoked.
-
-If a method with this annotation throws a Throwable, a log message and
-bulletin will be issued for the component. In this event, the service will
-remain in an 'ENABLING' state and will not be usable. All methods with this
-annotation will then be called again after a delay. The service will not be
-made available for use until all methods with this annotation have returned
-without throwing anything.
-
-Methods using this annotation must take either 0 arguments or a single argument
-of type `org.apache.nifi.controller.ConfigurationContext`.
-
-Note that this annotation will be ignored if applied to a ReportingTask or
-Processor. For a Controller Service, enabling and disabling are considered
-lifecycle events, as the action makes them usable or unusable by other
-components. However, for a Processor and a Reporting Task, these are not
-lifecycle events but rather a mechanism to allow a component to be excluded
-when starting or stopping a group of components.
-
-==== @OnRemoved
-
-The `@OnRemoved` annotation causes a method to be invoked before a
-component is removed from the flow.
-This allows resources to be cleaned up before removing a component.
-Methods with this annotation must take zero arguments.
-If a method with this annotation throws an Exception, the component
-will still be removed.
-
-==== @OnScheduled
-
-This annotation indicates that a method should be called every time
-the component is scheduled to run. Because ControllerServices
-are not scheduled, using this annotation on a ControllerService does
-not make sense and will not be honored. It should be
-used only for Processors and Reporting Tasks. If any method with this
-annotation throws an Exception, other methods with this
-annotation will not be invoked, and a notification will be presented
-to the user. In this case, methods annotated with
-`@OnUnscheduled` are then triggered, followed by methods with the
-`@OnStopped` annotation (during this state, if any of these
-methods throws an Exception, those Exceptions are ignored). The
-component will then yield its execution for some period of time,
-referred to as the "Administrative Yield Duration," which is a value
-that is configured in the `nifi.properties` file. Finally, the
-process will start again, until all of the methods annotated with
-`@OnScheduled` have returned without throwing any Exception.
-Methods with this annotation may take zero arguments or may take a
-single argument. If the single argument variation is used,
-the argument must be of type `ProcessContext` if the component is a
-Processor or `ConfigurationContext` if the component
-is a ReportingTask.
-
-==== @OnUnscheduled
-
-Methods with this annotation will be called whenever a Processor or
-ReportingTask is no longer scheduled to run. At that time, many threads
-may still be active in the Processor's `onTrigger` method. If such a method
-throws an Exception, a log message will be generated, and the
-Exception will be otherwise
-ignored and other methods with this annotation will still be invoked.
-Methods with this annotation may take zero arguments or may take a
-single argument.
-If the single argument variation is used, the argument must be of type
-`ProcessContext` if the component is a Processor or
-`ConfigurationContext` if the
-component is a ReportingTask.
-
-
-==== @OnStopped
-
-Methods with this annotation will be called when a Processor or
-ReportingTask is no longer scheduled to run
-and all threads have returned from the `onTrigger` method. If such a
-method throws an Exception,
-a log message will be generated, and the Exception will otherwise be
-ignored; other methods with
-this annotation will still be invoked.
-Methods with this annotation are permitted to take either 0 or 1 argument. If
-an argument is used, it must be of type ConfigurationContext if the
-component is a ReportingTask or of type ProcessContext if the
-component is a Processor.
-
-
-==== @OnShutdown
-
-Any method that is annotated with the `@OnShutdown` annotation will be
-called when NiFi is successfully
-shut down. If such a method throws an Exception, a log message will be
-generated, and the
-Exception will be otherwise ignored and other methods with this
-annotation will still be invoked.
-Methods with this annotation must take zero arguments. Note: while
-NiFi will attempt to invoke methods
-with this annotation on all components that use it, this is not always
-possible. For example, the process
-may be killed unexpectedly, in which case it does not have a chance to
-invoke these methods. Therefore,
-while methods using this annotation can be used to clean up resources,
-for instance, they should not be
-relied upon for critical business logic.
-
-=== Component Notification
-
-The NiFi API provides notification support through use of Java
-Annotations. The `org.apache.nifi.annotations.notification` package
-contains several annotations for notification management. The following
-annotations may be applied to Java methods in a NiFi component to
-indicate to the framework when the methods should be called. For the
-discussion of Component Notification, we will define a NiFi component
-as a *Processor*, *Controller Service*, or *Reporting Task*.
-
-==== @OnPrimaryNodeStateChange
-
-The `@OnPrimaryNodeStateChange` annotation causes a method to be invoked
-as soon as the state of the Primary Node in a cluster has changed.
-Methods with this annotation should take either no arguments or one
-argument of type `PrimaryNodeState`. The `PrimaryNodeState` provides
-context about what changed so that the component can take appropriate
-action. The `PrimaryNodeState` enumerator has two possible values:
-`ELECTED_PRIMARY_NODE` (the node receiving this
-state has been elected the Primary Node of the NiFi cluster), or
-`PRIMARY_NODE_REVOKED` (the node receiving this state was the Primary
-Node but has now had its Primary Node role revoked).
-
-[[restricted]]
-=== Restricted
-
-A Restricted component is one that can be used to execute arbitrary unsanitized code provided by the operator
-through the NiFi REST API/UI or can be used to obtain or alter data on the NiFi host system using the NiFi OS
-credentials. These components could be used by an otherwise authorized NiFi user to go beyond the intended use of
-the application, escalate privilege, or could expose data about the internals of the NiFi process or the host
-system. All of these capabilities should be considered privileged, and admins should be aware of these
-capabilities and explicitly enable them for a subset of trusted users.
-
-A Processor, Controller Service, or Reporting Task can be marked with the @Restricted annotation. This
-will result in the component being treated as restricted and will require a user to be explicitly added to the
-list of users who can access restricted components. Once a user is permitted to access restricted components,
-they will be allowed to create and modify those components assuming all other permissions are permitted.
-Without access to restricted components, a user will be still be aware these types of components exist but will
-be unable to create or modify them even with otherwise sufficient permissions.
-
-[[state_manager]]
-=== State Manager
-
-From the ProcessContext, ReportingContext, and ControllerServiceInitializationContext, components are
-able to call the `getStateManager()` method. This State Manager is responsible for providing a simple API
-for storing and retrieving state. This mechanism is intended to provide developers with the ability to
-very easily store a set of key/value pairs, retrieve those values, and update them atomically. The state
-can be stored local to the node or across all nodes in a cluster. It is important to note, however, that
-this mechanism is intended only to provide a mechanism for storing very 'simple' state. As such, the API
-simply allows a `Map<String, String>` to be stored and retrieved and for the entire Map to be atomically
-replaced. Moreover, the only implementation that is currently supported for storing cluster-wide state is
-backed by ZooKeeper. As such, the entire State Map must be less than 1 MB in size, after being serialized.
-Attempting to store more than this will result in an Exception being thrown. If the interactions required
-by the Processor for managing state are more complex than this (e.g., large amounts of data must be stored
-and retrieved, or individual keys must be stored and fetched individually) than a different mechanism should
-be used (e.g., communicating with an external database).
-
-
-[[state_scope]]
-==== Scope
-When communicating with the State Manager, all method calls require that a Scope be provided. This Scope will
-either be `Scope.LOCAL` or `Scope.CLUSTER`. If NiFi is run in a cluster, this Scope provides important information
-to the framework about how the operation should occur.
-
-If state as stored using `Scope.CLUSTER`, then all nodes in the cluster will be communicating with the same
-state storage mechanism. If state is stored and retrieved using `Scope.LOCAL`, then each node will see a different
-representation of the state.
-
-It is also worth noting that if NiFi is configured to run as a standalone instance, rather than running in a cluster,
-a scope of `Scope.LOCAL` is always used. This is done in order to allow the developer of a NiFi component to write the code
-in one consistent way, without worrying about whether or not the NiFi instance is clustered. The developer should instead assume
-that the instance is clustered and write the code accordingly.
-
-
-==== Storing and Retrieving State
-
-State is stored using the StateManager's `getState`, `setState`, `replace`, and `clear` methods. All of these methods
-require that a Scope be provided. It should be noted that the state that is stored with the Local scope is entirely different
-than state stored with a Cluster scope. If a Processor stores a value with the key of _My Key_ using the `Scope.CLUSTER` scope,
-and then attempts to retrieve the value using the `Scope.LOCAL` scope, the value retrieved will be `null` (unless a value was
-also stored with the same key using the `Scope.CLUSTER` scope). Each Processor's state, is stored in isolation from other
-Processors' state.
-
-It follows, then, that two Processors cannot share the same state. There are, however, some circumstances in which it is very
-necessary to share state between two Processors of different types, or two Processors of the same type. This can be accomplished
-by using a Controller Service. By storing and retrieving state from a Controller Service, multiple Processors can use the same
-Controller Service and the state can be exposed via the Controller Service's API.
-
-
-==== Unit Tests
-NiFi's Mock Framework provides an extensive collection of tools to perform unit testing of Processors. Processor unit tests typically
-begin with the `TestRunner` class. As a result, the `TestRunner` class contains a `getStateManager` method of its own. The StateManager
-that is returned, however, is of a specific type: `MockStateManager`. This implementation provides several methods in addition to those
-defined by the `StateManager` interface, that help developers to more easily develop unit tests.
-
-First, the `MockStateManager` implements the `StateManager` interface, so all of the state can be examined from within a unit test.
-Additionally, the `MockStateManager` exposes a handful of `assert*` methods to perform assertions that the State is set as expected.
-The `MockStateManager` also provides the ability to indicate that the unit test should immediately fail if state is updated for a particular
-`Scope`.
-
-
-
-
-=== Reporting Processor Activity
-
-Processors are responsible for reporting their activity so that users
-are able to understand what happens
-to their data. Processors should log events via the ComponentLog,
-which is accessible via the InitializationContext
-or by calling the `getLogger` method of `AbstractProcessor`.
-
-Additionally, Processors should use the `ProvenanceReporter`
-interface, obtained via the ProcessSession's
-`getProvenanceReporter` method. The ProvenanceReporter should be used
-to indicate any time that content is
-received from an external source or sent to an external location. The
-ProvenanceReporter also has methods for
-reporting when a FlowFile is cloned, forked, or modified, and when
-multiple FlowFiles are merged into a single FlowFile
-as well as associating a FlowFile with some other identifier. However,
-these functions are less critical to report, as
-the framework is able to detect these things and emit appropriate
-events on the Processor's behalf. Yet, it is a best practice
-for the Processor developer to emit these events, as it becomes
-explicit in the code that these events are being emitted, and
-the developer is able to provide additional details to the events,
-such as the amount of time that the action took or
-pertinent information about the action that was taken. If the
-Processor emits an event, the framework will not emit a duplicate
-event. Instead, it always assumes that the Processor developer knows
-what is happening in the context of the Processor
-better than the framework does. The framework may, however, emit a
-different event. For example, if a Processor modifies both the
-content of a FlowFile and its attributes and then emits only an
-ATTRIBUTES_MODIFIED event, the framework will emit a CONTENT_MODIFIED
-event. The framework will not emit an ATTRIBUTES_MODIFIED event if any
-other event is emitted for that FlowFile (either by the
-Processor or the framework). This is due to the fact that all
-<<provenance_events>> know about the attributes of the FlowFile before the
-event occurred as well as those attributes that occurred as a result
-of the processing of that FlowFile, and as a result the
-ATTRIBUTES_MODIFIED is generally considered redundant and would result
-in a rendering of the FlowFile lineage being very verbose.
-It is, however, acceptable for a Processor to emit this event along
-with others, if the event is considered pertinent from the
-perspective of the Processor.
-
-
-
-
-
-
-
-== Documenting a Component
-
-NiFi attempts to make the user experience as simple and convenient as
-possible by providing significant amount of documentation
-to the user from within the NiFi application itself via the User
-Interface. In order for this to happen, of course, Processor
-developers must provide that documentation to the framework. NiFi
-exposes a few different mechanisms for supplying documentation to
-the framework.
-
-
-=== Documenting Properties
-
-Individual properties can be documented by calling the `description`
-method of a PropertyDescriptor's builder as such:
-
-[source,java]
-----
-public static final PropertyDescriptor MY_PROPERTY = new PropertyDescriptor.Builder()
-  .name("My Property")
-  .description("Description of the Property")
-  ...
-  .build();
-----
-
-If the property is to provide a set of allowable values, those values
-are presented to the user in a drop-down field in the UI.
-Each of those values can also be given a description:
-
-[source,java]
-----
-public static final AllowableValue EXTENSIVE = new AllowableValue("Extensive", "Extensive",
-	"Everything will be logged - use with caution!");
-public static final AllowableValue VERBOSE = new AllowableValue("Verbose", "Verbose",
-	"Quite a bit of logging will occur");
-public static final AllowableValue REGULAR = new AllowableValue("Regular", "Regular",
-	"Typical logging will occur");
-
-public static final PropertyDescriptor LOG_LEVEL = new PropertyDescriptor.Builder()
-  .name("Amount to Log")
-  .description("How much the Processor should log")
-  .allowableValues(REGULAR, VERBOSE, EXTENSIVE)
-  .defaultValue(REGULAR.getValue())
-  ...
-  .build();
-----
-
-
-=== Documenting Relationships
-
-Processor Relationships are documented in much the same way that
-properties are - by calling the `description` method of a
-Relationship's builder:
-
-[source,java]
-----
-public static final Relationship MY_RELATIONSHIP = new Relationship.Builder()
-  .name("My Relationship")
-  .description("This relationship is used only if the Processor fails to process the data.")
-  .build();
-----
-
-
-=== Documenting Capability and Keywords
-
-The `org.apache.nifi.annotations.documentation` package provides Java
-annotations that can be used to document components. The
-CapabilityDescription
-annotation can be added to a Processor, Reporting Task, or Controller
-Service and is intended to provide a brief description of the
-functionality
-provided by the component. The Tags annotation has a `value` variable
-that is defined to be an Array of Strings. As such, it is used
-by providing multiple values as a comma-separated list of ++String++s
-with curly braces. These values are then incorporated into the UI by
-allowing
-users to filter the components based on a tag (i.e., a keyword).
-Additionally, the UI provides a tag cloud that allows users to select
-the tags that
-they want to filter by. The tags that are largest in the cloud are
-those tags that exist the most on the components in that instance of
-NiFi. An
-example of using these annotations is provided below:
-
-[source, java]
-----
-@Tags({"example", "documentation", "developer guide", "processor", "tags"})
-@CapabilityDescription("Example Processor that provides no real functionality but is provided" +
-	" for an example in the Developer Guide")
-public static final ExampleProcessor extends Processor {
-    ...
-}
-----
-
-=== Documenting FlowFile Attribute Interaction
-
-Many times a processor will expect certain FlowFile attributes be set on in-bound FlowFiles in order
-for the processor to function properly.  In other cases a processor may update or
-create FlowFile attributes on the out-bound FlowFile.  Processor developers may document both of these
-behaviors using the `ReadsAttribute` and `WritesAttribute` documentation annotations.  These attributes are used to generate documentation
-that gives users a better understanding of how a processor will interact with the flow.
-
-Note: Because Java 7 does not support
-repeated annotations on a type, you may need to use `ReadsAttributes` and `WritesAttributes` to indicate
-that a processor reads or writes multiple FlowFile attributes.  This annotation can only be applied to Processors.  An example is listed below:
-
-[source, java]
-----
-@WritesAttributes({ @WritesAttribute(attribute = "invokehttp.status.code", description = "The status code that is returned"),
-        @WritesAttribute(attribute = "invokehttp.status.message", description = "The status message that is returned"),
-        @WritesAttribute(attribute = "invokehttp.response.body", description = "The response body"),
-        @WritesAttribute(attribute = "invokehttp.request.url", description = "The request URL"),
-        @WritesAttribute(attribute = "invokehttp.tx.id", description = "The transaction ID that is returned after reading the response"),
-        @WritesAttribute(attribute = "invokehttp.remote.dn", description = "The DN of the remote server") })
-public final class InvokeHTTP extends AbstractProcessor {
-----
-
-=== Documenting Related Components
-Often Processors and ControllerServices are related to one another.  Sometimes it is a put/get relation as in `PutFile` and `GetFile`.
-Sometimes a Processor uses a ControllerService like `InvokeHTTP` and `StandardSSLContextService`.  Sometimes one ControllerService uses another
-like `DistributedMapCacheClientService` and `DistributedMapCacheServer`.  Developers of these extension points may relate these
-different components using the `SeeAlso` tag.  This annotation links these components in the documentation.
-`SeeAlso` can be applied to Processors, ControllerServices and ReportingTasks.  An example of how to do this is listed below:
-
-[source, java]
-----
-@SeeAlso(GetFile.class)
-public class PutFile extends AbstractProcessor {
-----
-
-=== Advanced Documentation
-
-When the documentation methods above are not sufficient, NiFi provides
-the ability to expose more advanced documentation to the user via the
-"Usage" documentation. When a user right-clicks on a Processor, NiFi
-provides a "Usage" menu item in the context menu. Additionally, the
-UI exposes a "Help" link in the top-right corner, from which the same
-Usage information can be found.
-
-The advanced documentation of a Processor is provided as an HTML file named `additionalDetails.html`.
-This file should exist within a directory whose name is the
-fully-qualified
-name of the Processor, and this directory's parent should be named
-`docs` and exist in the root of the Processor's jar.
-This file will be linked from a generated HTML file that will contain
-all the Capability, Keyword, PropertyDescription and Relationship information,
-so it will not be necessary to duplicate that.  This is a place
-to provide a rich explanation of what this Processor is doing, what kind of
-data it expects and produces, and what FlowFile attributes it expects and produces.
-Because this documentation is in an HTML format, you may include images and tables
-to best describe this component.  The same methods can be used to provide advanced
-documentation for Processors, ControllerServices and ReportingTasks.
-
-[[provenance_events]]
-== Provenance Events
-
-The different event types for provenance reporting are:
-
-[options="header"]
-|======================
-|Provenance Event        |Description
-|ADDINFO                 |Indicates a provenance event for adding additional information such as new linkage to a new URI or UUID
-|ATTRIBUTES_MODIFIED     |Indicates that a FlowFile's attributes were modified in some way. This event is not needed when another event is reported at the same time, as the other event will already contain all FlowFile attributes
-|CLONE                   |Indicates that a FlowFile is an exact duplicate of its parent FlowFile
-|CONTENT_MODIFIED        |Indicates that a FlowFile's content was modified in some way. When using this Event Type, it is advisable to provide details about how the content is modified
-|CREATE                  |Indicates that a FlowFile was generated from data that was not received from a remote system or external process
-|DOWNLOAD                |Indicates that the contents of a FlowFile were downloaded by a user or external entity
-|DROP                    |Indicates a provenance event for the conclusion of an object's life for some reason other than object expiration
-|EXPIRE                  |Indicates a provenance event for the conclusion of an object's life due to the object not being processed in a timely manner
-|FETCH                   |Indicates that the contents of a FlowFile were overwritten using the contents of some external resource. This is similar to the RECEIVE event but varies in that RECEIVE events are intended to be used as the event that introduces the FlowFile into the system, whereas FETCH is used to indicate that the contents of an existing FlowFile were overwritten
-|FORK                    |Indicates that one or more FlowFiles were derived from a parent FlowFile
-|JOIN                    |Indicates that a single FlowFile is derived from joining together multiple parent FlowFiles
-|RECEIVE                 |Indicates a provenance event for receiving data from an external process. This Event Type is expected to be the first event for a FlowFile. As such, a Processor that receives data from an external source and uses that data to replace the content of an existing FlowFile should use the FETCH event type, rather than the RECEIVE event type
-|REPLAY                  |Indicates a provenance event for replaying a FlowFile. The UUID of the event indicates the UUID of the original FlowFile that is being replayed. The event contains one Parent UUID that is also the UUID of the FlowFile that is being replayed and one Child UUID that is the UUID of the a newly created FlowFile that will be re-queued for processing
-|ROUTE                   |Indicates that a FlowFile was routed to a specified relationship and provides information about why the FlowFile was routed to this relationship
-|SEND                    |Indicates a provenance event for sending data to an external process
-|UNKNOWN                 |Indicates that the type of provenance event is unknown because the user who is attempting to access the event is not authorized to know the type
-|======================
-
-
-== Common Processor Patterns
-
-While there are many different Processors available to NiFi users, the
-vast majority of them fall into
-one of several common design patterns. Below, we discuss these
-patterns, when the patterns are appropriate,
-reasons we follow these patterns, and things to watch out for when
-applying such patterns. Note that the patterns
-and recommendations discussed below are general guidelines and not
-hardened rules.
-
-
-[[ingress]]
-=== Data Ingress
-
-A Processor that ingests data into NiFi has a single Relationship
-named `success`. This Processor generates
-new FlowFiles via the ProcessSession `create` method and does not pull
-FlowFiles from incoming Connections.
-The Processor name starts with "Get" or "Listen," depending on whether
-it polls an external source or exposes
-some interface to which external sources can connect. The name ends
-with the protocol used for communications.
-Processors that follow this pattern include `GetFile`, `GetSFTP`,
-`ListenHTTP`, and `GetHTTP`.
-
-This Processor may create or initialize a Connection Pool in a method
-that uses the  `@OnScheduled` annotation.
-However, because communications problems may prevent connections from
-being established or cause connections
-to be terminated, connections themselves are not created at this
-point. Rather, the connections are
-created or leased from the pool in the `onTrigger` method.
-
-The `onTrigger` method of this Processor begins by leasing a
-connection from the Connection Pool, if possible,
-or otherwise creates a connection to the external service. When no
-data is available from the
-external source, the `yield` method of the ProcessContext is called by
-the Processor and the method returns so
-that this Processor avoids continually running and depleting resources
-without benefit. Otherwise, this
-Processor then creates a FlowFile via the ProcessSession's `create`
-method and assigns an appropriate
-filename and path to the FlowFile (by adding the `filename` and `path`
-attributes), as well as any other
-attributes that may be appropriate. An OutputStream to the FlowFile's content is
-obtained via the ProcessSession's `write` method, passing a new
-OutputStreamCallback (which is usually
-an anonymous inner class). From within this callback, the Processor is
-able to write to the FlowFile and streams
-the content from the external resource to the FlowFile's OutputStream.
-If the desire is to write the entire contents
-of an InputStream to the FlowFile, the `importFrom` method of
-ProcessSession may be more convenient to use than the
-`write` method.
-
-When this Processor expects to receive many small files, it may be
-advisable to create several FlowFiles from a
-single session before committing the session. Typically, this allows
-the Framework to treat the content of the
-newly created FlowFiles much more efficiently.
-
-This Processor generates a Provenance event indicating that it has
-received data and specifies from
-where the data came. This Processor should log the creation of the
-FlowFile so that the FlowFile's
-origin can be determined by analyzing logs, if necessary.
-
-This Processor acknowledges receipt of the data and/or removes the
-data from the external source in order
-to prevent receipt of duplicate files. *This is done only after the
-ProcessSession by which the FlowFile was
-created has been committed!* Failure to adhere to this principle may
-result in data loss, as restarting NiFi
-before the session has been committed will result in the temporary
-file being deleted. Note, however, that it
-is possible using this approach to receive duplicate data because the
-application could be restarted after
-committing the session and before acknowledging or removing the data
-from the external source. In general, though,
-potential data duplication is preferred over potential data loss. The
-connection is finally returned or added to
-the Connection Pool, depending on whether the connection was leased
-from the Connection Pool to begin with or
-was created in the `onTrigger` method.
-
-If there is a communications problem, the connection is typically
-terminated and not returned (or added) to
-the Connection Pool. Connections to remote systems are torn down and
-the Connection Pool shutdown in a method
-annotated with the `@OnStopped` annotation so that resources can be reclaimed.
-
-
-=== Data Egress
-
-A Processor that publishes data to an external source has two
-Relationships: `success` and `failure`. The
-Processor name starts with "Put" followed by the protocol that is used
-for data transmission. Processors
-that follow this pattern include `PutEmail`, `PutSFTP`, and
-`PostHTTP` (note that the name does not
-begin with "Put" because this would lead to confusion, since PUT and
-POST have special meanings when dealing with
-HTTP).
-
-This Processor may create or initialize a Connection Pool in a method
-that uses the  `@OnScheduled` annotation.
-However, because communications problems may prevent connections from
-being established or cause connections
-to be terminated, connections themselves are not created at this
-point. Rather, the connections are
-created or leased from the pool in the `onTrigger` method.
-
-The `onTrigger` method first obtains a FlowFile from the
-ProcessSession via the `get` method. If no FlowFile is
-available, the method returns without obtaining a connection to the
-remote resource.
-
-If at least one FlowFile is available, the Processor obtains a
-connection from the Connection Pool, if possible,
-or otherwise creates a new connection. If the Processor is neither
-able to lease a connection from the Connection Pool
-nor create a new connection, the FlowFile is routed to `failure`, the
-event is logged, and the method returns.
-
-If a connection was obtained, the Processor obtains an InputStream to
-the FlowFile's content by invoking the
-`read` method on the ProcessSession and passing an InputStreamCallback
-(which is often an anonymous inner class)
-and from within that callback transmits the contents of the FlowFile
-to the destination. The event is logged
-along with the amount of time taken to transfer the file and the data
-rate at which the file was transferred.
-A SEND event is reported to the ProvenanceReporter by obtaining the
-reporter from the ProcessSession via the
-`getProvenanceReporter` method and calling the `send` method on the
-reporter. The connection is returned or added
-to the Connection Pool, depending on whether the connection was leased
-from the pool or newly created by the
-`onTrigger` method.
-
-If there is a communications problem, the connection is typically
-terminated and not returned (or added) to
-the Connection Pool. If there is an issue sending the data to the
-remote resource, the desired approach for handling the
-error depends on a few considerations. If the issue is related to a
-network condition, the FlowFile is generally
-routed to `failure`. The FlowFile is not penalized because there is
-not necessary a problem with the data. Unlike the
-case of the <<ingress>> Processor, we typically do not call `yield` on
-the ProcessContext. This is because in the case of
-ingest, the FlowFile does not exist until the Processor is able to
-perform its function. However, in the case of a Put Processor,
-the DataFlow Manager may choose to route `failure` to a different
-Processor. This can allow for a "backup" system to be
-used in the case of problems with one system or can be used for load
-distribution across many systems.
-
-If a problem occurs that is data-related, one of two approaches should
-be taken. First, if the problem is likely to
-sort itself out, the FlowFile is penalized and then routed to
-`failure`. This is the case, for instance, with PutFTP,
-when a FlowFile cannot be transferred because of a file naming
-conflict. The presumption is that the file will eventually
-be removed from the directory so that the new file can be transferred.
-As a result, we penalize the FlowFile and route to
-`failure` so that we can try again later. In the other case, if there
-is an actual problem with the data (such as the data does
-not conform to some required specification), a different approach may
-be taken. In this case, it may be advantageous
-to break apart the `failure` relationship into a `failure` and a
-`communications failure` relationship. This allows the
-DataFlow Manager to determine how to handle each of these cases
-individually. It is important in these situations to document
-well the differences between the two Relationships by clarifying it in
-the "description" when creating the Relationship.
-
-Connections to remote systems are torn down and the Connection Pool
-shutdown in a method
-annotated with `@OnStopped` so that resources can be reclaimed.
-
-
-=== Route Based on Content (One-to-One)
-
-A Processor that routes data based on its content will take one of two
-forms: Route an incoming FlowFile to exactly
-one destination, or route incoming data to 0 or more destinations.
-Here, we will discuss the first case.
-
-This Processor has two relationships: `matched` and `unmatched`. If a
-particular data format is expected, the Processor
-will also have a `failure` relationship that is used when the input is
-not of the expected format. The Processor exposes
-a Property that indicates the routing criteria.
-
-If the Property that specifies routing criteria requires processing,
-such as compiling a Regular Expression, this processing
-is done in a method annotated with `@OnScheduled`, if possible. The
-result is then stored in a member variable that is marked
-as `volatile`.
-
-The `onTrigger` method obtains a single FlowFile. The method reads the
-contents of the FlowFile via the ProcessSession's `read`
-method, evaluating the Match Criteria as the data is streamed. The
-Processor then determines whether the FlowFile should be
-routed to `matched` or `unmatched` based on whether or not the
-criteria matched, and routes the FlowFile to the appropriate
-relationship.
-
-The Processor then emits a Provenance ROUTE event indicating which
-Relationship to which the Processor routed the FlowFile.
-
-This Processor is annotated with the `@SideEffectFree` and
-`@SupportsBatching` annotations from the `org.apache.nifi.annotations.behavior`
-package.
-
-
-=== Route Based on Content (One-to-Many)
-
-If a Processor will route a single FlowFile to potentially many
-relationships, this Processor will be slightly different than
-the above-described Processor for Routing Data Based on Content. This
-Processor typically has Relationships that are dynamically
-defined by the user as well as an `unmatched` relationship.
-
-In order for the user to be able to define additionally Properties,
-the `getSupportedDynamicPropertyDescriptor` method must be
-overridden. This method returns a PropertyDescriptor with the supplied
-name and an applicable Validator to ensure that the
-user-specified Matching Criteria is valid.
-
-In this Processor, the Set of Relationships that is returned by the
-`getRelationships` method is a member variable that is
-marked `volatile`. This Set is initially constructed with a single
-Relationship named `unmatched`. The `onPropertyModified` method
-is overridden so that when a Property is added or removed, a new
-Relationship is created with the same name. If the Processor has
-Properties that are not user-defined, it is important to check if the
-specified Property is user-defined. This can be achieved by
-calling the `isDynamic` method of the PropertyDescriptor that is
-passed to this method. If this Property is dynamic,
-a new Set of Relationships is then created, and the previous set of
-Relationships is copied into it. This new Set
-either has the newly created Relationship added to it or removed from
-it, depending on whether a new Property was added
-to the Processor or a Property was removed (Property removal is
-detected by check if the third argument to this function is `null`).
-The member variable holding the Set of Relationships is then updated
-to point to this new Set.
-
-If the Properties that specify routing criteria require processing,
-such as compiling a Regular Expression, this processing is done
-in a method annotated with `@OnScheduled`, if possible. The result is
-then stored in a member variable that is marked as `volatile`.
-This member variable is generally of type `Map` where the key is of
-type `Relationship` and the value's type is defined by the result of
-processing the property value.
-
-The `onTrigger` method obtains a FlowFile via the `get` method of
-ProcessSession. If no FlowFile is available, it returns immediately.
-Otherwise, a Set of type Relationship is created. The method reads the
-contents of the FlowFile via the ProcessSession's `read` method,
-evaluating each of the Match Criteria as the data is streamed. For any
-criteria that matches, the relationship associated with that Match
-Criteria is added to the Set of Relationships.
-
-After reading the contents of the FlowFile, the method checks if the
-Set of Relationships is empty. If so, the original FlowFile has
-an attribute added to it to indicate the Relationship to which it was
-routed and is routed to the `unmatched`. This is logged, a
-Provenance ROUTE event is emitted, and the method returns. If the size
-of the Set is equal to 1, the original FlowFile has an attribute
-added to it to indicate the Relationship  to which it was routed and
-is routed to the Relationship specified by the entry in the Set.
-This is logged, a Provenance ROUTE event is emitted for the FlowFile,
-and the method returns.
-
-In the event that the Set contains more than 1 Relationship, the
-Processor creates a clone of the FlowFile for each Relationship,
-except
-for the first. This is done via the `clone` method of the
-ProcessSession. There is no need to report a CLONE Provenance Event,
-as the
-framework will handle this for you. The original FlowFile and each
-clone are routed to their appropriate Relationship with attribute
-indicating the name of the Relationship. A Provenance ROUTE event is
-emitted for each FlowFile. This is logged, and the method returns.
-
-This Processor is annotated with the `@SideEffectFree` and
-`@SupportsBatching` annotations from the
-`org.apache.nifi.annotations.behavior`
-package.
-
-
-=== Route Streams Based on Content (One-to-Many)
-
-The previous description of Route Based on Content (One-to-Many)
-provides an abstraction
-for creating a very powerful Processor. However, it assumes that each
-FlowFile will be routed
-in its entirety to zero or more Relationships. What if the incoming
-data format is a "stream" of
-many different pieces of information - and we want to send different
-pieces of this stream to
-different Relationships? For example, imagine that we want to have a
-RouteCSV Processor such that
-it is configured with multiple Regular Expressions. If a line in the
-CSV file matches a Regular
-Expression, that line should be included in the outbound FlowFile to
-the associated relationship.
-If a Regular Expression is associated with the Relationship
-"has-apples" and that Regular Expression
-matches 1,000 of the lines in the FlowFile, there should be one outbound
-FlowFile for the "has-apples" relationship that has 1,000 lines in it.
-If a different Regular Expression
-is associated with the Relationship "has-oranges" and that Regular
-Expression matches 50 lines in the
-FlowFile, there should be one outbound FlowFile for the "has-oranges"
-relationship that has 50 lines in it.
-I.e., one FlowFile comes in and two FlowFiles come out. The two
-FlowFiles may contain some of the same lines
-of text from the original FlowFile, or they may be entirely different.
-This is the type of Processor that
-we will discuss in this section.
-
-This Processor's name starts with "Route" and ends with the name of
-the data type that it routes. In our
-example here, we are routing CSV data, so the Processor is named
-RouteCSV. This Processor supports dynamic
-properties. Each user-defined property has a name that maps to the
-name of a Relationship. The value of
-the Property is in the format necessary for the "Match Criteria." In
-our example, the value of the property
-must be a valid Regular Expression.
-
-This Processor maintains an internal `ConcurrentMap` where the key is
-a `Relationship` and the value is of
-a type dependent on the format of the Match Criteria. In our example,
-we would maintain a
-`ConcurrentMap<Relationship, Pattern>`. This Processor overrides the
-`onPropertyModified` method.
-If the new value supplied to this method (the third argument) is null,
-the Relationship whose name is
-defined by the property name (the first argument) is removed from the
-ConcurrentMap. Otherwise, the new value
-is processed (in our example, by calling `Pattern.compile(newValue)`)
-and this value is added to the ConcurrentMap
-with the key again being the Relationship whose name is specified by
-the property name.
-
-This Processor will override the `customValidate` method. In this
-method, it will retrieve all Properties from
-the `ValidationContext` and count the number of PropertyDescriptors
-that are dynamic (by calling `isDynamic()`
-on the PropertyDescriptor). If the number of dynamic
-PropertyDescriptors is 0, this indicates that the user
-has not added any Relationships, so the Processor returns a
-`ValidationResult` indicating that the Processor
-is not valid because it has no Relationships added.
-
-The Processor returns all of the Relationships specified by the user
-when its `getRelationships` method is
-called and will also return an `unmatched` Relationship. Because this
-Processor will have to read and write to the
-Content Repository (which can be relatively expensive), if this
-Processor is expected to be used for very high
-data volumes, it may be advantageous to add a Property that allows the
-user to specify whether or not they care
-about the data that does not match any of the Match Criteria.
-
-When the `onTrigger` method is called, the Processor obtains a
-FlowFile via `ProcessSession.get`. If no data
-is available, the Processor returns. Otherwise, the Processor creates
-a `Map<Relationship, FlowFile>`. We will
-refer to this Map as `flowFileMap`. The Processor reads the incoming
-FlowFile by calling `ProcessSession.read`
-and provides an `InputStreamCallback`.
-From within the Callback, the Processor reads the first piece of data
-from the FlowFile. The Processor then
-evaluates each of the Match Criteria against this piece of data. If a
-particular criteria (in our example,
-a Regular Expression) matches, the Processor obtains the FlowFile from
-`flowFileMap` that belongs to the appropriate
-Relationship. If no FlowFile yet exists in the Map for this
-Relationship, the Processor creates a new FlowFile
-by calling `session.create(incomingFlowFile)` and then adds the new
-FlowFile to `flowFileMap`. The Processor then
-writes this piece of data to the FlowFile by calling `session.append`
-with an `OutputStreamCallback`. From within
-this OutputStreamCallback, we have access to the new FlowFile's
-OutputStream, so we are able to write the data
-to the new FlowFile. We then return from the OutputStreamCallback.
-After iterating over each of the Match Criteria,
-if none of them match, we perform the same routines as above for the
-`unmatched` relationship (unless the user
-configures us to not write out unmatched data). Now that we have
-called `session.append`, we have a new version of
-the FlowFile. As a result, we need to update our `flowFileMap` to
-associate the Relationship with the new FlowFile.
-
-If at any point, an Exception is thrown, we will need to route the
-incoming FlowFile to `failure`. We will also
-need to remove each of the newly created FlowFiles, as we won't be
-transferring them anywhere. We can accomplish
-this by calling `session.remove(flowFileMap.values())`. At this point,
-we will log the error and return.
-
-Otherwise, if all is successful, we can now iterate through the
-`flowFileMap` and transfer each FlowFile to the
-corresponding Relationship. The original FlowFile is then either
-removed or routed to an `original` relationship.
-For each of the newly created FlowFiles, we also emit a Provenance
-ROUTE event indicating which Relationship
-the FlowFile went to. It is also helpful to include in the details of
-the ROUTE event how many pieces of information
-were included in this FlowFile. This allows DataFlow Managers to
-easily see when looking at the Provenance
-Lineage view how many pieces of information went to each of the
-relationships for a given input FlowFile.
-
-Additionally, some Processors may need to "group" the data that is
-sent to each Relationship so that each FlowFile
-that is sent to a relationship has the same value. In our example, we
-may wan to allow the Regular Expression
-to have a Capturing Group and if two different lines in the CSV match
-the Regular Expression but have different
-values for the Capturing Group, we want them to be added to two
-different FlowFiles. The matching value could then
-be added to each FlowFile as an Attribute. This can be accomplished by
-modifying the `flowFileMap` such that
-it is defined as `Map<Relationship, Map<T, FlowFile>>` where `T` is
-the type of the Grouping Function (in our
-example, the Group would be a `String` because it is the result of
-evaluating a Regular Expression's
-Capturing Group).
-
-
-
-=== Route Based on Attributes
-
-This Processor is almost identical to the Route Data Based on Content
-Processors described above. It takes two different forms: One-to-One
-and
-One-to-Many, as do the Content-Based Routing Processors. This
-Processor, however, does not make any call to ProcessSession's `read`
-method,
-as it does not read FlowFile content. This Processor is typically very
-fast, so the `@SupportsBatching` annotation can be very important
-in this case.
-
-
-
-=== Split Content (One-to-Many)
-
-This Processor generally requires no user configuration, with the
-exception of the size of each Split to create. The `onTrigger` method
-obtains
-a FlowFile from its input queues. A List of type FlowFile is created.
-The original FlowFile is read via the ProcessSession's `read` method,
-and an InputStreamCallback is used. Within the InputStreamCallback,
-the content is read until a point is reached at which the FlowFile
-should be
-split. If no split is needed, the Callback returns, and the original
-FlowFile is routed to `success`. In this case, a Provenance ROUTE
-event
-is emitted. Typically, ROUTE events are not emitted when routing a
-FlowFile to `success` because this generates a very verbose lineage
-that
-becomes difficult to navigate. However, in this case,the event is
-useful because we would otherwise expect a FORK event and the absence
-of
-any event is likely to cause confusion. The fact that the FlowFile was
-not split but was instead transferred to `success` is logged, and the
-method returns.
-
-If a point is reached at which a FlowFile needs to be split, a new
-FlowFile is created via the ProcessSession's `create(FlowFile)` method
-or the
-`clone(FlowFile, long, long)` method. The next section of code depends
-on whether the `create` method is used or the `clone` method is used.
-Both methods are described below. Which solution is appropriate must
-be determined on a case-by-case basis.
-
-The Create Method is most appropriate when the data will not be
-directly copied from the original FlowFile to the new FlowFile.
-For example, if only some of the data will be copied, or if the data
-will be modified in some way before being copied to the new
-FlowFile, this method is necessary. However, if the content of the new
-FlowFile will be an exact copy of a portion of the original
-FlowFile, the Clone Method is much preferred.
-
-*Create Method*
-If using the `create` method, the method is called with the original
-FlowFile as the argument so that the newly created FlowFile will
-inherit
-the attributes of the original FlowFile and a Provenance FORK event
-will be created by the framework.
-
-The code then enters a `try/finally` block. Within the `finally`
-block, the newly created FlowFile is added to the List of FlowFiles
-that have
-been created. This is done within a `finally` block so that if an
-Exception is thrown, the newly created FlowFile will be appropriately
-cleaned up.
-Within the `try` block, the callback initiates a new callback by
-calling the ProcessSession's `write` method with an
-OutputStreamCallback.
-The appropriate data is then copied from the InputStream of the
-original FlowFile to the OutputStream for the new FlowFile.
-
-*Clone Method*
-If the content of the newly created created FlowFile is to be only a
-contiguous subset of the bytes of the original FlowFile, it is
-preferred
-to use the `clone(FlowFile, long, long)` method instead of the
-`create(FlowFile)` method of the ProcessSession. In this case, the
-offset
-of the original FlwoFile at which the new FlowFile's content should
-begin is passed as the second argument to the `clone` method. The
-length
-of the new FlowFile is passed as the third argument to the `clone`
-method. For example, if the original FlowFile was 10,000 bytes
-and we called `clone(flowFile, 500, 100)`, the FlowFile that would be
-returned to us would be identical to `flowFile` with respect to its
-attributes. However, the content of the newly created FlowFile would
-be 100 bytes in length and would start at offset 500 of the original
-FlowFile. That is, the contents of the newly created FlowFile would be
-the same as if you had copied bytes 500 through 599 of the original
-FlowFile.
-
-After the clone has been created, it is added to the List of FlowFiles.
-
-This method is much more highly preferred than the Create method, when
-applicable,
-because no disk I/O is required. The framework is able to simply
-create a new FlowFile
-that references a subset of the original FlowFile's content, rather
-than actually copying
-the data. However, this is not always possible. For example, if header
-information must be copied
-from the beginning of the original FlowFile and added to the beginning
-of each Split,
-then this method is not possible.
-
-
-*Both Methods*
-Regardless of whether the Clone Method or the Create Method is used,
-the following is applicable:
-
-If at any point in the InputStreamCallback, a condition is reached in
-which processing cannot continue
-(for example, the input is malformed), a `ProcessException` should be
-thrown. The call to the
-ProcessSession's `read` method is wrapped in a `try/catch` block
-where `ProcessException` is
-caught. If an Exception is caught, a log message is generated
-explaining the error. The List of
-newly created FlowFiles is removed via the ProcessSession's `remove`
-method. The original FlowFile
-is routed to `failure`.
-
-If no problems arise, the original FlowFile is routed to `original`
-and all newly created FlowFiles
-are updated to include the following attributes:
-
-[options="header"]
-|===
-| Attribute Name | Description
-| `split.parent.uuid` | The UUID of the original FlowFile
-| `split.index` | A one-up number indicating which FlowFile in the list this is (the first FlowFile
-				  created will have a value `0`, the second will have a value `1`, etc.)
-| `split.count` | The total number of split FlowFiles that were created
-|===
-
-The newly created FlowFiles are routed to `success`; this event is
-logged; and the method returns.
-
-
-=== Update Attributes Based on Content
-
-This Processor is very similar to the Route Based on Content
-Processors discussed above. Rather than
-routing a FlowFile to `matched` or `unmatched`, the FlowFile is
-generally routed to `success` or `failure`
-and attributes are added to the FlowFile as appropriate. The
-attributes to be added are configured in a
-manner similar to that of the Route Based on Content (One-to-Many),
-with the user defining their own
-properties. The name of the property indicates the name of an
-attribute to add. The value of the
-property indicates some Matching Criteria to be applied to the data.
-If the Matching Criteria matches
-the data, an attribute is added with the name the same as that of the
-Property. The value of the
-attribute is the criteria from the content that matched.
-
-For example, a Processor that evaluates XPath Expressions may allow
-user-defined XPaths to be
-entered. If the XPath matches the content of a FlowFile, that FlowFile
-will have an attribute added with
-the name being equal to that of the Property name and a value equal to
-the textual content of the XML Element or
-Attribute that matched the XPath. The `failure` relationship would
-then be used if the incoming FlowFile
-was not valid XML in this example. The `success` relationship would be
-used regardless of whether or not
-any matches were found. This can then be used to route the FlowFile
-when appropriate.
-
-This Processor emits a Provenance Event of type ATTRIBUTES_MODIFIED.
-
-
-=== Enrich/Modify Content
-
-The Enrich/Modify Content pattern is very common and very generic.
-This pattern is responsible for any
-general content modification. For the majority of cases, this
-Processor is marked with the
-`@SideEffectFree` and `@SupportsBatching` annotations. The Processor
-has any number of required and optional
-Properties, depending on the Processor's function. The Processor
-generally has a `success` and `failure` relationship.
-The `failure` relationship is generally used when the input file is
-not in the expected format.
-
-This Processor obtains a FlowFile and updates it using the
-ProcessSession's `write(StreamCallback)` method
-so that it is able to both read from the FlowFile's content and write
-to the next version of the FlowFile's
-content. If errors are encountered during the callback, the callback
-will throw a `ProcessException`. The
-call to the ProcessSession's `write` method is wrapped in a
-`try/catch` block that catches `ProcessException`
-and routes the FlowFile to failure.
-
-If the callback succeeds, a CONTENT_MODIFIED Provenance Event is emitted.
-
-
-
-== Error Handling
-
-When writing a Processor, there are several different unexpected cases that can occur.
-It is important that Processor developers understand the mechanics of how the NiFi framework
-behaves if Processors do not handle errors themselves, and it's important to understand
-what error handling is expected of Processors. Here, we will discuss how Processors should
-handle unexpected errors during the course of their work.
-
-
-=== Exceptions within the Processor
-
-During the execution of the `onTrigger` method of a Processor, many things can potentially go
-awry. Common failure conditions include:
-
-	- Incoming data is not in the expected format.
-	- Network connections to external services fail.
-	- Reading or writing data to a disk fails.
-	- There is a bug in the Processor or a dependent library.
-
-Any of these conditions can result in an Exception being thrown from the Processor. From the framework
-perspective, there are two types of Exceptions that can escape a Processor: `ProcessException` and
-all others.
-
-If a ProcessException is thrown from the Processor, the framework will assume that this is a failure that
-is a known outcome. Moreover, it is a condition where attempting to process the data again later may
-be successful. As a result, the framework will roll back the session that was being processed and penalize
-the FlowFiles that were being processed.
-
-If any other Exception escapes the Processor, though, the framework will assume that it is a failure that
-was not taken into account by the developer. In this case, the framework will also roll back the session
-and penalize the FlowFiles. However, in this case, we can get into some very problematic cases. For example,
-the Processor may be in a bad state and may continually run, depleting system resources, without providing
-any useful work. This is fairly common, for instance, when a NullPointerException is thrown continually.
-In order to avoid this case, if an Exception other than ProcessException is able to escape the Processor's
-`onTrigger` method, the framework will also "Administratively Yield" the Processor. This means that the
-Processor will not be triggered to run again for some amount of time. The amount of time is configured
-in the `nifi.properties` file but is 10 seconds by default.
-
-
-=== Exceptions within a callback: IOException, RuntimeException
-
-More often than not, when an Exception occurs in a Processor, it occurs from within a callback (I.e.,
-`InputStreamCallback`, `OutputStreamCallback`, or `StreamCallback`). That is, during the processing of a
-FlowFile's content. Callbacks are allowed to throw either `RuntimeException` or `IOException`. In the case
-of RuntimeException, this Exception will propagate back to the `onTrigger` method. In the case of an
-`IOException`, the Exception will be wrapped within a ProcessException and this ProcessException will then
-be thrown from the Framework.
-
-For this reason, it is recommended that Processors that use callbacks do so within a `try/catch` block
-and catch `ProcessException` as well as any other `RuntimeException` that they expect their callback to
-throw. It is *not* recommended that Processors catch the general `Exception` or `Throwable` cases, however.
-This is discouraged for two reasons.
-
-First, if an unexpected RuntimeException is thrown, it is likely a bug
-and allowing the framework to rollback the session will ensure no data loss and ensures that DataFlow Managers
-are able to deal with the data as they see fit by keeping the data queued up in place.
-
-Second, when an IOException is thrown from a callback, there really are two types of IOExceptions: those thrown
-from Processor code (for example, the data is not in the expected format or a network connection fails), and
-those that are thrown from the Content Repository (where the FlowFile content is stored). If the latter is the case,
-the framework will catch this IOException and wrap it into a `FlowFileAccessException`, which extends `RuntimeException`.
-This is done explicitly so that the Exception will escape the `onTrigger` method and the framework can handle this
-condition appropriately. Catching the general Exception prevents this from happening.
-
-
-=== Penalization vs. Yielding
-
-When an issue occurs during processing, the framework exposes two methods to allow Processor developers to avoid performing
-unnecessary work: "penalization" and "yielding." These two concepts can become confusing for developers new to the NiFi API.
-A developer is able to penalize a FlowFile by calling the `penalize(FlowFile)` method of ProcessSession. This causes the
-FlowFile itself to be inaccessible to downstream Processors for a period of time. The amount of time that the FlowFile is
-inaccessible is determined by the DataFlow Manager by setting the "Penalty Duration" setting in the Processor Configuration
-dialog. The default value is 30 seconds. Typically, this is done when a Processor determines that the data cannot be processed
-due to environmental reasons that are expected to sort themselves out. A great example of this is the PutSFTP processor, which
-will penalize a FlowFile if a file already exists on the SFTP server that has the same filename. In this case, the Processor
-penalizes the FlowFile and routes it to failure. A DataFlow Manager can then route failure back to the same PutSFTP Processor.
-This way, if a file exists with the same filename, the Processor will not attempt to send the file again for 30 seconds
-(or whatever period the DFM has configured the Processor to use). In the meantime, it is able to continue to process other
-FlowFiles.
-
-On the other hand, yielding allows a Processor developer to indicate to the framework that it will not be able to perform
-any useful function for some period of time. This commonly happens with a Processor that is communicating with a remote
-resource. If the Processor cannot connect to the remote resource, or if the remote resource is expected to provide data
-but reports that it has none, the Processor should call `yield` on the `ProcessContext` object and then return. By doing
-this, the Processor is telling the framework that it should not waste resources triggering this Processor to run, because
-there's nothing that it can do - it's better to use those resources to allow other Processors to run.
-
-
-=== Session Rollback
-
-Thus far, when we have discussed the `ProcessSession`, we have typically referred to it simply as a mechanism for accessing
-FlowFiles. However, it provides another very important capability, which is transactionality. All methods that are called
-on a ProcessSession happen as a transaction. When we decided to end the transaction, we can do so either by calling
-`commit()` or by calling `rollback()`. Typically, this is handled by the `AbstractProcessor` class: if the `onTrigger` method
-throws an Exception, the AbstractProcessor will catch the Exception, call `session.rollback()`, and then re-throw the Exception.
-Otherwise, the AbstractProcessor will call `commit()` on the ProcessSession.
-
-There are times, however, that developers will want to roll back a session explicitly. This can be accomplished at any time
-by calling the `rollback()` or `rollback(boolean)` method. If using the latter, the boolean indicates whether or not those
-FlowFiles that have been pulled from queues (via the ProcessSession `get` methods) should be penalized before being added
-back to their queues.
-
-When `rollback` is called, any modification that has occurred to the FlowFiles in that session are discarded, to included
-both content modification and attribute modification. Additionally, all Provenance Events are rolled back (with the exception
-of any SEND event that was emitted by passing a value of `true` for the `force` argument). The FlowFiles that were pulled from
-the input queues are then transferred back to the input queues (and optionally penalized) so that they can be processed again.
-
-On the other hand, when the `commit` method is called, the FlowFile's new state is persisted in the FlowFile Repository, and
-any Provenance Events that occurred are persisted in the Provenance Repository. The previous content is destroyed (unless
-another FlowFile references the same piece of content), and the FlowFiles are transferred to the outbound queues so that the
-next Processors can operate on the data.
-
-It is also important to note how this behavior is affected by using the `org.apache.nifi.annotations.behavior.SupportsBatching`
-annotation. If a Processor utilizes this annotation, calls to `ProcessSession.commit` may not take affect immediately. Rather,
-these commits may be batched together in order to provide higher throughput. However, if at any point, the Processor rolls back
-the ProcessSession, all changes since the last call to `commit` will be discarded and all "batched" commits will take affect.
-These "batched" commits are not rolled back.
-
-
-
-
-== General Design Considerations
-
-When designing a Processor, there are a few important design considering to keep in mind. This section of the Developer Guide
-brings to the forefront some of the ideas that a developer should be thinking about when creating a Processor.
-
-=== Consider the User
-
-One of the most important concepts to keep in mind when developing a Processor (or any other component) is the user
-experience that you are creating. It's important to remember that as the developer of such a component, you may have
-important knowledge about the context that others do not have. Documentation should always be supplied so that those
-less familiar with the process are able to use it with ease.
-
-When thinking about the user experience, it is also important to note that consistency is very important. It is best
-to stick with the standard <<naming-convensions>>. This is true for Processor names, Property names and value, Relationship
-names, and any other aspect that the user will experience.
-
-Simplicity is crucial! Avoid adding properties that you don't expect users to understand or change. As developers, we are
-told that hard-coding values is bad. But this sometimes results in developers exposing properties that, when asked for clarification,
-tell users to just leave the default value. This leads to confusion and complexity.
-
-
-=== Cohesion and Reusability
-
-For the sake of making a single, cohesive unit, developers are sometimes tempted to combine several functions into a single Processor.
-This is very true for the case when a Processor expects input data to be in format X so that the Processor can convert the data into
-format Y and send the newly-formatted data to some external service.
-
-Taking this approach of formatting the data for a particular endpoint and then sending the data to that endpoint within the same Processor
-has several drawbacks:
-
-	- The Processor becomes very complex, as it has to perform the data translation task as well as the task of
-	  sending the data to the remote service.
-	- If the Processor is unable to communicate with the remote service, it will route the data to a `failure` Relationship. In this case,
-	  the Processor will be responsible to perform the data translation again. And if it fails again, the translation is done yet again.
-	- If we have five different Processors that translate the incoming data into this new format before sending the data, we have a great
-	  deal of duplicated code. If the schema changes, for instance, many Processors must be updated.
-	- This intermediate data is thrown away when the Processor finishes sending to the remote service. The intermediate data format
-	  may well be useful to other Processors.
-
-In order to avoid these issues, and make Processors more reusable, a Processor should always stick to the principal of "do one thing and do
-it well." Such a Processor should be broken into two separate Processors: one to convert the data from Format X to Format Y, and another
-Processor to send data to the remote resource.
-
-
-[[naming-convensions]]
-=== Naming Conventions
-
-In order to deliver a consistent look and feel to users, it is advisable that Processors keep with standard naming conventions. The following
-is a list of standard conventions that are used:
-
-	- Processors that pull data from a remote system are named Get<Service> or Get<Protocol>, depending on if they poll data from arbitrary
-	  sources over a known Protocol (such as GetHTTP or GetFTP) or if they pull data from a known service (such as GetKafka)
-	- Processors that push data to a remote system are named Put<Service> or Put<Protocol>.
-	- Relationship names are lower-cased and use spaces to delineated words.
-	- Property names capitalize significant words, as would be done with the title of a book.
-
-
-
-=== Processor Behavior Annotations
-
-When creating a Processor, the developer is able to provide hints to the framework about how to utilize the Processor most
-effectively. This is done by applying annotations to the Processor's class. The annotations that can be applied to a
-Processor exist in three sub-packages of `org.apache.nifi.annotations`. Those in the `documentation` sub-package are used
-to provide documentation to the user. Those in the `lifecycle` sub-package instruct the framework which methods should
-be called on the Processor in order to respond to the appropriate life-cycle events. Those in the `behavior` package
-help the framework understand how to interact with the Processor in terms of scheduling and general behavior.
-
-The following annotations from the `org.apache.nifi.annotations.behavior` package can be used to modify how the framework
-will handle your Processor:
-
-	- `EventDriven`: Instructs the framework that the Processor can be scheduled using the Event-Driven scheduling
-		strategy. This strategy is still experimental at this point, but can result in reduced resource utilization
-		on dataflows that do not handle extremely high data rates.
-
-	- `SideEffectFree`: Indicates that the Processor does not have any side effects external to NiFi. As a result, the
-		framework is free to invoke the Processor many times with the same input without causing any unexpected
-		results to occur. This implies idempotent behavior. This can be used by the framework to improve efficiency by
-		performing actions such as transferring a ProcessSession from one Processor to another, such that if
-		a problem occurs many Processors' actions can be rolled back and performed again.
-
-	- `SupportsBatching`: This annotation indicates that it is okay for the framework to batch together multiple
-		ProcessSession commits into a single commit. If this annotation is present, the user will be able to choose
-		whether they prefer high throughput or lower latency in the Processor's Scheduling tab. This annotation should
-		be applied to most Processors, but it comes with a caveat: if the Processor calls `ProcessSession.commit`,
-		there is no guarantee that the data has been safely stored in NiFi's Content, FlowFile, and Provenance Repositories.
-		As a result, it is not appropriate for those Processors that receive data from an external source, commit the session,
-		and then delete the remote data or confirm a transaction with a remote resource.
-
-	- `TriggerSerially`: When this annotation is present, the framework will not allow the user to schedule more than one
-		concurrent thread to execute the `onTrigger` method at a time. Instead, the number of thread ("Concurrent Tasks")
-		will always be set to `1`. This does *not*, however, mean that the Processor does not have to be thread-safe,
-		as the thread that is executing `onTrigger` may change between invocations.
-
-	- `TriggerWhenAnyDestinationAvailable`: By default, NiFi will not schedule a Processor to run if any of its outbound
-		queues is full. This allows back-pressure to be applied all the way a chain of Processors. However, some Processors
-		may need to run even if one of the outbound queues is full. This annotations indicates that the Processor should run
-		if any Relationship is "available." A Relationship is said to be "available" if none of the connections that use
-		that Relationship is full. For example, the DistributeLoad Processor makes use of this annotation. If the "round robin"
-		scheduling strategy is used, the Processor will not run if any outbound queue is full. However, if the "next available"
-		scheduling strategy is used, the Processor will run if any Relationship at all is available and will route FlowFiles
-		only to those relationships that are available.
-
-	- `TriggerWhenEmpty`: The default behavior is to trigger a Processor to run only if its input queue has at least one
-		FlowFile or if the Processor has no input queues (which is typical of a "source" Processor). Applying this annotation
-		will cause the framework to ignore the size of the input queues and trigger the Processor regardless of whether or
-		not there is any data on an input queue. This is useful, for example, if the Processor needs to be triggered to run
-		periodically to time out a network connection.
-
-    - `InputRequirement`: By default, all Processors will allow users to create incoming connections for the Processor, but
-        if the user does not create an incoming connection, the Processor is still valid and can be scheduled to run. For Processors
-        that are expected to be used as a "Source Processor," though, this can be confusing to the user, and the user may attempt to
-        send FlowFiles to that Processor, only for the FlowFiles to queue up without being processed. Conversely, if the Processor
-        expects incoming FlowFiles but does not have an input queue, the Processor will be scheduled to run but will perform no work,
-        as it will receive no FlowFile, and this leads to confusion as well. As a result, we can use the `@InputRequirement` annotation
-        and provide it a value of `INPUT_REQUIRED`, `INPUT_ALLOWED`, or `INPUT_FORBIDDEN`. This provides information to the framework
-        about when the Processor should be made invalid, or whether or not the user should even be able to draw a Connection to the
-        Processor. For instance, if a Processor is annotated with `InputRequirement(Requirement.INPUT_FORBIDDEN)`, then the user will
-        not even be able to create a Connection with that Processor as the destination.
-
-
-=== Data Buffering
-
-An important point to keep in mind is that NiFi provides a generic data processing capability. Data can be in any format. Processors
-are generally scheduled with several threads. A common mistake that developers new to NiFi make is to buffer all the contents of a
-FlowFile in memory. While there are cases when this is required, it should be avoided if at all possible, unless it is well-known
-what format the data is in. For example, a Processor responsible for executing XPath against an XML document will need to load the
-entire contents of the data into memory. This is generally acceptable, as XML is not expected to be extremely large. However, a Processor
-that searches for a specific byte sequence may be used to search files that are hundreds of gigabytes or more. Attempting to load this
-into memory can cause a lot of problems - especially if multiple threads are processing different FlowFiles simultaneously.
-
-Instead of buffering this data into memory, it is advisable to instead evaluate the data as it is streamed from the Content Repository
-(i.e., scan the content from the `InputStream` that is provided to your callback by `ProcessSession.read`). Of course, in this case,
-we don't want to read from the Content Repository for each byte, so we would use a BufferedInputStream or somehow buffer some small
-amount of data, as appropriate.
-
-
-
-
-
-[[controller-services]]
-== Controller Services
-
-The `ControllerService` interface allows developers to share
-functionality and state across the JVM in a clean
-and consistent manner. The interface resembles that of the `Processor`
-interface but does not
-have an `onTrigger` method because Controller Services are not
-scheduled to run periodically, and
-Controller Services do not have Relationships because they are not
-integrated into the flow directly. Rather,
-they are used by Processors, Reporting Tasks, and
-other Controller Services.
-
-[[developing-controller-service]]
-=== Developing a ControllerService
-
-Just like with the Processor interface, the ControllerService
-interface exposes methods for configuration,
-validation, and initialization. These methods are all identical to
-those of the Processor interface
-except that the `initialize` method is passed a
-`ControllerServiceInitializationContext`, rather
-than a `ProcessorInitializationContext`.
-
-Controller Services come with an additional constraint that Processors
-do not have. A Controller Service
-must be comprised of an interface that extends `ControllerService`.
-Implementations can then be interacted
-with only through their interface.  A Processor, for instance, will
-never be given a concrete implementation of
-a ControllerService and therefore must reference the service only via
-interfaces that extends `ControllerService`.
-
-This constraint is in place mainly because a Processor can exist in
-one NiFi Archive (NAR) while the implementation
-of the Controller Service that the Processor lives in can exist in a
-different NAR. This is accomplished by
-the framework by dynamically implementing the exposed interfaces in
-such a way that the framework can
-switch to the appropriate ClassLoader and invoke the desired method on
-the concrete implementation. However,
-in order to make this work, the Processor and the Controller Service
-implementation must share the same definition
-of the Controller Service interface. Therefore, both of these NARs
-must depend on the NAR that houses the
-Controller Service's interface. See <<nars>> for more information.
-
-
-[[interacting-with-controller-service]]
-=== Interacting with a ControllerService
-
-ControllerServices may be obtained by a Processor, another
-ControllerService, or a ReportingTask
-by means of the ControllerServiceLookup or by using the
-`identifiesControllerService` method of the
-PropertyDescriptor's Builder class. The ControllerServiceLookup can be
-obtained by a Processor from the
-ProcessorInitializationContext that is passed to the `initialize`
-method. Likewise, it is obtained by
-a ControllerService from the ControllerServiceInitializationContext
-and by a ReportingTask via the
-ReportingConfiguration object passed to the `initialize` method.
-
-For most use cases, though, using the `identifiesControllerService`
-method of a PropertyDescriptor Builder
-is preferred and is the least complicated method. In order to use this
-method, we create a PropertyDescriptor
-that references a Controller Service as such:
-
-[source,java]
-----
-public static final PropertyDescriptor SSL_CONTEXT_SERVICE = new PropertyDescriptor.Builder()
-  .name("SSL Context Service")
-  .description("Specified the SSL Context Service that can be used to create secure connections")
-  .required(true)
-  .identifiesControllerService(SSLContextService.class)
-  .build();
-----
-
-Using this method, the user will be prompted to supply the SSL Context
-Service that should be used. This is
-done by providing the user with a drop-down menu from which they are
-able to choose any of the SSLContextService
-configurations that have been configured, regardless of the implementation.
-
-In order to make use of this service, the Processor can use code such as:
-
-[source,java]
-----
-final SSLContextService sslContextService = context.getProperty(SSL_CONTEXT_SERVICE)
-	.asControllerService(SSLContextService.class);
-----
-
-Note here that `SSLContextService` is an interface that extends
-ControllerService. The only implementation
-at this time is the `StandardSSLContextService`. However, the
-Processor developer need not worry about this
-detail.
-
-
-
-
-
-
-
-== Reporting Tasks
-
-So far, we have mentioned little about how to convey to the outside
-world how NiFi and its components
-are performing. Is the system able to keep up with the incoming data
-rate? How much more can
-the system handle? How much data is processed at the peak time of day
-versus the least busy time of day?
-
-In order to answer these questions, and many more, NiFi provides a
-capability for reporting status,
-statistics, metrics, and monitoring information to external services
-by means of the `ReportingTask`
-interface. ReportingTasks are given access to a host of information to
-determine how the system is performing.
-
-
-=== Developing a Reporting Task
-
-Just like with the Processor and ControllerService interfaces, the
-ReportingTask interface exposes methods for
-configuration, validation, and initialization. These methods are all
-identical to those of the
-Processor and ControllerService interfaces except that the
-`initialize` method is passed a `ReportingConfiguration`
-object, as opposed to the initialization objects received by the other
-Components. The ReportingTask also has
-an `onTrigger` method that is invoked by the framework to trigger the
-task to perform its job.
-
-Within the `onTrigger` method, the ReportingTask is given access to a
-ReportingContext, from which configuration
-and information about the NiFi instance can be obtained. The
-BulletinRepository allows Bulletins to be queried
-and allows the ReportingTask to submit its own Bulletins, so that
-information will be rendered to users. The
-ControllerServiceLookup that is accessible via the Context provides
-access to ControllerServices that have been
-configured. However, this method of obtaining Controller Services is
-not the preferred method. Rather, the
-preferred method for obtaining a Controller Service is to reference
-the Controller Service in a PropertyDescriptor,
-as is discussed in the <<interacting-with-controller-service>> section.
-
-The `EventAccess` object that is exposed via the ReportingContext
-provides access to the `ProcessGroupStatus`,
-which exposes statistics about the amount of data processed in the
-past five minutes by Process Groups,
-Processors, Connections, and other Components. Additionally, the
-EventAccess object provides access to
-the ++ProvenanceEventRecord++s
-that have been stored in the `ProvenanceEventRepository`. These
-Provenance Events are emitted by Processors when
-data is received from external sources, emitted to external services,
-removed from the system, modified,
-or routed according to some decision that was made.
-
-Each ProvenanceEvent has the ID of the FlowFile, the type of Event,
-the creation time of the Event, and
-all FlowFile attributes associated with the FlowFile at the time that
-the FlowFile was accessed by the component
-as well as the FlowFile attributes that were associated with the
-FlowFile as a result of the processing that the
-event describes. This provides a great deal of information to
-ReportingTasks, allowing reports to be generated
-in many different ways to expose metrics and monitoring capabilities
-needed for any number of operational concerns.
-
-== UI Extensions
-
-There are two UI extension points that are available in NiFi:
-
-- Custom Processor UIs
-- Content Viewers
-
-Custom UIs can be created to provide configuration options beyond the standard property/value tables available in most processor settings.  Examples of processors with Custom UIs are link:https://github.com/apache/nifi/tree/master/nifi-nar-bundles/nifi-update-attribute-bundle[UpdateAttribute^] and link:https://github.com/apache/nifi/tree/master/nifi-nar-bundles/nifi-standard-bundle[JoltTransformJSON^].
-
-Content Viewers can be created to extend the types of data that can be viewed within NiFi. NiFi comes with NARs in the lib directory which contain content viewers for data types such as csv, xml, avro, json (standard-nar) and image types such as png, jpeg and gif (media-nar).
-
-=== Custom Processor UIs
-
-To add a Custom UI to a processor:
-
-1. Create your UI.
-2. Build and bundle your WAR in a processor NAR.
-3. The WAR needs to contain a `nifi-processor-configuration` file in the META-INF directory, which associates the Custom UI with that processor.
-4. Place the NAR in the lib directory and it will be discovered when NiFi starts up.
-5. In the Configure Processor window for the processor, the Properties tab should now have an `Advanced` button, which will access the Custom UI.
-
-As an example, here is the NAR layout for UpdateAttribute:
-
-.Update Attribute NAR Layout
-------------------------------------------------------------------------------------------------
-nifi-update-attribute-bundle
-│
-├── nifi-update-attribute-model
-│
-├── nifi-update-attribute-nar
-│
-├── nifi-update-attribute-processor
-│
-├── nifi-update-attribute-ui
-│   ├── pom.xml
-│   └── src
-│       └── main
-│           ├── java
-│           ├── resources
-│           └── webapp
-│               └── css
-│               └── images
-│               └── js
-│               └── META-INF
-│               │   └── nifi-processor-configuration
-│               └── WEB-INF
-│
-└── pom.xml
-------------------------------------------------------------------------------------------------
-
-with the contents of the `nifi-processor-configuration` as follows:
-
-`org.apache.nifi.processors.attributes.UpdateAttribute:${project.groupId}:nifi-update-attribute-nar:${project.version}`
-
-NOTE:  Custom UIs can also be implemented for Controller Services and Reporting Tasks.
-
-
-=== Content Viewers
-
-To add a Content Viewer:
-
-1. Build and bundle your WAR in a processor NAR.
-2. The WAR needs to contain a `nifi-content-viewer` file in the META-INF directory, which lists the supported content types.
-3. Place the NAR in the lib directory and it will be discovered when NiFi starts up.
-4. When a matching content type is encountered, the content viewer will generate the appropriate view.
-
-A good example to follow is the NAR layout for the Standard Content Viewer:
-
-.Standard Content Viewer NAR Layout
-------------------------------------------------------------------------------------------------
-nifi-standard-bundle
-│
-├── nifi-jolt-transform-json-ui
-│
-├── nifi-standard-content-viewer
-│   ├── pom.xml
-│   └── src
-│       └── main
-│           ├── java
-│           ├── resources
-│           └── webapp
-│               └── css
-│               └── META-INF
-│               │   └── nifi-content-viewer
-│               └── WEB-INF
-│
-├── nifi-standard-nar
-│
-├── nifi-standard-prioritizers
-│
-├── nifi-standard-processors
-│
-├── nifi-standard-reporting-tasks
-│
-├── nifi-standard-utils
-│
-└── pom.xml
-------------------------------------------------------------------------------------------------
-
-with the contents of `nifi-content-viewer` as follows:
-------------------------------------------------------------------------------------------------
-application/xml
-application/json
-text/plain
-text/csv
-avro/binary
-application/avro-binary
-application/avro+binary
-------------------------------------------------------------------------------------------------
-
-
-== Command Line Tools
-
-=== tls-toolkit
-
-The Client/Server mode of operation came about from the desire to automatically generate required TLS configuration artifacts without needing to perform that generation in a centralized place.  This simplifies configuration in a clustered environment.  Since we don’t necessarily have a central place to run the generation logic or a trusted Certificate Authority, a shared secret is used to authenticate the clients and server to each other.
-
-The tls-toolkit prevents man in the middle attacks using HMAC verification of the public keys of the CA server and the CSR the client sends. A shared secret (the token) is used as the HMAC key.
-
-The basic process goes as follows:
-
-1. The client generates a KeyPair.
-2. The client generates a request json payload containing a CSR and an HMAC with the token as the key and the CSR’s public key fingerprint as the data.
-3. The client connects to the CA Hostname at the https port specified and validates that the CN of the CA’s certificate matches the hostname (NOTE: because we don’t trust the CA at this point, this adds NO security, it is just a way to error out early if possible).
-4. The server validates the HMAC from the client payload using the token as the key and the CSR’s public key fingerprint as the data.  This proves that the client knows the shared secret and that it wanted a CSR with that public key to be signed.  (NOTE: a man in the middle could forward this on but wouldn’t be able to change the CSR without invalidating the HMAC, defeating the purpose).
-5. The server signs the CSR and sends back a response json payload containing the certificate and an HMAC with the token as the key and a fingerprint of its public key as the data.
-6. The client validates the response HMAC using the token as the key and a fingerprint of the certificate public key supplied by the TLS session.  This validates that a CA that knows the shared secret is the one we are talking to over TLS.
-7. The client verifies that the CA certificate from the TLS session signed the certificate in the payload.
-8. The client adds the generated KeyPair to its keystore with the certificate chain and adds the CA certificate from the TLS connection to its truststore.
-9. The client writes out the configuration json containing keystore, truststore passwords and other details about the exchange.
-
-
-== Testing
-
-Testing the components that will be used within a larger framework can often be very cumbersome
-and tricky. With NiFi, we strive to make testing components as easy as possible. In order to do this,
-we have created a `nifi-mock` module that can be used in conjunction with JUnit to provide extensive
-testing of components.
-
-The Mock Framework is mostly aimed at testing Processors, as these are by far the most commonly
-developed extension point. However, the framework does provide the ability to test Controller Services
-as well.
-
-Components have typically been tested by creating functional tests to verify component behavior. This is
-done because often a Processor will consist of a handful of helper methods but the logic will largely be
-encompassed within the `onTrigger` method. The `TestRunner` interface allows us to test Processors
-and Controller Services by converting more "primitive" objects such as files and byte arrays into
-FlowFiles and handles creating the ProcessSessions and ProcessContexts needed for a Processor to do its job,
-as well as invoking the necessary lifecycle methods in order to ensure that the Processor behaves the
-same way in the unit tests as it does in production.
-
-
-=== Instantiate TestRunner
-
-Most unit tests for a Processor or a Controller Service start by creating an instance of the `TestRunner`
-class. In order to add the necessary classes to your Processor,
-you can use the Maven dependency:
-
-[source]
-----
-<dependency>
-	<groupId>org.apache.nifi</groupId>
-	<artifactId>nifi-mock</artifactId>
-	<version>${nifi version}</version>
-</dependency>
-----
-
-We create a new `TestRunner` by calling the static `newTestRunner` method of the `TestRunners` class
-(located in the `org.apache.nifi.util` package). This method takes a single argument. That argument can
-either be the class of the Processor to test or can be an instance of a Processor.
-
-=== Add ControllerServices
-
-After creating a new Test Runner, we can add any Controller Services to the Test Runner that our Processor
-will need in order to perform its job. We do this by calling the `addControllerService` method and supply
-both an identifier for the Controller Service and an instance of the Controller Service.
-
-If the Controller Service needs to be configured, its properties can be set by
-calling the `setProperty(ControllerService, PropertyDescriptor, String)`, `setProperty(ControllerService, String, String)`,
-or `setProperty(ControllerService, PropertyDescriptor, AllowableValue)` method. Each of these methods returns a
-`ValidationResult`. This object can then be inspected to ensure that the property is valid by calling `isValid`.
-Annotation data can be set by calling the `setAnnotationData(ControllerService, String)` method.
-
-We can now ensure that the Controller Service is valid by calling `assertValid(ControllerService)` - or ensure
-that the configured values are not valid, if testing the Controller Service itself, by calling
-`assertNotValid(ControllerService)`.
-
-Once a Controller Service has been added to the Test Runner and configured, it can now be enabled by calling the
-`enableControllerService(ControllerService)` method. If the Controller Service is not valid, this method
-will throw an IllegalStateException. Otherwise, the service is now ready to use.
-
-
-
-=== Set Property Values
-
-After configuring any necessary Controller Services, we need to configure our Processor. We can do this by
-calling the same methods as we do for Controller Services, without specifying any Controller Service. I.e.,
-we can call `setProperty(PropertyDescriptor, String)`, and so on. Each of the `setProperty` methods again
-returns a `ValidationResult` property that can be used to ensure that the property value is valid.
-
-Similarly, we can also call `assertValid()` and `assertNotValid()` to ensure that the configuration of the
-Processor is valid or not, according to our expectations.
-
-
-=== Enqueue FlowFiles
-
-Before triggering a Processor to run, it is usually necessary to enqueue FlowFiles for the Processor to process.
-This can be achieved by using the `enqueue` methods of the `TestRunner` class. The `enqueue` method has several
-different overrides, and allows data to be added in the form of a `byte[]`, `InputStream`, or `Path`. Each of these
-methods also supports a variation that allows a `Map<String, String>` to be added to support FlowFile attributes.
-
-Additionally, there is an `enqueue` method that takes a var-args of FlowFile objects. This can be useful, for example,
-to obtain the output of a Processor and then feed this to the input of the Processor.
-
-
-=== Run the Processor
-
-After configuring the Controller Services and enqueuing the necessary FlowFiles, the Processor can be triggered
-to run by calling the `run` method of `TestRunner`. If this method is called without any arguments, it will
-invoke any method in the Processor with an `@OnScheduled` annotation, call the Processor's `onTrigger` method once,
-and then run the `@OnUnscheduled` and finally `@OnStopped` methods.
-
-If it is desirable to run several iterations of the `onTrigger` method before the other `@OnUnscheduled` and
-`@OnStopped` life-cycle events are triggered, the `run(int)` method can be used to specify now many iterations
-of `onTrigger` should be called.
-
-There are times when we want to trigger the Processor to run but not trigger the `@OnUnscheduled` and `@OnStopped`
-life-cycle events. This is useful, for instance, to inspect the Processor's state before these events occur. This
-can be achieved using the `run(int, boolean)` and passing `false` as the second argument. After doing this, though,
-calling the `@OnScheduled` life-cycle methods could cause an issue. As a result, we can now run `onTrigger` again
-without causing these events to occur by using the `run(int,boolean,boolean)` version of the `run` method and
-passing `false` as the third argument.
-
-If it is useful to test behavior that occurs with multiple threads, this can also be achieved by calling the
-`setThreadCount` method of `TestRunner`. The default is 1 thread. If using multiple threads, it is important
-to remember that the `run` call of `TestRunner` specifies how many times the Processor should be triggered, not
-the number of times that the Processor should be triggered per thread. So, if the thread count is set to 2 but
-`run(1)` is called, only a single thread will be used.
-
-
-=== Validate Output
-
-After a Processor has finished running, a unit test will generally want to validate that the FlowFiles went where
-they were expected to go. This can be achieved using the `TestRunners` `assertAllFlowFilesTransferred` and
-`assertTransferCount` methods. The former method takes as arguments a Relationship and an integer to dictate how many
-FlowFiles should have been transferred to that Relationship. The method will fail the unit test unless this number of
-FlowFiles were transferred to the given Relationship *or* if any FlowFile was transferred to any other Relationship.
-The `assertTransferCount` method validates only that the FlowFile count was the expected number for the given Relationship.
-
-After validating the counts, we can then obtain the actual output FlowFiles via the `getFlowFilesForRelationship` method.
-This method returns a `List<MockFlowFile>`. It's important to note that the type of the List is `MockFlowFile`, rather
-than the `FlowFile` interface. This is done because `MockFlowFile` comes with many methods for validating the contents.
-
-For example, `MockFlowFile` has methods for asserting that FlowFile Attributes exist (`assertAttributeExists`), asserting
-that other attributes are not present (`assertAttributeNotExists`), or that Attributes have the correct value
-(`assertAttributeEquals`, `assertAttributeNotEquals`). Similar methods exist for verifying the contents of the FlowFile.
-The contents of a FlowFile can be compared to a `byte[]`, and `InputStream`, a file, or a String. If the data is expected
-to be textual, the String version is preferred, as it provides a more intuitive error message if the output is not
-as expected.
-
-
-
-=== Mocking External Resources
-
-One of the biggest problems when testing a NiFi processor that connects to a remote resource is that we don't want to
-actually connect to some remote resource from a unit test. We can stand up a simple server ourselves in the unit test
-and configure the Processor to communicate with it, but then we have to understand and implement the server-specific
-specification and may not be able to properly send back error messages, etc. that we would like for testing.
-
-Generally, the approach taken here is to have a method in the Processor that is responsible for obtaining a connection
-or a client to a remote resource. We generally mark this method as protected. In the unit test, instead of creating
-the `TestRunner` by calling `TestRunners.newTestRunner(Class)` and providing the Processor class, we instead create
-a subclass of the Processor in our unit test and use this:
-
-[source,java]
-----
-@Test
-public void testConnectionFailure() {
-	final TestRunner runner = TestRunners.newTestRunner(new MyProcessor() {
-		protected Client getClient() {
-			// Return a mocked out client here.
-			return new Client() {
-				public void connect() throws IOException {
-					throw new IOException();
-				}
-
-				// ...
-				// other client methods
-				// ...
-			};
-		}
-	});
-
-	// rest of unit test.
-}
-----
-
-This allows us to implement a Client that mocks out all of the network communications and returns the different
-error results that we want to test, as well as ensure that our logic is correct for handling successful calls
-to the client.
-
-
-=== Additional Testing Capabilities
-
-In addition to the above-mentioned capabilities provided by the
-testing framework, the TestRunner provides several
-convenience methods for verifying the behavior of a Processor. Methods
-are provided for ensuring that the Processor's
-Input Queue has been emptied. Unit Tests are able to obtain the
-ProcessContext, ProcessSessionFactory, ProvenanceReporter,
-and other framework-specific entities that will be used by the
-TestRunner. The `shutdown` method provides the ability to
-test Processor methods that are annotated to be run only on shutdown
-of NiFi. Annotation Data can be set for Processors
-that make use of Custom User Interfaces. Finally, the number of
-threads that should be used to run the Processor can
-be set via the `setThreadCount(int)` method.
-
-
-
-
-
-
-[[nars]]
-== NiFi Archives (NARs)
-
-When software from many different organizations is all hosted within
-the same environment, Java ClassLoaders quickly
-become a concern. If multiple components have a dependency on the same
-library but each depends on a different
-version, many problems arise, typically resulting in unexpected
-behavior or `NoClassDefFoundError` errors occurring.
-In order to prevent these issues from becoming problematic, NiFi
-introduces the notion of a NiFi Archive, or NAR.
-
-A NAR allows several components and their dependencies to be packaged
-together into a single package.
-The NAR package is then provided ClassLoader isolation from other NAR
-packages. Developers should always deploy
-their NiFi components as NAR packages.
-
-To achieve this, a developer creates a new Maven Artifact, which we
-refer to as the NAR artifact. The packaging is
-set to `nar`. The `dependencies` section of the POM is then created so
-that the NAR has a dependency on all NiFi Components that are to be included within the NAR.
-
-In order to use a packaging of `nar`, we must use the `nifi-nar-maven-plugin` module.
-This is included by adding the following snippet to the NAR's pom.xml:
-
-[source,xml]
-----
-<build>
-    <plugins>
-        <plugin>
-            <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-nar-maven-plugin</artifactId>
-            <version>1.1.0</version>
-            <extensions>true</extensions>
-        </plugin>
-    </plugins>
-</build>
-----
-
-In the Apache NiFi codebase, this exists in the NiFi root POM from which all other NiFi artifacts
-(with the exception of the nifi-nar-maven-plugin itself) inherit, so that we do not need to include
-this in any of our other POM files.
-
-The NAR is able to have one dependency that is of type `nar`. If more
-than one dependency is specified that is of type
-`nar`, then the nifi-nar-maven-plugin will error. If NAR A adds a
-dependency on NAR B, this will *not* result in
-NAR B packaging all of the components of NAR A. Rather, this will add
-a `Nar-Dependency-Id` element to the `MANIFEST.MF`
-file of NAR A. This will result in setting the ClassLoader of NAR B as
-the Parent ClassLoader of NAR A. In this case,
-we refer to NAR B as the _Parent_ of NAR A.
-
-This linkage of Parent ClassLoaders is the mechanism that NiFi uses in
-order to enable Controller Services to be shared
-across all NARs. As mentioned in the <<developing-controller-service>>
-section, A Controller Service must be separated
-into an interface that extends `ControllerService` and an
-implementation that implements that interface. Controller Services
-can be referenced from any Processor, regardless of which NAR it is
-in, as long as both the Controller Service Implementation
-and the Processor share the same definition of the Controller Service interface.
-
-In order to share this same definition, both the Processor's NAR and
-the Controller Service Implementation's NAR must have
-as a Parent the Controller Service definition's NAR. An example
-hierarchy may look like this:
-
-.Controller Service NAR Layout
-------------------------------------------------------------------------------------------------
-root
-├── my-controller-service-api
-│   ├── pom.xml
-│   └── src
-│       └── main
-│           └── java
-│               └── org
-│                   └── my
-│                       └── services
-│                           └── MyService.java
-│
-├── my-controller-service-api-nar
-│   └── pom.xml <1>
-│
-│
-│
-├── my-controller-service-impl
-│   ├── pom.xml <2>
-│   └── src
-│       ├── main
-│       │   ├── java
-│       │   │   └── org
-│       │   │       └── my
-│       │   │           └── services
-│       │   │                 └── MyServiceImpl.java
-│       │   └── resources
-│       │       └── META-INF
-│       │           └── services
-│       │               └── org.apache.nifi.controller.ControllerService
-│       └── test
-│           └── java
-│               └── org
-│                   └── my
-│                       └── services
-│                             └── TestMyServiceImpl.java
-│
-│
-├── my-controller-service-nar
-│   └── pom.xml <3>
-│
-│
-└── other-processor-nar
-    └── pom.xml <3>
-
-
-
-
-------------------------------------------------------------------------------------------------
-<1> This POM file has a type of `nar`. It has a dependency on
-`nifi-standard-services-api-nar`.
-<2> This POM file is of type `jar`. It has a dependency on
-`my-controller-service-api`. It does *not* have a dependency on any
-`nar` artifacts.
-<3> This POM file has a type of `nar`. It has a dependency on
-`my-controller-service-api-nar`.
-
-
-While these may seem very complex at first, after creating such a
-hierarchy once or twice, it becomes
-far less complicated. Note here that the
-`my-controller-service-api-nar` has a dependency on
-`nifi-standard-services-api-nar`.
-This is done so that any NAR that has a dependency on
-`my-controller-service-api-nar` will also be able to access
-all of the Controller Services that are provided by the
-`nifi-standard-services-api-nar`, such as the SSLContextService.
-In this same vane, it is not necessary to create a different
-"service-api" NAR for each service. Instead, it often
-makes sense to have a single "service-api" NAR that encapsulates the
-API's for many different Controller Services,
-as is done by the `nifi-standard-services-api-nar`. Generally, the API
-will not include extensive dependencies, and as a result,
-ClassLoader isolation may be less important, so lumping together many
-API artifacts into the same NAR is often acceptable.
-
-
-
-
-[[per-instance-classloading]]
-== Per-Instance ClassLoading
-
-A component developer may wish to add additional resources to the component’s classpath at runtime.
-For example, you may want to provide the location of a JDBC driver to a processor that interacts with a
-relational database, thus allowing the processor to work with any driver rather than trying to bundle a
-driver into the NAR.
-
-This may be accomplished by declaring one or more PropertyDescriptor instances with
-`dynamicallyModifiesClasspath` set to true. For example:
-
-
-[source,java]
-----
-PropertyDescriptor EXTRA_RESOURCE = new PropertyDescriptor.Builder()
-   .name("Extra Resources")
-   .description("The path to one or more resources to add to the classpath.")
-   .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-   .expressionLanguageSupported(true)
-   .dynamicallyModifiesClasspath(true)
-   .build();
-----
-
-When these properties are set on a component, the framework identifies all properties where
-`dynamicallyModifiesClasspath` is set to true. For each of these properties, the framework
-attempts to resolve filesystem resources from the value of the property. The value may be a
-comma-separated list of one or more directories or files, where any paths that do not exist are
-skipped. If the resource represents a directory, the directory is listed, and all of the files
-in that directory are added to the classpath individually.
-
-Each property may impose further restrictions on the format of the value through the validators.
-For example, using StandardValidators.FILE_EXISTS_VALIDATOR restricts the property to accepting a
-single file. Using StandardValidators.NON_EMPTY_VALIDATOR allows any combination of comma-separated
-files or directories.
-
-Resources are added to the instance ClassLoader by adding them to an inner ClassLoader that is always
-checked first. Anytime the value of these properties change, the inner ClassLoader is closed and
-re-created with the new resources.
-
-NiFi provides the `@RequiresInstanceClassLoading` annotation to further expand and isolate the libraries
-available on a component’s classpath. You can annotate a component with `@RequiresInstanceClassLoading`
-to indicate that the instance ClassLoader for the component requires a copy of all the resources in the
-component's NAR ClassLoader. When `@RequiresInstanceClassLoading` is not present, the
-instance ClassLoader simply has it's parent ClassLoader set to the NAR ClassLoader, rather than
-copying resources.
-
-The `@RequiresInstanceClassLoading` annotation also provides an optional flag `cloneAncestorResources'. If
-set to true, the instance ClassLoader will include ancestor resources up to the first ClassLoader containing a
-controller service API referenced by the component, or up to the Jetty NAR. If set to false, or not specified,
-only the resources from the component's NAR will be included.
-
-Because @RequiresInstanceClassLoading copies resources from the NAR ClassLoader for each instance of the
-component, use this capability judiciously. If ten instances of one component are created, all classes
-from the component's NAR ClassLoader are loaded into memory ten times. This could eventually increase the
-memory footprint significantly when enough instances of the component are created.
-
-Additionally, there are some restrictions when using @RequiresInstanceClassLoading when using Controller
-Services. Processors, Reporting Tasks, and Controller Services can reference a Controller Service API
-in one of its Property Descriptors. An issue may arise when the Controller Service API is bundled in the same
-NAR with a component that references it or with the Controller Service implementation. If either of these cases
-are encountered and the extension requires instance classloading, the extension will be skipped and an appropriate
-ERROR will be logged. To address this issue, the Controller Service API should be bundled in a parent NAR. The
-service implementation and extensions that reference that service should depend on the Controller Service API NAR.
-Please refer to the Controller Service NAR Layout in the <<nars>> section. Anytime a Controller Service API is
-bundled with an extension that requires it, even if @RequiresInstanceClassLoading isn't used, a WARNING will be
-logged to help avoid this bad practice.
-
-
-[[deprecation]]
-== Deprecating a Component
-Sometimes it may be desirable to deprecate a component. Whenever this occurs the developer may use the
- @DeprecationNotice annotation to indicate that a component has been deprecated, aloowing the developer
- to describe a reason for the deprecation and suggest alternative components. An example of how to do this can
- be found below:
-
-[source, java]
-----
- @DeprecationNotice(alternatives = {ListenSyslog.class}, classNames = {"org.apache.nifi.processors.standard.ListenRELP"}, reason = "Technology has been superseded",  )
- public class ListenOldProtocol extends AbstractProcessor {
-----
-As you can see, the alternatives can be used to define and array of alternative Components, while classNames can be
-used to represent the similar content through an array of strings.
-
-
-== How to contribute to Apache NiFi
-
-We are always excited to have contributions from the community - especially from new contributors!
-We are interested in accepting contributions of code, as well as documentation and even artwork that
-can be applied as icons or styling to the application.
-
-
-=== Technologies
-
-The back end of Apache NiFi is written in Java. The web tier makes use of JAX-RS and JavaScript is extensively
-used to provide a user interface. We depend on several third-party JavaScript libraries, including D3 and JQuery,
-among others. We make use of Apache Maven for our builds and Git for our version control system.
-
-Documentation is created in link:http://asciidoctor.org[AsciiDoc^].
-
-
-=== Where to Start?
-
-link:http://issues.apache.org/jira/browse/NIFI[NiFi's JIRA page^] can be used to find tickets that are tagged as "beginner",
-or you can dig into any of the tickets for creating Processors. Processors should be self-contained and not rely on other
-outside components (except for Controller Services), so they make for excellent starting points for new NiFi developers to
-get started. This exposes the developer to the NiFi API and is the most extensible part of the dataflow system.
-
-System-level and overview documentation is located in '<code checkout location>/nifi/nifi-docs/src/main/asciidoc'.
-Tools available to facilitate documentation generation are available at link:http://asciidoctor.org/docs/editing-asciidoc-with-live-preview/[Editing AsciiDoc with Live Preview^].
-
-
-=== Supplying a contribution
-
-Contributions can be provided either by creating a patch:
-
-`git format-patch`
-
-and attaching that patch to a ticket, or by generating a Pull Request.
-
-
-=== Contact Us
-
-The developer mailing list (dev@nifi.apache.org) is monitored pretty closely, and we tend to respond pretty
-quickly. If you have a question, don't hesitate to shoot us an e-mail - we're here to help! Unfortunately, though, e-mails
-can get lost in the shuffle, so if you do send an e-mail and don't get a response within a day or two, it's our fault - don't
-worry about bothering us. Just ping the mailing list again.
+鼓励ComponentLog 组件通过以下方式执行日志记录 
+`ComponentLog` 接口，而不是获取 
+第三方记录器的直接实例.这是因为通过
+ComponentLog进行日志记录 允许框架 
+将超出可配置严重性级别的日志消息呈现给 
+用户界面，从而允许 
+在发生重要事件时通知监视数据流的人员. 
+此外，它
+通过在DEBUG模式下记录堆栈跟踪
+并
+在日志消息中提供Processor的唯一 标识符，为所有组件提供一致的日志记录 格式 . 
+
+
+
+
+
+[[AbstractProcessor]] 
+=== AbstractProcessor API 
+
+由于绝大多数组件将通过扩展
+AbstractProcessor 来创建 ，因此
+我们将在本节中讨论它的 抽象类.该 
+AbstractProcessor提供几种方法， 
+将感兴趣的组件开发. 
+
+
+==== 组件初始化 
+
+在创建组件之前，在调用任何其他方法之前， 
+`init` 
+将调用AbstractProcessor的方法 .该方法采用单个参数， 
+即类型 
+`ProcessorInitializationContext`.上下文对象为 
+Processor提供ComponentLog， 
+Processor的唯一标识符和ControllerServiceLookup， 
+可用于与
+配置的ControllerServices 交互 .这些对象中的每一个都由
+AbstractProcessor 存储， 并且可以通过
+子类获得 子类 `getLogger`， `getIdentifier`，和 
+`getControllerServiceLookup` 方法，分别. 
+
+
+==== 公开组件的关系 
+
+为了使组件将FlowFile传输到新目的地 
+以进行后续处理， 
+组件必须首先能够向框架公开
+它当前支持的所有 关系. 
+这允许应用程序的用户
+通过
+在组件之间创建连接并将适当的
+关系分配 给这些连接来将组件 彼此 连接. 
+
+组件通过覆盖来公开有效的关系集 
+`getRelationships` 方法. 
+此方法不带参数并返回a `Set` 的 `Relationship` 
+对象.对于大多数组件，此Set 
+将是静态的，但其他组件将
+根据用户配置动态生成Set . 
+对于Set为静态的那些组件，建议 
+在Processor的
+构造函数或init方法中创建一个不可变的Set 并返回该值，而不是 
+动态生成Set。.这种 
+模式有助于实现更清晰的代码和更好的性能. 
+
+
+==== 公开组件属性 
+
+大多数组件在
+能够使用之前需要一些用户配置 .
+组件支持的属性 通过以下方式暴露给Framework 
+`getSupportedPropertyDescriptors` 方法. 
+此方法不带参数并返回a `List` 的 
+`PropertyDescriptor` 对象.
+List中对象的顺序 非常重要，因为它决定了
+在用户界面中呈现属性的顺序 . 
+
+一个 `PropertyDescriptor` object是通过创建一个新的
+实例来构造 的 `PropertyDescriptor.Builder` 对象， 
+呼吁构建适当的方法，最后调用 
+的 `build` 方法. 
+
+虽然此方法涵盖了大多数用例，但有时 
+需要允许用户配置 
+名称未知的其他属性.这可以
+通过覆盖来实现 
+`getSupportedDynamicPropertyDescriptor` 方法. 这个方法需要一个 
+`String` 作为唯一参数， 
+表示属性的名称. 该方法返回一个 
+`PropertyDescriptor` 可用于验证 
+属性名称以及值的对象.应该构建
+从此方法返回的任何 PropertyDescriptor， 
+设置值 `isDynamic` 真实的 
+`PropertyDescriptor.Builder` 类.
+AbstractProcessor 的默认 行为是不允许任何动态创建的 
+属性. 
+
+
+==== 验证组件属性 
+
+如果组件的配置
+无效，则无法启动组件 .一个组件属性的验证可以 
+通过设置在的PropertyDescriptor一个验证程序或通过以下方式实现 
+用于限制允许值 
+经由的PropertyDescriptor属性.Builder的 `allowableValues` 方法 
+或 `identifiesControllerService` 方法. 
+
+但是，有时候
+单独验证组件的属性 是不够的.为此， 
+AbstractProcessor公开了一个 `customValidate` 方法.该方法 
+采用类型的单个参数 `ValidationContext`. 
+此方法的返回值为a `Collection` 的 
+`ValidationResult` 描述
+验证期间发现的任何问题的对象 . 只有那些ValidationResult对象的 
+`isValid` 方法返回 `false` 应该退还. 
+仅当所有属性根据
+其关联的Validators和Allowable Values 有效时，才会调用此方法 . 
+一世.Ë.，只有当所有属性本身都有效时才会调用 
+此方法，并且此方法允许 
+验证组件的配置作为一个整体. 
+
+
+==== 响应配置的变化 
+
+有时希望组件在其
+属性发生变化时急切地做出反应 . 该 `onPropertyModified` 
+方法允许组件做到这一点.当用户更改
+组件的 属性值时， 
+`onPropertyModified` 将为每个已修改的属性调用方法. 
+该方法有三个参数:PropertyDescriptor， 
+指示修改
+了哪个属性， 旧值和新值.如果属性没有先前的 
+值，则第二个参数将是 `null`.如果
+删除了该属性 ，则第三个参数将是 `null`.重要的是要 
+注意，无论
+值是否有效，都将调用此方法 .只有在
+实际修改了值时才会调用此方法，而不是在 
+用户更新组件而不更改其值时调用此方法 .在 
+调用此方法时，保证 
+调用此方法的线程是当前
+在Processor中执行代码的唯一线程 ，除非Processor本身 
+创建自己的线程. 
+
+
+==== 执行工作 
+
+当组件有工作要做时，计划通过
+它来完成工作 `onTrigger` 框架调用的方法. 
+该方法有两个参数:a `ProcessContext` 和a 
+`ProcessSession`. 第一步 `onTrigger` 方法 
+通常是通过
+调用其中一个来获得要在其上执行工作的FlowFile `get` ProcessSession上的方法. 
+对于从外部源将数据提取到Orchsym Studio的组件，
+将跳过此 步骤.然后，组件可以自由检查 
+FlowFile属性; 添加，删除或修改属性; 读取或修改 
+FlowFile内容; 并将FlowFiles传输到适当的 
+关系. 
+
+
+==== 当组件被触发 
+
+组件时 `onTrigger` 只有在
+计划运行并且组件存在工作时，才会调用 该方法. 
+如果满足以下任何条件，则称组件存在工作: 
+
+- 目的地为Processor的
+Connection在其队列中至少有一个 FlowFile 
+- 组件没有传入的连接 
+- 组件使用@TriggerWhenEmpty注释进行注释 
+
+存在几个因素会影响组件的处理时间 
+`onTrigger` 方法被调用.首先，
+除非用户已将组件配置为运行，否则不会 触发组件.如果 
+计划运行组件，则周期性地 
+(该周期由用户界面中的用户配置)检查
+组件是否 有工作要做，如上所述. 
+如果是这样，框架将检查
+组件的下游目的地 .如果组件的任何出站连接已满，则 
+默认情况下，将不会安排组件运行. 
+
+但是，那 `@TriggerWhenAnyDestinationAvailable` 注释可以 
+添加到组件的类中.在这种情况下，需求 
+被更改，以便只有一个下游目标必须"可用” 
+(如果连接的
+队列未满，则目标被视为"可用” )，而不是要求所有下游 
+目标都可用. 
+
+也与组件调度有关 `@TriggerSerially` 
+注解.使用此批注的组件永远不会有多个 
+运行该批处理的线程 `onTrigger` 方法同时进行.这是 
+至关重要的注意，虽然，执行代码的线程 
+可以调用更改为调用.因此，仍然 
+必须注意确保组件是线程安全的！ 
+
+
+
+=== 元件生命周期 
+
+Orchsym Studio API通过使用Java 
+Annotations 提供生命周期支持 . 该 `org.apache.Orchsym Studio.annotations.lifecycle` 包中 
+包含 
+几个生命周期管理注释.以下 
+注释可以应用于Orchsym Studio元件中的Java方法， 
+以
+向框架指示 何时应该调用方法.对于
+元件生命周期的讨论 ，我们将Orchsym Studio元件定义为 
+Processor，ControllerServices或ReportingTask. 
+
+==== @OnAdded 
+
+The `@OnAdded` 注释会在
+创建元件后立即调用方法 .该 
+元件的 `initialize` 方法(或 `init` 方法，如果是子类 
+`AbstractProcessor`)将在
+构造元件之后调用 ， 
+然后是使用注释的方法 `@OnAdded`.如果有任何
+注释方法 `@OnAdded` 抛出异常，将向
+用户返回错误 ，并且该元件将不会添加到 
+流中.此外，
+不会调用具有此批注的其他方法 .此方法仅
+在元件的生命周期内调用一次 . 
+使用此Annotation的方法必须采用零参数. 
+
+==== @OnEnabled 
+
+的 `@OnEnabled` 注释可用于指示
+每当启用Controller Service时都应调用方法 .
+每次用户启用服务时，都会调用具有此批注的任何方法 .此外，每次
+重新启动Orchsym Studio时 ，如果Orchsym Studio配置为"自动恢复状态”并且
+启用了服务 ，则将调用该方法. 
+
+如果带有此批注的方法抛出Throwable，
+则将为该元件发出日志消息和 公告.在这种情况下，该服务将 
+保持"启用”状态' 状态，不可用.
+然后，在延迟之后将再次调用具有此注释的所有方法 .在
+具有此注释的所有方法返回
+而不丢弃任何内容之前，该服务将不可 用 . 
+
+使用此注释的方法必须采用0参数或
+类型的单个参数 `org.apache.Orchsym Studio.controller.ConfigurationContext`. 
+
+请注意，如果应用于ReportingTask或
+Processor，则将忽略此批注 .对于Controller Service，启用和禁用被视为 
+生命周期事件，因为该操作使其可用或不可用于其他 
+元件.但是，对于组件和报告任务，这些不是 
+生命周期事件，而是允许
+在启动或停止一组元件时排除 元件的机制. 
+
+==== @OnRemoved 
+
+的 `@OnRemoved` 注释导致在
+从流中删除元件之前调用方法 . 
+这样可以在删除元件之前清除资源. 
+使用此批注的方法必须采用零参数. 
+如果带有此批注的方法抛出异常，
+则仍将删除该元件 . 
+
+==== @OnScheduled 
+
+此注释指示每次
+调度元件运行时都应调用方法 .由于
+未调度ControllerServices ，因此在ControllerService上使用此批注 
+没有意义，也不会受到尊重.它应 
+仅用于组件和报告任务.如果具有此
+批注的任何方法 抛出异常，
+则不会调用具有此批注的其他方法 ，并且将向
+用户显示通知 . 在这种情况下，注释的方法 
+`@OnUnscheduled` 然后触发，然后是方法 
+`@OnStopped` 注释(在此状态期间，如果这些
+方法中的任何 一个抛出异常，则忽略这些异常).然后， 
+元件将在一段时间内执行其执行， 
+称为"管理产量持续时间”，这是 
+在 `Orchsym Studio.properties` 文件.最后，该 
+过程将再次开始，直到所有方法都注释为止 
+`@OnScheduled` 已经返回而没有抛出任何异常. 
+具有此批注的方法可以采用零参数或可以采用 
+单个参数.如果使用单个参数变体， 
+则参数必须是type `ProcessContext` 如果元件是 
+组件或 `ConfigurationContext` 如果元件 
+是ReportingTask. 
+
+==== @OnUnscheduled 
+
+只要
+不再计划运行Processor或ReportingTask，就会调用带有此批注的方法 .那时，
+组件中的许多线程 仍然可能处于活动状态 `onTrigger` 方法.如果这样的方法 
+抛出异常，将生成一条日志消息，
+否则将
+忽略异常 ，并且 仍将调用具有此批注的其他方法. 
+具有此批注的方法可以采用零参数或可以采用 
+单个参数. 
+如果使用单个参数变体，则参数必须是type 
+`ProcessContext` 如果元件是组件或 
+`ConfigurationContext` 如果 
+元件是ReportingTask. 
+
+
+==== @OnStopped 
+
+当
+不再计划运行组件或ReportingTask 
+并且所有线程都从该处返回时 ，将调用带有此批注的方法 `onTrigger` 方法.如果这样的 
+方法抛出异常， 
+将生成一条日志消息，否则将
+忽略异常 ; 
+仍将调用具有此批注的其他方法 . 
+允许使用此注释的方法采用0或1参数.如果使用 
+了参数，则如果
+元件是ReportingTask ，则它必须是ConfigurationContext 类型;如果
+元件是组件，则它必须是 ProcessContext类型 . 
+
+
+==== @OnShutdown 
+
+任何用方法注释的方法 `@OnShutdown` 
+当Orchsym Studio成功
+关闭时，将调用 注释 .如果这样的方法抛出异常，将
+生成一条日志消息 ，
+否则将忽略异常，并且 
+仍将调用具有此批注的其他方法 . 
+使用此批注的方法必须采用零参数.注意:虽然 
+Orchsym Studio将尝试
+在使用它的所有元件上使用此注释调用方法 ，但这并不总是 
+可行的.例如，进程 
+可能会意外终止，在这种情况下，它没有机会 
+调用这些方法.因此， 
+虽然使用此注释的方法可用于清理资源，但是 
+，它们不应该 
+依赖于关键业务逻辑. 
+
+=== 元件通知 
+
+Orchsym Studio API通过使用Java 
+Annotations 提供通知支持 . 该 `org.apache.Orchsym Studio.annotations.notification` package 
+包含几个用于通知管理的注释.以下 
+注释可以应用于Orchsym Studio元件中的Java方法， 
+以向框架指示何时应该调用方法.对于
+元件通知的 讨论，我们将Orchsym Studio元件定义 
+为*组件*， *控制器服务*， 要么 *报告任务*. 
+
+==== @OnPrimaryNodeStateChange 
+
+的 `@OnPrimaryNodeStateChange` 注释会
+在集群中主节点的状态发生更改后立即调用方法 . 
+使用此批注的方法应该不带参数或
+类型的一个 参数 `PrimaryNodeState`. 该 `PrimaryNodeState`提供 
+有关更改内容的上下文，以便元件可以采取适当的 
+操作. 该 `PrimaryNodeState` 枚举器有两个可能的值: 
+`ELECTED_PRIMARY_NODE` (接收此
+状态的节点 已被选为Orchsym Studio群集的主节点)，或 
+`PRIMARY_NODE_REVOKED` (接收此状态的节点是主 
+节点，但现在已撤消其主节点角色). 
+
+[[restricted]] 
+=== 受限制 
+
+的受限制元件可用于执行操作员
+通过Orchsym Studio REST API / UI 提供的任意未经过抽样的代码， 或者可用于使用Orchsym Studio OS 
+凭据获取或更改Orchsym Studio主机系统上的数据 .这些元件可由其他授权的Orchsym Studio用户使用，超出
+应用程序的预期用途 ，升级权限，或者可能暴露有关Orchsym Studio进程或主机
+系统内部的数据 .所有这些功能都应被视为特权，管理员应了解这些 
+功能，并为可信用户的子集明确启用它们. 
+
+可以使用@Restricted注释标记组件，控制器服务或报告任务.这 
+将导致元件被视为受限制，并且需要将用户显式添加到 
+可以访问受限元件的用户列表中.一旦允许用户访问受限制的元件， 
+他们将被允许创建和修改这些元件，假设允许所有其他权限. 
+如果不访问受限元件，用户仍然会知道存在这些类型的元件，但 
+即使有足够的权限，也无法创建或修改它们. 
+
+[[state_manager]] 
+=== 状态管理器 
+
+从ProcessContext，ReportingContext和ControllerServiceInitializationContext，元件 
+能够调用 `getStateManager()` 方法.此状态管理器负责提供
+用于存储和检索状态的简单API .此机制旨在为开发人员提供 
+非常轻松地存储一组键/值对，检索这些值并以原子方式更新它们的能力.状态 
+可以存储在节点的本地，也可以存储在集群中的所有节点上.然而，重要的是要注意， 
+这种机制仅用于提供存储非常简单的机制' 州.因此，API 
+只允许a `Map<String, String>` 存储和检索，以及原子地
+替换整个Map .此外，
+ZooKeeper 支持当前支持存储群集范围状态的唯一实现 . 因此，序列化后，整个State Map的大小必须小于1 MB. 
+尝试存储超过此数量将导致抛出异常.如果
+组件管理状态所需的交互 比这更复杂(例如，.G.，必须存储
+和检索大量数据 ，或者必须单独存储和提取单个密钥)，而不是使用不同的机制 
+(e.G.，与外部数据库通信). 
+
+
+[[state_scope]] 
+==== 范围 
+与状态管理器通信时，所有方法调用都要求提供范围.该范围将 
+是 `Scope.LOCAL` 要么 `Scope.CLUSTER`.如果Orchsym Studio在群集中运行，则此Scope为
+框架提供有关如何进行操作的重要信息 . 
+
+如果状态存储使用 `Scope.CLUSTER`然后，群集中的所有节点将与相同的
+状态存储机制进行通信 . 如果使用存储和检索状态 `Scope.LOCAL`，然后每个节点将看到不同 
+的状态表示. 
+
+值得注意的是，如果将Orchsym Studio配置为作为独立实例运行，而不是在集群中运行， 
+那么 `Scope.LOCAL` 总是使用.这样做是为了允许Orchsym Studio元件的开发人员以
+一致的方式编写代码 ，而不必担心Orchsym Studio实例是否是群集的.开发人员应该假设 
+该实例是集群的并相应地编写代码. 
+
+
+==== 存储和检索状态 
+
+状态使用StateManager存储 `getState`， `setState`， `replace`，和 `clear` 方法.所有这些方法 
+都要求提供范围.应该注意，与Local作用域一起
+存储的状态与使用Cluster作用域存储的状态完全不同 . 如果组件存储密钥为的值 _My Key_ 使用 `Scope.CLUSTER`范围， 
+然后尝试使用。检索值 `Scope.LOCAL` 范围，检索的值将是 `null`(除非
+使用相同的密钥存储了一个值 `Scope.CLUSTER` 范围).每个组件的状态与其他
+组件隔离存储 ' 州. 
+
+因此，两个组件不能共享相同的状态.但是，在某些情况下，非常 
+有必要在两个不同类型的组件或两个相同类型的组件之间共享状态。.这可以
+通过使用Controller服务来完成 .通过从Controller Service存储和检索状态，多个组件可以使用相同的 
+Controller Service，并且可以通过Controller Service的API公开状态. 
+
+
+==== 单元测试 
+Orchsym Studio的模拟框架提供了大量工具来执行组件的单元测试.组件单元测试通常 
+以 `TestRunner` 类. 结果， `TestRunner` class包含一个 `getStateManager` 它自己的方法.
+但是，返回的StateManager 具有特定类型: `MockStateManager`.除了
+由the定义的方法之外，该实现还提供了几种方法 `StateManager` 界面，帮助开发人员更轻松地开发单元测试. 
+
+首先， `MockStateManager` 实现 `StateManager` 接口，所以可以在单元测试中检查所有状态. 
+另外， `MockStateManager` 暴露了一小撮 `assert*` 执行状态按预期设置的断言的方法. 
+该 `MockStateManager` 还提供了指示如果针对特定状态更新状态则单元测试应立即失败的能力 
+`Scope`. 
+
+
+
+
+=== 报告组件活动 
+
+组件负责报告其活动，以便用户 
+能够了解
+其数据发生了什么 .组件应该通过ComponentLog记录事件，ComponentLog 
+可以通过InitializationContext访问 
+或通过调用 `getLogger` 的方法 `AbstractProcessor`. 
+
+另外，组件应该使用 `ProvenanceReporter` 
+接口，通过ProcessSession获得 
+`getProvenanceReporter` 方法.ProvenanceReporter应用于 
+指示
+从外部源接收内容或发送到外部位置的任何时间 .该 
+ProvenanceReporter还具有用于方法 
+的报告时FlowFile被克隆，分叉，或经修饰的，和当 
+多个FlowFiles被合并成一个单一的FlowFile 
+以及一个相关联FlowFile与一些其它标识符.但是， 
+这些功能对于报告来说不那么重要，因为 
+框架能够检测这些功能并
+代表组件发出适当的 事件.然而，
+组件开发人员发布这些事件是一种最佳实践 ，因为它
+在代码中显式发出这些事件， 并且 
+开发人员能够为事件提供其他详细信息， 
+例如该行动采取了
+有关所采取行动的 相关信息.如果 
+组件发出事件，框架将不会发出重复 
+事件.相反，它总是假设组件开发人员 比框架更好地
+了解组件上下文中发生的事情 
+.但是，该框架可能会发出 
+不同的事件.例如，如果组件修改
+FlowFile 的 内容及其属性，然后仅发出 
+属性_MODIFIED event, the framework will emit a CONTENT_修改过的 
+事件.如果
+为该FlowFile发出任何其他事件(由 
+组件或框架)，框架将不会发出ATTRIBUTES_MODIFIED事件 .这是因为所有 
+<<provenance_events>>都知道在
+事件发生之前FlowFile的属性以及由于FlowFile 
+的处理而发生的那些属性， 因此 
+通常会考虑ATTRIBUTES_MODIFIED冗余并导致 
+FlowFile谱系的渲染非常冗长. 
+但是，
+如果从
+组件的角度来看事件被认为是相关的，则组件可以与其他人 一起发出此事件是可以接受的。 . 
+
+
+
+
+
+
+
+== 记录元件 
+
+Orchsym Studio 通过用户界面从Orchsym Studio应用程序本身向用户
+提供大量文档 
+， 尝试使用户体验尽可能简单方便 
+.当然，为了实现这一点，组件 
+开发人员必须向框架提供该文档.Orchsym Studio提供 
+了一些不同的机制来
+为框架提供文档 . 
+
+
+=== 记录属性 
+
+可以通过调用来记录单个属性 `description` 
+PropertyDescriptor的构建器的方法如下: 
+
+[source,java] 
+
+---- 
+public static final PropertyDescriptor MY_PROPERTY = new PropertyDescriptor.Builder() 
+  .name("My Property") 
+  .description("Description of the Property") 
+  ... 
+  .build(); 
+---- 
+
+
+如果属性要提供一组允许值，那么这些值 
+将在UI的下拉字段中显示给用户. 
+这些值中的每一个也可以给出描述: 
+
+[source,java] 
+
+---- 
+public static final AllowableValue EXTENSIVE = new AllowableValue("Extensive", "Extensive", 
+"Everything will be logged - use with caution!"); 
+public static final AllowableValue VERBOSE = new AllowableValue("Verbose", "Verbose", 
+"Quite a bit of logging will occur"); 
+public static final AllowableValue REGULAR = new AllowableValue("Regular", "Regular", 
+"Typical logging will occur"); 
+
+public static final PropertyDescriptor LOG_LEVEL = new PropertyDescriptor.Builder() 
+  .name("Amount to Log") 
+  .description("How much the Processor should log") 
+  .allowableValues(REGULAR, VERBOSE, EXTENSIVE) 
+  .defaultValue(REGULAR.getValue()) 
+  ... 
+  .build(); 
+---- 
+
+
+
+=== 记录关系 
+
+组件关系的记录方式与
+属性大致相同 - 通过调用 `description` 一个方法 
+关系的建设者: 
+
+[source,java] 
+
+---- 
+public static final Relationship MY_RELATIONSHIP = new Relationship.Builder() 
+  .name("My Relationship") 
+  .description("This relationship is used only if the Processor fails to process the data.") 
+  .build(); 
+---- 
+
+
+
+=== 记录能力和关键字 
+
+的 `org.apache.Orchsym Studio.annotations.documentation` package提供
+了可用于记录元件的Java 注释.所述 
+CapabilityDescription 
+注释可以被添加到组件，报告任务，或控制器 
+服务并且旨在提供对所简要描述 
+的功能 
+由元件提供的. 标签注释有一个 `value` 
+被定义为字符串数组的变量 .因此，它 
+通过提供多个值作为逗号分隔列表来使用 ++ String ++ s， 
+带花括号.然后，通过
+允许 
+用户基于标签过滤元件(i，将这些值)合并到UI中 .Ë.，关键字). 
+此外，UI提供了一个标签云，允许用户选择 他们想要过滤
+的标签 
+.云中最大的标签是 
+那些
+Orchsym Studio 实例中元件中存在最多的标签 .
+下面提供了使用这些注释的 示例: 
+
+[source, java] 
+
+---- 
+@Tags({"example", "documentation", "developer guide", "processor", "tags"}) 
+@CapabilityDescription("Example Processor that provides no real functionality but is provided" + 
+" for an example in the Developer Guide") 
+public static final ExampleProcessor extends Processor { 
+    ... 
+} 
+---- 
+
+
+=== 记录FlowFile属性交互 
+
+很多时候组件会期望在入站的FlowFiles中设置某些FlowFile属性，以便 
+组件正常运行.  在其他情况下，组件可以
+在出站FlowFile上更新或 创建FlowFile属性.  组件开发人员可以 
+使用 `ReadsAttribute` 和 `WritesAttribute` 文档注释.  这些属性用于生成文档 
+，使用户可以更好地了解组件如何与流进行交互. 
+
+注意:由于Java 7不支持 
+对类型重复注释，因此您可能需要使用 `ReadsAttributes` 和 `WritesAttributes` 表示 
+组件读取或写入多个FlowFile属性.  此批注只能应用于组件.  下面列出了一个例子: 
+
+[source, java] 
+
+---- 
+@WritesAttributes({ @WritesAttribute(attribute = "invokehttp.status.code", description = "The status code that is returned"), 
+        @WritesAttribute(attribute = "invokehttp.status.message", description = "The status message that is returned"), 
+        @WritesAttribute(attribute = "invokehttp.response.body", description = "The response body"), 
+        @WritesAttribute(attribute = "invokehttp.request.url", description = "The request URL"), 
+        @WritesAttribute(attribute = "invokehttp.tx.id", description = "The transaction ID that is returned after reading the response"), 
+        @WritesAttribute(attribute = "invokehttp.remote.dn", description = "The DN of the remote server") }) 
+public final class InvokeHTTP extends AbstractProcessor { 
+---- 
+
+
+=== 记录相关元件 
+通常，组件和控制器服务彼此相关.  有时它是一个put / get关系，如 `PutFile` 和 `GetFile`. 
+有时组件使用类似的ControllerService `InvokeHTTP` 和 `StandardSSLContextService`.  有时候，一个ControllerService使用另一个 
+像 `DistributedMapCacheClientService` 和 `DistributedMapCacheServer`.  这些扩展点的开发者可以
+使用这些扩展点来关联这些 不同的元件 `SeeAlso` 标签.  此注释将文档中的这些元件链接起来. 
+`SeeAlso` 可以应用于组件，ControllerServices和ReportingTasks.  下面列出了如何执行此操作的示例: 
+
+[source, java] 
+
+---- 
+@SeeAlso(GetFile.class) 
+public class PutFile extends AbstractProcessor { 
+---- 
+
+
+=== 高级文档 
+
+当上述文档方法不足时，Orchsym Studio可以 
+通过
+"使用”文档向用户公开更高级的 文档.当用户右键单击组件时，Orchsym Studio 
+在上下文菜单中提供"使用”菜单项.此外， 
+UI在右上角显示"帮助”链接，从中
+可以找到相同的 使用信息. 
+
+组件的高级文档以名为的HTML文件的形式提供 `additionalDetails.html`. 
+此文件应存在于名称为Processor 的 
+完全限定 
+名称的目录中，并且应该命名此目录的父级 
+`docs` 并存在于Processor的jar的根目录中. 
+此文件将从生成的HTML文件链接，该文件将包含 
+所有Capability，Keyword，PropertyDescription和Relationship信息， 
+因此没有必要复制该文件.  这是一个
+提供有关此组件正在做什么，
+它期望和生成什么类型的数据以及它期望和生成的FlowFile属性的丰富解释的 地方。 . 
+由于此文档采用HTML格式，因此您可以包含图像和表格 
+以最好地描述此元件.  可以使用相同的方法
+为Processors，ControllerServices和ReportingTasks 提供高级 文档. 
+
+[[provenance_events]] 
+== 物源事件物 
+
+源报告的不同事件类型是: 
+
+[options="header"] 
+|====================== 
+|Provenance Event        |描述 
+|ADDINFO                 |表示用于添加其他信息(例如新链接到新URI或UUID)的起源事件 
+|ATTRIBUTES_MODIFIED     |表示以某种方式修改了FlowFile的属性. 当同时报告另一个事件时，不需要此事件，因为另一个事件已包含所有FlowFile属性 
+|CLONE                   |表示FlowFile与其父FlowFile完全相同 
+|CONTENT_MODIFIED        |表示以某种方式修改了FlowFile的内容. 使用此事件类型时，建议您提供有关如何修改内容的详细信息 
+|CREATE                  |表示FlowFile是从未从远程系统或外部进程接收的数据生成的 
+|DOWNLOAD                |表示用户或外部实体下载了FlowFile的内容 
+|DROP                    |表示由于对象到期之外的某些原因导致对象生命结束的起源事件 
+|EXPIRE                  |表示由于未及时处理对象而导致对象生命结束的起源事件 
+|FETCH                   |指示使用某些外部资源的内容覆盖FlowFile的内容. 这与RECEIVE事件类似，但不同之处在于RECEIVE事件旨在用作将FlowFile引入系统的事件，而FETCH用于指示现有FlowFile的内容被覆盖 
+|FORK                    |表示一个或多个FlowFiles是从父FlowFile派生的 
+|JOIN                    |表示单个FlowFile是通过将多个父FlowFiles连接在一起而派生的 
+|RECEIVE                 |表示从外部进程接收数据的来源事件. 此事件类型应该是FlowFile的第一个事件. 因此，从外部源接收数据并使用该数据替换现有FlowFile内容的组件应使用FETCH事件类型，而不是RECEIVE事件类型 
+|REPLAY                  |表示重放FlowFile的originance事件. 事件的UUID指示正在重播的原始FlowFile的UUID. 该事件包含一个父UUID，它也是正在重放的FlowFile的UUID，以及一个子UUID，它是新创建的FlowFile的UUID，它将被重新排队等待处理 
+|ROUTE                   |表示FlowFile已路由到指定的关系，并提供有关FlowFile路由到此关系的原因的信息 
+|SEND                    |表示将数据发送到外部进程的originance事件 
+|UNKNOWN                 |表示原产地事件的类型未知，因为尝试访问该事件的用户无权知道该类型 
+|====================== 
+
+
+== 通用组件模式 
+
+虽然Orchsym Studio用户可以使用许多不同的组件，但
+绝大多数组件 属于 
+几种常见的设计模式之一.下面，我们讨论这些 
+模式，模式是否合适， 
+我们遵循这些模式的原因，以及
+应用此类模式时需要注意的事项 .请注意，
+下面讨论的模式 和建议是一般指导原则，而不是 
+强化规则. 
+
+
+[[ingress]] 
+=== 数据入口 
+
+将数据提取到Orchsym Studio中的组件具有一个
+名为的关系 `success`.此组件
+通过ProcessSession 生成 新的FlowFiles `create` 方法，不会
+从传入的连接中提取 FlowFiles. 
+组件名称以"Get”或"Listen”开头，具体取决于它是否 
+轮询外部源或公开 
+某些外部源可以连接的接口.名称以
+用于通信的协议结束 . 
+遵循这种模式的组件包括 `GetFile`， `GetSFTP`， 
+`ListenHTTP`，和 `GetHTTP`. 
+
+此组件可以在
+使用该方法的方法中创建或初始化连接池 `@OnScheduled` 注解. 
+但是，由于通信问题可能会阻止 
+建立连接或导致连接 
+终止，因此
+此时不会创建连接本身 .相反，连接是 
+从池中创建或租用的 `onTrigger` 方法. 
+
+该 `onTrigger` 此组件的方法首先
+从连接池租用 连接(如果可能)， 
+或以其他方式创建与外部服务的连接.当没有 
+来自 
+外部源的数据时， `yield` ProcessContext 
+的方法由组件调用， 并且该方法返回，以便 
+此组件避免持续运行和耗尽资源 
+而没有任何好处.否则，此 
+组件然后通过ProcessSession创建FlowFile `create` 
+方法并为
+FlowFile 分配适当的 文件名和路径(通过添加 `filename` 和 `path` 
+属性)，以及
+可能适当的任何其他 属性.
+通过ProcessSession获取FlowFile内容的OutputStream `write` 方法，传递一个新的 
+OutputStreamCallback(通常是 
+一个匿名的内部类).在此回调中，组件 
+能够写入FlowFile并将
+内容从外部资源流式传输 到FlowFile的OutputStream. 
+如果希望
+将InputStream 的全部内容写入 FlowFile，则 `importFrom` 
+ProcessSession的方法 可能比使用起来更方便 
+`write` 方法. 
+
+当此组件希望接收许多小文件时， 
+建议
+在提交会话之前从单个会话创建多个FlowFiles .通常，这允许 
+框架
+更有效地处理新创建的FlowFiles 的内容 . 
+
+此组件生成一个Provenance事件，指示它已 
+接收数据并指定数据来自 
+何处.此组件应记录
+FlowFile 的创建， 以便
+可以通过分析日志来确定FlowFile的 来源，如有必要. 
+
+此组件确认收到数据和/或
+从外部源删除 数据， 
+以防止接收重复文件. *只有在创建
+了FlowFile 的ProcessSession提交 后才能执行此操作 
+！*不遵守此原则可能会 
+导致数据丢失，因为
+在提交会话之前重新启动Orchsym Studio 将导致临时 
+文件被删除.但请注意， 
+可以使用此方法接收重复数据，因为 
+在
+提交会话之后以及在确认或
+从外部源中删除数据之前 可以重新启动应用程序 .但是，一般而言， 
+潜在的数据重复优于潜在的数据丢失.该 
+连接最后返回或添加到 
+连接池，这取决于连接是否被出租 
+从连接池开始或 
+在创建 `onTrigger` 方法. 
+
+如果存在通信问题，则通常会
+终止连接，并且不会将连接 返回(或添加)到 
+连接池.与远程系统
+的连接被拆除， 连接池在使用
+注释的方法中关闭 `@OnStopped` 注释，以便可以回收资源. 
+
+
+=== 数据出口 
+
+将数据发布到外部源的组件有两个 
+关系: `success` 和 `failure`.所述 
+组件名称以"PUT”之后是所使用的协议开始 
+进行数据传输.
+遵循这种模式的组件 包括 `PutEmail`， `PutSFTP`，和 
+`PostHTTP` (请注意，该名称不 
+以"Put”开头，因为这会导致混淆，因为PUT和 
+POST在处理
+HTTP 时具有特殊含义 ). 
+
+此组件可以在
+使用该方法的方法中创建或初始化连接池 `@OnScheduled` 注解. 
+但是，由于通信问题可能会阻止 
+建立连接或导致连接 
+终止，因此
+此时不会创建连接本身 .相反，连接是 
+从池中创建或租用的 `onTrigger` 方法. 
+
+该 `onTrigger` 方法首先从
+ProcessSession通过获取FlowFile `get` 方法.如果没有FlowFile 
+可用，则该方法返回而不获取与
+远程资源的连接 . 
+
+如果至少有一个FlowFile可用，则组件会
+从连接池获取 连接(如果可能)， 
+或以其他方式创建新连接.如果组件既不 
+能从连接池租用连接 
+也不能创建新连接，则FlowFile将路由到 `failure`， 
+记录事件，方法返回. 
+
+如果获得了连接，则组件
+通过调用获取到FlowFile内容的InputStream 
+`read` ProcessSession上的方法并传递一个InputStreamCallback 
+(通常是一个匿名的内部类)， 
+并从该回调中传递FlowFile的内容 
+到目的地.记录事件 
+以及传输文件所花费的时间和传输文件的数据 
+速率. 
+通过
+从ProcessSession 获取报告者，向ProvenanceReporter报告SEND事件 
+`getProvenanceReporter` 方法和调用 `send` 关于
+记者的方法 .连接将返回或添加 
+到连接池，具体取决于连接是
+从池租用 还是由新创建的 
+`onTrigger` 方法. 
+
+如果存在通信问题，则通常会
+终止连接，并且不会将连接 返回(或添加)到 
+连接池.如果将数据发送到 
+远程资源时出现问题，则处理
+错误的所需方法 取决于一些注意事项.如果问题与 
+网络状况有关，则FlowFile通常会 
+路由到 `failure`.FlowFile不会受到惩罚，因为 
+数据没有必要存在问题.与
+<<ingress>>组件的情况不同 ，我们通常不会调用 `yield` 在 
+ProcessContext上.这是因为在
+摄取的情况下， 在组件能够
+执行其功能之前，FlowFile不存在 .但是，在Put Processor的情况下， 
+DataFlow Manager可以选择路由 `failure`到不同的 
+组件.这可以允许在一个系统
+出现问题的情况下使用"备份”系统， 或者可以用于
+跨多个系统的负载 分配. 
+
+如果出现与数据相关的问题，则应
+采用两种方法之一 .首先，如果问题可能会 
+解决，FlowFile会受到惩罚，然后路由到 
+`failure`.例如，
+当使用PutFTP时， 由于文件命名
+冲突而无法传输FlowFile .假设最终 
+将从目录中删除该文件，以便可以传输新文件. 
+因此，我们惩罚FlowFile并路由到 
+`failure` 这样我们以后可以再试一次.在另一种情况下，如果数据存在 
+实际问题(例如数据不 
+符合某些要求的规范)，
+可采取不同的方法 .在这种情况下，
+分开它可能是有利 的 `failure` 关系成一个 `failure` 和a 
+`communications failure` 关系.这允许 
+DataFlow Manager确定如何
+单独处理每个案例 .在这些情况下，
+通过
+在创建关系时在"描述”中对其进行澄清，很好地记录 两个关系之间的差异 . 
+
+与远程系统的连接被拆除，连接池 
+在
+注释的方法中关闭 `@OnStopped` 这样可以回收资源. 
+
+
+=== 基于内容的路由(一对一) 
+
+基于内容路由数据的组件将采用以下两种 
+形式之一:将传入的FlowFile路由到 
+一个目的地，或将传入数据路由到0个或更多目的地. 
+在这里，我们将讨论第一个案例. 
+
+此组件有两种关系: `matched` 和 `unmatched`.如果需要 
+特定的数据格式，组件 
+也将具有 `failure`输入
+不是预期格式时使用的关系 .组件公开 
+一个指示路由标准的属性. 
+
+如果指定路由条件的属性需要处理( 
+例如编译正则表达式)，则此处理 
+在使用注释的方法中完成 `@OnScheduled`， 如果可能的话.
+然后将 结果存储在标记
+为的成员变量中 `volatile`. 
+
+该 `onTrigger` 方法获取单个FlowFile.该方法
+通过ProcessSession 读取FlowFile 的 内容 `read` 
+方法，在数据流传输时评估匹配条件.然后， 
+组件确定是否应该将FlowFile 
+路由到 `matched` 要么 `unmatched`根据
+条件是否 匹配，并将FlowFile路由到适当的 
+关系. 
+
+然后，组件发出一个Provenance ROUTE事件，指示 
+组件将FlowFile路由到哪个关系. 
+
+此组件使用注释进行注释 `@SideEffectFree` 和 
+`@SupportsBatching` 来自的注释 `org.apache.Orchsym Studio.annotations.behavior` 
+包. 
+
+
+=== 基于内容的路由(一对多) 
+
+如果组件将单个FlowFile路由到可能的许多 
+关系，则此组件将
+与上述基于内容的路由数据组件略有不同 .此 
+组件通常具有
+由用户动态定义的关系 以及 `unmatched` 关系. 
+
+为了使用户能够以额外定义属性， 
+该 `getSupportedDynamicPropertyDescriptor` 方法必须被 
+覆盖.此方法返回带有提供的
+名称和适用的Validator 的PropertyDescriptor， 以确保 
+用户指定的匹配条件有效. 
+
+在此组件中，由...返回的关系集 
+`getRelationships` method是
+标记的成员变量 `volatile`.此Set最初构造为一个 
+名为的Relationship `unmatched`. 该 `onPropertyModified` 
+重写方法 ，以便在添加或删除属性时，
+创建具有相同名称的新 关系.如果组件具有 
+非用户定义的属性，则检查
+指定的属性是否是用户定义的非常重要 .这可以通过
+调用来实现 `isDynamic` 
+传递给此方法的PropertyDescriptor的 方法.如果此属性是动态的， 
+则会创建一组新的关系，并将先前的一组 
+关系复制到其中.这个新集合 
+要么添加了新创建的关系，要么从中删除 
+，具体取决于是否将新属性添加 
+到组件或删除了属性(
+检查属性删除是否 检查此函数的第三个参数是否为 `null`). 
+然后更新包含"关系集”的成员变量 
+以指向此新集. 
+
+如果指定路由条件的属性需要处理( 
+例如编译正则表达式)，则此处理
+在使用注释的方法中完成 `@OnScheduled`， 如果可能的话.
+然后将结果 存储在标记为的成员变量中 `volatile`. 
+该成员变量通常是类型 `Map` 密钥的 
+类型 `Relationship` 并且值的类型由
+处理属性值的结果定义 . 
+
+该 `onTrigger` 方法通过获取FlowFile `get` 
+ProcessSession的方法 . 如果没有可用的FlowFile，则立即返回. 
+否则，将创建一组类型关系.该方法
+通过ProcessSession 读取FlowFile 的 内容 `read` 方法， 
+在数据流传输时评估每个匹配条件.对于
+匹配的任何 条件，与该匹配
+条件关联的关系 将添加到"关系集”中. 
+
+在读取FlowFile的内容后，该方法检查 
+"关系集”是否为空.如果是这样，原始FlowFile会 
+添加一个属性来指示它被
+路由到的关系并被 路由到 `unmatched`.记录此信息，
+发出一个 Provenance ROUTE事件，该方法返回.如果
+Set 的大小 等于1，则原始FlowFile会
+添加一个属性 以指示它被
+路由到的关系， 并路由到Set中条目指定的Relationship. 
+记录此信息，为FlowFile发出一个Provenance ROUTE事件， 
+该方法返回. 
+
+如果Set包含多个Relationship，则 
+Processor会为每个Relationship创建一个FlowFile的克隆， 
+但
+第一个除外 . 这是通过 `clone` 
+ProcessSession的方法 .无需报告CLONE Provenance事件， 
+因为 
+框架将为您处理此问题.原始FlowFile和每个 
+克隆都被路由到适当的关系，其属性
+指示关系 的名称.
+为每个FlowFile发出一个Provenance ROUTE事件 . 记录此信息，方法返回. 
+
+此组件使用注释进行注释 `@SideEffectFree` 和 
+`@SupportsBatching` 来自的注释 
+`org.apache.Orchsym Studio.annotations.behavior` 
+包. 
+
+
+=== 基于内容的路由流(一对多)
+
+先前对基于内容的路由(一对多) 的描述 
+提供了
+创建非常强大的组件的抽象 .但是，它假定每个 
+FlowFile将
+完整路由 到零个或多个关系.如果传入的
+数据格式是
+许多不同信息的"流”， 该怎么办？ - 我们想将
+这个流的不同部分发送 到 
+不同的关系？例如，假设我们想要一个 
+RouteCSV组件，以便 
+配置多个正则表达式.如果
+CSV文件中的一行 与正则
+表达式匹配 ，则该行应包含在出站FlowFile中 
+与关联关系中. 
+如果正则表达式与关系
+"has-apples” 相关联 且正则表达式 
+与FlowFile中的1,000行相匹配，则应该有一个出站 
+FlowFile用于"has-apples”关系，其中包含1,000行. 
+如果不同的正则表达式 
+与关系"has-oranges”相关联并且正则 
+表达式与
+FlowFile 中的50行相匹配 ，则应该有一个出站FlowFile用于"has-oranges” 
+关系，其中包含50行. 
+一世.Ë.，一个FlowFile进来，两个FlowFiles问世.两个 
+FlowFiles可能包含
+原始FlowFile中的一些相同文本行 ，或者它们可能完全不同. 
+这是
+我们将在本节中讨论的组件类型 . 
+
+此组件的名称以"Route”开头，并
+以其路由的数据类型的名称结束 .在我们
+这里的 示例中，我们正在路由CSV数据，因此组件名为 
+RouteCSV.此组件支持动态 
+属性.每个用户定义的属性都有一个映射到 
+关系名称的名称.
+Property 的值采用 "Match Criteria”所需的格式."在 
+我们的示例中，属性的值 
+必须是有效的正则表达式. 
+
+此组件维护内部 `ConcurrentMap` 其中的关键是 
+一个 `Relationship` 并且值 
+的类型取决于匹配条件的格式.在我们的例子中， 
+我们将保持一个 
+`ConcurrentMap<Relationship, Pattern>`. 此组件覆盖了 
+`onPropertyModified` 方法. 
+如果提供给此方法的新值(第三个参数)为null， 则从ConcurrentMap中删除名称由属性名称(第一个参数)定义 
+的Relationship。 
+
+.否则，处理新值 
+(在我们的示例中，通过调用 `Pattern.compile(newValue)`) 
+并且此值将添加到ConcurrentMap 
+，其中键再次为其名称由
+属性名称指定的Relationship . 
+
+此组件将覆盖 `customValidate` 方法.在这种 
+方法中，它将会从所有属性 
+的 `ValidationContext`并计算
+动态PropertyDescriptors的数量 (通过调用 `isDynamic()` 
+在PropertyDescriptor上).如果动态
+PropertyDescriptors 的数量 为0，则表示用户 
+尚未添加任何关系，因此组件返回a 
+`ValidationResult` 指示组件 
+无效，因为它没有添加关系. 
+
+组件返回所有的关系由用户指定 
+当其 `getRelationships` 方法被 
+调用并且还将返回一个 `unmatched` 关系.因为此 
+组件必须读取和写入 
+内容存储库(这可能相对昂贵)，如果
+预期此 组件将用于非常高的
+数据量，则添加允许
+用户指定是否有用 的属性可能更有利 他们是否关心 
+与任何匹配标准不匹配的数据. 
+
+当。。。的时候 `onTrigger` 调用方法后，组件通过获取 
+FlowFile `ProcessSession.get`.如果没有
+可用数据 ，则组件返回.否则，组件创建 
+一个 `Map<Relationship, FlowFile>`.我们 
+将此地图称为 `flowFileMap`.组件
+通过调用读取传入的 FlowFile `ProcessSession.read` 
+并提供一个 `InputStreamCallback`. 
+在回调中，组件
+从FlowFile 读取第一个数据 .然后，组件 
+根据此数据评估每个匹配条件.如果 
+特定条件(在我们的示例中， 
+正则表达式)匹配，则组件从中获取FlowFile 
+`flowFileMap` 属于适当的 
+关系.如果此
+关系的Map中尚不存在FlowFile ，则组件
+通过调用创建新的FlowFile `session.create(incomingFlowFile)` 然后将新的
+FlowFile 添加 到 `flowFileMap`.然后，组件 
+通过调用将此数据写入FlowFile `session.append` 
+与 `OutputStreamCallback`.从 
+这个OutputStreamCallback中，我们可以访问新的FlowFile的 
+OutputStream，因此我们可以将数据写入 
+新的FlowFile. 然后我们从OutputStreamCallback返回. 
+迭代每个匹配条件后， 
+如果它们都不匹配，我们执行与上面相同的例程 
+`unmatched` 关系(除非用户 
+将我们配置为不写出不匹配的数据).现在我们 
+打电话了 `session.append`，我们有一个新版本 
+的FlowFile. 因此，我们需要更新我们的 `flowFileMap`以 
+新FlowFile的关联关系. 
+
+如果在任何时候抛出异常，我们将需要将
+传入的FlowFile 路由 到 `failure`.我们还 
+需要删除每个新创建的FlowFiles，因为我们不会 
+将它们转移到任何地方.我们可以
+通过致电来实现 这一点 `session.remove(flowFileMap.values())`.此时， 
+我们将记录错误并返回. 
+
+否则，如果一切都成功，我们现在可以迭代了 
+`flowFileMap` 并将每个FlowFile传输到 
+相应的关系.然后将原始FlowFile 
+删除或路由到 `original` 关系. 
+对于每个新创建的FlowFiles，我们还会发出一个Provenance 
+ROUTE事件，指示
+FlowFile去往哪个关系 .
+在ROUTE事件的详细 信息
+中包含此FlowFile中包含多少条信息 也很有帮助.这使得DataFlow Manager可以 
+在查看Provenance 
+Lineage视图时轻松查看 
+给定输入FlowFile的每个 关系有多少信息。. 
+
+此外，某些组件可能需要"分组” 
+发送到每个关系的数据，以便 发送到关系的每个FlowFile 
+具有相同的值.在我们的示例中，我们 
+可能希望允许正则表达式 
+具有捕获组，如果CSV中
+的两个不同的行与正则表达式匹配 但
+捕获组具有不同的 值，我们希望将它们添加到两个 
+不同的FlowFiles中.然后
+可以将匹配值 作为属性添加到每个FlowFile.这可以通过 
+修改 `flowFileMap`这样 
+它被定义为 `Map<Relationship, Map<T, FlowFile>>` 哪里 `T` 是 
+分组函数的类型(在我们的 
+示例中，该组将是一个 `String` 因为它是 
+评估正则表达式的 
+捕获组的结果). 
+
+
+
+=== 基于属性 
+
+的路由此组件几乎与上述基于内容
+组件的路由数据相同 .它采用两种不同的形式:一对一 
+和 
+一对多，基于内容的路由组件也是如此.
+但是，此 组件不会对ProcessSession进行任何调用 `read` 
+方法， 
+因为它不读取FlowFile内容.这个组件通常非常 
+快，所以 `@SupportsBatching` 
+在这种情况下，注释可能非常重要 . 
+
+
+
+=== 拆分内容(一对多) 
+
+此组件通常不需要用户配置， 
+但要创建的每个拆分的大小除外. 该 `onTrigger` method 从其输入队列中
+获取 
+FlowFile. 创建FlowFile类型的列表. 
+原始FlowFile通过ProcessSession读取 `read` 方法， 
+并使用InputStreamCallback.在InputStreamCallback中， 
+读取内容，直到达到FlowFile 
+应该被 
+拆分的点.如果不需要拆分，则返回Callback，并将原始 
+FlowFile路由到 `success`.在这种情况下，会发出一个Provenance ROUTE 
+事件 
+.通常，在将
+FlowFile 路由到时不会发出ROUTE事件 `success`因为这会产生一个非常冗长的血统 
+， 
+很难导航.然而，在这种情况下，该事件是 
+因为我们原本预期叉子事件和缺乏有用 
+的 
+任何事件很可能造成混乱.事实上，FlowFile 
+没有拆分，而是被转移到了 `success`记录， 
+方法返回. 
+
+如果达到需要拆分
+FlowFile的点，则通过ProcessSession创建新的 FlowFile `create(FlowFile)` 方法 
+或 
+`clone(FlowFile, long, long)` 方法.下一段代码取决于 
+是否 `create` 使用方法或 `clone` 使用方法. 
+两种方法如下所述.必须
+根据具体情况确定哪种解决方案是合适的 . 
+
+当数据不会
+从原始FlowFile直接复制到新的FlowFile 时，Create Method最合适 . 
+例如，如果仅复制某些数据，或者
+在复制到新
+FlowFile 之前将以某种方式修改 数据 ，则此方法是必需的.但是，如果新
+FlowFile 的内容 将是原始
+FlowFile 的一部分的精确副本 ，则克隆方法是首选. 
+
+*创建方法* 
+如果使用 `create` 方法，使用原始
+FlowFile作为参数调用该方法， 以便新创建的FlowFile将 
+继承 
+原始FlowFile的属性，并且
+框架将创建Provenance FORK事件 . 
+
+然后代码进入 `try/finally` 块. 内 `finally` 
+块，新创建的FlowFile添加到FlowFiles的列表 
+已经 
+被创建. 这是在一个 `finally` 阻止，如果 
+抛出异常，将适当地
+清理新创建的FlowFile . 
+内 `try` 阻止，回调通过
+调用ProcessSession来启动新的回调 `write` 使用
+OutputStreamCallback的方法 . 
+然后将适当的数据从
+原始FlowFile 的InputStream复制 到新FlowFile的OutputStream. 
+
+*克隆方法* 
+如果新创建的FlowFile的内容只是 
+原始FlowFile的字节的连续子集，则 
+最好 
+使用 `clone(FlowFile, long, long)` 方法而不是 
+`create(FlowFile)` ProcessSession的方法.在这种情况下，新FlowFile内容应该开始的原始FlwoFile 的 
+偏移量 作为第二个参数传递给
+
+`clone` 方法.新FlowFile 的 
+长度 
+作为第三个参数传递给 `clone` 
+方法.例如，如果原始FlowFile是10,000字节 
+，我们调用 `clone(flowFile, 500, 100)`，将
+返回给我们的FlowFile 将与之相同 `flowFile` 关于它的 
+属性.但是，新创建的FlowFile的内容 
+长度为100个字节，并且将从原始
+FlowFile的偏移量500开始 .也就是说，新创建的FlowFile的内容与 
+您复制原始
+FlowFile的字节500到599的内容 相同. 
+
+创建克隆后，它将添加到FlowFiles列表中. 
+
+在
+适用的情况下，此方法比Create方法更受欢迎 ， 
+因为不需要磁盘I / O..该框架能够简单地 
+创建一个新的FlowFile 
+，它引用原始FlowFile内容的一个子集，而 
+不是实际复制 
+数据. 但是，这并不总是可行的.例如，如果
+必须
+从原始FlowFile的开头复制标题 信息 并将其添加到
+每个Split 的开头 ， 
+那么此方法是不可能的. 
+
+
+*两种方法* 
+无论是使用克隆方法还是使用创建方法， 
+以下内容均适用: 
+
+如果在InputStreamCallback中的任何位置，达到了
+无法继续处理 的条件 
+(例如，输入格式不正确)， `ProcessException` 应该 
+抛出.对
+ProcessSession的调用 `read` 方法包裹在一个 `try/catch` 阻止 
+在哪里 `ProcessException` 被 
+抓了.如果捕获到异常，则会生成一条
+说明错误的日志消息 .
+通过ProcessSession删除新创建的FlowFiles 列表 `remove` 
+方法.原始的FlowFile 
+被路由到 `failure`. 
+
+如果没有出现问题，则将原始FlowFile路由到 `original` 
+并且所有新创建的FlowFiles都会 
+更新为包含以下属性: 
+
+[options="header"] 
+|=== 
+| Attribute Name | 描述 
+| `split.parent.uuid` | 原始FlowFile的UUID 
+| `split.index` |一个单一的数字，指示列表中的哪个FlowFile(
+  创建的第一个FlowFile 将具有值 `0`，第二个将有一个价值 `1`等等.) 
+| `split.count` | 已创建的拆分FlowFiles的总数 
+|=== 
+
+新创建的FlowFiles将路由到 `success`; 
+记录此事件 ; 并且该方法返回. 
+
+
+=== 基于内容更新属性 
+
+此组件与
+上面讨论的基于内容组件的路由非常相似 .而不是 
+将FlowFile路由到 `matched` 要么 `unmatched`，FlowFile 
+通常被路由到 `success` 要么 `failure` 
+和属性将根据需要添加到FlowFile.
+要添加的 属性的配置 
+方式类似于基于内容的路由(一对多)， 
+用户定义自己的 
+属性.属性的名称指示
+要添加的属性的名称 .
+属性的值 指示要应用于数据的一些匹配条件. 
+如果匹配条件与
+数据匹配 ，则添加一个名称与属性相同的 
+属性.
+属性的值 是匹配内容的条件. 
+
+例如，评估XPath表达式的组件可能允许 输入
+用户定义的XPath 
+.如果XPath与FlowFile的内容匹配，则该FlowFile 
+将添加一个属性，
+该属性 的名称等于Property name的名称，并且该值等于 与XPath匹配的
+XML Element或
+Attribute 的文本内容 . 该 `failure`
+如果
+在此示例中传入的FlowFile 不是有效的XML，则将使用 关系 . 该 `success`
+无论是否
+找到任何匹配，都将使用 关系 .然后，可以
+在适当时使用它来路由FlowFile . 
+
+此组件发出类型为ATTRIBUTES_MODIFIED的源事件. 
+
+
+=== 丰富/修改内容 
+
+丰富/修改内容模式非常常见且非常通用. 
+此模式负责任何 
+一般内容修改.对于大多数情况，此 
+组件标有 
+`@SideEffectFree` 和 `@SupportsBatching` 注释.组件 
+具有任意数量的必需
+属性和可选 属性，具体取决于组件的功能.组件 
+通常有一个 `success` 和 `failure` 关系. 
+该 `failure`通常在输入文件
+不是预期格式时使用关系 . 
+
+此组件获取FlowFile并使用
+ProcessSession 更新它 `write(StreamCallback)` 方法， 
+以便它能够从FlowFile的内容读取并写入FlowFile的 
+下一个版本的 
+内容.如果在回调期间遇到错误，则回调 
+将抛出一个 `ProcessException`.在 
+对ProcessSession的号召 `write` 方法包裹在一个 
+`try/catch` 抓住的块 `ProcessException` 
+并将FlowFile路由到失败. 
+
+如果回调成功，则会发出CONTENT_MODIFIED Provenance事件. 
+
+
+
+== 错误处理 
+
+编写组件时，可能会发生几种不同的意外情况. 
+
+如果组件本身不处理错误，组件开发人员必须了解Orchsym Studio框架的行为机制，了解 组件的
+错误处理方式非常重要 。.在这里，我们将讨论组件如何 
+在工作过程中处理意外错误. 
+
+
+=== 组件中的异常 
+
+执行期间 `onTrigger` 组件的方法，许多事情可能会 
+出错. 常见的故障情况包括: 
+
+- 传入的数据不是预期的格式. 
+- 与外部服务的网络连接失败. 
+- 读取或写入磁盘数据失败. 
+- 组件或从属库中存在错误. 
+
+任何这些条件都可能导致从组件抛出异常.从框架的 
+角度来看，有两种类型的异常可以转义组件: `ProcessException` 和 
+所有其他人. 
+
+如果从组件抛出ProcessException，框架将假定这
+是一个已知结果的失败 .此外，尝试稍后再次处理数据的条件可能 
+是成功的.因此，框架将回滚正在处理的会话并惩罚正在处理 
+的FlowFiles. 
+
+但是，如果任何其他Exception转义组件，框架将认为它是一个
+未被开发人员考虑的失败 .在这种情况下，框架还将回滚会话 
+并惩罚FlowFiles. 但是，在这种情况下，我们可以进入一些非常有问题的案例.例如， 
+组件可能处于不良状态并且可能持续运行，耗尽系统资源，而不提供 
+任何有用的工作. 这是相当常见的，例如，当连续抛出NullPointerException时. 
+为了避免这种情况，如果ProcessException以外的Exception能够转义组件 
+`onTrigger` 方法，框架也将"管理性地产生”组件.这意味着 
+组件不会被触发再运行一段时间.的时间量被配置 
+在 `Orchsym Studio.properties` 文件，但默认为10秒. 
+
+
+=== 回调中的异常:IOException，RuntimeException 
+
+通常情况下，当组件中发生异常时，它会在回调中发生(I.Ë.， 
+`InputStreamCallback`， `OutputStreamCallback`， 要么 `StreamCallback`).也就是说，在处理 
+FlowFile的内容时. 回调也可以抛出 `RuntimeException` 要么 `IOException`.在
+RuntimeException 的情况下 ，此异常将传播回 `onTrigger` 方法. 在一个案例中 
+`IOException`，Exception将被包装在ProcessException中，然后
+将从Framework抛出此ProcessException . 
+
+因此，建议使用回调的组件在a中执行此操作 `try/catch` 阻止 
+和捕获 `ProcessException` 以及任何其他 `RuntimeException` 他们希望他们的回调能够 
+抛出. 它是 *不* 建议组件抓住将军 `Exception` 要么 `Throwable` 然而，案件. 
+由于两个原因，这是不鼓励的. 
+
+首先，如果抛出了意外的RuntimeException，它可能是一个错误 
+并且允许框架回滚会话将确保没有数据丢失并确保DataFlow Manager 
+能够通过保持排队的数据来处理他们认为合适的数据地点. 
+
+其次，当从回调中抛出IOException时，实际上有两种类型的IOExceptions:
+从组件代码抛出的那些 (例如，数据不是预期的格式或网络连接失败)，以及 
+从那里抛出的那些内容存储库(存储FlowFile内容的位置).如果是后一种情况， 
+框架将捕获此IOException并将其包装到一个 `FlowFileAccessException`，延伸 `RuntimeException`. 
+这是明确完成的，以便Exception将转义 `onTrigger` 方法和框架可以
+适当地处理这个 条件. 捕获一般异常会阻止这种情况发生. 
+
+
+=== 刑罚与.屈服 
+
+当处理过程中出现问题时，框架公开了两种方法，允许组件开发人员避免执行 
+不必要的工作:"惩罚”和"屈服”."对于Orchsym Studio API新手来说，这两个概念可能会让人感到困惑. 
+开发人员可以通过调用来惩罚FlowFile `penalize(FlowFile)` ProcessSession的方法.这导致 
+FlowFile本身在一段时间内无法访问下游组件.FlowFile 
+不可访问的时间 由DataFlow Manager通过在Processor Configuration 
+对话框中设置"Penalty Duration”设置来确定 . 默认值为30秒.通常，当组件确定
+由于预期将自己排序的环境原因而无法处理数据时，这样做 .一个很好的例子是PutSFTP组件，
+如果SFTP服务器上已存在具有相同文件名的文件， 它将惩罚FlowFile.在这种情况下，组件会 
+惩罚FlowFile并将其路由到失败. 然后，DataFlow Manager可以将故障路由回相同的PutSFTP组件. 
+这样，如果文件存在具有相同文件名，则组件将不会再次尝试发送文件30秒 
+(或DFM配置组件使用的任何时间段).与此同时，它能够继续处理其他 
+FlowFiles. 
+
+另一方面，让步允许组件开发人员向框架指示它将无法在
+一段时间内执行 任何有用的功能.这通常发生在与远程
+资源通信的组件上 .如果组件无法连接到远程资源，或者如果远程资源需要提供数据 
+但报告它没有，则组件应该调用 `yield` 在...上 `ProcessContext` 对象然后返回.通过这样做 
+，组件告诉框架它不应该浪费资源来触发这个组件运行，因为 
+它没有什么可以做的- 最好使用这些资源来允许其他组件运行. 
+
+
+=== 会话回滚 
+
+到目前为止，我们已经讨论了 `ProcessSession`，我们通常简称为访问
+FlowFiles 的机制 . 但是，它提供了另一个非常重要的功能，即事务性.
+在ProcessSession 上调用的所有方法都 作为事务发生. 当我们决定结束交易时，我们可以通过电话来完成 
+`commit()` 或者通过电话 `rollback()`. 通常，这由处理 `AbstractProcessor` 上课:如果 `onTrigger` 方法 
+抛出异常，AbstractProcessor将捕获异常，调用 `session.rollback()`，然后重新抛出异常. 
+否则，AbstractProcessor将调用 `commit()` 在ProcessSession上. 
+
+但是，有时候开发人员会希望显式回滚会话.这可以
+通过调用来随时完成 `rollback()` 要么 `rollback(boolean)` 方法.如果使用后者，则布尔值表示是否 
+已从队列中提取的FlowFiles(通过ProcessSession) `get` 方法)在被添加
+回队列之前应该受到惩罚 . 
+
+什么时候 `rollback` 如果调用，则会丢弃该会话中FlowFiles发生的任何修改，包括 
+内容修改和属性修改.此外，所有Provenance事件都将被回滚(除了 
+通过传递值而发出的任何SEND事件 `true` 为了 `force` 论据).从
+输入队列中提取的FlowFile 然后被传输回输入队列(并且可选地被处罚)，以便可以再次处理它们. 
+
+另一方面，当 `commit` 调用方法后，FlowFile的新状态将保留在FlowFile存储库中，并且
+发生的任何Provenance事件都会保留 在Provenance存储库中.之前的内容被销毁(除非 
+另一个FlowFile引用相同的内容)，并且FlowFiles被传输到出站队列，以便 
+下一个组件可以对数据进行操作. 
+
+同样重要的是要注意这种行为如何受到影响 `org.apache.Orchsym Studio.annotations.behavior.SupportsBatching` 
+注解. 如果组件使用此注释，则调用 `ProcessSession.commit` 可能不会立即生效.相反， 
+这些提交可以一起批处理以提供更高的吞吐量.但是，如果在任何时候，组件回滚 
+ProcessSession，则自上次调用以来所有更改 `commit` 将被丢弃，所有"批量”提交将生效. 
+这些"批量”提交不会回滚. 
+
+
+
+
+== 一般设计注意事项 
+
+在设计组件时，需要考虑一些重要的设计."开发人员指南”的这一部分将开发人员 
+在创建组件时应考虑的一些想法放在首位. 
+
+=== 考虑用户 
+
+在开发组件(或任何其他元件)时要记住的最重要的概念之一是
+您正在创建的用户 体验.重要的是要记住，作为这样一个元件的开发者，您可能对其
+他人没有的上下文有 重要的了解.应始终提供文档，以便 
+不熟悉该过程的人员能够轻松使用它. 
+
+在考虑用户体验时，同样重要的是要注意一致性非常重要.最好 
+坚持标准的"命名 - 对流”.对于组件名称，属性名称和值，关系 
+名称以及用户将体验到的任何其他方面都是如此. 
+
+简单至关重要！避免添加您不希望用户理解或更改的属性.作为开发人员，我们被 
+告知硬编码值很糟糕.但这有时会导致开发人员暴露属性，当要求澄清时， 
+告诉用户只保留默认值. 这导致混乱和复杂性. 
+
+
+=== 内聚和可重用性 
+
+为了制作单一，有凝聚力的单元，开发人员有时会试图将多个功能组合到一个组件中. 
+当组件期望输入数据采用格式X以便组件可以将数据转换为 
+格式Y并将新格式化的数据发送到某些外部服务时，情况就是如此。. 
+
+采用这种方法格式化特定端点的数据，然后将数据发送到同一组件内的该端点 
+有几个缺点: 
+
+- 组件变得非常复杂，因为它必须执行数据转换任务以及
+  将数据发送到远程服务的任务 . 
+- 如果组件无法与远程服务通信，它将把数据路由到a `failure` 关系.在这种情况下， 
+  组件将负责再次执行数据转换. 如果再次失败，则翻译再次完成. 
+- 如果我们有五个不同的组件在传输数据之前将传入的数据转换为这种新格式，那么我们有 
+  大量重复的代码. 例如，如果架构发生更改，则必须更新许多组件. 
+- 组件完成发送到远程服务后，将丢弃此中间数据.中间数据格式 
+  可能对其他组件有用. 
+
+为了避免这些问题，使组件更可重复使用的，组件应该始终坚持"做一件事的主要做 
+很好."这样的组件应分成两个独立的组件:一个用于将数据从格式X转换为格式Y，另一个 
+组件用于将数据发送到远程资源. 
+
+
+[[naming-convensions]] 
+=== 命名约定 
+
+为了向用户提供一致的外观，建议组件遵守标准命名约定.以下 
+是使用的标准约定列表: 
+
+- 从远程系统提取数据的组件名为Get <Service>或Get <Protocol>，具体取决于它们是否
+  通过已知协议(例如GetHTTP或GetFTP)从任意源轮询数据， 或者它们是否从已知服务中提取数据(比如GetKafka) 
+- 将数据推送到远程系统的组件名为Put <Service>或Put <Protocol>. 
+- 关系名称较低，并使用空格来描述单词. 
+- 属性名称大写重要单词，就像书名一样. 
+
+
+
+=== 组件行为注释 
+
+创建组件时，开发人员能够向框架提供有关如何最
+有效地利用组件的提示 . 这是通过将注释应用于Processor的类来完成的.可以应用于
+组件的注释 存在于三个子包中 `org.apache.Orchsym Studio.annotations`. 那些人 `documentation` 子包用于 
+向用户提供文档. 那些人 `lifecycle` 子包指示框架应该
+在组件上调用哪些方法 ，以响应适当的生命周期事件. 那些人 `behavior` package 
+帮助框架了解如何在调度和一般行为方面与Processor进行交互. 
+
+以下注释来自 `org.apache.Orchsym Studio.annotations.behavior` package可用于修改框架 
+处理组件的方式: 
+
+- `EventDriven`:指示可以使用事件驱动的调度
+策略调度组件的框架 .此策略目前仍处于试验阶段，但可能导致
+数据流的资源利用率降低，而这些 数据流无法处理极高的数据速率. 
+
+- `SideEffectFree`:表示组件在Orchsym Studio外部没有任何副作用.因此， 
+框架可以使用相同的输入多次调用组件，而不会导致任何意外 
+结果. 这意味着幂等行为.框架可以使用它来通过
+执行诸如将ProcessSession从一个组件传输到另一个组件之类的操作来提高效率 ，这样如果 
+出现问题，许多组件' 可以回滚并再次执行操作. 
+
+- `SupportsBatching`:此注释表明框架可以将多个
+ProcessSession提交批处理 到单个提交中.如果存在此注释，则用户将能够
+在"组件的调度”选项卡中选择 是否更喜欢高吞吐量或更低延迟.这个注释应该 
+应用于大多数组件，但它有一个警告:如果组件调用 `ProcessSession.commit`， 
+无法保证数据已安全存储在Orchsym Studio的内容，FlowFile和Provenance存储库中. 
+因此，不适合那些从外部源接收数据，提交会话，
+然后删除远程数据或使用远程资源确认事务的组件 . 
+
+- `TriggerSerially`:当存在此批注时，框架将不允许用户安排多个 
+并发线程来执行 `onTrigger` 方法一次.相反，线程数("并发任务”) 
+将始终设置为 `1`. 这样做 *不*但是，意味着组件不必是线程安全的， 
+就像正在执行的线程一样 `onTrigger` 可能会在调用之间发生变化. 
+
+- `TriggerWhenAnyDestinationAvailable`:默认情况下，如果任何出站
+队列已满，Orchsym Studio将不会安排组件运行 . 这允许背压一直应用于组件链.但是，
+即使其中一个出站队列已满，某些组件 也可能需要运行.此注释表示
+如果任何关系"可用”，则应运行组件 ."如果没有使用
+该关系的连接已满，则称关系”可用" . 例如，DistributeLoad Processor使用此批注.如果使用"循环” 
+调度策略，则如果任何出站队列已满，则组件将不会运行.但是，如果使用"下一个可用” 
+调度策略，则组件将在任何关系完全可用时运行，并且
+仅将FlowFiles路由 到那些可用的关系. 
+
+- `TriggerWhenEmpty`:默认行为是仅在其输入队列至少有一个
+FlowFile或者组件没有输入队列(这是典型的"源”组件)时触发组件才能运行 .应用此批注 
+将导致框架忽略输入队列的大小并触发组件，无论输入队列中是否 
+有任何数据.例如，如果需要触发组件
+定期运行以超时网络连接，这很有用 . 
+
+   - `InputRequirement`:默认情况下，所有组件将允许用户为组件创建传入连接，但 
+        如果用户未创建传入连接，则组件仍然有效并可以安排运行.但是，对于 
+        预期用作"源组件”的组件，这可能会使用户感到困惑，并且用户可能会尝试 
+        将FlowFiles发送到该组件，仅用于FlowFiles排队而不进行处理.相反，如果组件 
+        期望传入的FlowFiles但没有输入队列，则组件将被安排运行但不会执行任何工作， 
+        因为它将不会收到FlowFile，这也会导致混淆. 因此，我们可以使用 `@InputRequirement` 注释 
+        并为其提供值 `INPUT_REQUIRED`, `INPUT_ALLOWED`， 要么 `INPUT_FORBIDDEN`.这为框架提供了 
+        有关何时使组件无效，或者用户是否应该甚至能够将连接绘制到 
+        组件的信息. 例如，如果组件使用注释 `InputRequirement(Requirement.INPUT_FORBIDDEN)`，那么用户 
+        甚至无法创建与该组件的连接作为目标. 
+
+
+=== 数据缓冲 
+
+要记住的一点是Orchsym Studio提供了通用的数据处理功能. 数据可以是任何格式.组件 
+通常安排有多个线程.开发人员对Orchsym Studio做出的一个常见错误是将
+FlowFile的所有内容缓冲 到内存中.虽然有些情况需要这样做，但应尽可能避免，除非众所周知 
+数据的格式是什么.例如，负责对XML文档执行XPath的组件需要
+将数据的全部内容加载 到内存中. 这通常是可以接受的，因为预计XML不会非常大.但是，
+搜索特定字节序列的组件 可用于搜索数百千兆字节或更多的文件.试图将其加载 
+到内存中会导致很多问题- 特别是如果多个线程同时处理不同的FlowFiles. 
+
+不是将这些数据缓冲到内存中，而是建议在从内容存储库流式传输时评估数据 
+(i.Ë.，扫描内容 `InputStream` 通过提供给你的回调 `ProcessSession.read`).当然，在这种情况下， 
+我们不想从Content Repository读取每个字节，因此我们将使用BufferedInputStream或以某种方式缓冲一些 
+少量数据，视情况而定. 
+
+
+
+
+
+[[controller-services]] 
+== 控制器服务 
+
+的 `ControllerService` interface允许开发人员以
+干净
+，一致的方式在JVM 上共享 功能和状态 . 界面类似于 `Processor` 
+接口，但不 
+具有 `onTrigger` 方法，因为Controller Services未 
+安排定期运行，并且 
+Controller Services没有关系，因为它们未 
+直接集成到流中.相反， 
+它们由组件，报告任务和 
+其他控制器服务使用. 
+
+[[developing-controller-service]] 
+=== 开发ControllerService 
+
+就像使用Processor接口一样，ControllerService 
+接口公开了配置， 
+验证和初始化的方法.这些方法都与
+组件接口的 方法完全相同， 
+除了 `initialize` 方法通过了 
+`ControllerServiceInitializationContext`而 
+不是一个 `ProcessorInitializationContext`. 
+
+控制器服务附带一个组件
+没有的附加约束 .控制器服务 
+必须包含扩展的接口 `ControllerService`. 
+然后，实现
+只能通过其界面进行交互 .  例如，组件 
+永远不会被赋予
+ControllerService 的具体实现， 因此必须仅通过
+扩展的接口引用服务 `ControllerService`. 
+
+此约束主要是因为组件可以存在于 
+一个Orchsym Studio存档(NAR)中，而
+组件所在的控制器服务的实现 可以存在于 
+不同的NAR中.这是通过 
+框架动态实现公开的接口来实现的 
+，框架可以 
+切换到适当的ClassLoader并
+在具体实现上调用所需的方法。 .但是， 
+为了使其工作，组件和控制器服务 
+实现必须共享
+Controller Service接口的相同定义 .因此，这两个 
+NAR必须依赖于包含
+Controller Service接口的NAR . 有关更多信息，请参见<<nars>>. 
+
+
+[[interacting-with-controller-service]] 
+=== 用ControllerService相互作用 
+
+ControllerServices可以由组件，另一获得 
+ControllerService或ReportingTask 
+由ControllerServiceLookup的手段或通过使用 
+`identifiesControllerService` 该方法 
+的PropertyDescriptor的生成器类.ControllerServiceLookup可以 
+由组件从 
+传递给的ProcessorInitializationContext获取 `initialize` 
+方法.同样，它由 
+ControllerService从ControllerServiceInitializationContext获取 
+，并由ReportingTask通过 
+ReportingConfiguration对象传递给 `initialize` 方法. 
+
+但是，对于大多数用例，使用 `identifiesControllerService` 
+PropertyDescriptor Builder的方法 
+是首选方法，也是最简单的方法.为了使用这个 
+方法，我们创建了一个PropertyDescriptor 
+，它引用了一个Controller服务: 
+
+[source,java] 
+
+---- 
+public static final PropertyDescriptor SSL_CONTEXT_SERVICE = new PropertyDescriptor.Builder() 
+  .name("SSL Context Service") 
+  .description("Specified the SSL Context Service that can be used to create secure connections") 
+  .required(true) 
+  .identifiesControllerService(SSLContextService.class) 
+  .build(); 
+---- 
+
+
+使用此方法，将提示用户提供
+应使用的SSL上下文 服务.这是 
+通过为用户提供一个下拉菜单来完成的，他们 
+可以从中选择任何
+已配置的SSLContextService 配置，而不管其实现方式如何。. 
+
+为了使用此服务，组件可以使用以下代码: 
+
+[source,java] 
+
+---- 
+final SSLContextService sslContextService = context.getProperty(SSL_CONTEXT_SERVICE) 
+.asControllerService(SSLContextService.class); 
+---- 
+
+
+请注意这里 `SSLContextService` 是一个扩展
+ControllerService 的接口 .目前唯一的实施 
+是 `StandardSSLContextService`.但是， 
+组件开发人员无需担心此 
+细节. 
+
+
+
+
+
+
+
+== 报告任务 
+
+到目前为止，我们几乎没有提到如何向外界传达 
+Orchsym Studio及其元件 
+的表现.系统是否能够跟上传入的数据 
+速率？
+系统还能 处理多少？在一天的高峰时段与一天
+中最不忙的时间处理多少数据 ？ 
+
+为了回答这些问题以及更多问题，Orchsym Studio提供了 通过以下方式向外部服务
+报告状态， 
+统计，指标和监控信息 
+的功能。 `ReportingTask` 
+接口.ReportingTasks可以访问大量信息，以 
+确定系统的运行方式. 
+
+
+=== 开发报告任务 
+
+与Processor和ControllerService接口一样， 
+ReportingTask接口公开了 
+配置，验证和初始化的方法.这些方法都
+与
+Processor和ControllerService接口的方法 完全相同， 除了 
+`initialize` 方法通过了 `ReportingConfiguration` 
+对象，而不是其他
+元件接收的初始化对象 .ReportingTask也有 
+一个 `onTrigger` 框架调用的方法，用于触发 
+任务执行其作业. 
+
+内 `onTrigger` 方法，ReportingTask被授权访问 
+ReportingContext，从中
+可以获得有关Orchsym Studio实例的配置 和信息.该 
+BulletinRepository允许公告进行查询 
+，并允许ReportingTask提交自己的公告，这样 
+的信息将呈现给用户.在 
+该通过上下文进行访问ControllerServiceLookup提供 
+访问ControllerServices已 
+配置.但是，这种获取Controller Services的方法 
+不是首选方法.相反，
+获取Controller服务的 首选方法是
+在PropertyDescriptor中引用 Controller服务， 
+如<<与控制器 - 服务交互>>部分中所述. 
+
+该 `EventAccess` 通过ReportingContext公开的对象 
+提供对 `ProcessGroupStatus`， 
+它显示
+过程组，
+组件，连接和其他元件在过去五分钟内 处理的数据量的统计信息 .此外， 
+EventAccess对象提供 
+对 ++ ProvenanceEventRecord ++ 
+已经存储在 `ProvenanceEventRepository`.
+当
+从外部源接收数据，发送到外部服务， 
+从系统中删除，修改 
+或根据某些决策路由时，组件发出这些 源事件事件 . 
+
+每个ProvenanceEvent都具有FlowFile的ID，事件的类型，事件 
+的创建时间，以及 在元件访问 
+FlowFile时与FlowFile关联的所有FlowFile属性 以及与之关联的FlowFile属性。所述 FlowFile作为处理的结果，所述 事件描述
+
+
+
+.这为
+ReportingTasks 提供了大量信息 ，允许以
+多种不同方式生成报告， 以公开
+任何操作问题所需的指标和监控功能 . 
+
+== UI扩展 
+
+Orchsym Studio中有两个UI扩展点: 
+
+- 自定义组件UI 
+- 内容查看器 
+
+可以创建自定义UI，以提供超出大多数组件设置中可用的标准属性/值表的配置选项.  具有自定义UI的组件的示例是 link:https://github.com/apache/Orchsym Studio/tree/master/Orchsym Studio-nar-bundles/Orchsym Studio-update-attribute-bundle[UpdateAttribute^] 和 link:https://github.com/apache/Orchsym Studio/tree/master/Orchsym Studio-nar-bundles/Orchsym Studio-standard-bundle[JoltTransformJSON^]. 
+
+可以创建内容查看器以扩展可在Orchsym Studio中查看的数据类型. Orchsym Studio在lib目录中附带NAR，其中包含数据类型的内容查看器，如csv，xml，avro，json(standard-nar)和图像类型，如png，jpeg和gif(media-nar). 
+
+=== 自定义组件UI 
+
+要将自定义UI添加到组件: 
+
+1. 创建您的UI. 
+2. 在组件NAR中构建和捆绑WAR. 
+3. WAR需要包含一个 `Orchsym Studio-processor-configuration` META-INF目录中的文件，它将Custom UI与该组件相关联. 
+4. 将NAR放在lib目录中，当Orchsym Studio启动时它将被发现. 
+五. 在组件的"配置组件”窗口中，"属性”选项卡现在应该具有 `Advanced` 按钮，将访问自定义UI. 
+
+作为示例，这是UpdateAttribute的NAR布局: 
+
+.更新属性NAR布局 
+------------------------------------------------------------------------------------------------ 
+Orchsym Studio-update-attribute-bundle 
+│ 
+├── Orchsym Studio-update-attribute-model 
+│ 
+├── Orchsym Studio-update-attribute-nar 
+│ 
+├── Orchsym Studio-update-attribute-processor 
+│ 
+├── Orchsym Studio-update-attribute-ui 
+│   ├── pom.xml 
+│   └── src 
+│       └── main 
+│           ├── java 
+│           ├── resources 
+│           └── webapp 
+│               └── css 
+│               └── images 
+│               └── js 
+│               └── META-INF 
+│               │   └── Orchsym Studio-processor-configuration 
+│               └── WEB-INF 
+│ 
+└── pom.xml 
+------------------------------------------------------------------------------------------------ 
+
+
+与内容 `Orchsym Studio-processor-configuration` 如下: 
+
+`org.apache.Orchsym Studio.processors.attributes.UpdateAttribute:${project.groupId}:Orchsym Studio-update-attribute-nar:${project.version}` 
+
+NOTE: 还可以为Controller Services和Reporting Tasks实现自定义UI. 
+
+
+=== 内容查看者 
+
+要添加内容查看器: 
+
+1. 在组件NAR中构建和捆绑WAR. 
+2. WAR需要包含一个 `Orchsym Studio-content-viewer` META-INF目录中的文件，列出了支持的内容类型. 
+3. 将NAR放在lib目录中，当Orchsym Studio启动时它将被发现. 
+4. 遇到匹配的内容类型时，内容查看器将生成适当的视图. 
+
+一个很好的例子是标准内容查看器的NAR布局: 
+
+.标准内容查看器NAR布局 
+-------------------------------------------------------------------------------------------- 
+Orchsym Studio-standard-bundle 
+│ 
+├── Orchsym Studio-jolt-transform-json-ui 
+│ 
+├── Orchsym Studio-standard-content-viewer 
+│   ├── pom.xml 
+│   └── src 
+│       └── main 
+│           ├── java 
+│           ├── resources 
+│           └── webapp 
+│               └── css 
+│               └── META-INF 
+│               │   └── Orchsym Studio-content-viewer 
+│               └── WEB-INF 
+│ 
+├── Orchsym Studio-standard-nar 
+│ 
+├── Orchsym Studio-standard-prioritizers 
+│ 
+├── Orchsym Studio-standard-processors 
+│ 
+├── Orchsym Studio-standard-reporting-tasks 
+│ 
+├── Orchsym Studio-standard-utils 
+│ 
+└── pom.xml 
+-------------------------------------------------------------------------------------------- 
+
+
+与内容 `Orchsym Studio-content-viewer` 如下: 
+------------------------------------------------------------------------------------------------ 
+application/xml 
+application/json 
+text/plain 
+text/csv 
+avro/binary 
+application/avro-binary 
+application/avro+binary 
+------------------------------------------------------------------------------------------------ 
+
+
+
+== 命令行工具 
+
+=== tls-toolkit 
+
+客户端/服务器操作模式来自于希望自动生成所需的TLS配置工件而无需在集中位置执行该生成.  这简化了集群环境中的配置.  由于我们不一定有一个运行生成逻辑或可信证书颁发机构的中心位置，因此共享密钥用于相互验证客户端和服务器. 
+
+tls-toolkit使用HMAC验证CA服务器的公钥和客户端发送的CSR来防止中间人攻击. 共享密钥(令牌)用作HMAC密钥. 
+
+基本流程如下: 
+
+1. 客户端生成KeyPair. 
+2. 客户端生成包含CSR和HMAC的请求json有效负载，其中令牌作为密钥，CSR的公钥指纹作为数据. 
+3. 客户端连接到指定的https端口上的CA主机名，并验证CA证书的CN是否与主机名匹配(NOTE: 因为我们此时不信任CA，这会增加NO安全性，如果可能的话，它只是一种早期错误输出的方法). 
+4. 服务器使用令牌作为密钥并使用CSR的公钥指纹作为数据，从客户端有效负载验证HMAC.  这证明客户端知道共享密钥，并且希望对具有该公钥的CSR进行签名.  (NOTE: 中间的一个人可以转发这个，但是如果没有使HMAC失效，就无法改变CSR，从而失去了目的). 
+五. 服务器签署CSR并发送回包含证书的响应json有效负载和以令牌作为密钥的HMAC以及其公钥的指纹作为数据. 
+6. 客户端使用令牌作为密钥以及由TLS会话提供的证书公钥的指纹来验证响应HMAC.  这验证了知道共享密钥的CA是我们通过TLS与之交谈的CA.. 
+7. 客户端验证来自TLS会话的CA证书是否在有效内容中签署了证书. 
+8. 客户端将生成的KeyPair添加到具有证书链的密钥库，并将CA证书从TLS连接添加到其信任库. 
+9. 客户端写出包含密钥库，信任库密码和有关交换的其他详细信息的配置json. 
+
+
+== 测试 
+
+测试将在更大的框架中使用的元件通常非常麻烦 
+和棘手. 通过Orchsym Studio，我们努力使测试元件尽可能简单.为了做到这一点， 
+我们创建了一个 `Orchsym Studio-mock` 可与JUnit结合使用的模块，可提供
+对元件的广泛 测试. 
+
+模拟框架主要用于测试组件，因为它们是迄今为止最常 
+开发的扩展点.但是，该框架确实提供给测试控制器服务的能力 
+，以及. 
+
+通常通过创建功能测试来验证元件行为，从而对元件进行测试.这样 
+做是因为组件通常由一些辅助方法组成，但逻辑将主要 
+包含在内 `onTrigger` 方法. 该 `TestRunner` interface允许我们
+通过将更多"原始”对象(如文件和字节数组)转换为
+FlowFiles 来测试组件 和控制器服务， 并处理创建组件完成其工作所需的ProcessSessions和ProcessContexts， 
+以及按顺序调用必要的生命周期方法确保组件
+在单元测试中的行为与在生产中的行为 相同. 
+
+
+=== 实例化TestRunner 
+
+组件或控制器服务的大多数单元测试都是通过创建一个实例来开始的 `TestRunner` 
+类.为了向组件添加必要的类， 
+您可以使用Maven依赖项: 
+
+[source] 
+
+---- 
+<dependency> 
+<groupId>org.apache.Orchsym Studio</groupId> 
+<artifactId>Orchsym Studio-mock</artifactId> 
+<version>${Orchsym Studio version}</version> 
+</dependency> 
+---- 
+
+
+我们创造了一个新的 `TestRunner` 通过调用静态 `newTestRunner` 的方法 `TestRunners` 班级 
+(位于 `org.apache.Orchsym Studio.util` 包). 此方法采用单个参数.该参数可以 
+是要测试的组件的类，也可以是组件的实例. 
+
+=== 添加ControllerServices 
+
+创建新的测试运行器后，我们可以将任何控制器服务添加到我们的组件
+将需要的测试运行器 中以执行其工作. 我们这样做是通过调用 `addControllerService` 方法并提供 
+Controller Service的标识符和Controller Service的实例. 
+
+如果需要配置Controller Service，可以通过
+调用它来设置其属性 `setProperty(ControllerService, PropertyDescriptor, String)`， `setProperty(ControllerService, String, String)`， 
+或 `setProperty(ControllerService, PropertyDescriptor, AllowableValue)` 方法. 每个方法都返回一个 
+`ValidationResult`. 然后可以检查此对象以通过调用确保该属性有效 `isValid`. 
+可以通过调用来设置注释数据 `setAnnotationData(ControllerService, String)` 方法. 
+
+我们现在可以通过调用确保Controller Service有效 `assertValid(ControllerService)` - 
+如果通过调用测试Controller Service本身，则确保 配置的值无效 
+`assertNotValid(ControllerService)`. 
+
+将Controller Service添加到Test Runner并进行配置后，现在可以通过调用它来启用它 
+`enableControllerService(ControllerService)` 方法.如果Controller Service无效，则此方法 
+将抛出IllegalStateException. 否则，该服务现在可以使用了. 
+
+
+
+=== 设置属性值 
+
+配置任何必要的Controller服务后，我们需要配置我们的组件.我们可以通过
+调用与Controller Services相同的方法来完成此 操作，而无需指定任何Controller Service. 一世.Ë.， 
+我们可以打电话 `setProperty(PropertyDescriptor, String)`， 等等. 每一个 `setProperty` 方法再次 
+返回一个 `ValidationResult` 可用于确保属性值有效的属性. 
+
+同样，我们也可以打电话 `assertValid()` 和 `assertNotValid()` 
+根据我们的期望，确保组件的配置 有效. 
+
+
+=== 入队FlowFiles 
+
+在触发组件运行之前，通常需要将FlowFiles排入队列以供组件处理. 
+这可以通过使用 `enqueue` 的方法 `TestRunner` 类. 该 `enqueue` method有几个 
+不同的覆盖，并允许以a的形式添加数据 `byte[]`， `InputStream`， 要么 `Path`.这些
+方法中的每 一种也支持允许a的变体 `Map<String, String>` 要添加以支持FlowFile属性. 
+
+此外，有一个 `enqueue` 获取FlowFile对象的var-args的方法.例如，这可用于 
+获取组件的输出，然后将其提供给组件的输入. 
+
+
+=== 运行组件 
+
+配置Controller Services并将必要的FlowFile排入队列后，可以
+通过调用来触发组件 运行 `run` 的方法 `TestRunner`.如果在没有任何参数的情况下
+调用此方法，它将 使用一个调用组件中的任何方法 `@OnScheduled` 注释，调用组件 `onTrigger` 方法一次， 
+然后运行 `@OnUnscheduled` 最后 `@OnStopped` 方法. 
+
+如果希望运行几次迭代 `onTrigger` 方法在另一方面之前 `@OnUnscheduled` 和 
+`@OnStopped` 生命周期事件被触发了 `run(int)` 方法可用于指定现在很多重复 
+的 `onTrigger` 应该叫. 
+
+有时我们想要触发组件运行但不触发 `@OnUnscheduled` 和 `@OnStopped` 
+生命周期事件. 例如，这有助于在这些事件发生之前检查组件的状态.这 
+可以通过使用 `run(int, boolean)` 和传球 `false` 作为第二个论点.不过这样做之后， 
+打电话给 `@OnScheduled` 生命周期方法可能会导致问题. 结果，我们现在可以运行了 `onTrigger` 再次使用 
+不会导致这些事件发生 `run(int,boolean,boolean)` 版本的 `run` 方法和 
+传球 `false` 作为第三个论点. 
+
+如果测试多个线程发生的行为很有用，也可以通过调用 
+`setThreadCount` 的方法 `TestRunner`. 默认值为1个线程.如果使用多个线程，重要的是 
+要记住 `run` 呼叫 `TestRunner` 指定应该触发组件
+的次数，而不是 每个线程应该触发组件的次数. 因此，如果线程数设置为2但是 
+`run(1)` 被调用，只使用一个线程. 
+
+
+=== 验证输出 
+
+组件运行完毕后，单元测试通常需要验证FlowFiles是否符合 
+预期的要求. 这可以通过使用 `TestRunners` `assertAllFlowFilesTransferred` 和 
+`assertTransferCount` 方法.前一种方法将关系和整数作为参数，以指示应该将多少 
+FlowFiles传输到该关系.除非将此数量的
+FlowFiles转移到给定的关系，否则该方法将无法通过单元测试 *要么* 如果任何FlowFile被转移到任何其他关系. 
+该 `assertTransferCount` 方法仅验证FlowFile计数是给定关系的预期数量. 
+
+验证计数后，我们可以通过获取实际输出FlowFiles `getFlowFilesForRelationship` 方法. 
+这个方法返回一个 `List<MockFlowFile>`. 重要的是要注意List的类型是 `MockFlowFile`而 
+不是 `FlowFile` 接口. 这样做是因为 `MockFlowFile` 有许多验证内容的方法. 
+
+例如， `MockFlowFile` 有断言FlowFile属性存在的方法(`assertAttributeExists`)，断言 
+其他属性不存在(`assertAttributeNotExists`)，或者属性具有正确的值 
+(`assertAttributeEquals`， `assertAttributeNotEquals`). 存在用于验证FlowFile的内容的类似方法. 
+可以将FlowFile的内容与a进行比较 `byte[]`，和 `InputStream`，文件或字符串.如果预期数据是 
+文本的，则首选String版本，因为如果输出不
+符合预期，它会提供更直观的错误消息 . 
+
+
+
+=== 模拟外部资源 
+
+测试连接到远程资源的Orchsym Studio组件时最大的问题之一是我们不希望 
+从单元测试中实际连接到某些远程资源.我们可以在单元测试中自己构建一个简单的服务器 
+并配置组件与之通信，但是我们必须理解并实现特定于服务器的 
+规范，并且可能无法正确发送错误消息等。. 我们想要测试. 
+
+通常，这里采用的方法是在组件中具有负责获得
+远程资源的连接 或客户端的方法. 我们通常将此方法标记为受保护.在单元测试，而不是创建 
+的 `TestRunner` 通过电话 `TestRunners.newTestRunner(Class)` 并且提供Processor类，我们
+在单元测试中创建 组件的子类并使用它: 
+
+[source,java] 
+
+---- 
+@Test 
+public void testConnectionFailure() { 
+final TestRunner runner = TestRunners.newTestRunner(new MyProcessor() { 
+protected Client getClient() { 
+// Return a mocked out client here. 
+return new Client() { 
+public void connect() throws IOException { 
+throw new IOException(); 
+} 
+
+// ... 
+// other client methods 
+// ... 
+}; 
+} 
+}); 
+
+// rest of unit test. 
+} 
+---- 
+
+
+这允许我们实现一个客户端，该客户端
+模拟所有网络通信并返回我们想要测试的不同 错误结果，并确保我们的逻辑正确处理成功调用 
+客户端. 
+
+
+=== 其他测试功能 
+
+除了
+测试框架提供的上述功能外 ，TestRunner还提供了几种 
+方便的方法来验证组件的行为.方法 
+提供了保证组件的 
+输入队列已被清空.单元测试能够获取 
+ProcessContext，ProcessSessionFactory，ProvenanceReporter 
+以及
+TestRunner 将使用的其他特定于框架的实体 . 该 `shutdown` method提供了
+测试注释为仅在关闭
+Orchsym Studio时运行的组件方法 的功能 .可以为
+使用自定义用户界面的组件设置注释数据 .最后，
+可以
+通过以下方式设置应该用于运行组件的线程 数 `setThreadCount(int)` 方法. 
+
+
+
+
+
+
+[[nars]] 
+== Orchsym Studio档案(NAR) 
+
+当来自许多不同组织的软件都在
+同一环境中托管时 ，Java ClassLoaders迅速 
+成为一个关注点.如果多个元件依赖于同一个 
+库但每个元件依赖于不同的 
+版本，则会出现许多问题，通常会导致意外 
+行为或 `NoClassDefFoundError` 发生错误. 
+为了防止这些问题成为问题，Orchsym Studio 
+引入了Orchsym Studio存档或NAR的概念. 
+
+NAR允许将多个元件及其依赖项
+一起打包 到单个包中. 
+然后，NAR包与其他NAR 
+包提供ClassLoader隔离 .开发人员应始终将
+其Orchsym Studio元件部署 为NAR包. 
+
+为此，开发人员创建了一个新的Maven工件，我们 
+将其称为NAR工件.包装 
+设定为 `nar`. 该 `dependencies` 然后创建POM的一部分，以便 
+NAR依赖于要包含在NAR中的所有Orchsym Studio元件. 
+
+为了使用包装 `nar`，我们必须使用 `Orchsym Studio-nar-maven-plugin` 模. 
+通过将以下代码段添加到NAR的pom中来实现此目的.XML: 
+
+[source,xml] 
+
+---- 
+<build> 
+    <plugins> 
+        <plugin> 
+            <groupId>org.apache.Orchsym Studio</groupId> 
+            <artifactId>Orchsym Studio-nar-maven-plugin</artifactId> 
+            <version>1.1.0</version> 
+            <extensions>true</extensions> 
+        </plugin> 
+    </plugins> 
+</build> 
+---- 
+
+
+在Orchsym Studio代码库中，它存在于Orchsym Studio根POM中，其中所有其他Orchsym Studio工件 
+(除了Orchsym Studio-nar-maven-plugin本身)都继承，因此我们不需要将其包含 
+在我们的任何其他工具中POM文件. 
+
+NAR能够具有一个类型的依赖项 `nar`.如果 
+指定了多个类型的依赖项 
+`nar`，那么Orchsym Studio-nar-maven-plugin就会出错.如果NAR A添加了
+对NAR B 的 依赖，那么这将是*不*导致 
+NAR B包装NAR A的所有元件.相反，这将添加 
+一个 `Nar-Dependency-Id` 要素 `MANIFEST.MF` 
+NAR A的文件.这将导致将NAR B的ClassLoader设置为NAR A 
+的Parent ClassLoader.在这种情况下， 
+我们将NAR B称为 _Parent_ NAR A. 
+
+Parent ClassLoaders的这种链接是Orchsym Studio使用的机制， 
+以便
+在所有NAR之间共享Controller Services .如<<development-controller-service>> 
+部分所述，必须将Controller Service 
+分成扩展的接口 `ControllerService` 以及 
+实现该接口的实现.只要Controller Service Implementation 和Processor共享相同的Controller Service接口定义，Controller Services 
+就可以从任何组件引用，无论它
+在哪个NAR 中。 
+. 
+
+为了共享相同的定义，组件的NAR和 
+Controller服务实现的NAR必须 
+作为父服务器服务定义的NAR。.示例 
+层次结构可能如下所示: 
+
+.Controller Service NAR Layout 
+------------------------------------------------------------------------------------------------ 
+root 
+├── my-controller-service-api 
+│   ├── pom.xml 
+│   └── src 
+│       └── main 
+│           └── java 
+│               └── org 
+│                   └── my 
+│                       └── services 
+│                           └── MyService.java 
+│ 
+├── my-controller-service-api-nar 
+│   └── pom.xml <1> 
+│ 
+│ 
+│ 
+├── my-controller-service-impl 
+│   ├── pom.xml <2> 
+│   └── src 
+│       ├── main 
+│       │   ├── java 
+│       │   │   └── org 
+│       │   │       └── my 
+│       │   │           └── services 
+│       │   │                 └── MyServiceImpl.java 
+│       │   └── resources 
+│       │       └── META-INF 
+│       │           └── services 
+│       │               └── org.apache.Orchsym Studio.controller.ControllerService 
+│       └── test 
+│           └── java 
+│               └── org 
+│                   └── my 
+│                       └── services 
+│                             └── TestMyServiceImpl.java 
+│ 
+│ 
+├── my-controller-service-nar 
+│   └── pom.xml <3> 
+│ 
+│ 
+└── other-processor-nar 
+    └── pom.xml <3> 
+
+
+
+
+------------------------------------------------------------------------------------------------ 
+
+<1>此POM文件的类型为 `nar`. 它依赖于 
+`Orchsym Studio-standard-services-api-nar`. 
+<2>此POM文件属于类型 `jar`. 它依赖于 
+`my-controller-service-api`. 确实如此 *不* 依赖于任何 
+`nar` 文物. 
+<3>此POM文件的类型为 `nar`. 它依赖于 
+`my-controller-service-api-nar`. 
+
+
+虽然这些看起来可能看起来非常复杂，但在创建
+一次或两次这样的 层次结构之后，它变得 
+复杂得多. 请注意这里 
+`my-controller-service-api-nar` 依赖于 
+`Orchsym Studio-standard-services-api-nar`. 
+这样做是为了使任何具有依赖性的NAR 
+`my-controller-service-api-nar`也将能够访问 
+由提供的所有控制器服务 
+`Orchsym Studio-standard-services-api-nar`，例如SSLContextService. 
+在同一个叶片中，没有必要
+为每个服务创建不同的 "service-api”NAR.相反，通常
+有一个"service-api”NAR封装了
+许多不同的Controller服务的API ，这通常 是有意义 
+的。 `Orchsym Studio-standard-services-api-nar`.通常，API 
+不会包含广泛的依赖项，因此， 
+ClassLoader隔离可能不那么重要，因此将许多 
+API工件集中到同一个NAR中通常是可以接受的. 
+
+
+
+
+[[per-instance-classloading]] 
+== Per-Instance ClassLoading 
+
+元件开发人员可能希望在运行时向元件的类路径添加其他资源. 
+例如，您可能希望将JDBC驱动程序的位置提供给与
+关系数据库交互 的组件，从而允许组件使用任何驱动程序而不是尝试将
+驱动程序捆绑 到NAR中. 
+
+这可以通过声明一个或多个PropertyDescriptor实例来完成 
+`dynamicallyModifiesClasspath` 设为true. 例如: 
+
+
+[source,java] 
+
+---- 
+PropertyDescriptor EXTRA_RESOURCE = new PropertyDescriptor.Builder() 
+   .name("Extra Resources") 
+   .description("The path to one or more resources to add to the classpath.") 
+   .addValidator(StandardValidators.NON_EMPTY_VALIDATOR) 
+   .expressionLanguageSupported(true) 
+   .dynamicallyModifiesClasspath(true) 
+   .build(); 
+---- 
+
+
+在元件上设置这些属性后，框架将标识所有属性 
+`dynamicallyModifiesClasspath` 设置为true.对于每个属性，框架都 
+尝试从属性的值中解析文件系统资源.该值可以是
+一个或多个目录或文件的 逗号分隔列表，其中
+跳过任何不存在的路径 .如果资源表示目录，则列出该目录，并且该目录中的所有文件 
+将分别添加到类路径中. 
+
+每个属性都可能通过验证器对值的格式施加进一步的限制. 
+例如，使用StandardValidators.文件_EXISTS_VALIDATOR将属性限制为接受 
+单个文件. 使用StandardValidators.非_EMPTY_VALIDATOR允许逗号分隔
+文件或目录的任意组合 . 
+
+通过将资源添加到始终
+首先检查的内部ClassLoader，将资源添加到实例ClassLoader .只要这些属性的值发生更改，内部ClassLoader就会关闭并 
+使用新资源重新创建. 
+
+Orchsym Studio提供 `@RequiresInstanceClassLoading` 注释，以进一步扩展和隔离
+元件的类路径上可用的库 . 您可以使用注释来批量元件 `@RequiresInstanceClassLoading` 
+指示元件的实例ClassLoader需要
+元件的NAR ClassLoader中的所有资源的副本 . 什么时候 `@RequiresInstanceClassLoading` 如果不存在， 
+实例ClassLoader只是将它的父ClassLoader设置为NAR ClassLoader，而不是 
+复制资源. 
+
+该 `@RequiresInstanceClassLoading` 注释还提供了一个可选的标志`cloneAncestorResources'.如果 
+设置为true，则实例ClassLoader将包含祖先资源，直到包含
+元件引用的控制器服务API 的第一个ClassLoader ，或者直到Jetty NAR.如果设置为false或未指定，则 
+仅包含元件NAR中的资源. 
+
+因为@RequiresInstanceClassLoading为
+元件的每个实例从NAR ClassLoader复制资源，所以 明智地使用此功能.如果创建了一个元件的十个实例，
+则元件的NAR ClassLoader中的所有类 都将加载到内存中十次.
+当创建足够的元件实例时，这最终可能会显着增加 内存占用. 
+
+此外，在使用Controller 
+Services 时使用@RequiresInstanceClassLoading时存在一些限制 .组件，报告任务和控制器服务可以
+在其属性描述符之一中引用Controller Service API .当Controller Service API 
+与引用它的元件或Controller Service实现捆绑在同一NAR中时，可能会出现问题 .如果
+遇到这些情况之一 并且扩展需要实例类加载，则将跳过扩展并
+记录相应的 错误. 要解决此问题，Controller Service API应捆绑在父NAR中.
+引用该服务的 服务实现和扩展应取决于Controller Service API NAR. 
+请参阅<<nars>>部分中的Controller Service NAR布局.
+只要控制器服务API 与需要它的扩展捆绑在一起，即使未使用@RequiresInstanceClassLoading，也会
+记录警告 以帮助避免这种不良做法. 
+
+
+[[deprecation]] 
+== 弃用元件 
+有时可能需要弃用元件.每当发生这种情况时，开发人员可以使用 
+@DeprecationNotice注释来指示元件已被弃用，并允许开发人员 
+描述弃用的原因并建议替代元件.下面是一个如何执行此操作的示例 
+: 
+
+[source, java] 
+
+---- 
+@DeprecationNotice(alternatives = {ListenSyslog.class}, classNames = {"org.apache.Orchsym Studio.processors.standard.ListenRELP"}, reason = "Technology has been superseded",  ) 
+public class ListenOldProtocol extends AbstractProcessor { 
+---- 
+
+如您所见，替代方案可用于定义替代元件和数组，而classNames可 
+用于通过字符串数组表示类似内容. 
+
+
+== 如何为Orchsym Studio做出贡献 
+
+我们总是很高兴能从社区中获得贡献- 特别是来自新贡献者！ 
+我们有兴趣接受代码的贡献，以及文档，甚至
+可以作为图标或样式应用于应用程序的艺术作品 . 
+
+
+=== 技术 
+
+Orchsym Studio的后端是用Java编写的.Web层利用JAX-RS和JavaScript广泛 
+用于提供用户界面.我们依赖于几个第三方JavaScript库，包括D3和JQuery 
+等. 我们为我们的版本使用Apache Maven，为我们的版本控制系统使用Git. 
+
+文档创建于 link:http://asciidoctor.org[AsciiDoc^]. 
+
+
+=== 从哪儿开始？ 
+
+link:http://issues.apache.org/jira/browse/Orchsym Studio[Orchsym Studio's JIRA page^]可用于查找标记为"初学者” 
+的票证， 或者您可以深入了解创建组件的任何票证.组件应该是独立的，不依赖于其它 
+的外部部件(除控制服务)，所以他们为新Orchsym Studio开发商极好的出发点 
+开始. 这使开发人员暴露于Orchsym Studio API，并且是数据流系统中最具扩展性的部分. 
+
+系统级和概述文档位于"<code checkout location> / Orchsym Studio / Orchsym Studio-docs / src / main / asciidoc”. 
+可以使用便于文档生成的工具 link:http://asciidoctor.org/文档/编辑 - asciidoc与 - 实时预览/[Editing AsciiDoc with Live Preview^]. 
+
+
+=== 提供 
+
+贡献可以通过创建补丁来提供贡献: 
+
+`git format-patch` 
+
+并将该补丁附加到故障单，或生成Pull请求. 
+
+
+=== 联系我们 
+
+开发人员邮件列表(dev @ Orchsym Studio.阿帕奇.org)受到非常密切的监控，我们倾向于
+快速响应 . 如果您有疑问，请不要犹豫，给我们发电子邮件 - 我们在这里帮助！不幸的是，电子邮件 
+可能会在随机播放中丢失，所以如果您发送电子邮件并且在一两天内没有收到回复，那就是我们的错- 不要 
+担心打扰我们. 只需再次ping邮件列表. 

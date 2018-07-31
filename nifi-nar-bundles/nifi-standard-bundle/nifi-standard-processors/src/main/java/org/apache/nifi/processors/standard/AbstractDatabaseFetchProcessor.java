@@ -324,7 +324,7 @@ public abstract class AbstractDatabaseFetchProcessor extends AbstractSessionFact
     }
 
     protected static StringBuilder getWrappedQuery(String sqlQuery, String tableName){
-       return new StringBuilder("SELECT * FROM (" + sqlQuery + ") AS " + tableName);
+       return new StringBuilder("SELECT * FROM (" + sqlQuery + ") " + tableName);
     }
 
     protected static String getMaxValueFromRow(ResultSet resultSet,
