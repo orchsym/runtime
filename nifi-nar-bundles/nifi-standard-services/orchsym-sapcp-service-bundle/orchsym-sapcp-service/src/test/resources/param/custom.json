@@ -1,0 +1,108 @@
+{
+	"import": [
+		{
+			"name": "name",
+			"type": "char",
+			"length": 50,
+			"nucLength": 30,
+			"default": "<NONE>",
+			"desc": "import name"
+		},
+		{
+			"name": "price",
+			"type": "float",
+			"default": 0,
+			"precision": 2
+		},
+		{
+			"name": "address",
+			"type": "structure",
+			"tab": {
+				"name": "ZADDR",
+				"params": [
+					{
+						"name": "country",
+						"type": "char",
+						"length": 30,
+						"nucLength": 20
+					},
+					{
+						"name": "city",
+						"type": "char",
+						"length": 30,
+						"nucLength": 20
+					},
+					{
+						"name": "street",
+						"type": "char",
+						"length": 50,
+						"nucLength": 30
+					},
+					{
+						"name": "building",
+						"type": "char",
+						"length": 50,
+						"nucLength": 30
+					},
+					{
+						"name": "number",
+						"type": "int"
+					}
+				]
+			}
+		}
+	],
+	"export": [
+		{
+			"name": "name",
+			"type": "char",
+			"length": 50,
+			"nucLength": 30
+		},
+		{
+			"name": "sum",
+			"type": "float",
+			"precision": 2
+		}
+	],
+	"table": [
+		{
+			"name": "staff",
+			"type": "input",
+			"params": [
+				{
+					"name": "id",
+					"type": "int"
+				},
+				{
+					"name": "name",
+					"type": "char",
+					"length": 50,
+					"nucLength": 30
+				},
+				{
+					"name": "height",
+					"type": "float",
+					"precision": 2
+				}
+			]
+		},
+		{
+			"name": "table2",
+			"type": "in_out",
+			"params": [
+				{
+					"name": "param1",
+					"type": "char",
+					"length": 50,
+					"nucLength": 30
+				},
+				{
+					"name": "param2",
+					"type": "float",
+					"precision": 2
+				}
+			]
+		}
+	]
+}

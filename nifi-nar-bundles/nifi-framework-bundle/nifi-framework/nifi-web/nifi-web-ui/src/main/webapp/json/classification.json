@@ -69,6 +69,7 @@
                     "JsonQueryElasticsearch",
                     "ListDatabaseTables",
                     "ListenBeats",
+                    "ListenHL7",
                     "ListenHTTP",
                     "ListenLumberjack",
                     "ListenRELP",
@@ -93,7 +94,8 @@
                     "QuerySolr",
                     "QueryWhois",
                     "ScrollElasticsearchHttp",
-                    "SelectHiveQL"
+                    "SelectHiveQL",
+                    "InvokeSAPRFC"
                 ],
                 "icon":"01.svg"
             },
@@ -137,6 +139,7 @@
                     "PutHDFS",
                     "PutHiveQL",
                     "PutHiveStreaming",
+                    "PutHL7",
                     "PutIgniteCache",
                     "PutInfluxDB",
                     "PutJMS",
@@ -164,7 +167,9 @@
                     "PutTCP",
                     "PutUDP",
                     "PutWebSocket",
-                    "StoreInKiteDataset"
+                    "StoreInKiteDataset",
+                    "ListenSAPTCP",
+                    "HandleSAPTCPResponse"
                 ],
                 "icon":"03.svg"
             },
@@ -233,6 +238,7 @@
                     "ConvertCharacterSet",
                     "ConvertCSVToAvro",
                     "ConvertExcelToCSVProcessor",
+                    "ConvertHL7Message",
                     "ConvertJSONToAvro",
                     "ConvertJSONToSQL",
                     "ConvertRecord",
@@ -440,7 +446,9 @@
                     "QueryElasticsearchHttp",
                     "QueryWhois",
                     "ScrollElasticsearchHttp",
-                    "SetSNMP"
+                    "SetSNMP",
+                    "ListenSAPTCP",
+                    "HandleSAPTCPResponse"
                 ]
             },
             {
@@ -619,7 +627,8 @@
                     "ExecuteSparkInteractive",
                     "ExecuteSQL",
                     "ExecuteStreamCommand",
-                    "SpringContextProcessor"
+                    "SpringContextProcessor",
+                    "ExecuteStoreProcedure"
                 ]
             }
         ]

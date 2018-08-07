@@ -45,5 +45,8 @@
         <module>nifi-hwx-schema-registry-bundle</module>
         <module>nifi-kerberos-credentials-service-api</module>
         <module>nifi-kerberos-credentials-service-bundle</module>
+
+        <module>orchsym-sapcp-service-api</module>
+        <module>orchsym-sapcp-service-bundle</module>
     </modules>
 </project>

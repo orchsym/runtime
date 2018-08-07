@@ -12,5 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+org.apache.nifi.processors.hl7.ConvertHL7Message
 org.apache.nifi.processors.hl7.ExtractHL7Attributes
+org.apache.nifi.processors.hl7.ListenHL7
+org.apache.nifi.processors.hl7.PutHL7
 org.apache.nifi.processors.hl7.RouteHL7
