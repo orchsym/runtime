@@ -113,7 +113,7 @@ Orchsym Studio旨在充分利用底层主机系统的性能上。在CPU和磁盘
 
 因为RAM :: Orchsym Studio存在于JVM中，因此仅限于JVM提供的内存空间。JVM垃圾收集成为限制总实际堆大小以及优化应用程序运行情况的一个非常重要的因素。定期阅读相同内容时，Orchsym Studio作业可能是I / O密集型的。请配置足够大的空间以优化性能。
 
-== Orchsym Studio功能的高级概述 
+== Orchsym Studio高级功能概述 
 本节提供了高度抽象的Orchsym Studio基础原理，让您可以了解Orchsym Studio的全局，以及它的一些最有趣的功能。主要功能类别包括流量管理，易用性，安全性，可扩展架构和灵活的扩展模型。
 
 流量管理:: 

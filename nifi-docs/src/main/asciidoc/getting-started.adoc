@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and 
 // limitations under the License. 
 // 
-= Orchsym Studio 
+= Orchsym Studio使用指南 
 Orchsym Studio团队<orchsym@baishancloud.com> 
 :homepage: https://www.baishancloud.com/ 
 :linkattrs: 
