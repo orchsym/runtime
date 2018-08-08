@@ -62,6 +62,7 @@ import java.util.UUID;
 
 import org.apache.nifi.web.httprequestui.model.PropertyInfoEntity;
 import org.apache.nifi.web.httprequestui.model.ParameterInfo;
+import org.apache.nifi.web.httprequestui.model.RespModel;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -155,6 +156,29 @@ public class PropertyResource {
         // ensure the propertyInfoEntity isn't null
         if (propertyInfoEntity == null) {
             propertyInfoEntity = new PropertyInfoEntity();
+            //add 2 default model
+            for (int i=0; i<2; i++) {
+                RespModel model = new RespModel();
+                model.id = UUID.randomUUID().toString();
+                model.name = "model" + String.valueOf(i+1);
+                ArrayList<String> contentTypeArray = new ArrayList();
+                contentTypeArray.add("application/json");
+                model.contentType = contentTypeArray;
+                model.description = "this is description of " + model.name;
+                Map<String, Map<String, String>> properties = new HashMap();
+                Map<String, String> property = new HashMap();
+                property.put("type", "string");
+                property.put("description", "this is description");
+                properties.put("name", property);
+
+                if (i == 0) {
+                    Map<String, String> property2 = new HashMap();
+                    property2.put("type", "integer");
+                    properties.put("name2", property2);
+                }
+                model.properties = properties;
+                propertyInfoEntity.respModels.add(model);
+            }
         }
 
         //get properties
