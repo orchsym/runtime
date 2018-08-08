@@ -52,6 +52,8 @@ pipeline {
     }
 
     stage('Copy to Ansible host') {
+      when { not { expression { BRANCH_NAME ==~ '^PR.*' } } }
+
       steps {
         slackSend (
           color: 'good',
@@ -126,6 +128,8 @@ pipeline {
     }
 
     stage('Upload to Samba') {
+      when { not { expression { BRANCH_NAME ==~ '^PR.*' } } }
+
       steps {
         slackSend (
           color: 'good',
@@ -144,6 +148,8 @@ pipeline {
     }
 
     stage('Upload to s3') {
+      when { not { expression { BRANCH_NAME ==~ '^PR.*' } } }
+
       steps {
         slackSend (
           color: 'good',
