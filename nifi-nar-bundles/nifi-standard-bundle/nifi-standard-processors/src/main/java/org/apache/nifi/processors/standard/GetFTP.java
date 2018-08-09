@@ -33,7 +33,7 @@ import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processors.standard.util.FTPTransfer;
 import org.apache.nifi.processors.standard.util.FileTransfer;
 
-@InputRequirement(Requirement.INPUT_FORBIDDEN)
+@InputRequirement(Requirement.INPUT_ALLOWED)
 @Tags({"FTP", "get", "retrieve", "files", "fetch", "remote", "ingest", "source", "input"})
 @CapabilityDescription("Fetches files from an FTP Server and creates FlowFiles from them")
 @WritesAttributes({
@@ -83,6 +83,7 @@ public class GetFTP extends GetFileTransfer {
         properties.add(FTPTransfer.HTTP_PROXY_PASSWORD);
         properties.add(FTPTransfer.BUFFER_SIZE);
         properties.add(FTPTransfer.UTF8_ENCODING);
+        properties.add(FTPTransfer.ENCODING);
         this.properties = Collections.unmodifiableList(properties);
     }
 
