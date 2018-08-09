@@ -25,8 +25,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.avro.AvroTypeUtil;
-import org.apache.nifi.controller.ConfigurationContext;
-import org.apache.nifi.reporting.InitializationException;
 
 import com.baishancloud.orchsym.sap.SAPConnectionPool;
 import com.baishancloud.orchsym.sap.SAPDataManager;
@@ -46,6 +44,38 @@ import com.sap.conn.jco.JCoFunction;
 @Tags({ "SAP", "RFC", "ABAP", "JCo", "client", "connection", "pooling", "Orchsym" })
 @CapabilityDescription("Provides SAP Connection Pooling Service. Connections can be asked from pool and returned after usage.")
 public class SAPClientConnectionPool extends SAPConnectionPool implements SAPClientConnectionPoolService {
+    protected volatile JCoDestination destination;
+
+    public void connect() throws SAPException {
+        try {
+            SAPDataManager.getInstance().updateClientProp(this.getIdentifier(), serverType, clientProperties);
+            destination = SAPDataManager.getInstance().getDestination(this.getIdentifier(), serverType); // registry
+
+            destination.ping();
+        } catch (JCoException e) {
+            throw new SAPException(Messages.getString("SAPConnectionPool.Disconnect"), e); //$NON-NLS-1$
+        }
+    }
+
+    @Override
+    public void shutdown() {
+        destination = null;
+        if (serverType != null)
+            SAPDataManager.getInstance().updateClientProp(this.getIdentifier(), serverType, null);
+    }
+
+    @Override
+    public boolean isConnected() {
+        if (destination != null) {
+            try {
+                destination.ping();
+                return true;
+            } catch (JCoException e) {
+                //
+            }
+        }
+        return false;
+    }
 
     public Map<String, String> getAttributes() throws SAPException {
         Map<String, String> attributes = new HashMap<>();

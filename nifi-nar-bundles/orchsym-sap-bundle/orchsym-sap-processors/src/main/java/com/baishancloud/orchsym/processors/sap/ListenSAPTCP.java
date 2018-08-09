@@ -3,6 +3,7 @@ package com.baishancloud.orchsym.processors.sap;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,6 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.behavior.SideEffectFree;
@@ -22,6 +24,8 @@ import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.components.Validator;
+import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.flowfile.attributes.CoreAttributes;
 import org.apache.nifi.lookup.KeyValueLookupService;
@@ -33,6 +37,7 @@ import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.io.OutputStreamCallback;
+import org.apache.nifi.processor.util.StandardValidators;
 
 import com.baishancloud.orchsym.processors.sap.event.SAPTCPEvent;
 import com.baishancloud.orchsym.processors.sap.i18n.Messages;
@@ -62,6 +67,43 @@ public class ListenSAPTCP extends AbstractSessionFactoryProcessor {
             .identifiesControllerService(SAPServerConnectionPoolService.class)//
             .build();
 
+    static final PropertyDescriptor SAP_FUNCTION_NAME = new PropertyDescriptor.Builder()//
+            .name("sap-function-name") //$NON-NLS-1$
+            .displayName(Messages.getString("ListenSAPTCP.Function"))//$NON-NLS-1$
+            .description(Messages.getString("ListenSAPTCP.Function_Desc"))//$NON-NLS-1$
+            .required(true)//
+            .addValidator(StandardValidators.NON_BLANK_VALIDATOR)//
+            .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
+            .build();
+
+    static final PropertyDescriptor SAP_IMPORT_TABLES = new PropertyDescriptor.Builder()//
+            .name("sap-import-tables") //$NON-NLS-1$
+            .displayName(Messages.getString("ListenSAPTCP.ImportTables")) //$NON-NLS-1$
+            .description(Messages.getString("ListenSAPTCP.ImportTables_Desc"))//$NON-NLS-1$
+            .required(false)//
+            .addValidator(Validator.VALID)//
+            .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
+            .build();
+
+    // static final PropertyDescriptor SAP_CUSTOM_FUN = new PropertyDescriptor.Builder()//
+    // .name("sap-custom-fun")//$NON-NLS-1$
+    // .displayName(Messages.getString("ListenSAPTCP.CustomFun"))//$NON-NLS-1$
+    // .description(Messages.getString("ListenSAPTCP.CustomFun_Desc"))//$NON-NLS-1$
+    // .required(false)//
+    // .defaultValue(BoolOption.NO.getValue()).allowableValues(BoolOption.getAll())//
+    // .addValidator(StandardValidators.NON_BLANK_VALIDATOR)//
+    // .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
+    // .build();
+    //
+    // static final PropertyDescriptor SAP_FUN_METADATA = new PropertyDescriptor.Builder()//
+    // .name("sap-function-metadata")//$NON-NLS-1$
+    // .displayName(Messages.getString("ListenSAPTCP.FunMetadata"))//$NON-NLS-1$
+    // .description(Messages.getString("ListenSAPTCP.FunMetadata_Desc"))//$NON-NLS-1$
+    // .required(false)//
+    // .addValidator(StandardValidators.NON_BLANK_VALIDATOR)//
+    // .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
+    // .build();
+
     static final PropertyDescriptor RESPONDER_CONTEXT_MAP = new PropertyDescriptor.Builder()//
             .name("Responder-context-map")//$NON-NLS-1$
             .displayName(Messages.getString("ListenSAPTCP.ResponderContext"))//$NON-NLS-1$
@@ -78,15 +120,25 @@ public class ListenSAPTCP extends AbstractSessionFactoryProcessor {
     protected Set<Relationship> relationships;
 
     private volatile SAPServerConnectionPoolService sapServerCP;
+    private volatile String functionName;
+    private volatile String[] importTables;
+    private volatile String funMetadataJson;
+    private volatile boolean ignoreEmptyValues;
+
     private volatile KeyValueLookupService kvLookupService;
     private volatile String contextIdentifier;
-    private volatile boolean ignoreEmptyValues;
+
     private volatile AtomicBoolean stopped = new AtomicBoolean(false);
 
     @Override
     protected void init(final ProcessorInitializationContext context) {
         final List<PropertyDescriptor> descriptors = new ArrayList<>();
         descriptors.add(SAP_CP);
+        descriptors.add(SAP_FUNCTION_NAME);
+        descriptors.add(SAP_IMPORT_TABLES);
+        // descriptors.add(SAP_CUSTOM_FUN);
+        // descriptors.add(SAP_FUN_METADATA);
+
         descriptors.add(RESPONDER_CONTEXT_MAP);
         descriptors.add(JSON_IGNORE_EMPTY_VALUES);
         this.descriptors = Collections.unmodifiableList(descriptors);
@@ -107,6 +159,12 @@ public class ListenSAPTCP extends AbstractSessionFactoryProcessor {
         return relationships;
     }
 
+    @Override
+    public void onPropertyModified(PropertyDescriptor descriptor, String oldValue, String newValue) {
+        super.onPropertyModified(descriptor, oldValue, newValue);
+        
+    }
+
     @OnScheduled
     public void onScheduled(ProcessContext context) {
         contextIdentifier = this.getIdentifier();
@@ -118,6 +176,27 @@ public class ListenSAPTCP extends AbstractSessionFactoryProcessor {
         } catch (SAPException e) {
             throw new ProcessException(e);
         }
+
+        functionName = context.getProperty(SAP_FUNCTION_NAME).evaluateAttributeExpressions().getValue();
+        String itabValues = context.getProperty(SAP_IMPORT_TABLES).evaluateAttributeExpressions().getValue();
+        if (StringUtils.isNotBlank(itabValues)) {
+            importTables = Arrays.asList(itabValues.split(",")).stream().map(f -> f.trim()).filter(f -> StringUtils.isNotBlank(f)).toArray(String[]::new);
+        }
+
+        // boolean customFun = context.getProperty(SAP_CUSTOM_FUN).evaluateAttributeExpressions().asBoolean();
+        // if (customFun) {
+        // String funMetadata = context.getProperty(SAP_FUN_METADATA).evaluateAttributeExpressions().getValue();
+        // if (StringUtils.isBlank(funMetadata)) {
+        // throw new ProcessException("The metadata of function should not be empty");
+        // } else {
+        // try {
+        // new ObjectMapper().readTree(funMetadata);
+        // } catch (IOException e) {
+        // throw new ProcessException("The metadata of function is invalid format");
+        // }
+        // funMetadataJson = funMetadata;
+        // }
+        // }
 
         // if set responder, need keep alive
         kvLookupService = context.getProperty(RESPONDER_CONTEXT_MAP).asControllerService(KeyValueLookupService.class);
@@ -140,6 +219,21 @@ public class ListenSAPTCP extends AbstractSessionFactoryProcessor {
             @Override
             public String getIdentifier() {
                 return contextIdentifier;
+            }
+
+            @Override
+            public String getFunName() {
+                return functionName;
+            }
+
+            @Override
+            public String getFunMetadata() {
+                return funMetadataJson;
+            }
+
+            @Override
+            public String[] getImportTables() {
+                return importTables;
             }
 
             @Override

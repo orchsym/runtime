@@ -25,7 +25,7 @@ public class SAPParamRoot {
     @JsonProperty("export")
     private List<SAPParam> exportParams;
 
-    @JsonProperty("table")
+    @JsonProperty("tables")
     private List<SAPTabParam> tableParams;
 
     public List<SAPParam> getImportParams() {

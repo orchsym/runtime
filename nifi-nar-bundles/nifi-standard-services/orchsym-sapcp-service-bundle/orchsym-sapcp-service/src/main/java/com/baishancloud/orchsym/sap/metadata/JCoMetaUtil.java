@@ -100,15 +100,20 @@ public final class JCoMetaUtil {
         JCoListMetaData tableMeta = JCo.createListMetaData("TABLE");//$NON-NLS-1$
 
         for (SAPTabParam table : tableParams) {
-            JCoRecordMetaData tableRecordMeta = createTableMetaData(table);
-            if (tableRecordMeta != null) {
-                String name = table.getName();
-                if (unifyUpperCase) {
-                    name = name.toUpperCase();
-                }
-                tableMeta.add(name, ESAPMetaType.TABLE.getJCoType(), // 99
-                        tableRecordMeta, ESAPParamType.TABLE.getJcoType()); // 0
+            String name = table.getName();
+            if (unifyUpperCase) {
+                name = name.toUpperCase();
             }
+            // JCoRecordMetaData tableRecordMeta = createTableMetaData(table);
+            // if (tableRecordMeta != null) {
+
+            // tableMeta.add(name, ESAPMetaType.TABLE.getJCoType(), // 99
+            // tableRecordMeta, ESAPParamType.TABLE.getJcoType()); // 0
+            tableMeta.add(name, ESAPMetaType.TABLE.getJCoType(), // 99
+                    table.getNucLength(), table.getLength(), 0, //
+                    null, null, //
+                    ESAPParamType.TABLE.getJcoType(), table.getTypeName(), null);
+            // }
         }
         tableMeta.lock();
 
@@ -129,11 +134,11 @@ public final class JCoMetaUtil {
             return null;
         }
 
-        String tableName = table.getName();
+        String typeName = table.getTypeName();
         if (unifyUpperCase) {
-            tableName = tableName.toUpperCase();
+            typeName = typeName.toUpperCase();
         }
-        JCoRecordMetaData tableRecordMeta = JCo.createRecordMetaData(tableName, params.size());
+        JCoRecordMetaData tableRecordMeta = JCo.createRecordMetaData(typeName, params.size());
 
         int ucoffset = 0;
         int nucoffset = 0;

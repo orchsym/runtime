@@ -9,7 +9,8 @@ import com.sap.conn.jco.JCoListMetaData;
 public enum ESAPParamType {
     IMPORT(JCoListMetaData.IMPORT_PARAMETER), // $NON-NLS-1$
     EXPORT(JCoListMetaData.EXPORT_PARAMETER), // $NON-NLS-1$
-    TABLE(0),// $NON-NLS-1$
+    TABLE(JCoListMetaData.OPTIONAL_PARAMETER), // $NON-NLS-1$
+    CHANGING(JCoListMetaData.CHANGING_PARAMETER),// $NON-NLS-1$
     ;
 
     private int jcoType;

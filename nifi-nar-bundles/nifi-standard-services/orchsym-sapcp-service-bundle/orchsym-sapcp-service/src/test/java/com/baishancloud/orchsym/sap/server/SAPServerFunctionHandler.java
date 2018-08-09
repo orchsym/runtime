@@ -40,6 +40,9 @@ public class SAPServerFunctionHandler implements JCoServerFunctionHandler {
 
         final JCoParameterList importParameterList = function.getImportParameterList();
         System.out.println("import: " + importParameterList);
+        
+        final JCoParameterList exportParameterList = function.getExportParameterList();
+        System.out.println("export: " + exportParameterList);
     }
 
 }

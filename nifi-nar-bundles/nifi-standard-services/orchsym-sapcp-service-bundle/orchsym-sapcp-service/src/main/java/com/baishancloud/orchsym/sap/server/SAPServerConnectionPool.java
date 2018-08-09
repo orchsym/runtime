@@ -1,12 +1,15 @@
 package com.baishancloud.orchsym.sap.server;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Tags;
@@ -21,11 +24,8 @@ import com.baishancloud.orchsym.sap.SAPConnectionPool;
 import com.baishancloud.orchsym.sap.SAPDataManager;
 import com.baishancloud.orchsym.sap.SAPException;
 import com.baishancloud.orchsym.sap.i18n.Messages;
-import com.baishancloud.orchsym.sap.metadata.JCoMetaUtil;
-import com.baishancloud.orchsym.sap.metadata.param.ESAPTabType;
-import com.baishancloud.orchsym.sap.metadata.param.SAPParamRoot;
+import com.sap.conn.jco.JCoDestination;
 import com.sap.conn.jco.JCoException;
-import com.sap.conn.jco.JCoFunctionTemplate;
 import com.sap.conn.jco.ext.DestinationDataProvider;
 import com.sap.conn.jco.ext.ServerDataProvider;
 import com.sap.conn.jco.server.JCoServer;
@@ -36,11 +36,11 @@ import com.sap.conn.jco.server.JCoServer;
  */
 @Tags({ "SAP", "RFC", "ABAP", "TCP", "JCo", "server", "connection", "pooling", "Orchsym" })
 @CapabilityDescription("Provides SAP Connection Pooling Service. Connections can be asked from pool and returned after usage.")
-@SuppressWarnings("rawtypes")
 public class SAPServerConnectionPool extends SAPConnectionPool implements SAPServerConnectionPoolService {
+    static final String SERVER_NAME = "OServer";
 
     static final PropertyDescriptor SAP_CONN_COUNT = new PropertyDescriptor.Builder()//
-            .name("sap-connection-count") //$NON-NLS-1$
+            .name("connection-count") //$NON-NLS-1$
             .displayName(Messages.getString("SAPServerConnectionPool.ConnectionCount"))//$NON-NLS-1$
             .description(Messages.getString("SAPServerConnectionPool.ConnectionCount_Desc"))//$NON-NLS-1$
             .required(false)//
@@ -50,7 +50,7 @@ public class SAPServerConnectionPool extends SAPConnectionPool implements SAPSer
             .build();
 
     static final PropertyDescriptor SAP_PROGID = new PropertyDescriptor.Builder()//
-            .name("sap-program-id") //$NON-NLS-1$
+            .name("program-id") //$NON-NLS-1$
             .displayName(Messages.getString("SAPServerConnectionPool.ProgramId"))//$NON-NLS-1$
             .description(Messages.getString("SAPServerConnectionPool.ProgramId_Desc"))//$NON-NLS-1$
             .required(true)//
@@ -58,26 +58,12 @@ public class SAPServerConnectionPool extends SAPConnectionPool implements SAPSer
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
             .build();
 
-    static final PropertyDescriptor SAP_FUNCTION = new PropertyDescriptor.Builder().name("sap-function") //$NON-NLS-1$
-            .displayName(Messages.getString("SAPServerConnectionPool.Function"))//$NON-NLS-1$
-            .description(Messages.getString("SAPServerConnectionPool.Function_Desc"))//$NON-NLS-1$
-            .required(true)//
-            .addValidator(StandardValidators.NON_BLANK_VALIDATOR)//
-            .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
-            .build();
-
-    static final PropertyDescriptor SAP_FUN_METADATA = new PropertyDescriptor.Builder()//
-            .name("sap-function-metadata")//$NON-NLS-1$
-            .displayName(Messages.getString("SAPServerConnectionPool.FunMetadata"))//$NON-NLS-1$
-            .description(Messages.getString("SAPServerConnectionPool.FunMetadata_Desc"))//$NON-NLS-1$
-            .required(true)//
-            .addValidator(StandardValidators.NON_BLANK_VALIDATOR)//
-            .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
-            .build();
+    private AtomicBoolean running = new AtomicBoolean();
+    private final ReentrantLock lock = new ReentrantLock();
+    private Map<String, SAPRequestCallback> callbackMap = new Hashtable<>();
 
     protected volatile Properties serverProperties;
 
-    private volatile String serverName;
     private volatile SAPServerRunner serverRunner;
     private volatile ExecutorService executorService;
 
@@ -88,8 +74,6 @@ public class SAPServerConnectionPool extends SAPConnectionPool implements SAPSer
         final List<PropertyDescriptor> props = new ArrayList<>(this.properties);
         props.add(SAP_PROGID);
         // props.add(SAP_CONN_COUNT); //don't set, only support one
-        props.add(SAP_FUNCTION);
-        props.add(SAP_FUN_METADATA);
 
         properties = Collections.unmodifiableList(props);
     }
@@ -98,26 +82,6 @@ public class SAPServerConnectionPool extends SAPConnectionPool implements SAPSer
     public void onConfigured(final ConfigurationContext context) throws InitializationException {
         super.onConfigured(context);
         executorService = Executors.newSingleThreadExecutor();
-
-        String functionName = context.getProperty(SAP_FUNCTION).evaluateAttributeExpressions().getValue();
-
-        String funMetadataJson = context.getProperty(SAP_FUN_METADATA).evaluateAttributeExpressions().getValue();
-        SAPParamRoot paramRoot = null;
-        try {
-            paramRoot = new SAPParamRoot.Parser().parse(funMetadataJson);
-        } catch (IOException e) {
-            throw new InitializationException(e);
-        }
-
-        String[] importTables = null;
-        if (paramRoot.getTableParams() != null)
-            importTables = paramRoot.getTableParams().stream() //
-                    .filter(t -> t.getType() != null && t.getTabType() != ESAPTabType.OUTPUT) // not structure and output table
-                    .map(p -> p.getName())//
-                    .toArray(String[]::new);
-
-        //
-        serverName = "SAPServer" + System.currentTimeMillis(); //$NON-NLS-1$
 
         final String programId = context.getProperty(SAP_PROGID).evaluateAttributeExpressions().getValue();
         // final Integer connectionCount = context.getProperty(SAP_CONN_COUNT).evaluateAttributeExpressions().asInteger();
@@ -131,55 +95,123 @@ public class SAPServerConnectionPool extends SAPConnectionPool implements SAPSer
         // from Program ID in SM59
         serverProperties.setProperty(ServerDataProvider.JCO_PROGID, programId);
         // server type of client
-        serverProperties.setProperty(ServerDataProvider.JCO_REP_DEST, serverType.getValue());
-        serverProperties.setProperty(ServerDataProvider.JCO_CONNECTION_COUNT, "1"/* connectionCount.toString() */);
+        serverProperties.setProperty(ServerDataProvider.JCO_REP_DEST, SAPDataManager.getDestinationName(getIdentifier(), serverType));
+        serverProperties.setProperty(ServerDataProvider.JCO_CONNECTION_COUNT, "2"/* connectionCount.toString() */);
 
-        SAPDataManager.getInstance().updateServerProp(this.getIdentifier(), serverName, serverProperties);
+        // set Dynamic properties for server
+        context.getProperties().entrySet().stream().filter(e -> e.getKey().isDynamic()).forEach(e -> {
+            serverProperties.setProperty(e.getKey().getName(), e.getValue());
+        });
 
         try {
+            updateProperties();
             connect();
-            
-            JCoServer jcoServer = SAPDataManager.getInstance().getServer(this.getIdentifier(), serverName);
-
-            final JCoFunctionTemplate functionTempalate = JCoMetaUtil.createFunTemplate(functionName, paramRoot);
-
-            serverRunner = new SAPServerRunner(jcoServer, functionTempalate);
-            serverRunner.setImportTables(importTables);
-
-            executorService.submit(serverRunner);
-        } catch (JCoException | SAPException e) {
-            throw new InitializationException(e);
+        } catch (SAPException e) {
+            throw new InitializationException(e.getCause());
         }
     }
 
     @Override
     public void shutdown() {
+        stop(); // also stop all
+        removeProperties();
+
+        super.shutdown();
+    }
+
+    private void updateProperties() {
+        final String identifier = getIdentifier();
+
+        SAPDataManager.getInstance().updateClientProp(identifier, serverType, clientProperties);
+        SAPDataManager.getInstance().updateServerProp(identifier, SERVER_NAME, serverProperties);
+    }
+
+    private void removeProperties() {
+        final String identifier = getIdentifier();
+        if (serverType != null) {
+            SAPDataManager.getInstance().updateClientProp(identifier, serverType, null);
+        }
+        SAPDataManager.getInstance().updateServerProp(identifier, SERVER_NAME, null);
+    }
+
+    @Override
+    public void connect() throws SAPException {
+
+        try {
+            final JCoDestination destination = SAPDataManager.getInstance().getDestination(getIdentifier(), serverType);
+            destination.ping();
+        } catch (JCoException e) {
+            throw new SAPException(e);
+        }
+    }
+
+    private void stop() {
+        lock.lock();
+
         if (serverRunner != null) {
             serverRunner.stop();
-            serverRunner.registryRequest(null); // clear callback
+            serverRunner = null;
         }
         if (executorService != null) {
             executorService.shutdownNow();
             executorService = null;
         }
 
-        super.shutdown();
-        if (serverName != null)
-            SAPDataManager.getInstance().updateServerProp(this.getIdentifier(), serverName, null);
+        try {
+            Thread.sleep(100); // waiting to stop the server
+        } catch (InterruptedException e) {
+            //
+        }
+        lock.unlock();
+    }
+
+    private void restart() throws SAPException {
+        updateProperties(); // reset, make sure the properties is right
+
+        stop();
+        start();
+    }
+
+    private void start() throws SAPException {
+        lock.lock();
+        running.set(true);
+        connect();
+
+        try {
+            JCoServer jcoServer = SAPDataManager.getInstance().getServer(this.getIdentifier(), SERVER_NAME);
+            executorService = Executors.newSingleThreadExecutor();
+            serverRunner = new SAPServerRunner(jcoServer, callbackMap);
+            executorService.submit(serverRunner);
+
+            try {
+                Thread.sleep(200); // waiting to stop the server
+            } catch (InterruptedException e) {
+                //
+            }
+
+            running.set(false);
+        } catch (JCoException e) {
+            throw new SAPException(e);
+        } finally {
+            lock.unlock();
+        }
+
     }
 
     public void registryRequest(final SAPRequestCallback requestCallback) throws SAPServerException {
-        if (serverRunner == null || !serverRunner.isRunning())
-            throw new SAPServerException(Messages.getString("SAPConnectionPool.WrongServer")); //$NON-NLS-1$
-        serverRunner.registryRequest(requestCallback);
+        callbackMap.put(requestCallback.getIdentifier(), requestCallback);
+
+        try {
+            restart(); // force to restart, if other processor started, maybe have problem.
+        } catch (SAPException e) {
+            throw new SAPServerException(e.getCause());
+        }
     }
 
     @Override
     public void unregistryRequest(String identifier) {
-        if (serverRunner == null || !serverRunner.isRunning())
-            throw new SAPServerException(Messages.getString("SAPConnectionPool.WrongServer")); //$NON-NLS-1$
-        serverRunner.unregistryRequest(identifier);
-
+        callbackMap.remove(identifier);
+        stop();
     }
 
 }

@@ -29,7 +29,7 @@ public class SAPServerTIDHandler implements JCoServerTIDHandler {
         // this point. JCo will then abort the tRFC and the R/3 backend will try
         // again later.
 
-        System.out.println("TID Handler: checkTID for " + tid);
+        // System.out.println("TID Handler: checkTID for " + tid);
         TIDState state = availableTIDs.get(tid);
         if (state == null) {
             availableTIDs.put(tid, TIDState.CREATED);
@@ -52,7 +52,7 @@ public class SAPServerTIDHandler implements JCoServerTIDHandler {
      */
     @Override
     public void commit(JCoServerContext serverCtx, String tid) {
-        System.out.println("TID Handler: commit for " + tid);
+        // System.out.println("TID Handler: commit for " + tid);
 
         // react on commit e.g. commit on the database
         // if necessary throw a RuntimeException, if the commit was not
@@ -68,7 +68,7 @@ public class SAPServerTIDHandler implements JCoServerTIDHandler {
      */
     @Override
     public void confirmTID(JCoServerContext serverCtx, String tid) {
-        System.out.println("TID Handler: confirmTID for " + tid);
+        // System.out.println("TID Handler: confirmTID for " + tid);
 
         try {
             // clean up the resources
@@ -88,7 +88,7 @@ public class SAPServerTIDHandler implements JCoServerTIDHandler {
      */
     @Override
     public void rollback(JCoServerContext serverCtx, String tid) {
-        System.out.println("TID Handler: rollback for " + tid);
+        // System.out.println("TID Handler: rollback for " + tid);
         availableTIDs.put(tid, TIDState.ROLLED_BACK);
 
         // react on rollback e.g. rollback on the database
@@ -98,7 +98,7 @@ public class SAPServerTIDHandler implements JCoServerTIDHandler {
     public void execute(JCoServerContext serverCtx) {
         String tid = serverCtx.getTID();
         if (tid != null) {
-            System.out.println("TID Handler: execute for " + tid);
+            // System.out.println("TID Handler: execute for " + tid);
             availableTIDs.put(tid, TIDState.EXECUTED);
         }
     }
