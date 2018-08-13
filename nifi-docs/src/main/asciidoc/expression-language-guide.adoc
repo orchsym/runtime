@@ -23,7 +23,7 @@ Orchsym Studio团队<orchsym@baishancloud.com>
 == 概述 
 Orchsym Studio中的所有数据都由称为流文件“FlowFile”的抽象表示。FlowFile由两个主要部分组成：内容和属性。FlowFile的内容部分表示要操作的数据。例如，如果使用GetFile Processor从本地文件系统中获取文件，则该文件的内容将成为FlowFile 的内容。
 
-FlowFile的属性部分表示有关数据本身或元数据的信息。属性是键值对，表示对数据的已知信息以及对于适当地路由和处理数据有用的信息。继续以上面的获取文件的组件为例，FlowFile将具有一个名为 `filename` 的属性反映文件系统上文件的名称。另外，FlowFile还有一个 `path` 属性反映此文件所在的文件系统上的目录。FlowFile还将具有一个名为的属性 `uuid`，这是此FlowFile 的唯一标识符。
+FlowFile的属性部分表示有关数据本身或元数据的信息。属性是键值对，表示对数据的已知信息以及对于适当的路由和处理数据有用的信息。继续以上面的获取文件的组件为例，FlowFile将具有一个名为 `filename` 的属性反映文件系统上文件的名称。另外，FlowFile还有一个 `path` 属性反映此文件所在的文件系统上的目录。FlowFile还将具有一个名为 `uuid` 的属性，这是此FlowFile 的唯一标识符。
 
 如果用户无法使用这些属性，那么将这些属性放在FlowFile上就没什么用处了。Orchsym Studio表达式语言提供了访问这些属性并将它们与其他值进行比较以及操作它们的值的功能。
 
@@ -1925,7 +1925,7 @@ ${filename:toLower():equals( ${filename} ):or(
 [.function] 
 === count 
 
-*描述*: [.description]#聚合函数，用于计算由 `allAttributes`， `allMatchingAttributes`和 `allDelineatedValues` 返回的非null，非false值的数量。此功能只能与 `allAttributes`，`allMatchingAttributes` 和 `allDelineatedValues` 一起使用。# 
+*描述*: [.description]#聚合函数，用于计算由 `allAttributes`， `allMatchingAttributes` 和 `allDelineatedValues` 返回的非null，非false值的数量。此功能只能与 `allAttributes`，`allMatchingAttributes` 和 `allDelineatedValues` 一起使用。# 
 
 *主题类型*: [.subject]#任意# 
 
