@@ -131,7 +131,7 @@ public final class JCoRecordUtil {
         for (JCoField field : jcoRecord) {
             int type = field.getType();
             String name = field.getName();
-            Object value = field.getValue();
+            String value = field.getString();
             if (value == null) {
                 if (!ignoreEmptyValues) {
                     results.put(name, "");
@@ -197,7 +197,7 @@ public final class JCoRecordUtil {
         for (JCoField f : tableParameterList) {
             if (f.getType() == JCoMetaData.TYPE_TABLE) {
                 final String tableName = f.getName();
-                if (!exportTablesList.isEmpty() && !exportTablesList.contains(tableName)) {
+                if (!exportTablesList.isEmpty() && !exportTablesList.contains(tableName.toUpperCase())) {
                     continue; // if set, and not in the list, will ignore
                 }
                 JCoTable table = f.getTable();

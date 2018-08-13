@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SAPTabParam extends AbsParam {
+    private String typeName;
     private List<SAPParam> params;
 
     @JsonIgnore
@@ -29,6 +30,14 @@ public class SAPTabParam extends AbsParam {
     @JsonIgnore
     public ESAPTabType getTabType() {
         return ESAPTabType.get(this.getType());
+    }
+
+    public String getTypeName() {
+        return typeName;
+    }
+
+    public void setTypeName(String typeName) {
+        this.typeName = typeName;
     }
 
     public List<SAPParam> getParams() {

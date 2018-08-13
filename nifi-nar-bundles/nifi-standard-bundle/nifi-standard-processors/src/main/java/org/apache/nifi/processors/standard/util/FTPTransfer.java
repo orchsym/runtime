@@ -114,14 +114,21 @@ public class FTPTransfer implements FileTransfer {
         .addValidator(StandardValidators.DATA_SIZE_VALIDATOR)
         .build();
     public static final PropertyDescriptor UTF8_ENCODING = new PropertyDescriptor.Builder()
-            .name("ftp-use-utf8")
-            .displayName("Use UTF-8 Encoding")
-            .description("Tells the client to use UTF-8 encoding when processing files and filenames. If set to true, the server must also support UTF-8 encoding.")
-            .required(true)
-            .allowableValues("true", "false")
-            .defaultValue("false")
-            .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
-            .build();
+        .name("ftp-use-utf8")
+        .displayName("Use UTF-8 Encoding")
+        .description("Tells the client to use UTF-8 encoding when processing files and filenames. If set to true, the server must also support UTF-8 encoding.")
+        .required(true)
+        .allowableValues("true", "false")
+        .defaultValue("false")
+        .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
+        .build();
+    public static final PropertyDescriptor ENCODING = new PropertyDescriptor.Builder()
+        .name("ftp-use-encode")
+        .displayName("Custom Encoding")
+        .description("Tells the client to use which encoding when processing files and filenames. ")
+        .required(false)
+        .addValidator(StandardValidators.CHARACTER_SET_VALIDATOR)
+        .build();
 
     private final ComponentLog logger;
 
@@ -553,7 +560,10 @@ public class FTPTransfer implements FileTransfer {
         }
 
         final boolean useUtf8Encoding = ctx.getProperty(UTF8_ENCODING).isSet() ? ctx.getProperty(UTF8_ENCODING).asBoolean() : false;
-        if (useUtf8Encoding) {
+        final String encoding = ctx.getProperty(ENCODING).getValue();
+        if(encoding != null && encoding.length() > 0){
+            client.setControlEncoding(encoding);
+        }else if (useUtf8Encoding) {
             client.setControlEncoding("UTF-8");
         }
 

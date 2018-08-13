@@ -15,5 +15,7 @@ public interface SAPClientConnectionPoolService extends SAPConnectionPoolService
     String KEY_SYSID = "systemID";
     String KEY_SYSNO = "systemNumber";
 
+    boolean isConnected();
+
     Object call(String function, GenericRecord readRecord, boolean ignoreEmptyValues, String... exportTables) throws SAPException;
 }

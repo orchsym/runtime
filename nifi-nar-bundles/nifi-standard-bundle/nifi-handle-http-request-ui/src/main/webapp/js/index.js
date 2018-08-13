@@ -114,13 +114,13 @@ $(function(){
         nodeTbodyForm: $(".apiEdit #formBox table[name=form] tbody"),
         nodeTbodyTr: $(".apiEdit table[name=parameters] tbody tr[repeat]"),
         getTr: function(){
-            return $('<tr repeat><td><input type="text" name="name"></td><td><select name="position"><option value="query">query</option><option value="header">header</option></select></td><td><select name="type"><option value="string">string</option><option value="boolean">boolean</option><option value="number">number</option></select></td><td><select name="format"></select></td></td><td class="text-center"><label style="line-height: 20px;" class="mda-checkbox"><input type="checkbox" value="true" name="required"><em style="margin-right: 20px;"></em></label></td><td><input type="text" name="description"></td><td class="text-center"><div class="icon-close"></div></td></tr>');
+            return $('<tr repeat><td><input type="text" name="name"></td><td><select name="position"><option value="query">query</option><option value="header">header</option><option value="cookie">cookie</option></select></td><td><select name="type"><option value="string">string</option><option value="boolean">boolean</option><option value="number">number</option></select></td><td><select name="format"></select></td></td><td class="text-center"><label style="line-height: 20px;" class="mda-checkbox"><input type="checkbox" value="true" name="required"><em style="margin-right: 20px;"></em></label></td><td><input type="text" name="description" maxlength="40"></td><td class="text-center"><div class="icon-close"></div></td></tr>');
         },
         getTr1: function(){
-            return $('<tr repeat><td><input type="text" name="name" readonly="readonly"></td><td><select name="position"><option value="path">path</option></select></td><td><select name="type"><option value="string">string</option><option value="boolean">boolean</option><option value="number">number</option></select></td><td><select name="format"></select></td><td class="text-center"><label style="line-height: 20px;" class="mda-checkbox"><input type="checkbox" value="true" name="required" disabled="disabled"><em style="margin-right: 20px;"></em></label></td><td><input type="text" name="description"></td><td class="text-center"></td></tr>');
+            return $('<tr repeat><td><input type="text" name="name" readonly="readonly"></td><td><select name="position"><option value="path">path</option></select></td><td><select name="type"><option value="string">string</option><option value="boolean">boolean</option><option value="number">number</option></select></td><td><select name="format"></select></td><td class="text-center"><label style="line-height: 20px;" class="mda-checkbox"><input type="checkbox" value="true" name="required" disabled="disabled"><em style="margin-right: 20px;"></em></label></td><td><input type="text" name="description" maxlength="40"></td><td class="text-center"></td></tr>');
         },
         getTr2: function(){
-            return $('<tr repeat><td><input type="text" name="name"></td><td><select name="type"><option value="string">string</option><option value="boolean">boolean</option><option value="number">number</option></select></td><td><select name="format"></select></td><td class="text-center"><label style="line-height: 20px;" class="mda-checkbox"><input type="checkbox" value="true" name="required" disabled="disabled"><em style="margin-right: 20px;"></em></label></td><td><input type="text" name="description"></td><td class="text-center"><div class="icon-close"></div></td></tr>');
+            return $('<tr repeat><td><input type="text" name="name"></td><td><select name="type"><option value="string">string</option><option value="boolean">boolean</option><option value="number">number</option></select></td><td><select name="format"></select></td><td class="text-center"><label style="line-height: 20px;" class="mda-checkbox"><input type="checkbox" value="true" name="required" disabled="disabled"><em style="margin-right: 20px;"></em></label></td><td><input type="text" name="description" maxlength="40"></td><td class="text-center"><div class="icon-close"></div></td></tr>');
         },
         format:{//
             string:[
@@ -246,7 +246,7 @@ $(function(){
                 twoWayBinding(tr.find("select[name=type]"),item,"type");
                 twoWayBinding(tr.find("input[name=description]"),item,"description");
             }
-            else if(item.position=="query" || item.position=="header")
+            else if(item.position=="query" || item.position=="header" || item.position=="cookie")
             {
                 var tr = ApiTools.parameters.getTr();
                 tr.find("input[name=name]").val(item.name);
@@ -495,8 +495,8 @@ $(function(){
             var response = $('<div class="response" />');
             var responseBody = $('<div class="response-body">' +
                 '<div class="triangle"></div>' +
-                '<div class="response-tr" style="font-weight: 600;"><input type="text" name="code" value="' + item.code + '" /></div>' +
-                '<div class="response-tr"><input type="text" name="description" value="' + item.description + '" /></div>' +
+                '<div class="response-tr" style="font-weight: 600;"><input name="code" value="' + item.code + '" type="number" /></div>' +
+                '<div class="response-tr"><input maxlength="40" type="text" name="description" value="' + item.description + '"/></div>' +
                 '<div class="response-tr" name="type"></div>' +
                 '</div>');
 
@@ -591,9 +591,9 @@ $(function(){
         if(Swagger.respModels.length)
         {
             var item = {
-                "code":  "code",
+                "code":  "200",
                 "description":  "description",
-                "type":  "object",
+                "type":  "array",
                 "ref":  Swagger.respModels[0]["name"]
             };
             Swagger.respInfos[ApiTools.method.selectMethod].push(item);
@@ -603,6 +603,17 @@ $(function(){
         {
             console.log("error");
         }
+    };
+
+    ApiTools.alert = function(par){
+        var W = screen.availWidth;
+        var H = screen.availHeight;
+        $("#mask .title").html(par.title || "提示");
+        $("#mask .body").html(par.text || "");
+        $("#mask button").on("click", function(){
+            $("#mask").hide();
+        });
+        $("#mask").show();
     };
 
     /*
@@ -626,6 +637,11 @@ $(function(){
     ModelTools.editor.setReadOnly(false);
     ModelTools.editor.setOption("wrap", "free");
     ModelTools.save = function(){
+        var error = ModelTools.isError();
+        if(!error)
+        {
+            return false;
+        }
         var url = 'api/property/info';
         var httpMethod = 'POST';
         if(ApiTools.method.selectMethod=="post"||ApiTools.method.selectMethod=="put")
@@ -647,6 +663,7 @@ $(function(){
                 ApiTools.body.delete();
             }
         }
+
         Swagger.processorId = getProcessorId();
         Swagger.revision = getRevision(),
         Swagger.clientId = getClientId();
@@ -661,8 +678,7 @@ $(function(){
             console.log(response);
             Initialization();
         }, function (xhr, status, error) {
-            console.log(xhr.responseText);
-            alert(xhr.responseText);
+            ApiTools.alert({text: xhr.responseText});
         });
     };
     ModelTools.model = {};
@@ -672,7 +688,10 @@ $(function(){
             "name":  randomWord(),
             "description": "description",
             "contentType": ["application/json"],
-            "properties": {}
+            "properties":
+            {
+
+            }
         };
         Swagger.respModels.push(item);
         ModelTools.model.showList();
@@ -691,7 +710,7 @@ $(function(){
 
             if(respInfos.length)
             {
-                alert("模型使用中，无法删除！");
+                ApiTools.alert({text: "模型 “" + respModels[0]["name"] + "” 在使用中，不能删除！"});
                 return;
             }
         }
@@ -760,6 +779,14 @@ $(function(){
                 }
             })(Swagger.respModels[i],i);
         }
+        if(Swagger.respModels.length)
+        {
+            $("#saveModel").show();
+        }
+        else
+        {
+            $("#saveModel").hide();
+        }
     };
 
     function autoInput(){
@@ -788,12 +815,16 @@ $(function(){
         });
         $(".modelEdit button#saveModel").on("click",function(){
             //Initialization(true);
-            for(x in ApiTools) {
-                if(ApiTools[x]["set"]) {
-                    ApiTools[x]["set"]();
+            var error = ModelTools.isError();
+            if(error)
+            {
+                for(x in ApiTools) {
+                    if(ApiTools[x]["set"]) {
+                        ApiTools[x]["set"]();
+                    }
                 }
+                ApiTools.alert({text: "保存模型成功!"});
             }
-            alert("保存模型成功!");
         });
     }
 
@@ -807,6 +838,7 @@ $(function(){
 
     function formatJson(){
         if(ModelTools.select) {
+            var id = ModelTools.select.attr("id");
             var model = ModelTools.model.getModel(ModelTools.select.attr("id"));
             var value = ModelTools.editor.getValue();
             value = value.replace(/\n/g, "");
@@ -814,14 +846,51 @@ $(function(){
             try {
                 var valueJson = JSON.parse(value);
                 model.properties = valueJson;
+                deleteErrorModel(id)
             } catch (e) {
                 try {
                     var valueJson = eval('(' + value + ')');
                     model.properties = valueJson;
+                    deleteErrorModel(id);
                 } catch (e) {
+                    addErrorModel(id);
                 }
             }
         }
+    }
+
+    ModelTools.errorModel = {};
+
+    ModelTools.isError = function()
+    {
+        var names = "";
+        for(x in ModelTools.errorModel)
+        {
+            var model = ModelTools.model.getModel(ModelTools.select.attr("id"));
+            names += names ? ",“" + model.name + "”" : "“" + model.name + "”";
+        }
+        var pathReg = /^\/(([\w\{\}\-\.,@%\+:])+[\/]?)*$/;
+        if(names)
+        {
+            ApiTools.alert({text: "模型 " + names + " 格式错误，请重新编辑相关模型！"});
+            return false;
+        }
+        else if(!pathReg.test(Swagger.path))
+        {
+            ApiTools.alert({text: "路径格式错误，请重新输入路径！", title:"路径格式错误"});
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    };
+
+    function addErrorModel(id){
+        ModelTools.errorModel[id] = true;
+    }
+    function deleteErrorModel(id){
+        delete ModelTools.errorModel[id];
     }
 
     function formatCode(input,n,space) {
@@ -906,6 +975,7 @@ $(function(){
         $("button#saveAll").on("click",function(){
             ModelTools.save();
         });
+
         $("#body input").on("click",function(){
             ApiTools.body.type = $(this).val();
             if($(this).val()=="raw")
@@ -1113,7 +1183,7 @@ $(function(){
         }
         return [];
     }
-
+    
     function getClientId() {
         return $('#http-request-client-id').text();
     }

@@ -8,6 +8,12 @@ public interface SAPRequestCallback {
 
     String getIdentifier();
 
+    String getFunName();
+
+    String[] getImportTables();
+
+    String getFunMetadata();
+
     boolean ignoreEmptyValue();
 
     void process(final Object importData);

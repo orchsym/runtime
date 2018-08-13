@@ -22,8 +22,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.nifi.annotation.behavior.DynamicProperty;
 import org.apache.nifi.annotation.lifecycle.OnDisabled;
 import org.apache.nifi.annotation.lifecycle.OnEnabled;
 import org.apache.nifi.components.PropertyDescriptor;
@@ -40,8 +42,6 @@ import org.apache.nifi.reporting.InitializationException;
 import com.baishancloud.orchsym.sap.i18n.Messages;
 import com.baishancloud.orchsym.sap.option.ESAPLanguage;
 import com.baishancloud.orchsym.sap.option.ESAPServerType;
-import com.sap.conn.jco.JCoDestination;
-import com.sap.conn.jco.JCoException;
 import com.sap.conn.jco.ext.DestinationDataProvider;
 
 /**
@@ -49,13 +49,14 @@ import com.sap.conn.jco.ext.DestinationDataProvider;
  * 
  * @author GU Guoqiang
  */
-public class SAPConnectionPool extends AbstractControllerService implements SAPConnectionPoolService {
+@DynamicProperty(name = "A SAP connection property", value = "A property for SAP connection", description = "Can set the additional properties for SAP to connection")
+public abstract class SAPConnectionPool extends AbstractControllerService implements SAPConnectionPoolService {
 
-    public static final PropertyDescriptor SERVER_TYPE = new PropertyDescriptor.Builder().name("Server Type") //$NON-NLS-1$
+    public static final PropertyDescriptor SERVER_TYPE = new PropertyDescriptor.Builder().name("server-type") //$NON-NLS-1$
             .displayName(Messages.getString("SAPConnectionPool.ServerType"))// //$NON-NLS-1$
             .description(Messages.getString("SAPConnectionPool.ServerType_desc"))// //$NON-NLS-1$
             .required(true)//
-            .defaultValue(ESAPServerType.AS_POOL.getValue()).allowableValues(ESAPServerType.getAll())//
+            .defaultValue(ESAPServerType.ASP.getValue()).allowableValues(ESAPServerType.getAll())//
             .addValidator(new Validator() {
                 @Override
                 public ValidationResult validate(final String subject, final String value, final ValidationContext context) {
@@ -66,7 +67,7 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
             })//
             .build();
 
-    public static final PropertyDescriptor HOST = new PropertyDescriptor.Builder().name("Host")//$NON-NLS-1$
+    public static final PropertyDescriptor HOST = new PropertyDescriptor.Builder().name("host")//$NON-NLS-1$
             .displayName(Messages.getString("SAPConnectionPool.Host"))// //$NON-NLS-1$
             .description(Messages.getString("SAPConnectionPool.Host_desc"))// //$NON-NLS-1$
             .required(true)//
@@ -76,7 +77,7 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
             .build();
 
     // for AS
-    public static final PropertyDescriptor SYSNR = new PropertyDescriptor.Builder().name("System Number")//$NON-NLS-1$
+    public static final PropertyDescriptor SYSNR = new PropertyDescriptor.Builder().name("sysnr")//$NON-NLS-1$
             .displayName(Messages.getString("SAPConnectionPool.SystemNumber")) // //$NON-NLS-1$
             .description(Messages.getString("SAPConnectionPool.SystemNumber_desc"))// //$NON-NLS-1$
             .required(false)//
@@ -86,7 +87,7 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
             .build();
 
     // for MS
-    public static final PropertyDescriptor SYSID = new PropertyDescriptor.Builder().name("System Id")//$NON-NLS-1$
+    public static final PropertyDescriptor SYSID = new PropertyDescriptor.Builder().name("r3name")//$NON-NLS-1$
             .displayName(Messages.getString("SAPConnectionPool.SystemId")) // //$NON-NLS-1$
             .description(Messages.getString("SAPConnectionPool.SystemId_desc"))// //$NON-NLS-1$
             .required(false)//
@@ -95,7 +96,7 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
             .build();
     // for MS
-    public static final PropertyDescriptor GROUP = new PropertyDescriptor.Builder().name("Group Name")//$NON-NLS-1$
+    public static final PropertyDescriptor GROUP = new PropertyDescriptor.Builder().name("group")//$NON-NLS-1$
             .displayName(Messages.getString("SAPConnectionPool.Group")) // //$NON-NLS-1$
             .description(Messages.getString("SAPConnectionPool.Group_desc"))// //$NON-NLS-1$
             .required(false)//
@@ -104,7 +105,7 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
             .build();
 
-    public static final PropertyDescriptor CLIENT = new PropertyDescriptor.Builder().name("Client")//$NON-NLS-1$
+    public static final PropertyDescriptor CLIENT = new PropertyDescriptor.Builder().name("client")//$NON-NLS-1$
             .displayName(Messages.getString("SAPConnectionPool.Client")) // //$NON-NLS-1$
             .description(Messages.getString("SAPConnectionPool.Client_desc"))// //$NON-NLS-1$
             .required(true)//
@@ -113,7 +114,7 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
             .build();
 
-    public static final PropertyDescriptor USER = new PropertyDescriptor.Builder().name("User")//$NON-NLS-1$
+    public static final PropertyDescriptor USER = new PropertyDescriptor.Builder().name("user")//$NON-NLS-1$
             .displayName(Messages.getString("SAPConnectionPool.User")) // //$NON-NLS-1$
             .description(Messages.getString("SAPConnectionPool.User_desc"))// //$NON-NLS-1$
             .required(false)//
@@ -122,7 +123,7 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
             .build();
 
-    public static final PropertyDescriptor PASSWORD = new PropertyDescriptor.Builder().name("Password")//$NON-NLS-1$
+    public static final PropertyDescriptor PASSWORD = new PropertyDescriptor.Builder().name("passwd")//$NON-NLS-1$
             .displayName(Messages.getString("SAPConnectionPool.Password")) // //$NON-NLS-1$
             .description(Messages.getString("SAPConnectionPool.Password_desc"))// //$NON-NLS-1$
             .required(false)//
@@ -131,7 +132,7 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
             .build();
 
-    public static final PropertyDescriptor LANGUAGE = new PropertyDescriptor.Builder().name("Language")//$NON-NLS-1$
+    public static final PropertyDescriptor LANGUAGE = new PropertyDescriptor.Builder().name("lang")//$NON-NLS-1$
             .displayName(Messages.getString("SAPConnectionPool.Language")) // //$NON-NLS-1$
             .description(Messages.getString("SAPConnectionPool.Language_desc")) // //$NON-NLS-1$
             .required(false)//
@@ -146,7 +147,7 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
             })//
             .build();
 
-    public static final PropertyDescriptor POOL_CAPACITY = new PropertyDescriptor.Builder().name("Max idle connections")//$NON-NLS-1$
+    public static final PropertyDescriptor POOL_CAPACITY = new PropertyDescriptor.Builder().name("pool_capacity")//$NON-NLS-1$
             .displayName(Messages.getString("SAPConnectionPool.PoolCapacity")) // //$NON-NLS-1$
             .description(Messages.getString("SAPConnectionPool.PoolCapacity_desc"))// //$NON-NLS-1$
             .required(false)//
@@ -155,7 +156,7 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
             .build();
 
-    public static final PropertyDescriptor PEAK_LIMIT = new PropertyDescriptor.Builder().name("Max active connections")//$NON-NLS-1$
+    public static final PropertyDescriptor PEAK_LIMIT = new PropertyDescriptor.Builder().name("peak_limit")//$NON-NLS-1$
             .displayName(Messages.getString("SAPConnectionPool.PeakLimit")) // //$NON-NLS-1$
             .description(Messages.getString("SAPConnectionPool.PeakLimit_desc"))// //$NON-NLS-1$
             .required(false)//
@@ -164,7 +165,7 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
             .build();
 
-    public static final PropertyDescriptor ROUTER = new PropertyDescriptor.Builder().name("Router")//$NON-NLS-1$
+    public static final PropertyDescriptor ROUTER = new PropertyDescriptor.Builder().name("saprouter")//$NON-NLS-1$
             .displayName(Messages.getString("SAPConnectionPool.Router")) // //$NON-NLS-1$
             .description(Messages.getString("SAPConnectionPool.Router_desc"))// //$NON-NLS-1$
             .required(false)//
@@ -173,9 +174,25 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
             .build();
 
-    protected List<PropertyDescriptor> properties;
+    public static final PropertyDescriptor CODEPAGE = new PropertyDescriptor.Builder().name("codepage")//$NON-NLS-1$
+            .displayName(Messages.getString("SAPConnectionPool.CodePage")) // //$NON-NLS-1$
+            .description(Messages.getString("SAPConnectionPool.CodePage_desc"))// //$NON-NLS-1$
+            .required(false)//
+            .defaultValue("8400")//
+            .addValidator(StandardValidators.NON_NEGATIVE_INTEGER_VALIDATOR)//
+            .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
+            .build();
 
-    protected volatile JCoDestination destination;
+    public static final PropertyDescriptor EXPIRATION_TIME = new PropertyDescriptor.Builder().name("expiration_time")//$NON-NLS-1$
+            .displayName(Messages.getString("SAPConnectionPool.ExpirationTime")) // //$NON-NLS-1$
+            .description(Messages.getString("SAPConnectionPool.ExpirationTime_desc"))// //$NON-NLS-1$
+            .required(false)//
+            .defaultValue("5 min")// 5 min
+            .addValidator(StandardValidators.createTimePeriodValidator(1, TimeUnit.MILLISECONDS, Integer.MAX_VALUE, TimeUnit.MINUTES))//
+            .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
+            .build();
+
+    protected List<PropertyDescriptor> properties;
 
     protected volatile ESAPServerType serverType;
     protected volatile Properties clientProperties;
@@ -195,6 +212,8 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
         props.add(POOL_CAPACITY);
         props.add(PEAK_LIMIT);
         props.add(ROUTER);
+        props.add(CODEPAGE);
+        props.add(EXPIRATION_TIME);
 
         properties = Collections.unmodifiableList(props);
     }
@@ -202,6 +221,14 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
     @Override
     protected List<PropertyDescriptor> getSupportedPropertyDescriptors() {
         return properties;
+    }
+
+    @Override
+    protected PropertyDescriptor getSupportedDynamicPropertyDescriptor(final String propertyDescriptorName) {
+        return new PropertyDescriptor.Builder().name(propertyDescriptorName)//
+                .expressionLanguageSupported(ExpressionLanguageScope.NONE)//
+                .addValidator(Validator.VALID)//
+                .required(false).dynamic(true).build();
     }
 
     @OnEnabled
@@ -223,12 +250,23 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
         final Integer peakLimit = context.getProperty(PEAK_LIMIT).evaluateAttributeExpressions().asInteger();
 
         final String router = context.getProperty(ROUTER).evaluateAttributeExpressions().getValue();
+        final String codepage = context.getProperty(CODEPAGE).evaluateAttributeExpressions().getValue();
+        final int expirTime = context.getProperty(EXPIRATION_TIME).evaluateAttributeExpressions().asTimePeriod(TimeUnit.MILLISECONDS).intValue();
 
         clientProperties = new Properties();
         clientProperties.setProperty(DestinationDataProvider.JCO_CLIENT, client);
         clientProperties.setProperty(DestinationDataProvider.JCO_USER, user);
         clientProperties.setProperty(DestinationDataProvider.JCO_PASSWD, password);
         clientProperties.setProperty(DestinationDataProvider.JCO_LANG, language);
+        clientProperties.setProperty(DestinationDataProvider.JCO_CODEPAGE, codepage);
+        clientProperties.setProperty(DestinationDataProvider.JCO_EXPIRATION_TIME, String.valueOf(expirTime));
+        clientProperties.setProperty(DestinationDataProvider.JCO_EXPIRATION_PERIOD, String.valueOf(60000)); // 1min by default
+        clientProperties.setProperty(DestinationDataProvider.JCO_MAX_GET_TIME, String.valueOf(30000)); // 30s by default
+
+        // set Dynamic properties
+        context.getProperties().entrySet().stream().filter(e -> e.getKey().isDynamic()).forEach(e -> {
+            clientProperties.setProperty(e.getKey().getName(), e.getValue());
+        });
 
         if (StringUtils.isNotBlank(router))
             clientProperties.setProperty(DestinationDataProvider.JCO_SAPROUTER, router);
@@ -240,7 +278,7 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
             Properties aSConnectionProps = loadASConnectionProps(host, sysnr);
             clientProperties.putAll(aSConnectionProps);
             break;
-        case AS_POOL:// Application Server with pool
+        case ASP:// Application Server with pool
             checkEmptyProperty(SYSNR, sysnr);
 
             Properties aSWithPoolConnectionProps = loadASWithPoolConnectionProps(host, sysnr, poolCap, peakLimit);
@@ -255,7 +293,6 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
             break;
         }
 
-        SAPDataManager.getInstance().updateClientProp(this.getIdentifier(), serverType, clientProperties);
     }
 
     protected void checkEmptyProperty(PropertyDescriptor pd, String value) throws InitializationException {
@@ -304,31 +341,7 @@ public class SAPConnectionPool extends AbstractControllerService implements SAPC
      */
     @OnDisabled
     public void shutdown() {
-        destination = null;
-        if (serverType != null)
-            SAPDataManager.getInstance().updateClientProp(this.getIdentifier(), serverType, null);
-    }
-
-    public void connect() throws SAPException {
-        try {
-            destination = SAPDataManager.getInstance().getDestination(this.getIdentifier(), serverType); // registry
-
-            destination.ping();
-        } catch (JCoException e) {
-            throw new SAPException(Messages.getString("SAPConnectionPool.Disconnect"), e); //$NON-NLS-1$
-        }
-    }
-
-    public boolean isConnected() {
-        if (destination != null) {
-            try {
-                destination.ping();
-                return true;
-            } catch (JCoException e) {
-                //
-            }
-        }
-        return false;
+        //
     }
 
     @Override

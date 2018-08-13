@@ -1,10 +1,15 @@
 package com.baishancloud.orchsym.sap;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.zip.Adler32;
+
+import org.apache.commons.codec.digest.DigestUtils;
 
 import com.baishancloud.orchsym.sap.i18n.Messages;
 import com.baishancloud.orchsym.sap.option.ESAPServerType;
@@ -18,6 +23,7 @@ import com.sap.conn.jco.ext.ServerDataEventListener;
 import com.sap.conn.jco.ext.ServerDataProvider;
 import com.sap.conn.jco.server.JCoServer;
 import com.sap.conn.jco.server.JCoServerFactory;
+import com.sap.conn.jco.util.Codecs.MD5;
 
 /**
  * 
@@ -29,16 +35,12 @@ public final class SAPDataManager {
     static class CustomDestinationDataProvider implements DestinationDataProvider {
         private DestinationDataEventListener el;
 
-        private Map<ESAPServerType, Properties> destTypesPropertiesMap = new HashMap<>();
+        private Map<String, Properties> destTypesPropertiesMap = new HashMap<>();
 
         public Properties getDestinationProperties(String destinationName) {
-            ESAPServerType serverType = ESAPServerType.valueOf(destinationName.toUpperCase());
-            if (serverType == null) {
-                throw new RuntimeException(Messages.getString("SAPDataManager.Unsupport_Destination", destinationName)); //$NON-NLS-1$
-            }
-            Properties prop = destTypesPropertiesMap.get(serverType);
+            Properties prop = destTypesPropertiesMap.get(destinationName);
             if (prop == null) {
-                throw new RuntimeException(Messages.getString("SAPDataManager.Unavailable_Destination", destinationName)); //$NON-NLS-1$ //$NON-NLS-2$
+                // throw new RuntimeException(Messages.getString("SAPDataManager.Unavailable_Destination", destinationName)); //$NON-NLS-1$ //$NON-NLS-2$
             }
             return prop;
         }
@@ -48,20 +50,19 @@ public final class SAPDataManager {
         }
 
         public boolean supportsEvents() {
-            return false;
+            return true; // enable to delete
         }
 
-        void changeProperties(ESAPServerType serverType, Properties properties) {
-            final String destinationName = serverType.name();
+        void changeProperties(String destinationName, Properties properties) {
             if (properties == null) {
                 if (el != null)
                     el.deleted(destinationName);
 
-                destTypesPropertiesMap.remove(serverType);
+                destTypesPropertiesMap.remove(destinationName);
             } else {
-                Properties oldProp = destTypesPropertiesMap.get(serverType);
+                Properties oldProp = destTypesPropertiesMap.get(destinationName);
                 if (oldProp == null || !oldProp.equals(properties)) {
-                    destTypesPropertiesMap.put(serverType, properties);
+                    destTypesPropertiesMap.put(destinationName, properties);
 
                     if (el != null)
                         el.updated(destinationName);
@@ -78,7 +79,7 @@ public final class SAPDataManager {
         public Properties getServerProperties(String serverName) {
             Properties prop = serverPropertiesMap.get(serverName);
             if (prop == null) {
-                throw new RuntimeException(Messages.getString("SAPDataManager.Unavailable_Server", serverName)); //$NON-NLS-1$ //$NON-NLS-2$
+                // throw new RuntimeException(Messages.getString("SAPDataManager.Unavailable_Server", serverName)); //$NON-NLS-1$ //$NON-NLS-2$
             }
             return prop;
         }
@@ -90,7 +91,7 @@ public final class SAPDataManager {
 
         @Override
         public boolean supportsEvents() {
-            return false;
+            return true; // enable to delete
         }
 
         void changeProperties(String serverName, Properties properties) {
@@ -112,14 +113,12 @@ public final class SAPDataManager {
     }
 
     private static SAPDataManager instance;
-    private final Map<String, CustomDestinationDataProvider> clientDataProvidersMap;
-    private final Map<String, CustomServerDataProvider> serverDataProvidersMap;
-    private CustomDestinationDataProvider previousClientDataProvider;
-    private CustomServerDataProvider previousServerDataProvider;
+    private final CustomDestinationDataProvider clientDataProvider;
+    private final CustomServerDataProvider serverDataProvider;
 
     private SAPDataManager() {
-        clientDataProvidersMap = new ConcurrentHashMap<>(5);
-        serverDataProvidersMap = new ConcurrentHashMap<>(5);
+        clientDataProvider = new CustomDestinationDataProvider();
+        serverDataProvider = new CustomServerDataProvider();
     }
 
     public static SAPDataManager getInstance() {
@@ -140,37 +139,17 @@ public final class SAPDataManager {
 
     public void unregisterClient() {
         try {
-            if (previousClientDataProvider != null)
-                Environment.unregisterDestinationDataProvider(previousClientDataProvider);
-        } catch (IllegalStateException e) {
+            Environment.unregisterDestinationDataProvider(clientDataProvider);
+        } catch (IllegalStateException e2) {
             // nothing to do
-        }
-
-        // wrong previous, try to remove from list one by one
-        for (Entry<String, CustomDestinationDataProvider> entry : clientDataProvidersMap.entrySet()) {
-            try {
-                Environment.unregisterDestinationDataProvider(entry.getValue());
-            } catch (IllegalStateException e2) {
-                // nothing to do
-            }
         }
     }
 
     public void unregisterServer() {
         try {
-            if (previousServerDataProvider != null)
-                Environment.unregisterServerDataProvider(previousServerDataProvider);
-        } catch (IllegalStateException e) {
+            Environment.unregisterServerDataProvider(serverDataProvider);
+        } catch (IllegalStateException e2) {
             // nothing to do
-        }
-
-        // wrong previous, try to remove from list one by one
-        for (Entry<String, CustomServerDataProvider> entry : serverDataProvidersMap.entrySet()) {
-            try {
-                Environment.unregisterServerDataProvider(entry.getValue());
-            } catch (IllegalStateException e2) {
-                // nothing to do
-            }
         }
     }
 
@@ -179,12 +158,7 @@ public final class SAPDataManager {
      */
     public synchronized void updateClientProp(String identifier, ESAPServerType serverType, Properties properties) {
         if (serverType != null) {
-            CustomDestinationDataProvider customDestinationDataProvider = clientDataProvidersMap.get(identifier);
-            if (customDestinationDataProvider == null) {
-                customDestinationDataProvider = new CustomDestinationDataProvider();
-                clientDataProvidersMap.put(identifier, customDestinationDataProvider);
-            }
-            customDestinationDataProvider.changeProperties(serverType, properties);
+            clientDataProvider.changeProperties(getDestinationName(identifier, serverType), properties);
         }
     }
 
@@ -193,15 +167,23 @@ public final class SAPDataManager {
      */
     public synchronized void updateServerProp(String identifier, String serverName, Properties properties) {
         if (serverName != null) {
-            CustomServerDataProvider customServerDataProvider = serverDataProvidersMap.get(identifier);
-            if (customServerDataProvider == null) {
-                customServerDataProvider = new CustomServerDataProvider();
-                serverDataProvidersMap.put(identifier, customServerDataProvider);
-            }
-            customServerDataProvider.changeProperties(serverName, properties);
+            serverDataProvider.changeProperties(getServerName(identifier, serverName), properties);
         }
     }
 
+    public static String getDestinationName(String identifier, ESAPServerType serverType) {
+        return serverType.getValue() + '_' + getChecksum(identifier);
+    }
+
+    public static String getServerName(String identifier, String serverName) {
+        return serverName + '_' + getChecksum(identifier);
+    }
+
+    public static String getChecksum(String identifier) {
+        Adler32 a32 = new Adler32();
+        a32.update(identifier.getBytes(StandardCharsets.UTF_8));
+        return Long.toString(a32.getValue(), 32).toUpperCase();
+    }
     // public void setDestinationDataEventListener(DestinationDataEventListener eventListener) {
     // this.clientDataProvider.setDestinationDataEventListener(eventListener);
     // }
@@ -214,23 +196,10 @@ public final class SAPDataManager {
         if (identifier == null) {
             return null;
         }
-        CustomDestinationDataProvider customDestinationDataProvider = clientDataProvidersMap.get(identifier);
-        if (customDestinationDataProvider == null) {
-            return null;
+        if (!Environment.isDestinationDataProviderRegistered()) {//
+            Environment.registerDestinationDataProvider(clientDataProvider);
         }
-        if (Environment.isDestinationDataProviderRegistered()) {//
-            if (previousClientDataProvider != customDestinationDataProvider) {
-                unregisterClient();
-
-                Environment.registerDestinationDataProvider(customDestinationDataProvider);
-            }
-        } else {
-            Environment.registerDestinationDataProvider(customDestinationDataProvider);
-        }
-
-        previousClientDataProvider = customDestinationDataProvider;
-
-        JCoDestination jcoDest = JCoDestinationManager.getDestination(serverType.name());
+        JCoDestination jcoDest = JCoDestinationManager.getDestination(getDestinationName(identifier, serverType));
         return jcoDest;
     }
 
@@ -238,23 +207,11 @@ public final class SAPDataManager {
         if (identifier == null) {
             return null;
         }
-        CustomServerDataProvider customServerDataProvider = serverDataProvidersMap.get(identifier);
-        if (customServerDataProvider == null) {
-            return null;
-        }
-        if (Environment.isServerDataProviderRegistered()) {//
-            if (previousServerDataProvider != customServerDataProvider) {
-                unregisterServer();
-
-                Environment.registerServerDataProvider(customServerDataProvider);
-            }
-        } else {
-            Environment.registerServerDataProvider(customServerDataProvider);
+        if (!Environment.isServerDataProviderRegistered()) {//
+            Environment.registerServerDataProvider(serverDataProvider);
         }
 
-        previousServerDataProvider = customServerDataProvider;
-
-        JCoServer server = JCoServerFactory.getServer(serverName);
+        JCoServer server = JCoServerFactory.getServer(getServerName(identifier, serverName));
         return server;
     }
 }

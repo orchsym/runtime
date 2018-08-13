@@ -14,8 +14,6 @@ public interface SAPConnectionPoolService extends ControllerService {
 
     void connect() throws SAPException;
 
-    boolean isConnected();
-
     Map<String, String> getAttributes() throws SAPException;
 
 }

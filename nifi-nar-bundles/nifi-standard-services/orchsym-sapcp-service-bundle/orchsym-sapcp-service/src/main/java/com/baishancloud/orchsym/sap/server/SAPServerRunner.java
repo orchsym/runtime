@@ -4,22 +4,18 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.baishancloud.orchsym.sap.i18n.Messages;
 import com.baishancloud.orchsym.sap.record.JCoRecordUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.sap.conn.jco.AbapException;
-import com.sap.conn.jco.JCo;
-import com.sap.conn.jco.JCoCustomRepository;
-import com.sap.conn.jco.JCoDestinationManager;
 import com.sap.conn.jco.JCoFunction;
-import com.sap.conn.jco.JCoFunctionTemplate;
 import com.sap.conn.jco.JCoRuntimeException;
 import com.sap.conn.jco.server.DefaultServerHandlerFactory;
 import com.sap.conn.jco.server.JCoServer;
@@ -27,6 +23,7 @@ import com.sap.conn.jco.server.JCoServerContext;
 import com.sap.conn.jco.server.JCoServerContextInfo;
 import com.sap.conn.jco.server.JCoServerFunctionHandler;
 import com.sap.conn.jco.server.JCoServerState;
+import com.sap.conn.jco.server.JCoServerTIDHandler;
 
 /**
  * @author GU Guoqiang
@@ -34,47 +31,55 @@ import com.sap.conn.jco.server.JCoServerState;
  */
 public class SAPServerRunner implements SAPServerRunnable {
     private static final Logger logger = LoggerFactory.getLogger(SAPServerRunner.class);
-
     private final JCoServer jcoServer;
-    private final JCoFunctionTemplate functionTempalte;
+    private final Map<String, SAPRequestCallback> callbackMap;
 
-    private String[] importTables;
-    private volatile SAPRequestCallback requestCallback;
     private volatile boolean stopped;
 
-    private JCoCustomRepository repository;
-
-    public SAPServerRunner(JCoServer jcoServer, JCoFunctionTemplate functionTempalte) {
+    public SAPServerRunner(JCoServer jcoServer, Map<String, SAPRequestCallback> callbackMap) {
         this.jcoServer = jcoServer;
-        this.functionTempalte = functionTempalte;
+        this.callbackMap = callbackMap;
     }
 
-    public void setImportTables(String[] importTables) {
-        this.importTables = importTables;
-    }
+    private void startServer() {
+        final JCoServerFunctionHandler handler = new JCoServerFunctionHandler() {
 
-    public void registryRequest(SAPRequestCallback callback) {
-        if (callback != null && this.requestCallback != null) {
-            if (this.requestCallback.getIdentifier().equals(callback.getIdentifier())) {
-                return; // same one
-            } else {
-                throw new IllegalArgumentException(Messages.getString("SAPServerRunner.uniqueMessage")); //$NON-NLS-1$
+            @Override
+            public void handleRequest(JCoServerContext serverCtx, JCoFunction function) throws AbapException {
+                SAPServerRunner.this.handleRequest(serverCtx, function);
             }
-        }
-        this.requestCallback = callback;
-    }
 
-    public void unregistryRequest(String identifier) {
-        if (requestCallback != null && requestCallback.getIdentifier().equals(identifier)) { // same one
-            requestCallback = null;
+        };
+        DefaultServerHandlerFactory.FunctionHandlerFactory factory = new DefaultServerHandlerFactory.FunctionHandlerFactory();
+        for (Entry<String, SAPRequestCallback> entry : callbackMap.entrySet()) {
+            factory.registerHandler(entry.getValue().getFunName(), handler);
         }
+        jcoServer.setCallHandlerFactory(factory);
+
+        final SAPServerAdapter listener = createSAPServerListener();
+        jcoServer.addServerErrorListener(listener);
+        jcoServer.addServerExceptionListener(listener);
+        jcoServer.addServerStateChangedListener(listener);
+
+        JCoServerTIDHandler tidHandler = new SAPServerTIDHandler();
+        jcoServer.setTIDHandler(tidHandler);
+        
+        jcoServer.start();
+
+        stopped = false;
     }
 
     protected void handleRequest(JCoServerContext serverCtx, JCoFunction function) throws AbapException {
-        if (!function.getName().equals(functionTempalte.getName())) { // must same name
+        if (callbackMap.isEmpty()) { // nothing to do
             return;
         }
-        if (requestCallback == null) { // nothing to do
+        for (Entry<String, SAPRequestCallback> entry : callbackMap.entrySet()) {
+            doCallback(function, entry.getValue());
+        }
+    }
+
+    private void doCallback(JCoFunction function, SAPRequestCallback requestCallback) throws AbapException {
+        if (!function.getName().equals(requestCallback.getFunName())) {
             return;
         }
         final boolean ignoreEmptyValues = requestCallback.ignoreEmptyValue();
@@ -83,7 +88,7 @@ public class SAPServerRunner implements SAPServerRunnable {
         // get import
         importResults.putAll(JCoRecordUtil.convertToMap(function.getImportParameterList(), ignoreEmptyValues));
         // get import tables
-        importResults.putAll(JCoRecordUtil.convertTablesToMap(function, ignoreEmptyValues, importTables));
+        importResults.putAll(JCoRecordUtil.convertTablesToMap(function, ignoreEmptyValues, requestCallback.getImportTables()));
 
         requestCallback.process(importResults); // write import data with flow
 
@@ -139,36 +144,7 @@ public class SAPServerRunner implements SAPServerRunnable {
 
     @Override
     public Boolean call() throws Exception {
-        if (functionTempalte == null) {
-            return false;
-        }
-        repository = JCo.createCustomRepository("OrchsymRepository" + System.currentTimeMillis());
-        repository.addFunctionTemplateToCache(functionTempalte);
-        String repDest = jcoServer.getRepositoryDestination();
-        if (repDest != null) {
-            repository.setDestination(JCoDestinationManager.getDestination(repDest));
-        }
-        jcoServer.setRepository(repository);
-
-        DefaultServerHandlerFactory.FunctionHandlerFactory factory = new DefaultServerHandlerFactory.FunctionHandlerFactory();
-        factory.registerHandler(functionTempalte.getName(), new JCoServerFunctionHandler() {
-
-            @Override
-            public void handleRequest(JCoServerContext serverCtx, JCoFunction function) throws AbapException {
-                SAPServerRunner.this.handleRequest(serverCtx, function);
-            }
-
-        });
-        jcoServer.setCallHandlerFactory(factory);
-
-        final SAPServerAdapter listener = createSAPServerListener();
-        jcoServer.addServerErrorListener(listener);
-        jcoServer.addServerExceptionListener(listener);
-        jcoServer.addServerStateChangedListener(listener);
-
-        jcoServer.start();
-
-        stopped = false;
+        startServer();
 
         // block server
         while (jcoServer.getState() == JCoServerState.ALIVE) {
@@ -195,10 +171,10 @@ public class SAPServerRunner implements SAPServerRunnable {
             if (jcoServer != null) {
                 jcoServer.stop();
                 jcoServer.release();
-                repository.clear();
             }
         } catch (JCoRuntimeException e) {
-            logger.error(e.getMessage(), e);
+            // ignore the log
+            // logger.error(e.getMessage(), e);
         }
     }
 
