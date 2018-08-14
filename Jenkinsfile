@@ -81,7 +81,7 @@ pipeline {
         )
 
         sh """
-          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name orchsym-dev --service ${env.PROJECT_NAME}/${env.BRANCH_NAME} --skip-download"
+          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name orchsym-dev --service ${env.PROJECT_NAME}/${env.BRANCH_NAME}"
         """
 
         slackSend(
