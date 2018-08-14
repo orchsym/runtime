@@ -34,7 +34,7 @@ public class NiFiPropertiesWriterFactory {
     private final List<String> lines;
 
     public NiFiPropertiesWriterFactory() throws IOException {
-        this(TlsToolkitMain.class.getClassLoader().getResourceAsStream("conf/nifi.properties"));
+        this(TlsToolkitMain.class.getClassLoader().getResourceAsStream("conf/orchsym.properties"));
     }
 
     public NiFiPropertiesWriterFactory(InputStream inputStream) throws IOException {

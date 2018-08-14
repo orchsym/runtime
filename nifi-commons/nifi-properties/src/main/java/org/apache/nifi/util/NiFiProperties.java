@@ -1433,6 +1433,7 @@ public abstract class NiFiProperties {
     public static NiFiProperties createBasicNiFiProperties(final String propertiesFilePath, final Map<String, String> additionalProperties) {
         final Map<String, String> addProps = (additionalProperties == null) ? Collections.EMPTY_MAP : additionalProperties;
         final Properties properties = new Properties();
+        final Properties orchsym_properties = new Properties();
         final String nfPropertiesFilePath = (propertiesFilePath == null)
                 ? System.getProperty(NiFiProperties.PROPERTIES_FILE_PATH)
                 : propertiesFilePath;
@@ -1449,7 +1450,13 @@ public abstract class NiFiProperties {
             InputStream inStream = null;
             try {
                 inStream = new BufferedInputStream(new FileInputStream(propertiesFile));
-                properties.load(inStream);
+                orchsym_properties.load(inStream);
+                for(Object key :orchsym_properties.keySet()){
+                    if(key != null && key.toString().trim().length() > 0){
+                        String keyStr = key.toString().trim();
+                        properties.put(keyStr.replace("orchsym", "nifi"), orchsym_properties.getProperty(key.toString()));
+                    }
+                }
             } catch (final Exception ex) {
                 throw new RuntimeException("Cannot load properties file due to "
                         + ex.getLocalizedMessage(), ex);

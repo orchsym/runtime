@@ -43,7 +43,7 @@ PHYS_DIR=$(pwd -P)
 SCRIPT_DIR=$PHYS_DIR
 PROGNAME=$(basename "$0")
 
-. "${SCRIPT_DIR}/nifi-env.sh"
+. "${SCRIPT_DIR}/orchsym-env.sh"
 
 
 
@@ -213,10 +213,10 @@ cat <<SERVICEDESCRIPTOR > ${SVC_FILE}
 # description: Apache NiFi is a dataflow system based on the principles of Flow-Based Programming.
 #
 
-# Make use of the configured NIFI_HOME directory and pass service requests to the nifi.sh executable
+# Make use of the configured NIFI_HOME directory and pass service requests to the orchsym.sh executable
 NIFI_HOME=${NIFI_HOME}
 bin_dir=\${NIFI_HOME}/bin
-nifi_executable=\${bin_dir}/nifi.sh
+nifi_executable=\${bin_dir}/orchsym.sh
 
 \${nifi_executable} "\$@"
 SERVICEDESCRIPTOR
@@ -309,7 +309,7 @@ run() {
 
     if [ -n "${run_as_user}" ]; then
       # Provide SCRIPT_DIR and execute nifi-env for the run.as user command
-      run_nifi_cmd="sudo -u ${run_as_user} sh -c \"SCRIPT_DIR='${SCRIPT_DIR}' && . '${SCRIPT_DIR}/nifi-env.sh' && ${run_nifi_cmd}\""
+      run_nifi_cmd="sudo -u ${run_as_user} sh -c \"SCRIPT_DIR='${SCRIPT_DIR}' && . '${SCRIPT_DIR}/orchsym-env.sh' && ${run_nifi_cmd}\""
     fi
 
     if [ "$1" = "run" ]; then

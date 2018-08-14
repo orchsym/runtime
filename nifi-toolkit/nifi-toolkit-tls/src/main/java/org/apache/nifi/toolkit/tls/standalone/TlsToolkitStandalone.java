@@ -51,7 +51,7 @@ import java.util.List;
 public class TlsToolkitStandalone {
     public static final String NIFI_KEY = "nifi-key";
     public static final String NIFI_CERT = "nifi-cert";
-    public static final String NIFI_PROPERTIES = "nifi.properties";
+    public static final String NIFI_PROPERTIES = "orchsym.properties";
 
     private final Logger logger = LoggerFactory.getLogger(TlsToolkitStandalone.class);
     private final OutputStreamFactory outputStreamFactory;
@@ -184,7 +184,7 @@ public class TlsToolkitStandalone {
             tlsClientManager.addPrivateKeyToKeyStore(keyPair, NIFI_KEY, CertificateUtils.generateIssuedCertificate(tlsClientConfig.calcDefaultDn(hostname),
                     keyPair.getPublic(), sanDnsExtensions, certificate, caKeyPair, signingAlgorithm, days), certificate);
             tlsClientManager.setCertificateEntry(NIFI_CERT, certificate);
-            tlsClientManager.addClientConfigurationWriter(new NifiPropertiesTlsClientConfigWriter(niFiPropertiesWriterFactory, new File(hostDir, "nifi.properties"),
+            tlsClientManager.addClientConfigurationWriter(new NifiPropertiesTlsClientConfigWriter(niFiPropertiesWriterFactory, new File(hostDir, "orchsym.properties"),
                     hostname, instanceDefinition.getNumber()));
             tlsClientManager.write(outputStreamFactory);
             if (logger.isInfoEnabled()) {

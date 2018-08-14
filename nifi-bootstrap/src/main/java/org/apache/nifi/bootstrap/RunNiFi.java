@@ -953,7 +953,7 @@ public class RunNiFi {
         String nifiPropsFilename = props.get("props.file");
         if (nifiPropsFilename == null) {
             if (confDir.exists()) {
-                nifiPropsFilename = new File(confDir, "nifi.properties").getAbsolutePath();
+                nifiPropsFilename = new File(confDir, "orchsym.properties").getAbsolutePath();
             } else {
                 nifiPropsFilename = DEFAULT_CONFIG_FILE;
             }

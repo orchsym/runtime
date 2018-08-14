@@ -39,7 +39,7 @@ public class NiFiPropertiesLoader {
 
     private static final Logger logger = LoggerFactory.getLogger(NiFiPropertiesLoader.class);
 
-    private static final String RELATIVE_PATH = "conf/nifi.properties";
+    private static final String RELATIVE_PATH = "conf/orchsym.properties";
 
     private static final String BOOTSTRAP_KEY_PREFIX = "nifi.bootstrap.sensitive.key=";
 
@@ -206,12 +206,18 @@ public class NiFiPropertiesLoader {
             throw new IllegalArgumentException("NiFi properties file missing or unreadable");
         }
 
+        Properties orchsym_properties = new Properties();
         Properties rawProperties = new Properties();
-
         InputStream inStream = null;
         try {
             inStream = new BufferedInputStream(new FileInputStream(file));
-            rawProperties.load(inStream);
+            orchsym_properties.load(inStream);
+            for(Object key :orchsym_properties.keySet()){
+                if(key != null && key.toString().trim().length() > 0){
+                    String keyStr = key.toString().trim();
+                    rawProperties.put(keyStr.replace("orchsym", "nifi"), orchsym_properties.getProperty(key.toString()));
+                }
+            }
             logger.info("Loaded {} properties from {}", rawProperties.size(), file.getAbsolutePath());
 
             ProtectedNiFiProperties protectedNiFiProperties = new ProtectedNiFiProperties(rawProperties);

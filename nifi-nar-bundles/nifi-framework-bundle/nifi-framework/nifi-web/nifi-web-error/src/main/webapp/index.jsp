@@ -32,13 +32,13 @@
     <link rel="stylesheet" href="<%= contextPath %>/nifi/assets/font-awesome/css/font-awesome.min.css" type="text/css"/>
     <link rel="stylesheet" href="<%= contextPath %>/nifi/css/message-pane.css" type="text/css"/>
     <link rel="stylesheet" href="<%= contextPath %>/nifi/css/message-page.css" type="text/css"/>
-    <meta http-equiv="Refresh" content="5; url=<%= contextPath %>/nifi/">
+    <meta http-equiv="Refresh" content="5; url=<%= contextPath %>/runtime/">
 </head>
 
 <body class="message-pane">
 <div class="message-pane-message-box">
     <p class="message-pane-title">
-        Did you mean: <a href="<%= contextPath %>/nifi/">/nifi</a>
+        Did you mean: <a href="<%= contextPath %>/runtime/">/runtime</a>
     </p>
     <p class="message-pane-content">You may have mistyped... but we'll try to redirect you in 5 seconds.</p>
 </div>
