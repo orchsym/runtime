@@ -172,7 +172,7 @@ public class ExecuteStoreProcedure extends AbstractProcessor {
                     + "to be valid, to be issued by the processor to the database.params is JsonArray which has many JsonObjects" +
                     "represents to a param features ,features key contails param.index,param.value,param.type,param.value.type," +
                     "param.format. the value of param.index is a Integer represents a param sequence in a sql. param.type is a param type" +
-                    "like IN,INOUT,OUT. param. param. param.value and param.value.type respresents the value and value type of the param." +
+                    "like IN,IN/OUT,OUT. param. param. param.value and param.value.type respresents the value and value type of the param." +
                     "param.format is optional, but default options may not always work for your data. \"\n" +
                     "Incoming FlowFiles are expected to be parametrized SQL statements. In some cases \"\n" +
                     "a format option needs to be specified, currently this is only applicable for binary data types, dates, times and timestamps. Binary Data Types (defaults to 'ascii') - \"\n" +
@@ -266,26 +266,31 @@ public class ExecuteStoreProcedure extends AbstractProcessor {
         final Integer queryTimeout = context.getProperty(QUERY_TIMEOUT).asTimePeriod(TimeUnit.SECONDS).intValue();
         final Integer fetchSize = context.getProperty(FETCH_SIZE) == null ? 0 : Integer.parseInt(context.getProperty(FETCH_SIZE).getValue());
         final StopWatch stopWatch = new StopWatch(true);
-        final String methodName, params;
+        String methodName="", params=null;
         if (context.getProperty(METHOD_NAME).isSet()) {
             methodName = context.getProperty(METHOD_NAME).getValue();
         } else {
             // If the query is not set, then an incoming flow file is required, and expected to contain a valid SQL select query.
             // If there is no incoming connection, onTrigger will not be called as the processor will fail when scheduled.
             methodName = fileToProcess.getAttribute("MethodName");
+
         }
         if (context.getProperty(PARAMS).isSet()) {
             params = context.getProperty(PARAMS).getValue();
         } else {
             // If the query is not set, then an incoming flow file is required, and expected to contain a valid SQL select query.
             // If there is no incoming connection, onTrigger will not be called as the processor will fail when scheduled.
-            final StringBuilder queryContents = new StringBuilder();
-            params = fileToProcess.getAttribute("Params");
+            try{
+                params = fileToProcess.getAttribute("Params");
+            }catch (Exception e){
+            }
         }
         String callQuery = "";
+        Connection con = null;
+        ExecuteStoreProcedureUtils sql = null;
         try {
-            final Connection con = dbcpService.getConnection();
-            ExecuteStoreProcedureUtils sql = new ExecuteStoreProcedureUtils(con);
+            con = dbcpService.getConnection();
+            sql = new ExecuteStoreProcedureUtils(con);
             sql.withStatement(new Closure(this) {
                 @Override
                 public Object call(Object... args) {
@@ -296,12 +301,12 @@ public class ExecuteStoreProcedure extends AbstractProcessor {
                             try {
                                 if (queryTimeout != null)
                                     callableStatement.setQueryTimeout(queryTimeout);
-                                if (fetchSize != null)
+                                if (fetchSize != null && fetchSize != 0){
                                     callableStatement.setFetchSize(fetchSize);
+                                }
                             } catch (SQLException e) {
                                 throw new ProcessException(e);
                             }
-
                         }
                     }
                     return null;
@@ -324,24 +329,22 @@ public class ExecuteStoreProcedure extends AbstractProcessor {
             fileToProcess = session.write(fileToProcess, new OutputStreamCallback() {
                 @Override
                 public void process(OutputStream outputStream) throws IOException {
-                    if (null != list) {
+                    if (null != list && list.size() > 0) {
                         outputStream.write(formatResults(list).getBytes(StandardCharsets.UTF_8));
                     }
-                    if (null != outs) {
+                    if (null != outs && !outs.equals("")) {
                         outputStream.write(formatResults(outs).getBytes(StandardCharsets.UTF_8));
                     }
                 }
             });
-            if (list != null) {
+            if (list != null && list.size() > 0) {
                 fileToProcess = session.putAttribute(fileToProcess, RESULT_ROW_COUNT, String.valueOf(list.size()));
             }
-            if (outs != null) {
+            if (outs != null && !outs.equals("")) {
                 fileToProcess = session.putAttribute(fileToProcess, RESULT_OUT_COUNT, String.valueOf(outs.length));
             }
             long duration = stopWatch.getElapsed(TimeUnit.MILLISECONDS);
             fileToProcess = session.putAttribute(fileToProcess, RESULT_QUERY_DURATION, String.valueOf(duration));
-            con.close();
-            sql.close();
             session.transfer(fileToProcess, REL_SUCCESS);
 
         } catch (final ProcessException | SQLException e) {
@@ -364,10 +367,23 @@ public class ExecuteStoreProcedure extends AbstractProcessor {
                 }
                 session.transfer(fileToProcess, REL_FAILURE);
             }
+        } finally {
+            if (null != sql) {
+                sql.close();
+            }
+            if (null != con) {
+                try {
+                    con.close();
+                } catch (Exception e) {
+                    throw new ProcessException(e.getMessage());
+                }
+            }
         }
     }
 
     public List<Object> analyzeParamJsonArray(String paramString) {
+        if (null == paramString || paramString.equals("[]"))
+            return null;
         String paramType = "";
         Integer paramIndex = 0;
         Integer paramDataType = 0;
@@ -405,8 +421,7 @@ public class ExecuteStoreProcedure extends AbstractProcessor {
     public void getParam(Integer index, String paramType, Integer paramDataType, String paramFormat, String paramValue, Object[] params) {
         if (paramType.equals("IN")) {
             params[index] = getConvertJavaDataByType(paramDataType, paramFormat, paramValue);
-
-        } else if (paramType.equals("INOUT") || paramType.equals("OUT")) {
+        } else if (paramType.equals("IN/OUT") || paramType.equals("OUT")) {
             params[index] = getConvertTypeByType(paramDataType, paramFormat, paramValue, paramType);
         } else {
             final String errorString = paramType + " type do not support";
@@ -604,7 +619,7 @@ public class ExecuteStoreProcedure extends AbstractProcessor {
         //eg:  OUT    Sql.VARCHAR
         if (type.equals("OUT")) {
             return DateType.getByValue(paramDataType).outParameter;
-        } else if (type.equals("INOUT")) {
+        } else if (type.equals("IN/OUT")) {
             return Sql.inout(Sql.in(DateType.getByValue(paramDataType).outParameter.getType(), paramValue));
         }
         return null;

@@ -21,8 +21,7 @@ public class ExecuteStoreProcedureTest {
 
         //test call storeProcedure with neither in and out
         sqlQuery = "{call addUser()}";
-        testGroovyCallFunctions(null, sqlQuery);
-
+        testGroovyCallFunctions(paramList, sqlQuery);
 
         //test call storeProcedure with in
         paramList.add("three");
