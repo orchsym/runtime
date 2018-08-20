@@ -4,6 +4,7 @@ pipeline {
   environment {
     PROJECT_NAME = 'runtime'
     BUILD_OUTPUT_FILE = "${WORKSPACE}/build.output"
+    VERSION_NAME= "1.7.0-${BRANCH_NAME}"
   }
 
   tools {
@@ -39,14 +40,14 @@ pipeline {
       steps {
         sh """
           mvn clean
-          mvn build-helper:parse-version versions:set -DgenerateBackupPoms=false -DnewVersion=${env.BRANCH_NAME}
+          mvn build-helper:parse-version versions:set -DgenerateBackupPoms=false -DnewVersion=${env.VERSION_NAME}
           mvn -T 4 install -Dmaven.test.failure.ignore=true
-          echo runtime-${env.BRANCH_NAME}.tar.gz >> ${env.BUILD_OUTPUT_FILE}
+          echo ${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz >> ${env.BUILD_OUTPUT_FILE}
         """
 
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Compile Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nGenerated `runtime-${env.BRANCH_NAME}.tar.gz`"
+          message: "${env.EMOJI_SERVICE_RUNTIME} *Compile Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nGenerated `${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz`"
         )
       }
     }
@@ -61,7 +62,7 @@ pipeline {
         )
 
         sh """
-          scp nifi-assembly/target/runtime-${env.BRANCH_NAME}.tar.gz root@${env.ANSIBLE_DEPLOY_HOST}:${env.ANSIBLE_DEVOPS_PATH}/ansible/packages/services/
+          scp nifi-assembly/target/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz root@${env.ANSIBLE_DEPLOY_HOST}:${env.ANSIBLE_DEVOPS_PATH}/ansible/packages/services/
         """
 
         slackSend(
@@ -81,7 +82,7 @@ pipeline {
         )
 
         sh """
-          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name orchsym-dev --service ${env.PROJECT_NAME}/${env.BRANCH_NAME}"
+          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name orchsym-dev --service ${env.PROJECT_NAME}/${env.VERSION_NAME}"
         """
 
         slackSend(
@@ -137,12 +138,12 @@ pipeline {
         )
 
         sh """
-          sudo rsync --progress ${env.WORKSPACE}/nifi-assembly/target/runtime-${env.BRANCH_NAME}.tar.gz ${env.SAMBA_LOCAL_MOUNT_PATH}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/
+          sudo rsync --progress ${env.WORKSPACE}/nifi-assembly/target/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz ${env.SAMBA_LOCAL_MOUNT_PATH}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/
         """
 
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Upload to Samba Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can get it from Samba Server `//${env.SAMBA_SERVER}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/runtime-${env.BRANCH_NAME}.tar.gz`"
+          message: "${env.EMOJI_SERVICE_RUNTIME} *Upload to Samba Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can get it from Samba Server `//${env.SAMBA_SERVER}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz`"
         )
       }
     }
@@ -157,12 +158,12 @@ pipeline {
         )
 
         sh """
-          s3cmd put --acl-public ${env.WORKSPACE}/nifi-assembly/target/runtime-${env.BRANCH_NAME}.tar.gz ${env.S3_PACKAGES_URL}/services/
+          s3cmd put --acl-public ${env.WORKSPACE}/nifi-assembly/target/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz ${env.S3_PACKAGES_URL}/services/
         """
 
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Upload to S2 Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can download it from ${env.DOWNLOAD_PACKAGES_URL_BASE}/services/runtime-${env.BRANCH_NAME}.tar.gz"
+          message: "${env.EMOJI_SERVICE_RUNTIME} *Upload to S2 Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can download it from ${env.DOWNLOAD_PACKAGES_URL_BASE}/services/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz"
         )
       }
     }
