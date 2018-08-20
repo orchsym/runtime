@@ -27,6 +27,7 @@ import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.MultipartBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.internal.tls.OkHostnameVerifier;
@@ -984,27 +985,50 @@ public final class InvokeHTTP extends AbstractProcessor {
 
     private RequestBody getRequestBodyToSend(final ProcessSession session, final ProcessContext context, final FlowFile requestFlowFile) {
         if(context.getProperty(PROP_SEND_BODY).asBoolean()) {
-            return new RequestBody() {
-                @Override
-                public MediaType contentType() {
-                    String contentType = context.getProperty(PROP_CONTENT_TYPE).evaluateAttributeExpressions(requestFlowFile).getValue();
-                    contentType = StringUtils.isBlank(contentType) ? DEFAULT_CONTENT_TYPE : contentType;
-                    return MediaType.parse(contentType);
-                }
 
-                @Override
-                public void writeTo(BufferedSink sink) throws IOException {
-                    session.exportTo(requestFlowFile, sink.outputStream());
-                }
-
-                @Override
-                public long contentLength(){
-                    return useChunked ? -1 : requestFlowFile.getSize();
-                }
-            };
+            String contentType = context.getProperty(PROP_CONTENT_TYPE).evaluateAttributeExpressions(requestFlowFile).getValue();
+            contentType = StringUtils.isBlank(contentType) ? DEFAULT_CONTENT_TYPE : contentType;
+            if (contentType.equalsIgnoreCase("multipart/form-data")) {
+                return getMultipartBody(session, context, requestFlowFile);
+            }
+            return getRequestBody(session, context, requestFlowFile, contentType);
         } else {
             return RequestBody.create(null, new byte[0]);
         }
+    }
+
+    private RequestBody getRequestBody(final ProcessSession session, final ProcessContext context, final FlowFile requestFlowFile, final String contentType) {
+
+        return new RequestBody() {
+            @Override
+            public MediaType contentType() {
+                return MediaType.parse(contentType);
+            }
+
+            @Override
+            public void writeTo(BufferedSink sink) throws IOException {
+                session.exportTo(requestFlowFile, sink.outputStream());
+            }
+
+            @Override
+            public long contentLength(){
+                return useChunked ? -1 : requestFlowFile.getSize();
+            }
+        };
+    }
+
+    private RequestBody getMultipartBody(final ProcessSession session, final ProcessContext context, final FlowFile requestFlowFile) {
+
+        final String fileName = requestFlowFile.getAttribute(CoreAttributes.FILENAME.key());
+
+        RequestBody retuestBody = getRequestBody(session, context, requestFlowFile, "");
+
+        MultipartBody multipartBody = new MultipartBody.Builder()
+        .setType(MediaType.parse("multipart/form-data"))
+        .addFormDataPart("file", fileName, retuestBody)
+        .build();
+
+        return multipartBody;
     }
 
     private Request.Builder setHeaderProperties(final ProcessContext context, Request.Builder requestBuilder, final FlowFile requestFlowFile) {
