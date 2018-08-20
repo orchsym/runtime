@@ -245,12 +245,11 @@ public class ListenHL7 extends AbstractProcessor {
                 flowFile = session.write(flowFile, new OutputStreamCallback() {
                     @Override
                     public void process(final OutputStream out) throws IOException {
-                        out.write(ackMessage.toString().getBytes(encoding));
+                        out.write(receivedMessage.getBytes(encoding));
                     }
                 });
             }
             session.putAttribute(flowFile, "response_message", ackMessage.toString());
-            session.putAttribute(flowFile, "receive_message", theMessage.toString());
             session.getProvenanceReporter().create(flowFile);
         } catch (HL7Exception e) {
             getLogger().error("Warn when get ACK from receive message." + e);
