@@ -76,8 +76,6 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
-import com.google.gson.Gson;
-
 import org.apache.nifi.util.NiFiProperties;
 import org.apache.nifi.apiregistry.spec.APISpec;
 import org.apache.nifi.apiregistry.spec.InfoSpec;

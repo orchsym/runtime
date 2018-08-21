@@ -34,6 +34,7 @@ import java.util.concurrent.BlockingQueue;
 import javax.net.ssl.SSLContext;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.SupportsBatching;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -68,6 +69,11 @@ import org.apache.nifi.processor.util.listen.response.socket.SocketChannelRespon
 import org.apache.nifi.security.util.SslContextFactory;
 import org.apache.nifi.ssl.RestrictedSSLContextService;
 import org.apache.nifi.ssl.SSLContextService;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonArray;
 
 @SupportsBatching
 @InputRequirement(InputRequirement.Requirement.INPUT_FORBIDDEN)
@@ -200,6 +206,29 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
         return attributes;
     }
 
+    //解包数据内容，并设置到attribute中
+    @Override
+    protected void processAdditionalAttributes(ProcessContext context, ProcessSession session, FlowFile flowfile, FlowFileEventBatch batch) {
+        super.processAdditionalAttributes(context, session, flowfile, batch);
+
+        String annotation = context.getAnnotationData();
+        if (annotation == null) {
+            return;
+        }
+        try {
+            StandardEvent standardEvent = batch.getEvents().get(0);
+            byte[] data = standardEvent.getData();
+            if (data != null && maxBatchSize == 1) { // only add the messages attribute when batch is 1.
+                Map<String, String> attributes = unpackContent(annotation, data, charset);
+                if (attributes.size() > 0) {
+                    flowfile = session.putAllAttributes(flowfile, attributes);    
+                }
+            } 
+        } catch (Exception e) {
+            getLogger().error("Failed to decode the content from tcp", e);
+        }
+    }
+
     @Override
     protected String getTransitUri(FlowFileEventBatch batch) {
         return getTransitUri(batch.getEvents().get(0).getSender(), String.valueOf(port));
@@ -213,6 +242,37 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
         if (lookupService != null) { // if not set, won't register
             lookupService.register(contextIdentifier, new TCPContextEvent(dispatcher, events));
         }
+    }
+
+    public Map<String, String> unpackContent(String annotation, byte[] data, Charset charset) {
+        Map<String, String> attributes = new HashMap();
+        int from = 0, to = 0;
+        ArrayList<UnPackingInfo> unpackingInfos = parseUnPackingInfos(annotation);
+        for (int i=0; i<unpackingInfos.size(); i++) {
+            UnPackingInfo info = unpackingInfos.get(i);
+            int length = info.length;
+            to += length;
+            byte[] subArray = Arrays.copyOfRange(data, from, to);
+            attributes.put(info.name, new String(subArray, charset));
+            from = to;
+        }
+        return attributes;
+    }
+
+    ArrayList<UnPackingInfo> parseUnPackingInfos(String info) {
+
+        ArrayList<UnPackingInfo> unpackingInfos = new ArrayList();
+        Gson gson = new Gson();
+        JsonObject infoObject = new JsonParser().parse(info).getAsJsonObject();
+        JsonArray jsonInfosArr = infoObject.getAsJsonArray("infos");
+        for (int i=0; jsonInfosArr!=null && i<jsonInfosArr.size(); i++) {
+            UnPackingInfo unpackingInfo = new UnPackingInfo();
+            JsonObject object = (JsonObject) jsonInfosArr.get(i).getAsJsonObject();
+            unpackingInfo.name = object.get("name").getAsString();
+            unpackingInfo.length = object.get("length").getAsInt();
+            unpackingInfos.add(unpackingInfo);
+        }
+        return unpackingInfos;
     }
 
     static String getTransitUri(String sender, String port) {
@@ -230,6 +290,5 @@ public class ListenTCP extends AbstractListenEventBatchingProcessor<StandardEven
             this.dispatcher = dispatcher;
             this.events = events;
         }
-
     }
 }

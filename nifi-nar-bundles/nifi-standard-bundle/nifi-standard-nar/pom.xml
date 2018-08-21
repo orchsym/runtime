@@ -56,5 +56,15 @@
             <artifactId>nifi-handle-http-request-ui</artifactId>
             <type>war</type>
         </dependency>
+        <dependency>
+            <groupId>org.apache.nifi</groupId>
+            <artifactId>nifi-put-tcp-ui</artifactId>
+            <type>war</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.nifi</groupId>
+            <artifactId>nifi-listen-tcp-ui</artifactId>
+            <type>war</type>
+        </dependency>
     </dependencies>
 </project>

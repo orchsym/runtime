@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -30,6 +31,7 @@ import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 
 import javax.net.ssl.SSLContext;
 
@@ -51,6 +53,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class TestListenTCP {
+
+    private final static String ANNOTATION_DATA = "{\"processorId\":\"123\",\"infos\":[{\"name\":\"mobileNo\",\"length\":12},{\"name\":\"state\",\"length\":5},{\"name\":\"message\",\"length\":10}]}";
+    private final static String TEST_MESSAGE_STRING = "18511015637 ok   Success   ";
+    private final static String TEST_MESSAGE_STRING_GBK = "18511015637 ok   成功      ";
 
     private ListenTCP proc;
     private TestRunner runner;
@@ -188,6 +194,54 @@ public class TestListenTCP {
         for (int i = 0; i < mockFlowFiles.size(); i++) {
             mockFlowFiles.get(i).assertContentEquals("This is message " + (i + 1));
         }
+    }
+
+    @Test
+    public void testUnPackingData() throws Exception {
+
+        String charSetName = "UTF-8";
+        final Charset charSet = Charset.forName(charSetName);
+
+        ProcessContext processContext = runner.getProcessContext();
+        ListenTCP processor = (ListenTCP) runner.getProcessor();
+
+        byte[] data = TEST_MESSAGE_STRING.getBytes(charSet);
+
+        Map<String, String> attributes = processor.unpackContent(ANNOTATION_DATA, data, charSet);
+
+        Assert.assertEquals(12, attributes.get("mobileNo").length());
+        Assert.assertEquals("18511015637 ", attributes.get("mobileNo"));
+
+        Assert.assertEquals(5, attributes.get("state").length());
+        Assert.assertEquals("ok   ", attributes.get("state"));
+
+        Assert.assertEquals(10, attributes.get("message").length());
+        Assert.assertEquals("Success   ", attributes.get("message"));
+        Assert.assertEquals("Success", attributes.get("message").trim());
+    }
+
+    @Test
+    public void testUnPackingDataGBK() throws Exception {
+
+        String charSetName = "gbk";
+        final Charset charSet = Charset.forName(charSetName);
+
+        ProcessContext processContext = runner.getProcessContext();
+        ListenTCP processor = (ListenTCP) runner.getProcessor();
+
+        byte[] data = TEST_MESSAGE_STRING_GBK.getBytes(charSet);
+
+        Map<String, String> attributes = processor.unpackContent(ANNOTATION_DATA, data, charSet);
+
+        Assert.assertEquals(12, attributes.get("mobileNo").length());
+        Assert.assertEquals("18511015637 ", attributes.get("mobileNo"));
+
+        Assert.assertEquals(5, attributes.get("state").length());
+        Assert.assertEquals("ok   ", attributes.get("state"));
+
+        Assert.assertEquals(10, attributes.get("message").getBytes("gbk").length);
+        Assert.assertEquals("成功      ", attributes.get("message"));
+        Assert.assertEquals("成功", attributes.get("message").trim());
     }
 
     protected void runTCP(final List<String> messages, final int expectedTransferred, final SSLContext sslContext) throws IOException, InterruptedException {

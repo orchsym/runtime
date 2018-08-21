@@ -667,7 +667,6 @@ $(function(){
         Swagger.processorId = getProcessorId();
         Swagger.revision = getRevision(),
         Swagger.clientId = getClientId();
-        console.log("Swagger",JSON.stringify(Swagger));
         return $.ajax({
             type: httpMethod,
             url: url,

@@ -136,7 +136,7 @@ public class PropertyResource {
             // load the processor configuration
             processorDetails = configurationContext.getComponentDetails(requestContext);
         } catch (final Exception e) {
-            final String message = String.format("Unable to get UpdateAttribute[id=%s] criteria: %s", requestContext.getId(), e);
+            final String message = String.format("Unable to get PropertyInfos[id=%s]: %s", requestContext.getId(), e);
             logger.error(message, e);
             throw new WebApplicationException(e, error(message));
         }
@@ -148,7 +148,7 @@ public class PropertyResource {
                 Gson gson = new Gson();
                 propertyInfoEntity = gson.fromJson(annotation, new TypeToken<PropertyInfoEntity>(){}.getType());
             } catch (final IllegalArgumentException iae) {
-                final String message = String.format("Unable to deserialize existing rules for UpdateAttribute[id=%s]. Deserialization error: %s", requestContext.getId(), iae);
+                final String message = String.format("Unable to deserialize existing PropertyInfos for HandleHttpRequest[id=%s]. Deserialization error: %s", requestContext.getId(), iae);
                 logger.error(message, iae);
                 throw new WebApplicationException(iae, error(message));
             }

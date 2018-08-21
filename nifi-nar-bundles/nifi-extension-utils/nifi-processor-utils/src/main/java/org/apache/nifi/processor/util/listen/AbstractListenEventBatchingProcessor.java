@@ -125,6 +125,8 @@ public abstract class AbstractListenEventBatchingProcessor<E extends Event> exte
             final Map<String,String> attributes = getAttributes(entry.getValue());
             flowFile = session.putAllAttributes(flowFile, attributes);
 
+            processAdditionalAttributes(context, session, flowFile, entry.getValue());
+
             getLogger().debug("Transferring {} to success", new Object[] {flowFile});
             session.transfer(flowFile, REL_SUCCESS);
             session.adjustCounter("FlowFiles Transferred to Success", 1L, false);
@@ -164,6 +166,10 @@ public abstract class AbstractListenEventBatchingProcessor<E extends Event> exte
      * @param events the list of all events processed by the current execution of onTrigger
      */
     protected void postProcess(ProcessContext context, ProcessSession session, final List<E> events) {
+        // empty implementation so sub-classes only have to override if necessary
+    }
+
+    protected void processAdditionalAttributes(ProcessContext context, ProcessSession session, FlowFile flowfile, final FlowFileEventBatch batch) {
         // empty implementation so sub-classes only have to override if necessary
     }
 

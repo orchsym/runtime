@@ -19,9 +19,12 @@ package org.apache.nifi.processors.standard.util;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.nifi.processors.standard.PutTCP;
+import org.apache.nifi.processors.standard.PackingInfo;
+import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.reporting.InitializationException;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
+import org.apache.nifi.util.MockFlowFile;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -30,6 +33,12 @@ import org.junit.Test;
 import java.net.InetAddress;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+
+import java.nio.charset.Charset;
+import java.io.ByteArrayOutputStream;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -59,6 +68,12 @@ public abstract class TestPutTCPCommon {
     private final static int LONG_TEST_TIMEOUT_PERIOD = 100000;
     private final static String OUTGOING_MESSAGE_DELIMITER = "\n";
     private final static String OUTGOING_MESSAGE_DELIMITER_MULTI_CHAR = "{delimiter}\r\n";
+
+    private final static String ANNOTATION_DATA = "{\"processorId\":\"123\",\"alignType\":\"align-left\",\"infos\":[{\"name\":\"custName\",\"length\":6,\"stuffing\":\" \",\"charSet\":\"GBK\"},{\"name\":\"mobileNo\",\"length\":12,\"stuffing\":\" \"},{\"name\":\"idNo\",\"length\":18},{\"name\":\"reportSn\",\"length\":24}]}";
+    private final static String EXPECTED_STRING = "杨五  18511015637 513334199405138168GZYH20171023150544078094";
+
+    private final static String ANNOTATION_DATA_ALIGN_RIGHT = "{\"processorId\":\"123\",\"alignType\":\"align-right\",\"infos\":[{\"name\":\"custName\",\"length\":6,\"stuffing\":\" \",\"charSet\":\"GBK\"},{\"name\":\"mobileNo\",\"length\":12,\"stuffing\":\" \"},{\"name\":\"idNo\",\"length\":18},{\"name\":\"reportSn\",\"length\":24}]}";
+    private final static String EXPECTED_STRING_ALIGN_RIGHT = "  杨五 18511015637513334199405138168GZYH20171023150544078094";
 
     private TCPTestServer server;
     private int tcp_server_port;
@@ -250,6 +265,54 @@ public abstract class TestPutTCPCommon {
         checkTotalNumConnections(server, 1);
     }
 
+    @Test
+    public void testPackingData() throws Exception {
+
+        String charSetName = "gbk";
+        final Charset charSet = Charset.forName(charSetName);
+        MockFlowFile flowFile = createPackingFlowFile(runner);
+        ProcessContext processContext = runner.getProcessContext();
+        PutTCP processor = (PutTCP) runner.getProcessor();
+        String annotationData = ANNOTATION_DATA;
+
+        ByteArrayOutputStream writeByteArrayStream = new ByteArrayOutputStream();
+        ByteArrayOutputStream expectedByteArrayStream = new ByteArrayOutputStream();
+
+        ArrayList<PackingInfo> parsePackingInfos = processor.parsePackingInfos(annotationData);
+        processor.handleBufferInfo(writeByteArrayStream, flowFile, parsePackingInfos, charSet);
+
+        String writeStr = writeByteArrayStream.toString(charSetName);
+
+        expectedByteArrayStream.write(EXPECTED_STRING.getBytes(charSetName));
+
+        assertArrayEquals(writeByteArrayStream.toByteArray(), expectedByteArrayStream.toByteArray());
+        assertEquals(EXPECTED_STRING, writeStr);
+    }
+
+    @Test
+    public void testPackingDataAlignRight() throws Exception {
+
+        String charSetName = "gbk";
+        final Charset charSet = Charset.forName(charSetName);
+        MockFlowFile flowFile = createPackingFlowFile(runner);
+        ProcessContext processContext = runner.getProcessContext();
+        PutTCP processor = (PutTCP) runner.getProcessor();
+        String annotationData = ANNOTATION_DATA_ALIGN_RIGHT;
+
+        ByteArrayOutputStream writeByteArrayStream = new ByteArrayOutputStream();
+        ByteArrayOutputStream expectedByteArrayStream = new ByteArrayOutputStream();
+
+        ArrayList<PackingInfo> parsePackingInfos = processor.parsePackingInfos(annotationData);
+        processor.handleBufferInfo(writeByteArrayStream, flowFile, parsePackingInfos, charSet);
+
+        String writeStr = writeByteArrayStream.toString(charSetName);
+
+        expectedByteArrayStream.write(EXPECTED_STRING_ALIGN_RIGHT.getBytes(charSetName));
+
+        assertArrayEquals(writeByteArrayStream.toByteArray(), expectedByteArrayStream.toByteArray());
+        assertEquals(EXPECTED_STRING_ALIGN_RIGHT, writeStr);
+    }
+
     private void checkTotalNumConnections(final TCPTestServer server, final int expectedTotalNumConnections) {
         assertEquals(expectedTotalNumConnections, server.getTotalNumConnections());
     }
@@ -320,5 +383,14 @@ public abstract class TestPutTCPCommon {
         }
 
         return new String[] { new String(content) };
+    }
+
+    public static MockFlowFile createPackingFlowFile(final TestRunner testRunner) {
+        final Map<String, String> attributes = new HashMap<>();
+        attributes.put("custName", "杨五");
+        attributes.put("mobileNo", "18511015637");
+        attributes.put("idNo", "513334199405138168");
+        attributes.put("reportSn", "GZYH20171023150544078094");
+        return testRunner.enqueue("", attributes);
     }
 }

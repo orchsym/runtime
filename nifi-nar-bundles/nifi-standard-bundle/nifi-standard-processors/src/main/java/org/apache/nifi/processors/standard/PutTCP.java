@@ -17,6 +17,7 @@
 package org.apache.nifi.processors.standard;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.CopyUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
@@ -50,6 +51,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.SocketChannel;
@@ -60,8 +62,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonArray;
 
 /**
  * <p>
@@ -112,6 +120,11 @@ import java.util.concurrent.TimeUnit;
 @Tags({ "remote", "egress", "put", "tcp" })
 @TriggerWhenEmpty // trigger even when queue is empty so that the processor can check for idle senders to prune.
 public class PutTCP extends AbstractPutEventProcessor {
+
+    private static final String PROPERTIES_NIFI_WEB_HTTP_HOST = "nifi.web.http.host";
+    private static final String PROPERTIES_NIFI_WEB_HTTP_PORT = "nifi.web.http.port";
+    private static final String PROPERTIES_NIFI_WEB_HTTPS_HOST = "nifi.web.https.host";
+    private static final String PROPERTIES_NIFI_WEB_HTTPS_PORT = "nifi.web.https.port";
     
     public static final PropertyDescriptor RECEIVE_BUFFER_SIZE = new PropertyDescriptor.Builder()
             .name("receive-buffer-size")
@@ -265,9 +278,23 @@ public class PutTCP extends AbstractPutEventProcessor {
             final StopWatch stopWatch = new StopWatch(true);
             try (final InputStream rawIn = session.read(flowFile);
                  final BufferedInputStream in = new BufferedInputStream(rawIn)) {
-                IOUtils.copy(in, out);
-                if (delimiter != null) {
-                    out.write(delimiter.getBytes(charSet), 0, delimiter.length());
+                String annotation = context.getAnnotationData();
+
+                if (annotation == null) {
+                    //没有关于封包字段的信息，按照默认逻辑发送flowfile数据到tcp连接
+                    IOUtils.copy(in, out);
+                    if (delimiter != null) {
+                        out.write(delimiter.getBytes(charSet), 0, delimiter.length());
+                    }
+                } else {
+                    ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream();
+                    ArrayList<PackingInfo> packingInfos = parsePackingInfos(annotation);
+                    //将flowfile的attribute信息按照封包字段结构信息，写入tcp发送buffer
+                    handleBufferInfo(byteArrayStream, flowFile, packingInfos, charSet);
+                    if (delimiter != null) {
+                        byteArrayStream.write(delimiter.getBytes(charSet));
+                    }
+                    CopyUtils.copy(byteArrayStream.toByteArray(), out);
                 }
                 out.flush();
                 if(receiveBufferSize > 0 && endOfMessageByte > 0 ) {
@@ -371,5 +398,74 @@ public class PutTCP extends AbstractPutEventProcessor {
      */
     protected boolean isConnectionPerFlowFile(final ProcessContext context) {
         return context.getProperty(CONNECTION_PER_FLOWFILE).getValue().equalsIgnoreCase("true");
+    }
+
+    //根据封包字段信息将flowfile相关的attribute内容写入tcp的发送buffer
+    public void handleBufferInfo(ByteArrayOutputStream outputStream, FlowFile flowFile, ArrayList<PackingInfo> packingInfos, Charset charSet) throws IOException{
+
+        Map<String, String> attributes =  flowFile.getAttributes();
+        for (int i=0; i<packingInfos.size(); i++) {
+            PackingInfo info = packingInfos.get(i);
+            int length = info.length;  //字段长度
+            byte[] bytes = new byte[length];
+
+            String value = attributes.get(info.name);
+            if (value == null) {
+                value = "";
+            }
+
+            byte[] valueBytes = value.getBytes(charSet);
+            int valueBytesLen = valueBytes.length; //内容长度
+
+            if (valueBytesLen >= length) {
+                //不拷贝超出字段长度范围的内容
+                System.arraycopy(valueBytes, 0, bytes, 0, length);
+            } else {
+                String align = info.align;
+                if (align.equals("align-left")) {
+                    //左对齐，默认填充方式，填充在内容之后
+                    System.arraycopy(valueBytes, 0, bytes, 0, valueBytesLen);
+                    //填充字符，默认填充字符为0
+                    char stuffing = info.stuffing;
+                    if (stuffing != 0) {
+                        for (int j=valueBytesLen; j<length ; j++) {
+                            bytes[j] = (byte)stuffing;
+                        }
+                    }
+                } else if (align.equals("align-right")) {
+                    //右对齐，填充在内容之前
+                    System.arraycopy(valueBytes, 0, bytes, length-valueBytesLen, valueBytesLen);
+                    //填充字符，默认填充字符为0
+                    char stuffing = info.stuffing;
+                    if (stuffing != 0) {
+                        for (int j=0; j<length-valueBytesLen ; j++) {
+                            bytes[j] = (byte)stuffing;
+                        }
+                    }
+                }
+            }
+            outputStream.write(bytes);
+        }
+    }
+
+    public ArrayList<PackingInfo> parsePackingInfos(String info) {
+
+        ArrayList<PackingInfo> packingInfos = new ArrayList();
+        Gson gson = new Gson();
+        JsonObject infoObject = new JsonParser().parse(info).getAsJsonObject();
+        JsonArray jsonInfosArr = infoObject.getAsJsonArray("infos");
+        String align = infoObject.get("alignType").getAsString();
+        for (int i=0; jsonInfosArr!=null && i<jsonInfosArr.size(); i++) {
+            PackingInfo packingInfo = new PackingInfo();
+            JsonObject object = (JsonObject) jsonInfosArr.get(i).getAsJsonObject();
+            packingInfo.name = object.get("name").getAsString();
+            packingInfo.length = object.get("length").getAsInt();
+            if(object.has("stuffing")){
+                packingInfo.stuffing = object.get("stuffing").getAsCharacter();
+            }
+            packingInfo.align = align;
+            packingInfos.add(packingInfo);
+        }
+        return packingInfos;
     }
 }
