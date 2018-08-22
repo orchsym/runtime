@@ -65,7 +65,6 @@ import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.SQLNonTransientException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -648,34 +647,13 @@ public class PutDatabaseRecord extends AbstractSessionFactoryProcessor {
                 Object[] values = currentRecord.getValues();
                 if (values != null) {
                     if (fieldIndexes != null) {
-                        RecordSchema schema = currentRecord.getSchema();
                         for (int i = 0; i < fieldIndexes.size(); i++) {
-                            int dateType = tableSchema.columns.get(schema.getField(fieldIndexes.get(i)).getFieldName()).getDataType();
                             // If DELETE type, insert the object twice because of the null check (see generateDelete for details)
                             if (DELETE_TYPE.equalsIgnoreCase(statementType)) {
-                                if (dateType == Types.TIMESTAMP) {
-                                    ps.setTimestamp(i * 2 + 1, java.sql.Timestamp.valueOf(values[fieldIndexes.get(i)].toString()));
-                                    ps.setTimestamp(i * 2 + 2, java.sql.Timestamp.valueOf(values[fieldIndexes.get(i)].toString()));
-                                } else if (dateType == Types.DATE) {
-                                    ps.setDate(i * 2 + 1, java.sql.Date.valueOf(values[fieldIndexes.get(i)].toString()));
-                                    ps.setDate(i * 2 + 2, java.sql.Date.valueOf(values[fieldIndexes.get(i)].toString()));
-                                } else if (dateType == Types.INTEGER) {
-                                    ps.setInt(i * 2 + 1, Integer.parseInt(values[fieldIndexes.get(i)].toString()));
-                                    ps.setInt(i * 2 + 2, Integer.parseInt(values[fieldIndexes.get(i)].toString()));
-                                } else {
-                                    ps.setObject(i * 2 + 1, values[fieldIndexes.get(i)]);
-                                    ps.setObject(i * 2 + 2, values[fieldIndexes.get(i)]);
-                                }
+                                ps.setObject(i * 2 + 1, values[fieldIndexes.get(i)]);
+                                ps.setObject(i * 2 + 2, values[fieldIndexes.get(i)]);
                             } else {
-                                if (dateType == Types.TIMESTAMP) {
-                                    ps.setTimestamp(i + 1, java.sql.Timestamp.valueOf(values[fieldIndexes.get(i)].toString()));
-                                } else if (dateType == Types.DATE) {
-                                    ps.setDate(i + 1, java.sql.Date.valueOf(values[fieldIndexes.get(i)].toString()));
-                                } else if (dateType == Types.INTEGER) {
-                                    ps.setInt(i + 1, Integer.parseInt(values[fieldIndexes.get(i)].toString()));
-                                } else {
-                                    ps.setObject(i + 1, values[fieldIndexes.get(i)]);
-                                }
+                                ps.setObject(i + 1, values[fieldIndexes.get(i)]);
                             }
                         }
                     } else {
