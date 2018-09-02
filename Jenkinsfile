@@ -128,6 +128,36 @@ pipeline {
       }
     }
 
+    stage('Build/Push docker image') {
+      when { not { expression { BRANCH_NAME ==~ '^PR.*' } } }
+
+      steps {
+        slackSend(
+          color: 'good',
+          message: "${env.EMOJI_SERVICE_RUNTIME} *Build/Push docker image*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        )
+
+        sh "echo Generated Docker Images: >> ${env.BUILD_OUTPUT_FILE}"
+
+        script {
+          docker.withRegistry("http://${env.DOCKER_REGISTRY_ADDR2}", "${env.DOCKER_REGISTRY_SECRET_ID2}") {
+            image = docker.build("${env.DOCKER_REGISTRY_ADDR2}/${env.DOCKER_REGISTRY_PROJECT_NAME}/${env.PROJECT_NAME}:${env.BRANCH_NAME}",  "--build-arg VERSION_NAME=${env.VERSION_NAME} --pull -f Dockerfile .")
+            image.push()
+            sh "echo ${env.DOCKER_REGISTRY_ADDR2}/${env.DOCKER_REGISTRY_PROJECT_NAME}/${env.PROJECT_NAME}:${env.VERSION_NAME} >> ${env.BUILD_OUTPUT_FILE}"
+            if (env.BRANCH_NAME == 'master') {
+              image.push('latest')
+              sh "echo ${env.DOCKER_REGISTRY_ADDR2}/${env.DOCKER_REGISTRY_PROJECT_NAME}/${env.PROJECT_NAME}:latest >> ${env.BUILD_OUTPUT_FILE}"
+            }
+          }
+        }
+
+        slackSend(
+          color: 'good',
+          message: "${env.EMOJI_SERVICE_RUNTIME} *Build/Push docker image finished*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        )
+      }
+    }
+
     stage('Upload to Samba') {
       when { not { expression { BRANCH_NAME ==~ '^PR.*' } } }
 
