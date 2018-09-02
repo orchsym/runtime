@@ -8,6 +8,8 @@ nb-configuration.xml
 .DS_Store
 .metadata
 .recommenders
+.factorypath
+.vscode
 
 # Intellij
 .idea/
