@@ -141,7 +141,7 @@ pipeline {
 
         script {
           docker.withRegistry("http://${env.DOCKER_REGISTRY_ADDR2}", "${env.DOCKER_REGISTRY_SECRET_ID2}") {
-            image = docker.build("${env.DOCKER_REGISTRY_ADDR2}/${env.DOCKER_REGISTRY_PROJECT_NAME}/${env.PROJECT_NAME}:${env.BRANCH_NAME}",  "--build-arg VERSION_NAME=${env.VERSION_NAME} --pull -f Dockerfile .")
+            image = docker.build("${env.DOCKER_REGISTRY_ADDR2}/${env.DOCKER_REGISTRY_PROJECT_NAME}/${env.PROJECT_NAME}:${env.VERSION_NAME}",  "--build-arg VERSION_NAME=${env.VERSION_NAME} --pull -f Dockerfile .")
             image.push()
             sh "echo ${env.DOCKER_REGISTRY_ADDR2}/${env.DOCKER_REGISTRY_PROJECT_NAME}/${env.PROJECT_NAME}:${env.VERSION_NAME} >> ${env.BUILD_OUTPUT_FILE}"
             if (env.BRANCH_NAME == 'master') {
