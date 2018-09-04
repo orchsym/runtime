@@ -753,6 +753,12 @@ language governing permissions and limitations under the License. -->
             <version>${project.version}</version>
             <type>nar</type>
         </dependency>
+        <dependency>
+            <groupId>com.hashmapinc.tempus.processors</groupId>
+            <artifactId>nifi-opcua-bundle-nar</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+            <type>nar</type>
+        </dependency>
     </dependencies>
     <profiles>
         <profile>

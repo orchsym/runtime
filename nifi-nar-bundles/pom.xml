@@ -100,6 +100,7 @@
         <module>nifi-dubbo-bundle</module>
         <module>nifi-store-procedure-bundle</module>
         <module>orchsym-sap-bundle</module>
+        <module>nifi-opcua-bundle</module>
     </modules>
     <build>
         <plugins>

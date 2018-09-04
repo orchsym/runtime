@@ -86,6 +86,8 @@
                     "ListHDFS",
                     "ListS3",
                     "ListSFTP",
+                    "GetOPCData",
+                    "GetOPCNodeList",
                     "QueryCassandra",
                     "QueryDatabaseTable",
                     "QueryDNS",
