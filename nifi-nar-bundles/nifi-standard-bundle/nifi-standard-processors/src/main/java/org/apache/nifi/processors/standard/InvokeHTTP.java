@@ -43,6 +43,7 @@ import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
+import org.apache.nifi.annotation.lifecycle.OnStopped;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.ValidationContext;
 import org.apache.nifi.components.ValidationResult;
@@ -413,6 +414,14 @@ public final class InvokeHTTP extends AbstractProcessor {
             .addValidator(StandardValidators.DATA_SIZE_VALIDATOR)
             .build();
 
+    public static final PropertyDescriptor KEEP_ALIVE = new PropertyDescriptor.Builder()
+            .name("Keep Alive")
+            .description("Specifies whether to keep the connection alive when the request is done")
+            .required(true)
+            .defaultValue("true")
+            .allowableValues("true", "false")
+            .build();
+
     public static final List<PropertyDescriptor> PROPERTIES = Collections.unmodifiableList(Arrays.asList(
             PROP_METHOD,
             PROP_URL,
@@ -421,6 +430,7 @@ public final class InvokeHTTP extends AbstractProcessor {
             PROP_READ_TIMEOUT,
             PROP_DATE_HEADER,
             PROP_FOLLOW_REDIRECTS,
+            KEEP_ALIVE,
             PROP_ATTRIBUTES_TO_SEND,
             PROP_BASIC_AUTH_USERNAME,
             PROP_BASIC_AUTH_PASSWORD,
@@ -567,6 +577,24 @@ public final class InvokeHTTP extends AbstractProcessor {
         }
 
         return results;
+    }
+
+    @OnStopped
+    public void closeHttpClient() {
+        OkHttpClient okHttpClient = okHttpClientAtomicReference.get();
+        if (okHttpClient != null) {
+            okHttpClient.dispatcher().executorService().shutdown();
+            okHttpClient.connectionPool().evictAll();
+            try {
+                final Cache cache = okHttpClient.cache();
+                if (cache != null && !cache.isClosed()) {
+                    cache.close();
+                }
+            } catch (IOException e) {
+                getLogger().error("Fail to close the cache: {}", e);
+            }
+            okHttpClientAtomicReference.set(null);
+        }
     }
 
     @OnScheduled
@@ -730,6 +758,14 @@ public final class InvokeHTTP extends AbstractProcessor {
     @Override
     public void onTrigger(ProcessContext context, ProcessSession session) throws ProcessException {
         OkHttpClient okHttpClient = okHttpClientAtomicReference.get();
+        if (okHttpClient == null) {
+            try{
+                setUpClient(context);
+                okHttpClient = okHttpClientAtomicReference.get();
+            }catch(Exception e) {
+                throw new ProcessException("Could not setup http client", e);
+            }
+        }
 
         FlowFile requestFlowFile = session.get();
 
@@ -931,6 +967,11 @@ public final class InvokeHTTP extends AbstractProcessor {
                 }
             } catch (final Exception e1) {
                 logger.error("Could not cleanup response flowfile due to exception: {}", new Object[]{e1}, e1);
+            }
+        } finally {
+            //close the connection
+            if (shouldCloseWhenDone(context)) {
+                closeHttpClient();
             }
         }
     }
@@ -1239,5 +1280,10 @@ public final class InvokeHTTP extends AbstractProcessor {
             }
             return delegate.verify(hostname, session);
         }
+    }
+
+    //请求结束后是否断开连接，默认请求结束后断开TCP链接
+    protected boolean shouldCloseWhenDone(final ProcessContext context) {
+        return !context.getProperty(KEEP_ALIVE).asBoolean();
     }
 }

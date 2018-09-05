@@ -60,7 +60,7 @@ import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.nifi.annotation.behavior.DynamicProperties;
 import org.apache.nifi.annotation.behavior.DynamicProperty;
@@ -72,6 +72,7 @@ import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
+import org.apache.nifi.annotation.lifecycle.OnStopped;
 import org.apache.nifi.components.AllowableValue;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
@@ -208,6 +209,14 @@ public class GetHTTP extends AbstractSessionFactoryProcessor {
             .addValidator(StandardValidators.PORT_VALIDATOR)
             .build();
 
+    public static final PropertyDescriptor KEEP_ALIVE = new PropertyDescriptor.Builder()
+            .name("Keep Alive")
+            .description("Specifies whether to keep the connection alive when the request is done")
+            .required(true)
+            .defaultValue("true")
+            .allowableValues("true", "false")
+            .build();
+
     public static final String DEFAULT_COOKIE_POLICY_STR = "default";
     public static final String STANDARD_COOKIE_POLICY_STR = "standard";
     public static final String STRICT_COOKIE_POLICY_STR = "strict";
@@ -250,6 +259,8 @@ public class GetHTTP extends AbstractSessionFactoryProcessor {
 
     private final AtomicBoolean clearState = new AtomicBoolean(false);
 
+    private HttpClientConnectionManager connectionManger;
+
     @Override
     protected void init(final ProcessorInitializationContext context) {
         final Set<Relationship> relationships = new HashSet<>();
@@ -264,6 +275,7 @@ public class GetHTTP extends AbstractSessionFactoryProcessor {
         properties.add(PASSWORD);
         properties.add(CONNECTION_TIMEOUT);
         properties.add(DATA_TIMEOUT);
+        properties.add(KEEP_ALIVE);
         properties.add(USER_AGENT);
         properties.add(ACCEPT_CONTENT_TYPE);
         properties.add(FOLLOW_REDIRECTS);
@@ -363,6 +375,14 @@ public class GetHTTP extends AbstractSessionFactoryProcessor {
         return sslContextBuilder.build();
     }
 
+    @OnStopped
+    public void shutdownConnection() {
+        if (connectionManger != null) {
+            connectionManger.shutdown();
+            connectionManger = null;
+        }
+    }
+
     @Override
     public void onTrigger(final ProcessContext context, final ProcessSessionFactory sessionFactory) throws ProcessException {
         final ComponentLog logger = getLogger();
@@ -388,29 +408,8 @@ public class GetHTTP extends AbstractSessionFactoryProcessor {
         // get the ssl context service
         final SSLContextService sslContextService = context.getProperty(SSL_CONTEXT_SERVICE).asControllerService(SSLContextService.class);
 
-        // create the connection manager
-        final HttpClientConnectionManager conMan;
-        if (sslContextService == null) {
-            conMan = new BasicHttpClientConnectionManager();
-        } else {
-            final SSLContext sslContext;
-            try {
-                sslContext = createSSLContext(sslContextService);
-            } catch (final Exception e) {
-                throw new ProcessException(e);
-            }
-
-            final SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(sslContext);
-
-            // Also include a plain socket factory for regular http connections (especially proxies)
-            final Registry<ConnectionSocketFactory> socketFactoryRegistry =
-                    RegistryBuilder.<ConnectionSocketFactory>create()
-                            .register("https", sslsf)
-                            .register("http", PlainConnectionSocketFactory.getSocketFactory())
-                            .build();
-
-            conMan = new BasicHttpClientConnectionManager(socketFactoryRegistry);
-        }
+        // get the connection manager
+        HttpClientConnectionManager conMan = acquireConnectionManager(sslContextService);
 
         try {
             // build the request configuration
@@ -440,7 +439,10 @@ public class GetHTTP extends AbstractSessionFactoryProcessor {
             // build the http client
             final HttpClientBuilder clientBuilder = HttpClientBuilder.create();
             clientBuilder.setConnectionManager(conMan);
-
+            if (!shouldCloseWhenDone(context)) {
+                clientBuilder.setConnectionManagerShared(true);
+            }
+            
             // include the user agent
             final String userAgent = context.getProperty(USER_AGENT).getValue();
             if (userAgent != null) {
@@ -571,8 +573,42 @@ public class GetHTTP extends AbstractSessionFactoryProcessor {
                 logger.debug("Error closing client due to {}, continuing.", new Object[]{e.getMessage()});
             }
         } finally {
-            conMan.shutdown();
+            boolean closeWhenDone = shouldCloseWhenDone(context);
+            if (closeWhenDone) {
+                shutdownConnection();
+            }
         }
+    }
+
+    private HttpClientConnectionManager acquireConnectionManager(SSLContextService sslContextService) {
+
+        if (connectionManger != null) {
+            return connectionManger;
+        }
+
+        if (sslContextService == null) {
+            connectionManger = new PoolingHttpClientConnectionManager();
+        } else {
+            final SSLContext sslContext;
+            try {
+                sslContext = createSSLContext(sslContextService);
+            } catch (final Exception e) {
+                throw new ProcessException(e);
+            }
+
+            final SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(sslContext);
+
+            // Also include a plain socket factory for regular http connections (especially proxies)
+            final Registry<ConnectionSocketFactory> socketFactoryRegistry =
+                    RegistryBuilder.<ConnectionSocketFactory>create()
+                            .register("https", sslsf)
+                            .register("http", PlainConnectionSocketFactory.getSocketFactory())
+                            .build();
+
+            connectionManger = new PoolingHttpClientConnectionManager(socketFactoryRegistry);
+        }
+
+        return connectionManger;
     }
 
     private void updateStateMap(ProcessContext context, HttpResponse response, StateMap beforeStateMap, String url){
@@ -639,5 +675,10 @@ public class GetHTTP extends AbstractSessionFactoryProcessor {
         String timestamp = mapValue.substring(0,indexOfColon);
         String value = mapValue.substring(indexOfColon+1);
         return new Tuple<>(timestamp,value);
+    }
+
+    //请求结束后是否断开连接，默认请求结束后断开TCP链接
+    protected boolean shouldCloseWhenDone(final ProcessContext context) {
+        return !context.getProperty(KEEP_ALIVE).asBoolean();
     }
 }

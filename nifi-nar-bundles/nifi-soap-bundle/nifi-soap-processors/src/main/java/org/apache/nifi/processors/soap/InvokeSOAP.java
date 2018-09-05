@@ -26,6 +26,10 @@ import org.apache.axis2.addressing.EndpointReference;
 import org.apache.axis2.client.Options;
 import org.apache.axis2.client.ServiceClient;
 
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpConnectionManager;
+import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
+
 import org.apache.axis2.transport.http.HTTPConstants;
 import org.apache.axis2.transport.http.impl.httpclient3.HttpTransportPropertiesImpl;
 import org.apache.nifi.annotation.behavior.DynamicProperty;
@@ -149,6 +153,14 @@ public class InvokeSOAP extends AbstractProcessor {
             .addValidator(StandardValidators.POSITIVE_INTEGER_VALIDATOR)
             .build();
 
+    public static final PropertyDescriptor KEEP_ALIVE = new PropertyDescriptor.Builder()
+            .name("Keep Alive")
+            .description("Specifies whether to keep the connection alive when the request is done")
+            .required(true)
+            .defaultValue("true")
+            .allowableValues("true", "false")
+            .build();
+
     public static final Relationship REL_ORIGINAL = new Relationship.Builder()
             .name("Original")
             .description("Original flowfile received by this processor.")
@@ -175,12 +187,15 @@ public class InvokeSOAP extends AbstractProcessor {
 
     private ServiceClient serviceClient;
 
+    private MultiThreadedHttpConnectionManager httpConnectionManager;
+
     @Override
     protected void init(final ProcessorInitializationContext context) {
         final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
         descriptors.add(ENDPOINT_URL);
         descriptors.add(TARGET_NAMESPACE);
         descriptors.add(METHOD_NAME);
+        descriptors.add(KEEP_ALIVE);
         descriptors.add(USER_NAME);
         descriptors.add(PASSWORD);
         descriptors.add(USER_AGENT);
@@ -213,7 +228,13 @@ public class InvokeSOAP extends AbstractProcessor {
     }
 
     @OnScheduled
-    public void onScheduled(final ProcessContext context) {
+    public void setupServiceClient(final ProcessContext context) {
+        if (httpConnectionManager != null) {
+            return;
+        }
+        httpConnectionManager = new MultiThreadedHttpConnectionManager();
+        HttpClient httpClient = new HttpClient(httpConnectionManager);
+
         Options options = new Options();
 
         final String endpointURL = context.getProperty(ENDPOINT_URL).evaluateAttributeExpressions().getValue();
@@ -242,6 +263,11 @@ public class InvokeSOAP extends AbstractProcessor {
             auth.setPassword(password);
             options.setProperty(org.apache.axis2.transport.http.HTTPConstants.AUTHENTICATE, auth);
         }
+        
+        //can handle keep alive
+        options.setProperty(HTTPConstants.REUSE_HTTP_CLIENT, true);
+        options.setProperty(HTTPConstants.CACHED_HTTP_CLIENT, httpClient);
+    
         try {
             serviceClient = new ServiceClient();
             serviceClient.setOptions(options);
@@ -253,9 +279,13 @@ public class InvokeSOAP extends AbstractProcessor {
     }
 
     @OnStopped
-    public void onStopped(final ProcessContext context) {
+    public void cleanupServiceClient() {
         try {
             serviceClient.cleanup();
+            httpConnectionManager.closeIdleConnections(0);
+            httpConnectionManager.shutdown();
+            httpConnectionManager = null;
+            serviceClient = null;
         } catch (AxisFault axisFault) {
             getLogger().error("Failed to clean up the web service client.", axisFault);
             throw new ProcessException(axisFault);
@@ -264,6 +294,8 @@ public class InvokeSOAP extends AbstractProcessor {
 
     @Override
     public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
+
+        setupServiceClient(context);
 
         final ComponentLog logger = getLogger();
         FlowFile ff = session.get();
@@ -309,6 +341,11 @@ public class InvokeSOAP extends AbstractProcessor {
                 }
             } catch (final Exception e1) {
                 logger.error("Could not cleanup response flowfile due to exception: {}", new Object[] { e1 }, e1);
+            }
+        } finally {
+            //close the connection
+            if (shouldCloseWhenDone(context)) {
+                cleanupServiceClient();
             }
         }
 
@@ -378,5 +415,10 @@ public class InvokeSOAP extends AbstractProcessor {
 
     private static boolean isHTTPS(final String url) {
         return url.charAt(4) == ':';
+    }
+
+    //请求结束后是否断开连接，默认请求结束后断开TCP链接
+    protected boolean shouldCloseWhenDone(final ProcessContext context) {
+        return !context.getProperty(KEEP_ALIVE).asBoolean();
     }
 }
