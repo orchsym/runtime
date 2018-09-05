@@ -181,6 +181,17 @@ public class JettyServer implements NiFiServer {
         this.props = properties;
     }
 
+    private String getWebPath() {
+        String webPath = props.getProperty("nifi.web.path");
+        if (StringUtils.isBlank(webPath)) {
+            webPath = "runtime";
+        }
+        if (webPath.startsWith("/")) {
+            webPath = webPath.substring(1);
+        }
+        return webPath;
+    }
+
     private Handler loadWars(final Set<Bundle> bundles) {
 
         // load WARs
@@ -321,7 +332,13 @@ public class JettyServer implements NiFiServer {
         webApiContext = loadWar(webApiWar, "/nifi-api", frameworkClassLoader);
         handlers.addHandler(webApiContext);
 
-        if(!headlessMode) {
+        if (!headlessMode) {
+            final String webPath = getWebPath();
+            final WebAppContext runtimeWebUiContext = loadWar(webUiWar, '/' + webPath, frameworkClassLoader);
+            runtimeWebUiContext.getInitParams().put("oidc-supported", String.valueOf(props.isOidcEnabled()));
+            runtimeWebUiContext.getInitParams().put("knox-supported", String.valueOf(props.isKnoxSsoEnabled()));
+            handlers.addHandler(runtimeWebUiContext);
+
             // load the web ui app
             final WebAppContext webUiContext = loadWar(webUiWar, "/nifi", frameworkClassLoader);
             webUiContext.getInitParams().put("oidc-supported", String.valueOf(props.isOidcEnabled()));
@@ -979,12 +996,13 @@ public class JettyServer implements NiFiServer {
         }
 
         if (urls.isEmpty()) {
-            logger.warn("NiFi has started, but the UI is not available on any hosts. Please verify the host properties.");
+            logger.warn("Runtime has started, but the UI is not available on any hosts. Please verify the host properties.");
         } else {
             // log the ui location
-            logger.info("NiFi has started. The UI is available at the following URLs:");
+            logger.info("Runtime has started. The UI is available at the following URLs:");
+            final String webPath = getWebPath();
             for (final String url : urls) {
-                logger.info(String.format("%s/nifi", url));
+                logger.info(String.format("%s/"+webPath, url));
             }
         }
     }
