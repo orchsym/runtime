@@ -63,6 +63,7 @@ import java.util.UUID;
 import org.apache.nifi.web.httprequestui.model.PropertyInfoEntity;
 import org.apache.nifi.web.httprequestui.model.ParameterInfo;
 import org.apache.nifi.web.httprequestui.model.RespModel;
+import org.apache.nifi.web.httprequestui.model.RespInfo;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -179,6 +180,18 @@ public class PropertyResource {
                 model.properties = properties;
                 propertyInfoEntity.respModels.add(model);
             }
+            //add default response
+            RespInfo respInfo = new RespInfo();
+            respInfo.code = "200";
+            respInfo.description = "description";
+            respInfo.type = "object";
+            respInfo.ref = "model1";
+            ArrayList<RespInfo> arr= new ArrayList();
+            arr.add(respInfo);
+            propertyInfoEntity.respInfos.put("get", arr);
+            propertyInfoEntity.respInfos.put("post", arr);
+            propertyInfoEntity.respInfos.put("delete", arr);
+            propertyInfoEntity.respInfos.put("put", arr);
         }
 
         //get properties

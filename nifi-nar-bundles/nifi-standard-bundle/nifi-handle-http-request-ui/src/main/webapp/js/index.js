@@ -220,7 +220,7 @@ $(function(){
                 //twoWayBinding(tr.find("input[type=checkbox][name=required]"),item,"required");
                 twoWayBinding(tr.find("select[name=format]"),item,"format");
                 twoWayBinding(tr.find("select[name=type]"),item,"type");
-                twoWayBinding(tr.find("input[name=description]"),item,"description");
+                twoWayBinding(tr.find("input[name=description]"),item,"description",true);
             }
             else if(item.position=="form")
             {
@@ -244,7 +244,7 @@ $(function(){
                 //twoWayBinding(tr.find("input[type=checkbox][name=required]"),item,"required");
                 twoWayBinding(tr.find("select[name=format]"),item,"format");
                 twoWayBinding(tr.find("select[name=type]"),item,"type");
-                twoWayBinding(tr.find("input[name=description]"),item,"description");
+                twoWayBinding(tr.find("input[name=description]"),item,"description",true);
             }
             else if(item.position=="query" || item.position=="header" || item.position=="cookie")
             {
@@ -268,7 +268,7 @@ $(function(){
                 twoWayBinding(tr.find("input[type=checkbox][name=required]"),item,"required");
                 twoWayBinding(tr.find("select[name=format]"),item,"format");
                 twoWayBinding(tr.find("select[name=type]"),item,"type");
-                twoWayBinding(tr.find("input[name=description]"),item,"description");
+                twoWayBinding(tr.find("input[name=description]"),item,"description",true);
             }
         });
     };
@@ -466,7 +466,7 @@ $(function(){
             $("#formBox input[name=bodyName]").val(bodyParameters.name);
             $("#formBox input[name=bodyDescription]").val(bodyParameters.description);
             twoWayBinding($("#formBox input[name=bodyName]"),bodyParameters,"name");
-            twoWayBinding($("#formBox input[name=bodyDescription]"),bodyParameters,"description");
+            twoWayBinding($("#formBox input[name=bodyDescription]"),bodyParameters,"description",true);
             twoWayBinding(select,bodyParameters,"ref");
             $(".apiEdit #formBox table[name=body] td .icon-close").off();
             $(".apiEdit #formBox table[name=body] td .icon-close").show();
@@ -496,7 +496,7 @@ $(function(){
             var responseBody = $('<div class="response-body">' +
                 '<div class="triangle"></div>' +
                 '<div class="response-tr" style="font-weight: 600;"><input name="code" value="' + item.code + '" type="number" /></div>' +
-                '<div class="response-tr"><input maxlength="40" type="text" name="description" value="' + item.description + '"/></div>' +
+                '<div class="response-tr"><input maxlength="40" type="text" name="description" value="' + item.description + '" /></div>' +
                 '<div class="response-tr" name="type"></div>' +
                 '</div>');
 
@@ -522,7 +522,7 @@ $(function(){
             var responseModels = ApiTools.respInfos.getModels(item);
             response.append(close,responseBody,responseModels);
             twoWayBinding(responseBody.find("input[name=code]"),item,"code");
-            twoWayBinding(responseBody.find("input[name=description]"),item,"description");
+            twoWayBinding(responseBody.find("input[name=description]"),item,"description",true);
             twoWayBinding(select,item,"type");
             return response;
 
@@ -548,16 +548,14 @@ $(function(){
                 twoWayBinding(select,mod,"ref");
                 tr1.append(select);
                 var tr2 = $('<div class="response-tr">' + models.contentType + '</div>');
-                var tr3 = $('<div class="response-tr">' + models.description + '</div>');
                 select.on("change",function(){
                     mod.ref = select.find("option:selected").attr("value");
                     var _models = Swagger.respModels.filter(function(item){
                         return item.name == mod.ref;
                     })[0];
                     tr2.html(_models.contentType);
-                    tr3.html(_models.description);
                 });
-                responseModels.append(tr1,tr2,tr3);
+                responseModels.append(tr1,tr2);
                 return responseModels;
             }
             return "";
@@ -794,10 +792,6 @@ $(function(){
             ModelTools.select.find(".li-title").html($(this).val());
             model.name = $(this).val();
         });
-        $(".modelEdit input[name=description]").on("input",function(){
-            var model = ModelTools.model.getModel(ModelTools.select.attr("id"));
-            model.description = $(this).val();
-        });
         $(".modelEdit input[name=contentType]").on("click",function(e){
             var model = ModelTools.model.getModel(ModelTools.select.attr("id"));
             var val = [];
@@ -862,6 +856,7 @@ $(function(){
 
     ModelTools.isError = function()
     {
+        formatJson();
         var names = "";
         for(x in ModelTools.errorModel)
         {
@@ -879,7 +874,6 @@ $(function(){
             ApiTools.alert({text: "路径格式错误，请重新输入路径！", title:"路径格式错误"});
             return false;
         }
-        else
         {
             return true;
         }
@@ -1025,7 +1019,6 @@ $(function(){
         {
             var model = ModelTools.model.getModel(ModelTools.select.attr("id"));
             model.name = $(".modelEdit input[name=name]").val();
-            model.description = $(".modelEdit input[name=description]").val();
             var val = [];
             $(".modelEdit [name=contentType]:checked").each(function(){
                 val.push($(this).val());
@@ -1081,7 +1074,7 @@ $(function(){
         // }
     }
 
-    function twoWayBinding(input,obj,key){
+    function twoWayBinding(input,obj,key,boo){
         if(input[0].nodeName=="INPUT")
         {
             if(input.attr("type")=='radio')
@@ -1122,7 +1115,6 @@ $(function(){
                 }
                 else {
                     input.on("click",function(e){
-                        console.log();
                         if(Array.isArray(obj[key]))
                         {
                             var val = [];
@@ -1148,7 +1140,7 @@ $(function(){
             }
             else {
                 //input.off();
-                if(key=="description")
+                if(key=="description" && !boo)
                 {
                     input.on("input",function(e){
                         obj[key][ApiTools.method.selectMethod] = input.val();

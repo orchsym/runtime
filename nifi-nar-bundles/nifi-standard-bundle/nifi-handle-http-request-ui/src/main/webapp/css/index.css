@@ -726,6 +726,7 @@ footer {
     text-align: right;
     height: 30px;
     float: left;
+    padding-right: 37px;
 }
 footer button{
     float: right;

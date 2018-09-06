@@ -202,10 +202,6 @@
                     <div class="title-name">模型名称：</div>
                     <input type="text" class="input" name="name" maxlength="20" />
                 </div>
-                <div class="title-box api-setup-box" style="width: 50%;">
-                    <div class="title-name">描述信息：</div>
-                    <input type="text" class="input" name="description" maxlength="40" />
-                </div>
                 <div class="title-box api-setup-box">
                     <div class="title-name">内容类型：</div>
                     <div class="title-body">
