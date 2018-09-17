@@ -167,15 +167,23 @@
 
                         // determine the appropriate bounding box
                         var minX = null, maxX = null, minY = null, maxY = null;
+                        console.log(selection)
                         selection.each(function (d) {
+                            var ele = d3.select(this)
+                            var smallView = ele.select('g.processor-canvas-small-processor');
                             if (minX === null || d.position.x < minX) {
                                 minX = d.position.x;
                             }
                             if (minY === null || d.position.y < minY) {
                                 minY = d.position.y;
                             }
-                            var componentMaxX = d.position.x + d.dimensions.width;
-                            var componentMaxY = d.position.y + d.dimensions.height;
+                            if(smallView.empty()) {
+                                var componentMaxX = d.position.x + d.dimensions.width;
+                                var componentMaxY = d.position.y + d.dimensions.height;
+                            }else {
+                                var componentMaxX = d.position.x + 100;
+                                var componentMaxY = d.position.y + 88;
+                            }
                             if (maxX === null || componentMaxX > maxX) {
                                 maxX = componentMaxX;
                             }

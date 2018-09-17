@@ -1563,6 +1563,52 @@
         },
 
         /**
+         * open or close the component
+         *
+         *
+         * @param {type} selection      The selection
+         */
+         openProcess: function (selection) {
+            //展开测试
+            var ele = selection._groups[0][0].childNodes[9].childNodes
+            //父元素父元素展开，框变高
+            selection._groups[0][0].childNodes[0].setAttribute('height', '130')
+            selection._groups[0][0].childNodes[1].setAttribute('height', '130')
+            console.log(ele)
+
+            ele[3].style.display = 'block'
+            ele[4].style.display = 'block'
+            ele[5].style.display = 'block'
+            ele[6].style.display = 'block'
+            ele[7].style.display = 'block'
+            ele[8].style.display = 'block'
+            ele[9].style.display = 'block'
+            ele[10].style.display = 'block'
+            ele[11].style.display = 'block'
+            ele[12].style.display = 'block'
+         },
+
+         closeProcess: function (selection) {
+            // 收起测试
+            var ele = selection._groups[0][0].childNodes[9].childNodes
+            //父元素父元素展开，框变高
+            selection._groups[0][0].childNodes[0].setAttribute('height', '130')
+            selection._groups[0][0].childNodes[1].setAttribute('height', '130')
+            console.log(ele)
+
+            ele[3].style.display = 'block'
+            ele[4].style.display = 'block'
+            ele[5].style.display = 'block'
+            ele[6].style.display = 'block'
+            ele[7].style.display = 'block'
+            ele[8].style.display = 'block'
+            ele[9].style.display = 'block'
+            ele[10].style.display = 'block'
+            ele[11].style.display = 'block'
+            ele[12].style.display = 'block'
+         },
+
+        /**
          * Groups the currently selected components into a new group.
          */
         group: function () {

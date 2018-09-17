@@ -21,17 +21,19 @@
     if (typeof define === 'function' && define.amd) {
         define(['jquery',
                 'd3',
+                'nf.Connection',
                 'nf.Common',
                 'nf.Client',
                 'nf.ClusterSummary',
                 'nf.CanvasUtils'],
-            function ($, d3, nfCommon, nfClient, nfClusterSummary, nfCanvasUtils) {
-                return (nf.Processor = factory($, d3, nfCommon, nfClient, nfClusterSummary, nfCanvasUtils));
+            function ($, d3, nfConnection, nfCommon, nfClient, nfClusterSummary, nfCanvasUtils) {
+                return (nf.Processor = factory($, d3, nfConnection, nfCommon, nfClient, nfClusterSummary, nfCanvasUtils));
             });
     } else if (typeof exports === 'object' && typeof module === 'object') {
         module.exports = (nf.Processor =
             factory(require('jquery'),
                 require('d3'),
+                require('nf.Connection'),
                 require('nf.Common'),
                 require('nf.Client'),
                 require('nf.ClusterSummary'),
@@ -39,12 +41,13 @@
     } else {
         nf.Processor = factory(root.$,
             root.d3,
+            root.nf.Connection,
             root.nf.Common,
             root.nf.Client,
             root.nf.ClusterSummary,
             root.nf.CanvasUtils);
     }
-}(this, function ($, d3, nfCommon, nfClient, nfClusterSummary, nfCanvasUtils) {
+}(this, function ($, d3, nfConnection, nfCommon, nfClient, nfClusterSummary, nfCanvasUtils) {
     'use strict';
 
     var nfConnectable;
@@ -59,6 +62,11 @@
     var dimensions = {
         width: 350,
         height: 130
+    };
+
+    var smallDimensions = {
+        width: 100,
+        height: 100
     };
 
     // ---------------------------------
@@ -93,28 +101,249 @@
         });
     };
 
-    /**
-     * Renders the processors in the specified selection.
-     *
-     * @param {selection} entered           The selection of processors to be rendered
-     * @param {boolean} selected             Whether the element should be selected
-     * @return the entered selection
-     */
-    var renderProcessors = function (entered, selected) {
-        if (entered.empty()) {
-            return entered;
+    var getDragSelection = function () {
+        var dragSelection = d3.select('rect.drag-selection');
+        // lazily create the drag selection box
+        if (dragSelection.empty()) {
+            // get the current selection
+            var selection = d3.selectAll('g.component.selected');
+
+            // determine the appropriate bounding box
+            var minX = null, maxX = null, minY = null, maxY = null;
+            console.log(selection)
+            selection.each(function (d) {
+                var ele = d3.select(this)
+                console.log(ele)
+                var smallView = ele.select('g.processor-canvas-small-processor');
+                if (minX === null || d.position.x < minX) {
+                    minX = d.position.x;
+                }
+                if (minY === null || d.position.y < minY) {
+                    minY = d.position.y;
+                }
+                if(smallView.empty()) {
+                    var componentMaxX = d.position.x + d.dimensions.width;
+                    var componentMaxY = d.position.y + d.dimensions.height;
+                }else {
+                    var componentMaxX = d.position.x + 100;
+                    var componentMaxY = d.position.y + 100;
+                }
+                if (maxX === null || componentMaxX > maxX) {
+                    maxX = componentMaxX;
+                }
+                if (maxY === null || componentMaxY > maxY) {
+                    maxY = componentMaxY;
+                }
+            });
+
+            // create a selection box for the move
+            d3.select('#canvas').append('rect')
+                .attr('rx', 6)
+                .attr('ry', 6)
+                .attr('x', minX)
+                .attr('y', minY)
+                .attr('class', 'drag-selection')
+                .attr('pointer-events', 'none')
+                .attr('width', maxX - minX)
+                .attr('height', maxY - minY)
+                .attr('stroke-width', function () {
+                    return 1 / nfCanvasUtils.getCanvasScale();
+                })
+                .attr('stroke-dasharray', function () {
+                    return 4 / nfCanvasUtils.getCanvasScale();
+                })
+                .datum({
+                    original: {
+                        x: minX,
+                        y: minY
+                    },
+                    x: minX,
+                    y: minY
+                });
+        } else {
+            // update the position of the drag selection
+            dragSelection.attr('x', function (d) {
+                d.x += d3.event.dx;
+                return d.x;
+            })
+                .attr('y', function (d) {
+                    d.y += d3.event.dy;
+                    return d.y;
+                });
+        }
+    }
+
+    var updateComponentsPosition = function (dragSelection) {
+        var updates = d3.map();
+
+        // determine the drag delta
+        var dragData = dragSelection.datum();
+        var delta = {
+            x: dragData.x - dragData.original.x,
+            y: dragData.y - dragData.original.y
+        };
+
+        // if the component didn't move, return
+        // if (delta.x === 0 && delta.y === 0) {
+        //     return;
+        // }
+
+        var selectedConnections = d3.selectAll('g.connection.selected');
+        var selectedComponents = d3.selectAll('g.component.selected');
+
+        // ensure every component is writable
+        if (nfCanvasUtils.canModify(selectedConnections) === false || nfCanvasUtils.canModify(selectedComponents) === false) {
+            nfDialog.showOkDialog({
+                headerText: nf._.msg('nf-draggable.ComponentPosition'),
+                dialogContent: nf._.msg('nf-draggable.Message2')
+            });
+            return;
         }
 
-        var processor = entered.append('g')
-            .attrs({
-                'id': function (d) {
-                    return 'id-' + d.id;
-                },
-                'class': 'processor component'
-            })
-            .classed('selected', selected)
-            .call(nfCanvasUtils.position);
+        // go through each selected connection
+        selectedConnections.each(function (d) {
+            var connectionUpdate = nfDraggable.updateConnectionPosition(d, delta);
+            if (connectionUpdate !== null) {
+                updates.set(d.id, connectionUpdate);
+            }
+        });
+        // go through each selected component
+        selectedComponents.each(function (d) {
+            // consider any self looping connections
+            var connections = nfConnection.getComponentConnections(d.id);
+            $.each(connections, function (_, connection) {
+                if (!updates.has(connection.id) && nfCanvasUtils.getConnectionSourceComponentId(connection) === nfCanvasUtils.getConnectionDestinationComponentId(connection)) {
+                    var connectionUpdate = nfDraggable.updateConnectionPosition(nfConnection.get(connection.id), delta);
+                    if (connectionUpdate !== null) {
+                        updates.set(connection.id, connectionUpdate);
+                    }
+                }
+            });
 
+            // consider the component itself
+            updates.set(d.id, nfDraggable.updateComponentPosition(d, delta));
+        });
+
+        nfDraggable.refreshConnections(updates);
+    };
+
+    var paintSmallProcessor = function (processor, processorData) {
+        // processor border
+        processor.append('rect')
+            .attrs({
+                'class': 'border',
+                'width': function (d) {
+                    return 100;
+                },
+                'height': function (d) {
+                    return 88;
+                },
+                'fill': 'transparent',
+                'stroke': 'transparent'
+            });
+        //processor body
+        processor.append('rect')
+            .attrs({
+                'class': 'body',
+                'width': function (d) {
+                    return 100;
+                },
+                'height': function (d) {
+                    return 88;
+                },
+                'filter': 'url(#component-drop-shadow)',
+                'stroke-width': 0
+            });
+        var details = processor.append('g').attr('class', 'processor-canvas-details');
+        var smallView = processor.append('g').attr('class', 'processor-canvas-small-processor');
+        // circle
+        processor.append('circle')
+            .attrs({
+                'r': 30,
+                'cx': 50,
+                'cy': 44,
+                'fill': '#506773'
+            })
+
+        // processor icon
+        processor.append('text')
+            .attrs({
+                'x': 35,
+                'y': 55,
+                'fill': '#FFFFFF',
+                'class': 'processor-icon'
+            })
+            .text('\ue826');
+
+        // run status icon
+        processor.append('text')
+            .attrs({
+                'class': 'run-status-icon',
+                'x': 10,
+                'y': 20
+            });
+
+        //自定义展开按钮
+        processor.append('text')
+            .attrs({
+                'x': 80,
+                'y': 20,
+                'style': 'font-size:20px'
+            })
+            .text('+')
+            .on('click',function(d){
+                console.log(processor.datum())
+                processor.selectAll('*').remove()
+                paintBigProcessor(processor, processorData)
+                var processorEntities = processor.datum();
+                nfProcessor.set(processorEntities);
+                getDragSelection();
+                var dragSelection = d3.select('rect.drag-selection');
+                if (dragSelection.empty()) {
+                    return;
+                }
+                updateComponentsPosition(dragSelection);
+                dragSelection.remove();
+            });
+        // processor name
+        processor.append('text')
+            .attrs({
+                'x': 0,
+                'y': 110,
+                'width': 150,
+                'height': 14,
+                'class': 'processor-name'
+            });
+        // bulletin background
+        processor.append('rect')
+            .attrs({
+                'class': 'bulletin-background',
+                'x': function (d) {
+                    return 100 - 24;
+                },
+                'y': function(d) {
+                    return 88 - 24;
+                },
+                'width': 24,
+                'height': 24
+            });
+
+        // bulletin icon
+        processor.append('text')
+            .attrs({
+                'class': 'bulletin-icon',
+                'x': function (d) {
+                    return 100 - 17;
+                },
+                'y': function (d) {
+                    return 88 - 7;
+                },
+            })
+            .text('\uf24a');
+    // -------------------------------------------------------------------------------------------------------------------------------------------------------
+    };
+
+    var paintBigProcessor = function(processor, processorData) {
         // processor border
         processor.append('rect')
             .attrs({
@@ -128,8 +357,7 @@
                 'fill': 'transparent',
                 'stroke': 'transparent'
             });
-
-        // processor body
+        //processor body
         processor.append('rect')
             .attrs({
                 'class': 'body',
@@ -142,35 +370,416 @@
                 'filter': 'url(#component-drop-shadow)',
                 'stroke-width': 0
             });
-
-        // processor name
+        //自定义收缩按钮
         processor.append('text')
             .attrs({
-                'x': 75,
-                'y': 18,
-                'width': 230,
-                'height': 14,
-                'class': 'processor-name'
-            });
-
-        // processor icon container
-        processor.append('rect')
-            .attrs({
-                'x': 0,
-                'y': 0,
-                'width': 50,
-                'height': 50,
-                'class': 'processor-icon-container'
-            });
-
-        // processor icon
-        processor.append('text')
-            .attrs({
-                'x': 9,
-                'y': 35,
-                'class': 'processor-icon'
+                'x': 319,
+                'y': 30,
+                'style': 'font-size:34px;'
             })
-            .text('\ue826');
+            .text('-')
+            .on('click',function(d){
+                processor.selectAll('*').remove()
+                paintSmallProcessor(processor, processorData)
+                var processorEntities = processor.datum();
+                nfProcessor.set(processorEntities);
+                // get the drag selection
+                getDragSelection()
+                var dragSelection = d3.select('rect.drag-selection');
+                if (dragSelection.empty()) {
+                    return;
+                }
+                updateComponentsPosition(dragSelection);
+                dragSelection.remove();
+            });
+
+            // processor name
+            processor.append('text')
+                .attrs({
+                    'x': 75,
+                    'y': 18,
+                    'width': 230,
+                    'height': 14,
+                    'class': 'processor-name'
+                });
+
+            // processor icon container
+            processor.append('rect')
+                .attrs({
+                    'x': 0,
+                    'y': 0,
+                    'width': 50,
+                    'height': 48,
+                    'class': 'processor-icon-container'
+                });
+
+            // processor icon
+            processor.append('text')
+                .attrs({
+                    'x': 9,
+                    'y': 35,
+                    'class': 'processor-icon'
+                })
+                .text('\ue826');
+            var details = processor.append('g').attr('class', 'processor-canvas-details');
+            var bigView = processor.append('g').attr('class', 'processor-canvas-big-processor');
+            // run status icon
+            details.append('text')
+                .attrs({
+                    'class': 'run-status-icon',
+                    'x': 55,
+                    'y': 23
+                });
+
+            // processor type
+            details.append('text')
+                .attrs({
+                    'class': 'processor-type',
+                    'x': 75,
+                    'y': 32,
+                    'width': 230,
+                    'height': 12
+                });
+
+            // processor type
+            details.append('text')
+                .attrs({
+                    'class': 'processor-bundle',
+                    'x': 75,
+                    'y': 45,
+                    'width': 200,
+                    'height': 12
+                });
+
+            // draw the processor statistics table
+
+            // in
+            details.append('rect')
+                .attrs({
+                    'width': function () {
+                        return processorData.dimensions.width;
+                    },
+                    'height': 19,
+                    'x': 0,
+                    'y': 50,
+                    'fill': '#f4f6f7',
+                });
+
+            // border
+            details.append('rect')
+                .attrs({
+                    'width': function () {
+                        return processorData.dimensions.width;
+                    },
+                    'height': 1,
+                    'x': 0,
+                    'y': 68,
+                    'fill': '#c7d2d7',
+                });
+
+            // read/write
+            details.append('rect')
+                .attrs({
+                    'width': function () {
+                        return processorData.dimensions.width;
+                    },
+                    'height': 19,
+                    'x': 0,
+                    'y': 69,
+                    'fill': '#ffffff',
+                });
+
+            // border
+            details.append('rect')
+                .attrs({
+                    'width': function () {
+                        return processorData.dimensions.width;
+                    },
+                    'height': 1,
+                    'x': 0,
+                    'y': 87,
+                    'fill': '#c7d2d7',
+                });
+
+            // out
+            details.append('rect')
+                .attrs({
+                    'width': function () {
+                        return processorData.dimensions.width;
+                    },
+                    'height': 20,
+                    'x': 0,
+                    'y': 88,
+                    'fill': '#f4f6f7',
+                });
+
+            // border
+            details.append('rect')
+                .attrs({
+                    'width': function () {
+                        return processorData.dimensions.width;
+                    },
+                    'height': 1,
+                    'x': 0,
+                    'y': 106,
+                    'fill': '#c7d2d7',
+                });
+
+            // tasks/time
+            details.append('rect')
+                .attrs({
+                    'width': function () {
+                        return processorData.dimensions.width;
+                    },
+                    'height': 19,
+                    'x': 0,
+                    'y': 107,
+                    'fill': '#ffffff',
+                });
+
+            // stats label container
+            var processorStatsLabel = details.append('g')
+                .attrs({
+                    'transform': 'translate(10, 55)',
+                });
+
+            // in label
+            processorStatsLabel.append('text')
+                .attrs({
+                    'width': 73,
+                    'height': 10,
+                    'y': 9,
+                    'class': 'stats-label'
+                })
+                .text(nf._.msg('nf-processor.In'));
+
+            // read/write label
+            processorStatsLabel.append('text')
+                .attrs({
+                    'width': 73,
+                    'height': 10,
+                    'y': 27,
+                    'class': 'stats-label'
+                })
+                .text(nf._.msg('nf-processor.ReadWrite'));
+
+            // out label
+            processorStatsLabel.append('text')
+                .attrs({
+                    'width': 73,
+                    'height': 10,
+                    'y': 46,
+                    'class': 'stats-label'
+                })
+                .text(nf._.msg('nf-processor.Out'));
+
+            // tasks/time label
+            processorStatsLabel.append('text')
+                .attrs({
+                    'width': 73,
+                    'height': 10,
+                    'y': 65,
+                    'class': 'stats-label'
+                })
+                .text(nf._.msg('nf-processor.TasksTime'));
+
+            // stats value container
+            var processorStatsValue = details.append('g')
+                .attrs({
+                    'transform': 'translate(85, 55)',
+                });
+
+            // in value
+            var inText = processorStatsValue.append('text')
+                .attrs({
+                    'width': 180,
+                    'height': 9,
+                    'y': 9,
+                    'class': 'processor-in stats-value'
+                });
+
+            // in count
+            inText.append('tspan')
+                .attrs({
+                    'class': 'count'
+                });
+
+            // in size
+            inText.append('tspan')
+                .attrs({
+                    'class': 'size'
+                });
+
+            // read/write value
+            processorStatsValue.append('text')
+                .attrs({
+                    'width': 180,
+                    'height': 10,
+                    'y': 27,
+                    'class': 'processor-read-write stats-value'
+                });
+
+            // out value
+            var outText = processorStatsValue.append('text')
+                .attrs({
+                    'width': 180,
+                    'height': 10,
+                    'y': 46,
+                    'class': 'processor-out stats-value'
+                });
+
+            // out count
+            outText.append('tspan')
+                .attrs({
+                    'class': 'count'
+                });
+
+            // out size
+            outText.append('tspan')
+                .attrs({
+                    'class': 'size'
+                });
+
+            // tasks/time value
+            processorStatsValue.append('text')
+                .attrs({
+                    'width': 180,
+                    'height': 10,
+                    'y': 65,
+                    'class': 'processor-tasks-time stats-value'
+                });
+
+            // stats value container
+            var processorStatsInfo = details.append('g')
+                .attrs({
+                    'transform': 'translate(305, 55)',
+                    'style': 'display:none'});
+
+            // in info
+            processorStatsInfo.append('text')
+                .attrs({
+                    'width': 25,
+                    'height': 10,
+                    'y': 9,
+                    'class': 'stats-info'
+                })
+                .text(nf._.msg('nf-processor.5min-1'));
+
+            // read/write info
+            processorStatsInfo.append('text')
+                .attrs({
+                    'width': 25,
+                    'height': 10,
+                    'y': 27,
+                    'class': 'stats-info'
+                })
+                .text(nf._.msg('nf-processor.5min-1'));
+
+            // out info
+            processorStatsInfo.append('text')
+                .attrs({
+                    'width': 25,
+                    'height': 10,
+                    'y': 46,
+                    'class': 'stats-info'
+                })
+                .text(nf._.msg('nf-processor.5min-1'));
+
+            // tasks/time info
+            processorStatsInfo.append('text')
+                .attrs({
+                    'width': 25,
+                    'height': 10,
+                    'y': 65,
+                    'class': 'stats-info'
+                })
+                .text('5 min');
+            // --------
+            // comments
+            // --------
+
+            details.append('path')
+                .attrs({
+                    'class': 'component-comments',
+                    'transform': 'translate(' + (processorData.dimensions.width - 2) + ', ' + (processorData.dimensions.height - 10) + ')',
+                    'd': 'm0,0 l0,8 l-8,0 z'
+                });
+
+            // active thread count
+            // details.append('text')
+            //     .attrs({
+            //         'class': 'active-thread-count-icon',
+            //         'y': 46
+            //     })
+            //     .text('\ue840');
+
+            // active thread background
+            details.append('text')
+                .attrs({
+                    'class': 'active-thread-count',
+                    'y': 46
+                });
+
+
+            // bulletin background
+            details.append('rect')
+                .attrs({
+                    'class': 'bulletin-background',
+                    'x': function (d) {
+                        return processorData.dimensions.width - 24;
+                    },
+                    'y': function(d) {
+                        return processorData.dimensions.height - 24;
+                    },
+                    'width': 24,
+                    'height': 24
+                });
+
+            // bulletin icon
+            details.append('text')
+                .attrs({
+                    'class': 'bulletin-icon',
+                    'x': function (d) {
+                        return processorData.dimensions.width - 17;
+                    },
+                    'y': function (d) {
+                        return processorData.dimensions.height - 7;
+                    },
+                })
+                .text('\uf24a');
+
+            
+            // // select
+            // var selection = select();
+            // // enter
+            // var entered = renderProcessors(selection.enter(), false);
+            // // update
+            // var updated = selection.merge(entered);
+            // updated.call(updateProcessors);
+    // --------------------------------------------------------------------------------------------------------------------------------
+    };
+
+    /**
+     * Renders the processors in the specified selection.
+     *
+     * @param {selection} entered           The selection of processors to be rendered
+     * @param {boolean} selected             Whether the element should be selected
+     * @return the entered selection
+     */
+    var renderProcessors = function (entered, selected) {
+        if (entered.empty()) {
+            return entered;
+        }
+        var processor = entered.append('g')
+            .attrs({
+                'id': function (d) {
+                    return 'id-' + d.id;
+                },
+                'class': 'processor component'
+            })
+            // .classed('selected', selected)
+            .call(nfCanvasUtils.position);
+
 
         // restricted icon background
         processor.append('circle')
@@ -222,11 +831,10 @@
      *
      * @param {selection} updated       The processors to update
      */
-    var updateProcessors = function (updated) {
+    var updateProcessors = function (updated, index) {
         if (updated.empty()) {
             return;
         }
-
         // processor border authorization
         updated.select('rect.border')
             .classed('unauthorized', function (d) {
@@ -248,341 +856,18 @@
 
             // update the component behavior as appropriate
             nfCanvasUtils.editable(processor, nfConnectable, nfDraggable);
-
             // if this processor is visible, render everything
             if (processor.classed('visible')) {
                 if (details.empty()) {
                     details = processor.append('g').attr('class', 'processor-canvas-details');
-
-                    // run status icon
-                    details.append('text')
-                        .attrs({
-                            'class': 'run-status-icon',
-                            'x': 55,
-                            'y': 23
-                        });
-
-                    // processor type
-                    details.append('text')
-                        .attrs({
-                            'class': 'processor-type',
-                            'x': 75,
-                            'y': 32,
-                            'width': 230,
-                            'height': 12
-                        });
-
-                    // processor type
-                    details.append('text')
-                        .attrs({
-                            'class': 'processor-bundle',
-                            'x': 75,
-                            'y': 45,
-                            'width': 200,
-                            'height': 12
-                        });
-
-                    // -----
-                    // stats
-                    // -----
-
-                    // draw the processor statistics table
-
-                    // in
-                    details.append('rect')
-                        .attrs({
-                            'width': function () {
-                                return processorData.dimensions.width;
-                            },
-                            'height': 19,
-                            'x': 0,
-                            'y': 50,
-                            'fill': '#f4f6f7'
-                        });
-
-                    // border
-                    details.append('rect')
-                        .attrs({
-                            'width': function () {
-                                return processorData.dimensions.width;
-                            },
-                            'height': 1,
-                            'x': 0,
-                            'y': 68,
-                            'fill': '#c7d2d7'
-                        });
-
-                    // read/write
-                    details.append('rect')
-                        .attrs({
-                            'width': function () {
-                                return processorData.dimensions.width;
-                            },
-                            'height': 19,
-                            'x': 0,
-                            'y': 69,
-                            'fill': '#ffffff'
-                        });
-
-                    // border
-                    details.append('rect')
-                        .attrs({
-                            'width': function () {
-                                return processorData.dimensions.width;
-                            },
-                            'height': 1,
-                            'x': 0,
-                            'y': 87,
-                            'fill': '#c7d2d7'
-                        });
-
-                    // out
-                    details.append('rect')
-                        .attrs({
-                            'width': function () {
-                                return processorData.dimensions.width;
-                            },
-                            'height': 20,
-                            'x': 0,
-                            'y': 88,
-                            'fill': '#f4f6f7'
-                        });
-
-                    // border
-                    details.append('rect')
-                        .attrs({
-                            'width': function () {
-                                return processorData.dimensions.width;
-                            },
-                            'height': 1,
-                            'x': 0,
-                            'y': 106,
-                            'fill': '#c7d2d7'
-                        });
-
-                    // tasks/time
-                    details.append('rect')
-                        .attrs({
-                            'width': function () {
-                                return processorData.dimensions.width;
-                            },
-                            'height': 19,
-                            'x': 0,
-                            'y': 107,
-                            'fill': '#ffffff'
-                        });
-
-                    // stats label container
-                    var processorStatsLabel = details.append('g')
-                        .attrs({
-                            'transform': 'translate(10, 55)'
-                        });
-
-                    // in label
-                    processorStatsLabel.append('text')
-                        .attrs({
-                            'width': 73,
-                            'height': 10,
-                            'y': 9,
-                            'class': 'stats-label'
-                        })
-                        .text(nf._.msg('nf-processor.In'));
-
-                    // read/write label
-                    processorStatsLabel.append('text')
-                        .attrs({
-                            'width': 73,
-                            'height': 10,
-                            'y': 27,
-                            'class': 'stats-label'
-                        })
-                        .text(nf._.msg('nf-processor.ReadWrite'));
-
-                    // out label
-                    processorStatsLabel.append('text')
-                        .attrs({
-                            'width': 73,
-                            'height': 10,
-                            'y': 46,
-                            'class': 'stats-label'
-                        })
-                        .text(nf._.msg('nf-processor.Out'));
-
-                    // tasks/time label
-                    processorStatsLabel.append('text')
-                        .attrs({
-                            'width': 73,
-                            'height': 10,
-                            'y': 65,
-                            'class': 'stats-label'
-                        })
-                        .text(nf._.msg('nf-processor.TasksTime'));
-
-                    // stats value container
-                    var processorStatsValue = details.append('g')
-                        .attrs({
-                            'transform': 'translate(85, 55)'
-                        });
-
-                    // in value
-                    var inText = processorStatsValue.append('text')
-                        .attrs({
-                            'width': 180,
-                            'height': 9,
-                            'y': 9,
-                            'class': 'processor-in stats-value'
-                        });
-
-                    // in count
-                    inText.append('tspan')
-                        .attrs({
-                            'class': 'count'
-                        });
-
-                    // in size
-                    inText.append('tspan')
-                        .attrs({
-                            'class': 'size'
-                        });
-
-                    // read/write value
-                    processorStatsValue.append('text')
-                        .attrs({
-                            'width': 180,
-                            'height': 10,
-                            'y': 27,
-                            'class': 'processor-read-write stats-value'
-                        });
-
-                    // out value
-                    var outText = processorStatsValue.append('text')
-                        .attrs({
-                            'width': 180,
-                            'height': 10,
-                            'y': 46,
-                            'class': 'processor-out stats-value'
-                        });
-
-                    // out count
-                    outText.append('tspan')
-                        .attrs({
-                            'class': 'count'
-                        });
-
-                    // out size
-                    outText.append('tspan')
-                        .attrs({
-                            'class': 'size'
-                        });
-
-                    // tasks/time value
-                    processorStatsValue.append('text')
-                        .attrs({
-                            'width': 180,
-                            'height': 10,
-                            'y': 65,
-                            'class': 'processor-tasks-time stats-value'
-                        });
-
-                    // stats value container
-                    var processorStatsInfo = details.append('g')
-                        .attr('transform', 'translate(305, 55)');
-
-                    // in info
-                    processorStatsInfo.append('text')
-                        .attrs({
-                            'width': 25,
-                            'height': 10,
-                            'y': 9,
-                            'class': 'stats-info'
-                        })
-                        .text(nf._.msg('nf-processor.5min-1'));
-
-                    // read/write info
-                    processorStatsInfo.append('text')
-                        .attrs({
-                            'width': 25,
-                            'height': 10,
-                            'y': 27,
-                            'class': 'stats-info'
-                        })
-                        .text(nf._.msg('nf-processor.5min-1'));
-
-                    // out info
-                    processorStatsInfo.append('text')
-                        .attrs({
-                            'width': 25,
-                            'height': 10,
-                            'y': 46,
-                            'class': 'stats-info'
-                        })
-                        .text(nf._.msg('nf-processor.5min-1'));
-
-                    // tasks/time info
-                    processorStatsInfo.append('text')
-                        .attrs({
-                            'width': 25,
-                            'height': 10,
-                            'y': 65,
-                            'class': 'stats-info'
-                        })
-                        .text('5 min');
-
-                    // --------
-                    // comments
-                    // --------
-
-                    details.append('path')
-                        .attrs({
-                            'class': 'component-comments',
-                            'transform': 'translate(' + (processorData.dimensions.width - 2) + ', ' + (processorData.dimensions.height - 10) + ')',
-                            'd': 'm0,0 l0,8 l-8,0 z'
-                        });
-
-                    // -------------------
-                    // active thread count
-                    // -------------------
-
-                    // active thread count
-                    details.append('text')
-                        .attrs({
-                            'class': 'active-thread-count-icon',
-                            'y': 46
-                        })
-                        .text('\ue840');
-
-                    // active thread background
-                    details.append('text')
-                        .attrs({
-                            'class': 'active-thread-count',
-                            'y': 46
-                        });
-
-                    // ---------
-                    // bulletins
-                    // ---------
-
-                    // bulletin background
-                    details.append('rect')
-                        .attrs({
-                            'class': 'bulletin-background',
-                            'x': function (d) {
-                                return processorData.dimensions.width - 24;
-                            },
-                            'width': 24,
-                            'height': 24
-                        });
-
-                    // bulletin icon
-                    details.append('text')
-                        .attrs({
-                            'class': 'bulletin-icon',
-                            'x': function (d) {
-                                return processorData.dimensions.width - 17;
-                            },
-                            'y': 17
-                        })
-                        .text('\uf24a');
+                    var bigView = processor.select('g.processor-canvas-big-processor');
+                    if(bigView.empty()) {
+                        processor.selectAll('*').remove()
+                        paintSmallProcessor(processor, processorData)
+                    } else {
+                        processor.selectAll('*').remove()
+                        paintBigProcessor(processor, processorData)
+                    }
                 }
 
                 if (processorData.permissions.canRead) {
@@ -782,7 +1067,6 @@
         if (!d.permissions.canRead) {
             return 'hidden';
         }
-
         return d.component.restricted ? 'visible' : 'hidden';
     };
 
@@ -1013,7 +1297,8 @@
                 // add the processor
                 processorMap.set(processorEntity.id, $.extend({
                     type: 'Processor',
-                    dimensions: dimensions
+                    dimensions: dimensions,
+                    smallDimensions: smallDimensions,
                 }, processorEntity));
             };
 
@@ -1029,11 +1314,13 @@
             // select
             var selection = select();
 
+            
+
             // enter
             var entered = renderProcessors(selection.enter(), selectAll);
 
             // update
-            updateProcessors(selection.merge(entered));
+             updateProcessors(selection.merge(entered));
         },
 
         /**
@@ -1043,6 +1330,7 @@
          * @argument {object} options                Configuration options
          */
         set: function (processorEntities, options) {
+            console.log(processorEntities)
             var selectAll = false;
             var transition = false;
             var overrideRevisionCheck = false;
@@ -1087,6 +1375,7 @@
             // select
             var selection = select();
 
+
             // enter
             var entered = renderProcessors(selection.enter(), selectAll);
 
@@ -1121,9 +1410,9 @@
          */
         refresh: function (id) {
             if (nfCommon.isDefinedAndNotNull(id)) {
-                d3.select('#id-' + id).call(updateProcessors);
+                 d3.select('#id-' + id).call(updateProcessors);
             } else {
-                d3.selectAll('g.processor').call(updateProcessors);
+                 d3.selectAll('g.processor').call(updateProcessors);
             }
         },
 
@@ -1140,7 +1429,7 @@
          * Refreshes the components necessary after a pan event.
          */
         pan: function () {
-            d3.selectAll('g.processor.entering, g.processor.leaving').call(updateProcessors);
+             d3.selectAll('g.processor.entering, g.processor.leaving').call(updateProcessors);
         },
 
         /**
@@ -1169,7 +1458,6 @@
          */
         remove: function (processorIds) {
             var now = new Date().getTime();
-
             if ($.isArray(processorIds)) {
                 $.each(processorIds, function (_, processorId) {
                     removedCache.set(processorId, now);

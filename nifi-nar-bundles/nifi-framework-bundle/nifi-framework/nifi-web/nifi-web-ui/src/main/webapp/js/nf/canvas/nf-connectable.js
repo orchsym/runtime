@@ -153,11 +153,20 @@
                                 return 'M' + x + ' ' + y + 'L' + (x + componentOffset + xOffset) + ' ' + (y - yOffset) + 'L' + (x + componentOffset + xOffset) + ' ' + (y + yOffset) + 'Z';
                             } else {
                                 // get the position on the destination perimeter
+                                var smallView = destination.select('g.processor-canvas-small-processor');
+                                if(smallView.empty()) {
+                                    var width = destinationData.dimensions.width
+                                    var height = destinationData.dimensions.height
+                                } else {
+                                    var width = 100
+                                    var height = 88
+                                }
+
                                 var end = nfCanvasUtils.getPerimeterPoint(pathDatum, {
                                     'x': destinationData.position.x,
                                     'y': destinationData.position.y,
-                                    'width': destinationData.dimensions.width,
-                                    'height': destinationData.dimensions.height
+                                    'width': width,
+                                    'height': height
                                 });
 
                                 // direct line between components to provide a 'snap feel'
@@ -228,14 +237,19 @@
                 .on('mouseenter.connectable', function (d) {
                     if (allowConnection()) {
                         var selection = d3.select(this);
-
                         // ensure the current component supports connection source
                         if (nfCanvasUtils.isValidConnectionSource(selection)) {
                             // see if theres already a connector rendered
                             var addConnect = d3.select('text.add-connect');
                             if (addConnect.empty()) {
-                                var x = (d.dimensions.width / 2) - 14;
-                                var y = (d.dimensions.height / 2) + 14;
+                                var smallView = selection.select('g.processor-canvas-small-processor')
+                                if (smallView.empty()){
+                                    var x = (d.dimensions.width / 2) - 14;
+                                    var y = (d.dimensions.height / 2) + 14;
+                                } else {
+                                    var x = 100 / 2 - 14;
+                                    var y = 88 / 2 + 14;
+                                }
 
                                 selection.append('text')
                                     .datum({
