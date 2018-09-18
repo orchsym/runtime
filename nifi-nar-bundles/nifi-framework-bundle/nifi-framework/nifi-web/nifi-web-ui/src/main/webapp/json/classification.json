@@ -291,6 +291,7 @@
                     "ScanAttribute",
                     "ScanContent",
                     "SegmentContent",
+                    "SignatureProcessor",
                     "SplitAvro",
                     "SplitContent",
                     "SplitJson",
@@ -301,7 +302,8 @@
                     "UnpackContent",
                     "UpdateAttribute",
                     "UpdateCounter",
-                    "UpdateRecord"
+                    "UpdateRecord",
+                    "URLEncodeContent"
                 ]
             },
             {
