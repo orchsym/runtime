@@ -47,6 +47,7 @@ import org.apache.nifi.processor.io.OutputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.processors.mapper.exp.ExpVar;
 import org.apache.nifi.processors.mapper.exp.ExpVarTable;
+import org.apache.nifi.processors.mapper.exp.MapperChecker;
 import org.apache.nifi.processors.mapper.exp.MapperTable;
 import org.apache.nifi.processors.mapper.exp.MapperTableType;
 import org.apache.nifi.processors.mapper.record.RecordPathsMap;
@@ -77,7 +78,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
         expressionLanguageScope = ExpressionLanguageScope.FLOWFILE_ATTRIBUTES, description = "enable to customize multi-flows and do mapping with expression for each fields.")
 public class RecordMapper extends AbstractProcessor {
     static final String OP_SLASH = "/";
-
+    public static final MapperChecker MC = new MapperChecker();
     public static final String DEFAULT_MAIN = "main";
     public static final String PRE_INPUT = MapperTableType.INPUT.getPrefix();
     public static final String PRE_OUTPUT = MapperTableType.OUTPUT.getPrefix();

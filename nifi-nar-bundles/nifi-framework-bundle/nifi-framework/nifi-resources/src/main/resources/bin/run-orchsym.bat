@@ -42,7 +42,7 @@ set CONF_DIR=conf
 set BOOTSTRAP_CONF_FILE=%CONF_DIR%\bootstrap.conf
 set JAVA_ARGS=-Dorg.apache.nifi.bootstrap.config.log.dir=%NIFI_LOG_DIR% -Dorg.apache.nifi.bootstrap.config.pid.dir=%NIFI_PID_DIR% -Dorg.apache.nifi.bootstrap.config.file=%BOOTSTRAP_CONF_FILE%
 
-SET JAVA_PARAMS=-cp %CONF_DIR%;%LIB_DIR%\* -Xms12m -Xmx24m %JAVA_ARGS% org.apache.nifi.bootstrap.RunNiFi
+SET JAVA_PARAMS=-cp %CONF_DIR%;%LIB_DIR%\* -Xms12m -Xmx24m %JAVA_ARGS% com.baishancloud.orchsym.boot.RunOrchsymRuntime
 set BOOTSTRAP_ACTION=run
 
 cmd.exe /C "%JAVA_EXE%" %JAVA_PARAMS% %BOOTSTRAP_ACTION%

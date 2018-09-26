@@ -52,6 +52,7 @@ import com.alibaba.dubbo.config.ReferenceConfig;
 import com.alibaba.dubbo.config.RegistryConfig;
 import com.alibaba.dubbo.rpc.RpcContext;
 import com.alibaba.dubbo.rpc.service.GenericService;
+import com.baishancloud.orchsym.processors.dubbo.param.CheckParam;
 import com.baishancloud.orchsym.processors.dubbo.param.CustomParam;
 import com.baishancloud.orchsym.processors.dubbo.param.FlowParam;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -80,6 +81,7 @@ public class InvokeDubbo extends AbstractProcessor {
      */
     private static final Pattern VERSION_PATTERN = Pattern.compile("\\d+(\\.\\d+){0,2}");
     private static final String VERSION_ALL = "*";
+    public static final CheckParam CP = new CheckParam();
 
     public enum PARAM_CHOICE {
         FLOW("Flow"), CUSTOM("Custom");

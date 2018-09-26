@@ -170,11 +170,11 @@ install() {
     detectOS
 
     if [ "${darwin}" = "true"  ] || [ "${cygwin}" = "true" ]; then
-        echo 'Installing Apache NiFi as a service is not supported on OS X or Cygwin.'
+        echo 'Installing Orchsym Runtime as a service is not supported on OS X or Cygwin.'
         exit 1
     fi
 
-    SVC_NAME=nifi
+    SVC_NAME=orchsym-runtime
     if [ "x$2" != "x" ] ; then
         SVC_NAME=$2
     fi
@@ -185,7 +185,7 @@ install() {
     SVC_FILE="${initd_dir}/${SVC_NAME}"
 
     if [ ! -w  "${initd_dir}" ]; then
-        echo "Current user does not have write permissions to ${initd_dir}. Cannot install NiFi as a service."
+        echo "Current user does not have write permissions to ${initd_dir}. Cannot install Runtime as a service."
         exit 1
     fi
 
@@ -290,7 +290,7 @@ run() {
 
     echo
     echo "Java home: ${JAVA_HOME}"
-    echo "NiFi home: ${NIFI_HOME}"
+    echo "Runtime home: ${NIFI_HOME}"
     echo
     echo "Bootstrap Config File: ${BOOTSTRAP_CONF}"
     echo
@@ -305,7 +305,7 @@ run() {
 
     BOOTSTRAP_DIR_PARAMS="${BOOTSTRAP_LOG_PARAMS} ${BOOTSTRAP_PID_PARAMS} ${BOOTSTRAP_CONF_PARAMS}"
 
-    run_nifi_cmd="'${JAVA}' -cp '${BOOTSTRAP_CLASSPATH}' -Xms12m -Xmx24m ${BOOTSTRAP_DIR_PARAMS} org.apache.nifi.bootstrap.RunNiFi $@"
+    run_nifi_cmd="'${JAVA}' -cp '${BOOTSTRAP_CLASSPATH}' -Xms12m -Xmx24m ${BOOTSTRAP_DIR_PARAMS} com.baishancloud.orchsym.boot.RunOrchsymRuntime $@"
 
     if [ -n "${run_as_user}" ]; then
       # Provide SCRIPT_DIR and execute nifi-env for the run.as user command
@@ -350,6 +350,6 @@ case "$1" in
         run "start"
         ;;
     *)
-        echo "Usage nifi {start|stop|run|restart|status|dump|install}"
+        echo "Usage orchsym.sh {start|stop|run|restart|status|dump|install}"
         ;;
 esac

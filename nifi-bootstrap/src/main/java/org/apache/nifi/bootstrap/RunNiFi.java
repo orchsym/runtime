@@ -113,28 +113,28 @@ public class RunNiFi {
     public static final String PING_CMD = "PING";
     public static final String DUMP_CMD = "DUMP";
 
-    private volatile boolean autoRestartNiFi = true;
+    protected volatile boolean autoRestartNiFi = true;
     private volatile int ccPort = -1;
-    private volatile long nifiPid = -1L;
-    private volatile String secretKey;
-    private volatile ShutdownHook shutdownHook;
-    private volatile boolean nifiStarted;
+    protected volatile long nifiPid = -1L;
+    protected volatile String secretKey;
+    protected volatile ShutdownHook shutdownHook;
+    protected volatile boolean nifiStarted;
 
     private final Lock startedLock = new ReentrantLock();
     private final Lock lock = new ReentrantLock();
     private final Condition startupCondition = lock.newCondition();
 
-    private final File bootstrapConfigFile;
+    protected final File bootstrapConfigFile;
 
     // used for logging initial info; these will be logged to console by default when the app is started
-    private final Logger cmdLogger = LoggerFactory.getLogger("org.apache.nifi.bootstrap.Command");
+    protected final Logger cmdLogger = LoggerFactory.getLogger("org.apache.nifi.bootstrap.Command");
     // used for logging all info. These by default will be written to the log file
-    private final Logger defaultLogger = LoggerFactory.getLogger(RunNiFi.class);
+    protected final Logger defaultLogger = LoggerFactory.getLogger(RunNiFi.class);
 
 
-    private final ExecutorService loggingExecutor;
+    protected final ExecutorService loggingExecutor;
     private volatile Set<Future<?>> loggingFutures = new HashSet<>(2);
-    private final NotificationServiceManager serviceManager;
+    protected final NotificationServiceManager serviceManager;
 
     public RunNiFi(final File bootstrapConfigFile, final boolean verbose) throws IOException {
         this.bootstrapConfigFile = bootstrapConfigFile;
@@ -168,7 +168,7 @@ public class RunNiFi {
         System.out.println();
     }
 
-    private static String[] shift(final String[] orig) {
+    protected static String[] shift(final String[] orig) {
         return Arrays.copyOfRange(orig, 1, orig.length);
     }
 
@@ -241,7 +241,7 @@ public class RunNiFi {
         }
     }
 
-    private static File getDefaultBootstrapConfFile() {
+    protected static File getDefaultBootstrapConfFile() {
         String configFilename = System.getProperty("org.apache.nifi.bootstrap.config.file");
 
         if (configFilename == null) {
@@ -379,7 +379,7 @@ public class RunNiFi {
         return getStatusFile(defaultLogger);
     }
 
-    private Properties loadProperties(final Logger logger) throws IOException {
+    protected Properties loadProperties(final Logger logger) throws IOException {
         final Properties props = new Properties();
         final File statusFile = getStatusFile(logger);
         if (statusFile == null || !statusFile.exists()) {
@@ -398,7 +398,7 @@ public class RunNiFi {
         return props;
     }
 
-    private synchronized void savePidProperties(final Properties pidProperties, final Logger logger) throws IOException {
+    protected synchronized void savePidProperties(final Properties pidProperties, final Logger logger) throws IOException {
         final String pid = pidProperties.getProperty(PID_KEY);
         if (!StringUtils.isBlank(pid)) {
             writePidFile(pid, logger);
@@ -486,7 +486,7 @@ public class RunNiFi {
         }
     }
 
-    private Integer getCurrentPort(final Logger logger) throws IOException {
+    protected Integer getCurrentPort(final Logger logger) throws IOException {
         final Properties props = loadProperties(logger);
         final String portVal = props.getProperty("port");
         if (portVal == null) {
@@ -517,7 +517,7 @@ public class RunNiFi {
         return null;
     }
 
-    private boolean isProcessRunning(final String pid, final Logger logger) {
+    protected boolean isProcessRunning(final String pid, final Logger logger) {
         try {
             // We use the "ps" command to check if the process is still running.
             final ProcessBuilder builder = new ProcessBuilder();
@@ -553,7 +553,7 @@ public class RunNiFi {
         }
     }
 
-    private Status getStatus(final Logger logger) {
+    protected Status getStatus(final Logger logger) {
         final Properties props;
         try {
             props = loadProperties(logger);
@@ -866,7 +866,7 @@ public class RunNiFi {
         return childPids;
     }
 
-    private void killProcessTree(final String pid, final Logger logger) throws IOException {
+    protected void killProcessTree(final String pid, final Logger logger) throws IOException {
         logger.debug("Killing Process Tree for PID {}", pid);
 
         final List<String> children = getChildProcesses(pid);
@@ -888,7 +888,7 @@ public class RunNiFi {
         }
     }
 
-    private String getHostname() {
+    protected String getHostname() {
         String hostname = "Unknown Host";
         String ip = "Unknown IP Address";
         try {
@@ -953,7 +953,7 @@ public class RunNiFi {
         String nifiPropsFilename = props.get("props.file");
         if (nifiPropsFilename == null) {
             if (confDir.exists()) {
-                nifiPropsFilename = new File(confDir, "orchsym.properties").getAbsolutePath();
+                nifiPropsFilename = new File(confDir, "nifi.properties").getAbsolutePath();
             } else {
                 nifiPropsFilename = DEFAULT_CONFIG_FILE;
             }
@@ -1177,13 +1177,13 @@ public class RunNiFi {
         }
     }
 
-    private void writeSensitiveKeyFile(Map<String, String> props, Path sensitiveKeyFile) throws IOException {
+    protected void writeSensitiveKeyFile(Map<String, String> props, Path sensitiveKeyFile) throws IOException {
         BufferedWriter sensitiveKeyWriter = Files.newBufferedWriter(sensitiveKeyFile, StandardCharsets.UTF_8);
         sensitiveKeyWriter.write(props.get(NIFI_BOOTSTRAP_SENSITIVE_KEY));
         sensitiveKeyWriter.close();
     }
 
-    private Path createSensitiveKeyFile(File confDir) {
+    protected Path createSensitiveKeyFile(File confDir) {
         Path sensitiveKeyFile = Paths.get(confDir+"/sensitive.key");
 
         final boolean isPosixSupported = FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
@@ -1217,11 +1217,11 @@ public class RunNiFi {
         return sensitiveKeyFile;
     }
 
-    private boolean isSensitiveKeyPresent(Map<String, String> props) {
+    protected boolean isSensitiveKeyPresent(Map<String, String> props) {
         return props.containsKey(NIFI_BOOTSTRAP_SENSITIVE_KEY) && !StringUtils.isBlank(props.get(NIFI_BOOTSTRAP_SENSITIVE_KEY));
     }
 
-    private void handleLogging(final Process process) {
+    protected void handleLogging(final Process process) {
         final Set<Future<?>> existingFutures = loggingFutures;
         if (existingFutures != null) {
             for (final Future<?> future : existingFutures) {
@@ -1268,12 +1268,12 @@ public class RunNiFi {
     }
 
 
-    private boolean isWindows() {
+    protected boolean isWindows() {
         final String osName = System.getProperty("os.name");
         return osName != null && osName.toLowerCase().contains("win");
     }
 
-    private boolean waitForStart() {
+    protected boolean waitForStart() {
         lock.lock();
         try {
             final long startTime = System.nanoTime();
@@ -1297,7 +1297,7 @@ public class RunNiFi {
         return true;
     }
 
-    private File getFile(final String filename, final File workingDir) {
+    protected File getFile(final String filename, final File workingDir) {
         File file = new File(filename);
         if (!file.isAbsolute()) {
             file = new File(workingDir, filename);
@@ -1306,15 +1306,15 @@ public class RunNiFi {
         return file;
     }
 
-    private String replaceNull(final String value, final String replacement) {
+    protected String replaceNull(final String value, final String replacement) {
         return (value == null) ? replacement : value;
     }
 
-    void setAutoRestartNiFi(final boolean restart) {
+    protected  void setAutoRestartNiFi(final boolean restart) {
         this.autoRestartNiFi = restart;
     }
 
-    void setNiFiCommandControlPort(final int port, final String secretKey) throws IOException {
+    protected  void setNiFiCommandControlPort(final int port, final String secretKey) throws IOException {
         this.ccPort = port;
         this.secretKey = secretKey;
 
@@ -1344,7 +1344,7 @@ public class RunNiFi {
         return this.ccPort;
     }
 
-    void setNiFiStarted(final boolean nifiStarted) {
+    protected void setNiFiStarted(final boolean nifiStarted) {
         startedLock.lock();
         try {
             this.nifiStarted = nifiStarted;
@@ -1353,7 +1353,7 @@ public class RunNiFi {
         }
     }
 
-    boolean getNifiStarted() {
+    protected  boolean getNifiStarted() {
         startedLock.lock();
         try {
             return nifiStarted;
@@ -1362,7 +1362,7 @@ public class RunNiFi {
         }
     }
 
-    private static class Status {
+    protected static class Status {
 
         private final Integer port;
         private final String pid;
