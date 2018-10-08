@@ -147,6 +147,11 @@ public final class InvokeHTTP extends AbstractProcessor {
 
     public static final String DEFAULT_CONTENT_TYPE = "application/octet-stream";
 
+    //Cookies
+    public static final String COOKIE_KEY = "Cookies";
+    public static final String COOKIE_CACHE_KEY = "CookieCacheKey";
+    public static final String COOKIE_SEPARATORS = "&&";
+
     // Set of flowfile attributes which we generally always ignore during
     // processing, including when converting http headers, copying attributes, etc.
     // This set includes our strings defined above as well as some standard flowfile
@@ -422,6 +427,14 @@ public final class InvokeHTTP extends AbstractProcessor {
             .allowableValues("true", "false")
             .build();
 
+    public static final PropertyDescriptor COOKIE_ENABLED = new PropertyDescriptor.Builder()
+            .name("Cookie Enabled")
+            .description("Specifies whether to add cookies when send request and retrive cookies when response received, cookies that added and received are placed at flowfile's attribute by name 'Cookies'")
+            .required(false)
+            .defaultValue("false")
+            .allowableValues("true", "false")
+            .build();
+
     public static final List<PropertyDescriptor> PROPERTIES = Collections.unmodifiableList(Arrays.asList(
             PROP_METHOD,
             PROP_URL,
@@ -450,7 +463,8 @@ public final class InvokeHTTP extends AbstractProcessor {
             PROP_USE_CHUNKED_ENCODING,
             PROP_PENALIZE_NO_RETRY,
             PROP_USE_ETAG,
-            PROP_ETAG_MAX_CACHE_SIZE));
+            PROP_ETAG_MAX_CACHE_SIZE,
+            COOKIE_ENABLED));
 
     // relationships
     public static final Relationship REL_SUCCESS_REQ = new Relationship.Builder()
@@ -836,6 +850,20 @@ public final class InvokeHTTP extends AbstractProcessor {
                 statusAttributes.put(REQUEST_URL, url.toExternalForm());
                 statusAttributes.put(TRANSACTION_ID, txId.toString());
 
+                boolean cookieEnabled = context.getProperty(COOKIE_ENABLED).asBoolean();
+                //save cookies to attributes
+                String cookieString = "";
+                if (cookieEnabled) {
+                    ArrayList<String> cookies = new ArrayList<String>();
+                    if (!responseHttp.headers("Set-Cookie").isEmpty()) {
+                        for (String header : responseHttp.headers("Set-Cookie")) {
+                            cookies.add(header);
+                        }  
+                    }
+                    cookieString = String.join(COOKIE_SEPARATORS, cookies);
+                    statusAttributes.put(COOKIE_KEY, cookieString);
+                }
+
                 if (requestFlowFile != null) {
                     requestFlowFile = session.putAllAttributes(requestFlowFile, statusAttributes);
                 }
@@ -874,6 +902,9 @@ public final class InvokeHTTP extends AbstractProcessor {
                         } else {
                             responseFlowFile = session.create();
                         }
+
+                        //write the cookie infos to response flowfile
+                        responseFlowFile = session.putAttribute(responseFlowFile, COOKIE_KEY, cookieString);
 
                         // write attributes to response flowfile
                         responseFlowFile = session.putAllAttributes(responseFlowFile, statusAttributes);
@@ -989,6 +1020,22 @@ public final class InvokeHTTP extends AbstractProcessor {
 
             String credential = Credentials.basic(authUser, authPass);
             requestBuilder = requestBuilder.header("Authorization", credential);
+        }
+
+        //set cookie header
+        boolean cookieEnabled = context.getProperty(COOKIE_ENABLED).asBoolean();
+        if (cookieEnabled) {
+            String cookiesString = requestFlowFile.getAttribute(COOKIE_KEY);
+            String cookies = "";
+            List<String> cookiesList = new ArrayList<String>(Arrays.asList(cookiesString.split("&&")));
+            for (String cookieStr : cookiesList) {
+                List<String> cookiePart = new ArrayList<String>(Arrays.asList(cookieStr.split(";")));
+                if(cookiePart.size() > 0) {
+                    cookies += cookiePart.get(0);
+                    cookies += ";";
+                }
+            }
+            requestBuilder = requestBuilder.addHeader("Cookie", cookies);
         }
 
         // set the request method
