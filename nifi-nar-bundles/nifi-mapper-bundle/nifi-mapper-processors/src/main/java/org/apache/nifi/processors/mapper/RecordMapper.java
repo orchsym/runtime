@@ -275,6 +275,9 @@ public class RecordMapper extends AbstractProcessor {
 
         final ComponentLog logger = getLogger();
 
+        // init default value for output expressions
+        RecordUtil.initTableExpressionsDefaultValue(context, outputTables.values());
+
         // init some maps
         final Set<String> outputTablesKeyset = outputTables.keySet();
         final Map<String, FlowFile> outputFlowsMap = outputTables.keySet().stream().collect(Collectors.toMap(Function.identity(), n -> session.create()));

@@ -1,5 +1,6 @@
 package org.apache.nifi.processors.mapper.record;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -14,6 +15,7 @@ import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processors.mapper.exp.ExpVar;
 import org.apache.nifi.processors.mapper.exp.ExpVarTable;
+import org.apache.nifi.processors.mapper.exp.MapperExpField;
 import org.apache.nifi.processors.mapper.exp.MapperTable;
 import org.apache.nifi.processors.mapper.exp.MapperTableType;
 import org.apache.nifi.processors.mapper.exp.VarTableType;
@@ -51,7 +53,7 @@ public class RecordUtil {
             DataType typeOfMap = ((MapDataType) dataType).getValueType();
             return getChildSchema(typeOfMap);
         } else if (dataType instanceof ChoiceDataType) {
-            final List<DataType> possibleSubTypes = ((ChoiceDataType) dataType).getPossibleSubTypes();
+            // final List<DataType> possibleSubTypes = ((ChoiceDataType) dataType).getPossibleSubTypes();
             // TODO ???
         } else {
             // others without schema
@@ -287,13 +289,17 @@ public class RecordUtil {
         }
 
         final Map<String, String> pathValuesMap = new LinkedHashMap<>();
-        outputTable.getExpressions().stream().filter(f -> StringUtils.isNotBlank(f.getPath()) && StringUtils.isNotEmpty(f.getExp())).forEach(f -> {
+        outputTable.getExpressions().stream().filter(f -> StringUtils.isNotBlank(f.getPath())).forEach(f -> {
             final String expression = f.getExp();
 
             if (VarUtil.hasEL(expression)) { // only process EL, shouldn't set the record path
-                PropertyValue expPropValue = context.newPropertyValue(expression);
-                expPropValue = expPropValue.evaluateAttributeExpressions(inputFlowFile, expValuesMap);
-                String value = expPropValue.getValue();
+                String value = context.newPropertyValue(expression).evaluateAttributeExpressions(inputFlowFile, expValuesMap).getValue();
+
+                // try default value,
+                final String defaultValue = f.getDefaultLiteralValue();
+                if (StringUtils.isBlank(value) && defaultValue != null) { // set the default value, even ""
+                    value = defaultValue;
+                }
 
                 final String path = RecordPathsWriter.checkPath(f.getPath());
                 pathValuesMap.put(path, value);
@@ -327,5 +333,25 @@ public class RecordUtil {
             calcRecordVarValues(context, outputValuesMap, outputFieldsValuesMap, writeRecord, outputRecordPaths, rpVarsTable, true);
         }
         return outputValuesMap;
+    }
+
+    /**
+     * Only init the default value of expression for output table. currently, shouldn't no expressions for input table.
+     */
+    public static void initTableExpressionsDefaultValue(final ProcessContext context, Collection<MapperTable> outputTables) {
+        if (outputTables == null || outputTables.isEmpty()) {
+            return;
+        }
+        for (MapperTable table : outputTables) {
+            final List<MapperExpField> expressions = table.getExpressions();
+            for (MapperExpField field : expressions) {
+                final String defaultValue = field.getDefaultValue();
+                if (defaultValue != null) { // set
+                    // also support the processor vars, but not for flowfile
+                    String newDefaultValue = context.newPropertyValue(defaultValue).evaluateAttributeExpressions().getValue();
+                    field.setDefaultLiteralValue(newDefaultValue); // record
+                }
+            }
+        }
     }
 }

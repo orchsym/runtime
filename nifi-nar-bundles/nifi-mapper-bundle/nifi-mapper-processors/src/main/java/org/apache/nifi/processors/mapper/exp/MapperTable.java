@@ -71,6 +71,9 @@ public class MapperTable {
     @JsonProperty("filter_desc")
     private String filterDescription;
 
+    /**
+     * only for output table, the input table support vars.
+     */
     private List<MapperExpField> expressions;
 
     @JsonSerialize(using = SchemaSerializer.class)
@@ -78,6 +81,9 @@ public class MapperTable {
     @JsonProperty("avro_schema")
     private Schema schema;
 
+    /**
+     * support for input and output table.
+     */
     @JsonIgnoreProperties
     @JsonIgnore
     private ExpVarTable varTable;

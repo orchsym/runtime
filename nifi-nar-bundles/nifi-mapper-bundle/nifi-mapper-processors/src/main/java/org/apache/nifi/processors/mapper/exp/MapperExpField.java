@@ -1,5 +1,6 @@
 package org.apache.nifi.processors.mapper.exp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -16,6 +17,10 @@ public class MapperExpField {
 
     @JsonProperty("default")
     private String defaultValue;
+
+    @JsonIgnoreProperties
+    @JsonIgnore
+    private transient String defaultLiteralValue;
 
     public MapperExpField() {
         super();
@@ -56,6 +61,14 @@ public class MapperExpField {
 
     public void setDefaultValue(String defaultValue) {
         this.defaultValue = defaultValue;
+    }
+
+    public String getDefaultLiteralValue() {
+        return defaultLiteralValue;
+    }
+
+    public void setDefaultLiteralValue(String defaultLiteralValue) {
+        this.defaultLiteralValue = defaultLiteralValue;
     }
 
     @Override

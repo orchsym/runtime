@@ -4,15 +4,14 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.avro.AvroTypeUtil;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processors.mapper.exp.MapperTable;
@@ -29,7 +28,6 @@ import org.apache.nifi.serialization.record.RecordFieldType;
 import org.apache.nifi.serialization.record.RecordSchema;
 import org.apache.nifi.serialization.record.type.ArrayDataType;
 import org.apache.nifi.serialization.record.type.ChoiceDataType;
-import org.apache.nifi.serialization.record.type.MapDataType;
 import org.apache.nifi.serialization.record.type.RecordDataType;
 import org.apache.nifi.serialization.record.util.DataTypeUtils;
 
@@ -80,7 +78,16 @@ public class RecordPathsWriter {
             final RecordPath recordPath = recordPathsMap.getCompiled(expression);
 
             final RecordPathResult result = recordPath.evaluate(readerRecord);
-            result.getSelectedFields().filter(fv -> fv.getValue() != null).forEach(fv -> expPathValuesMap.put(path, fv.getValue()));
+            result.getSelectedFields().forEach(fv -> {
+                Object value = fv.getValue();
+
+                final String defaultValue = f.getDefaultLiteralValue();
+                if (defaultValue != null // set the default value, even ""
+                        && (value == null || (value instanceof String && StringUtils.isBlank(value.toString())))) {
+                    value = defaultValue;
+                }
+                expPathValuesMap.put(path, value);
+            });
         });
 
         Record writeRecord = null;
@@ -279,7 +286,7 @@ public class RecordPathsWriter {
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     Optional<Object> cleanupValue(final Object value) {
         if (value instanceof Record) {
             final Record record = (Record) value;
