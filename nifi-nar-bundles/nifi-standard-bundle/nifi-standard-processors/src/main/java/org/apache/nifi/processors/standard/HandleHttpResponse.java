@@ -16,6 +16,7 @@
  */
 package org.apache.nifi.processors.standard;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -92,7 +93,7 @@ public class HandleHttpResponse extends AbstractProcessor {
             .build();
 
     @Override
-    public final List<PropertyDescriptor> getSupportedPropertyDescriptors() {
+    public List<PropertyDescriptor> getSupportedPropertyDescriptors() {
         final List<PropertyDescriptor> properties = new ArrayList<>();
         properties.add(STATUS_CODE);
         properties.add(HTTP_CONTEXT_MAP);
@@ -144,6 +145,7 @@ public class HandleHttpResponse extends AbstractProcessor {
 
         final HttpContextMap contextMap = context.getProperty(HTTP_CONTEXT_MAP).asControllerService(HttpContextMap.class);
         final HttpServletResponse response = contextMap.getResponse(contextIdentifier);
+        final Map<String, Object> additions = contextMap.getAdditions(contextIdentifier);
         if (response == null) {
             session.transfer(flowFile, REL_FAILURE);
             getLogger().error("Failed to respond to HTTP request for {} because FlowFile had an '{}' attribute of {} but could not find an HTTP Response Object for this identifier",
@@ -167,8 +169,7 @@ public class HandleHttpResponse extends AbstractProcessor {
         }
 
         try {
-            session.exportTo(flowFile, response.getOutputStream());
-            response.flushBuffer();
+            flowFile = processResponse(context, session, flowFile, response, additions);
         } catch (final ProcessException e) {
             session.transfer(flowFile, REL_FAILURE);
             getLogger().error("Failed to respond to HTTP request for {} due to {}", new Object[]{flowFile, e});
@@ -205,5 +206,12 @@ public class HandleHttpResponse extends AbstractProcessor {
         }
 
         return true;
+    }
+
+    protected FlowFile processResponse(final ProcessContext context, final ProcessSession session, final FlowFile flowFile, final HttpServletResponse response, final Map<String, Object> additions)
+            throws IOException {
+        session.exportTo(flowFile, response.getOutputStream());
+        response.flushBuffer();
+        return flowFile;
     }
 }

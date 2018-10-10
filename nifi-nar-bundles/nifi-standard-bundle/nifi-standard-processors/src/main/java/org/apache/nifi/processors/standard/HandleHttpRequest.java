@@ -66,6 +66,7 @@ import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.controller.ControllerServiceLookup;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
+import org.apache.nifi.flowfile.attributes.CoreAttributes;
 import org.apache.nifi.http.HttpContextMap;
 import org.apache.nifi.processor.AbstractProcessor;
 import org.apache.nifi.processor.ProcessContext;
@@ -384,26 +385,9 @@ public class HandleHttpRequest extends AbstractProcessor {
         }
         this.containerQueue = new LinkedBlockingQueue<>(context.getProperty(CONTAINER_QUEUE_SIZE).asInteger());
         final String host = context.getProperty(HOSTNAME).getValue();
-        final int port = context.getProperty(PORT).asInteger();
-        final SSLContextService sslService = context.getProperty(SSL_CONTEXT).asControllerService(SSLContextService.class);
-        final HttpContextMap httpContextMap = context.getProperty(HTTP_CONTEXT_MAP).asControllerService(HttpContextMap.class);
-        final long requestTimeout = httpContextMap.getRequestTimeout(TimeUnit.MILLISECONDS);
-
-        final String clientAuthValue = context.getProperty(CLIENT_AUTH).getValue();
-        final boolean need;
-        final boolean want;
-        if (CLIENT_NEED.equals(clientAuthValue)) {
-            need = true;
-            want = false;
-        } else if (CLIENT_WANT.equals(clientAuthValue)) {
-            need = false;
-            want = true;
-        } else {
-            need = false;
-            want = false;
-        }
-
-        final SslContextFactory sslFactory = (sslService == null) ? null : createSslFactory(sslService, need, want);
+        final int port = getListeningPort(context);
+        
+        final SslContextFactory sslFactory = createSslFactory(context);
         final Server server = new Server(port);
 
         // create the http configuration
@@ -440,91 +424,11 @@ public class HandleHttpRequest extends AbstractProcessor {
             server.setConnectors(new Connector[]{https});
         }
 
-        final Set<String> allowedMethods = new HashSet<>();
-        if (context.getProperty(ALLOW_GET).asBoolean()) {
-            allowedMethods.add("GET");
-        }
-        if (context.getProperty(ALLOW_POST).asBoolean()) {
-            allowedMethods.add("POST");
-        }
-        if (context.getProperty(ALLOW_PUT).asBoolean()) {
-            allowedMethods.add("PUT");
-        }
-        if (context.getProperty(ALLOW_DELETE).asBoolean()) {
-            allowedMethods.add("DELETE");
-        }
-        if (context.getProperty(ALLOW_HEAD).asBoolean()) {
-            allowedMethods.add("HEAD");
-        }
-        if (context.getProperty(ALLOW_OPTIONS).asBoolean()) {
-            allowedMethods.add("OPTIONS");
-        }
-
-        final String additionalMethods = context.getProperty(ADDITIONAL_METHODS).getValue();
-        if (additionalMethods != null) {
-            for (final String additionalMethod : additionalMethods.split(",")) {
-                final String trimmed = additionalMethod.trim();
-                if (!trimmed.isEmpty()) {
-                    allowedMethods.add(trimmed.toUpperCase());
-                }
-            }
-        }
-
-        final String pathRegex = context.getProperty(PATH_REGEX).getValue();
-        final Pattern pathPattern = (pathRegex == null) ? null : Pattern.compile(pathRegex);
-
         server.setHandler(new AbstractHandler() {
             @Override
             public void handle(final String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response)
                     throws IOException, ServletException {
-
-                final String requestUri = request.getRequestURI();
-                if (!allowedMethods.contains(request.getMethod().toUpperCase())) {
-                    getLogger().info("Sending back METHOD_NOT_ALLOWED response to {}; method was {}; request URI was {}",
-                            new Object[]{request.getRemoteAddr(), request.getMethod(), requestUri});
-                    response.sendError(Status.METHOD_NOT_ALLOWED.getStatusCode());
-                    return;
-                }
-
-                if (pathPattern != null) {
-                    final URI uri;
-                    try {
-                        uri = new URI(requestUri);
-                    } catch (final URISyntaxException e) {
-                        throw new ServletException(e);
-                    }
-
-                    if (!pathPattern.matcher(uri.getPath()).matches()) {
-                        response.sendError(Status.NOT_FOUND.getStatusCode());
-                        getLogger().info("Sending back NOT_FOUND response to {}; request was {} {}",
-                                new Object[]{request.getRemoteAddr(), request.getMethod(), requestUri});
-                        return;
-                    }
-                }
-
-                // If destination queues full, send back a 503: Service Unavailable.
-                if (context.getAvailableRelationships().isEmpty()) {
-                    response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                    return;
-                }
-
-                // Right now, that information, though, is only in the ProcessSession, not the ProcessContext,
-                // so it is not known to us. Should see if it can be added to the ProcessContext.
-                final AsyncContext async = baseRequest.startAsync();
-                async.setTimeout(requestTimeout);
-                final boolean added = containerQueue.offer(new HttpRequestContainer(request, response, async));
-
-                if (added) {
-                    getLogger().debug("Added Http Request to queue for {} {} from {}",
-                            new Object[]{request.getMethod(), requestUri, request.getRemoteAddr()});
-                } else {
-                    getLogger().info("Sending back a SERVICE_UNAVAILABLE response to {}; request was {} {}",
-                            new Object[]{request.getRemoteAddr(), request.getMethod(), request.getRemoteAddr()});
-
-                    response.sendError(Status.SERVICE_UNAVAILABLE.getStatusCode());
-                    response.flushBuffer();
-                    async.complete();
-                }
+                handleHttp(context, target, baseRequest, request, response);
             }
         });
 
@@ -546,11 +450,36 @@ public class HandleHttpRequest extends AbstractProcessor {
         throw new IllegalStateException("Server is not listening on any ports");
     }
 
+    protected int getListeningPort(final ProcessContext context) {
+        final int port = context.getProperty(PORT).asInteger();
+        return port;
+    }
+
     protected int getRequestQueueSize() {
         return containerQueue.size();
     }
 
-    private SslContextFactory createSslFactory(final SSLContextService sslService, final boolean needClientAuth, final boolean wantClientAuth) {
+    protected SslContextFactory createSslFactory(final ProcessContext context) {
+        final SSLContextService sslService = context.getProperty(SSL_CONTEXT).asControllerService(SSLContextService.class);
+        final String clientAuthValue = context.getProperty(CLIENT_AUTH).getValue();
+        final boolean need;
+        final boolean want;
+        if (CLIENT_NEED.equals(clientAuthValue)) {
+            need = true;
+            want = false;
+        } else if (CLIENT_WANT.equals(clientAuthValue)) {
+            need = false;
+            want = true;
+        } else {
+            need = false;
+            want = false;
+        }
+
+        final SslContextFactory sslFactory = (sslService == null) ? null : createSslFactory(sslService, need, want);
+        return sslFactory;
+    }
+
+    protected SslContextFactory createSslFactory(final SSLContextService sslService, final boolean needClientAuth, final boolean wantClientAuth) {
         final SslContextFactory sslFactory = new SslContextFactory();
 
         sslFactory.setNeedClientAuth(needClientAuth);
@@ -571,6 +500,103 @@ public class HandleHttpRequest extends AbstractProcessor {
         }
 
         return sslFactory;
+    }
+
+    protected Set<String> getAllowedMethods(final ProcessContext context) {
+        final Set<String> allowedMethods = new HashSet<>();
+        if (context.getProperty(ALLOW_GET).asBoolean()) {
+            allowedMethods.add(HTTPUtils.METHOD_GET);
+        }
+        if (context.getProperty(ALLOW_POST).asBoolean()) {
+            allowedMethods.add(HTTPUtils.METHOD_POST);
+        }
+        if (context.getProperty(ALLOW_PUT).asBoolean()) {
+            allowedMethods.add(HTTPUtils.METHOD_PUT);
+        }
+        if (context.getProperty(ALLOW_DELETE).asBoolean()) {
+            allowedMethods.add(HTTPUtils.METHOD_DELETE);
+        }
+        if (context.getProperty(ALLOW_HEAD).asBoolean()) {
+            allowedMethods.add(HTTPUtils.METHOD_HEAD);
+        }
+        if (context.getProperty(ALLOW_OPTIONS).asBoolean()) {
+            allowedMethods.add(HTTPUtils.METHOD_OPTIONS);
+        }
+
+        final String additionalMethods = context.getProperty(ADDITIONAL_METHODS).getValue();
+        if (additionalMethods != null) {
+            for (final String additionalMethod : additionalMethods.split(",")) {
+                final String trimmed = additionalMethod.trim();
+                if (!trimmed.isEmpty()) {
+                    allowedMethods.add(trimmed.toUpperCase());
+                }
+            }
+        }
+        return allowedMethods;
+    }
+
+    protected Pattern getPathPattern(final ProcessContext context) {
+        final String pathRegex = context.getProperty(PATH_REGEX).getValue();
+        final Pattern pathPattern = (pathRegex == null) ? null : Pattern.compile(pathRegex);
+        return pathPattern;
+    }
+
+    protected void handleHttp(final ProcessContext context, final String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response)
+            throws IOException, ServletException {
+        final Set<String> allowedMethods = getAllowedMethods(context);
+        final Pattern pathPattern = getPathPattern(context);
+
+        final String requestUri = request.getRequestURI();
+        if (!allowedMethods.contains(request.getMethod().toUpperCase())) {
+            getLogger().info("Sending back METHOD_NOT_ALLOWED response to {}; method was {}; request URI was {}", new Object[] { request.getRemoteAddr(), request.getMethod(), requestUri });
+            response.sendError(Status.METHOD_NOT_ALLOWED.getStatusCode());
+            return;
+        }
+
+        if (pathPattern != null) {
+            final URI uri;
+            try {
+                uri = new URI(requestUri);
+            } catch (final URISyntaxException e) {
+                throw new ServletException(e);
+            }
+
+            if (!pathPattern.matcher(uri.getPath()).matches()) {
+                response.sendError(Status.NOT_FOUND.getStatusCode());
+                getLogger().info("Sending back NOT_FOUND response to {}; request was {} {}", new Object[] { request.getRemoteAddr(), request.getMethod(), requestUri });
+                return;
+            }
+        }
+
+        // If destination queues full, send back a 503: Service Unavailable.
+        if (context.getAvailableRelationships().isEmpty()) {
+            response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            return;
+        }
+
+        handleAfter(context, target, baseRequest, request, response);
+    }
+
+    protected void handleAfter(final ProcessContext context, final String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException {
+        final String requestUri = request.getRequestURI();
+        final HttpContextMap httpContextMap = context.getProperty(HTTP_CONTEXT_MAP).asControllerService(HttpContextMap.class);
+        final long requestTimeout = httpContextMap.getRequestTimeout(TimeUnit.MILLISECONDS);
+
+        // Right now, that information, though, is only in the ProcessSession, not the ProcessContext,
+        // so it is not known to us. Should see if it can be added to the ProcessContext.
+        final AsyncContext async = baseRequest.startAsync();
+        async.setTimeout(requestTimeout);
+        final boolean added = containerQueue.offer(new HttpRequestContainer(request, response, async));
+
+        if (added) {
+            getLogger().debug("Added Http Request to queue for {} {} from {}", new Object[] { request.getMethod(), requestUri, request.getRemoteAddr() });
+        } else {
+            getLogger().info("Sending back a SERVICE_UNAVAILABLE response to {}; request was {} {}", new Object[] { request.getRemoteAddr(), request.getMethod(), request.getRemoteAddr() });
+
+            response.sendError(Status.SERVICE_UNAVAILABLE.getStatusCode());
+            response.flushBuffer();
+            async.complete();
+        }
     }
 
     @Override
@@ -603,12 +629,16 @@ public class HandleHttpRequest extends AbstractProcessor {
         if (container == null) {
             return;
         }
-
+        
         final long start = System.nanoTime();
         final HttpServletRequest request = container.getRequest();
+
+        final Map<String, String> attributes = new HashMap<>();
+        putAttribute(attributes, CoreAttributes.MIME_TYPE.key(), request.getContentType()); // set first, maybe will be modify in process
+
         FlowFile flowFile = session.create();
-        try (OutputStream flowFileOut = session.write(flowFile)) {
-            StreamUtils.copy(request.getInputStream(), flowFileOut);
+        try {
+            flowFile = processRequest(context, session, request, flowFile, attributes);
         } catch (final IOException e) {
             // There may be many reasons which can produce an IOException on the HTTP stream and in some of them, eg.
             // bad requests, the connection to the client is not closed. In order to address also these cases, we try
@@ -633,10 +663,9 @@ public class HandleHttpRequest extends AbstractProcessor {
         final String charset = request.getCharacterEncoding() == null ? context.getProperty(URL_CHARACTER_SET).getValue() : request.getCharacterEncoding();
 
         final String contextIdentifier = UUID.randomUUID().toString();
-        final Map<String, String> attributes = new HashMap<>();
+       
         try {
             putAttribute(attributes, HTTPUtils.HTTP_CONTEXT_ID, contextIdentifier);
-            putAttribute(attributes, "mime.type", request.getContentType());
             putAttribute(attributes, "http.servlet.path", request.getServletPath());
             putAttribute(attributes, "http.context.path", request.getContextPath());
             putAttribute(attributes, "http.method", request.getMethod());
@@ -738,7 +767,8 @@ public class HandleHttpRequest extends AbstractProcessor {
         flowFile = session.putAllAttributes(flowFile, attributes);
 
         final HttpContextMap contextMap = context.getProperty(HTTP_CONTEXT_MAP).asControllerService(HttpContextMap.class);
-        final boolean registered = contextMap.register(contextIdentifier, request, container.getResponse(), container.getContext());
+        Map<String, Object> additions = getContextAddtions(context, session, request);
+        final boolean registered = contextMap.register(contextIdentifier, request, container.getResponse(), container.getContext(), additions);
 
         if (!registered) {
             getLogger().warn("Received request from {} but could not process it because too many requests are already outstanding; responding with SERVICE_UNAVAILABLE",
@@ -777,6 +807,18 @@ public class HandleHttpRequest extends AbstractProcessor {
         }
 
         map.put(key, value);
+    }
+
+    protected FlowFile processRequest(final ProcessContext context, final ProcessSession session, final HttpServletRequest request, final FlowFile source, final Map<String, String> attributes)
+            throws IOException {
+        try (OutputStream flowFileOut = session.write(source)) {
+            StreamUtils.copy(request.getInputStream(), flowFileOut);
+        }
+        return source;
+    }
+
+    protected Map<String, Object> getContextAddtions(final ProcessContext context, final ProcessSession session, final HttpServletRequest request) {
+        return Collections.emptyMap();
     }
 
     private static class HttpRequestContainer {

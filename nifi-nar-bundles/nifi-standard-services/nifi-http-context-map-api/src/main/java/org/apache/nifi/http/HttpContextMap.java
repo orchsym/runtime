@@ -16,6 +16,7 @@
  */
 package org.apache.nifi.http;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.AsyncContext;
@@ -51,6 +52,8 @@ public interface HttpContextMap extends ControllerService {
      */
     boolean register(String identifier, HttpServletRequest request, HttpServletResponse response, AsyncContext context);
 
+    boolean register(String identifier, HttpServletRequest request, HttpServletResponse response, AsyncContext context, Map<String, Object> additions);
+
     /**
      * Retrieves the HttpServletResponse for the given identifier, if it exists
      *
@@ -75,4 +78,6 @@ public interface HttpContextMap extends ControllerService {
      * @return the configured timeout for HTTP Requests
      */
     long getRequestTimeout(TimeUnit timeUnit);
+    
+    Map<String, Object> getAdditions(String identifier);
 }

@@ -13,3 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 org.apache.nifi.processors.soap.InvokeSOAP
+com.baishancloud.orchsym.processors.soap.HandleSOAPHttpRequest
+com.baishancloud.orchsym.processors.soap.HandleSOAPHttpResponse

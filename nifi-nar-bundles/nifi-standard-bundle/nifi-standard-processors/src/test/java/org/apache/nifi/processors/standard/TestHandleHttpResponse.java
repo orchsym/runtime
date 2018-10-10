@@ -187,6 +187,16 @@ public class TestHandleHttpResponse {
         }
 
         @Override
+        public boolean register(String identifier, HttpServletRequest request, HttpServletResponse response, AsyncContext context, Map<String, Object> additions) {
+            return true;
+        }
+
+        @Override
+        public Map<String, Object> getAdditions(String identifier) {
+            return null;
+        }
+
+        @Override
         public HttpServletResponse getResponse(final String identifier) {
             if (!id.equals(identifier)) {
                 Assert.fail("attempting to respond to wrong request; should have been " + id + " but was " + identifier);

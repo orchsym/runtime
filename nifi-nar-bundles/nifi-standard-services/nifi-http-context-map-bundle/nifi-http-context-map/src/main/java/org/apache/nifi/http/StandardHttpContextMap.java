@@ -17,6 +17,7 @@
 package org.apache.nifi.http;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -108,12 +109,17 @@ public class StandardHttpContextMap extends AbstractControllerService implements
 
     @Override
     public boolean register(final String identifier, final HttpServletRequest request, final HttpServletResponse response, final AsyncContext context) {
-        // fail if there are too many already. Maybe add a configuration property for how many
+        return register(identifier, request, response, context, Collections.emptyMap());
+    }
+
+    @Override
+    public boolean register(String identifier, HttpServletRequest request, HttpServletResponse response, AsyncContext context, Map<String, Object> additions) {
+     // fail if there are too many already. Maybe add a configuration property for how many
         // outstanding, with a default of say 5000
         if (wrapperMap.size() >= maxSize) {
             return false;
         }
-        final Wrapper wrapper = new Wrapper(request, response, context);
+        final Wrapper wrapper = new Wrapper(request, response, context,additions);
         final Wrapper existing = wrapperMap.putIfAbsent(identifier, wrapper);
         if (existing != null) {
             throw new IllegalStateException("HTTP Request already registered with identifier " + identifier);
@@ -133,6 +139,16 @@ public class StandardHttpContextMap extends AbstractControllerService implements
     }
 
     @Override
+    public Map<String, Object> getAdditions(String identifier) {
+        final Wrapper wrapper = wrapperMap.get(identifier);
+        if (wrapper == null) {
+            return Collections.emptyMap();
+        }
+
+        return wrapper.getAdditions();
+    }
+
+    @Override
     public void complete(final String identifier) {
         final Wrapper wrapper = wrapperMap.remove(identifier);
         if (wrapper == null) {
@@ -149,11 +165,17 @@ public class StandardHttpContextMap extends AbstractControllerService implements
         private final HttpServletResponse response;
         private final AsyncContext async;
         private final long nanoTimeAdded = System.nanoTime();
+        private final Map<String, Object> additions;
 
         public Wrapper(final HttpServletRequest request, final HttpServletResponse response, final AsyncContext async) {
+            this(request, response, async, Collections.emptyMap());
+        }
+
+        public Wrapper(final HttpServletRequest request, final HttpServletResponse response, final AsyncContext async, Map<String, Object> additions) {
             this.request = request;
             this.response = response;
             this.async = async;
+            this.additions = additions;
         }
 
         public HttpServletResponse getResponse() {
@@ -162,6 +184,10 @@ public class StandardHttpContextMap extends AbstractControllerService implements
 
         public AsyncContext getAsync() {
             return async;
+        }
+
+        public Map<String, Object> getAdditions() {
+            return additions;
         }
 
         public long getNanoTimeAdded() {

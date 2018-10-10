@@ -278,6 +278,11 @@ public class TestHandleHttpRequest {
 
         @Override
         public boolean register(final String identifier, final HttpServletRequest request, final HttpServletResponse response, final AsyncContext context) {
+           return register(identifier, request, response, context, null);
+        }
+
+        @Override
+        public boolean register(String identifier, HttpServletRequest request, HttpServletResponse response, AsyncContext context, Map<String, Object> additions) {
             if(registerSuccessfully) {
                 responseMap.put(identifier, response);
             }
@@ -287,6 +292,12 @@ public class TestHandleHttpRequest {
         @Override
         public HttpServletResponse getResponse(final String identifier) {
             return responseMap.get(identifier);
+        }
+
+
+        @Override
+        public Map<String, Object> getAdditions(String identifier) {
+            return null;
         }
 
         @Override
