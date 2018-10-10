@@ -748,7 +748,7 @@
                 })
                 .text('\uf24a');
 
-
+            
             // // select
             // var selection = select();
             // // enter
@@ -832,7 +832,6 @@
      * @param {selection} updated       The processors to update
      */
     var updateProcessors = function (updated, index) {
-        debugger
         if (updated.empty()) {
             return;
         }
@@ -1315,7 +1314,7 @@
             // select
             var selection = select();
 
-
+            
 
             // enter
             var entered = renderProcessors(selection.enter(), selectAll);
