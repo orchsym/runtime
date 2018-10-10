@@ -22,9 +22,12 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
 import org.apache.nifi.authentication.AuthenticationResponse;
 import org.apache.nifi.authentication.LoginCredentials;
@@ -38,9 +41,14 @@ import org.apache.nifi.authentication.exception.ProviderCreationException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import javax.net.ssl.SSLContext;
 
 /**
  * @author Zhou Guoliang
@@ -70,9 +78,15 @@ public class OrchsymLoginIdentityProvider implements LoginIdentityProvider {
         if(checkDefaultUser(user, password)) {
             return;
         }
-        CloseableHttpClient httpclient = HttpClients.createDefault();
         
         try {
+            SSLContext sslContext = new SSLContextBuilder()
+                .loadTrustMaterial(null, TrustSelfSignedStrategy.INSTANCE).build();
+            CloseableHttpClient httpclient = HttpClients.custom()
+                    .setSSLContext(sslContext)
+                    .setSSLHostnameVerifier(new NoopHostnameVerifier())
+                    .build();
+        
             final URI url = new URI(authUrl);
             final HttpPost post = new HttpPost(url);
             String json = "{\"email\":\"" + user + "\",\"password\":\"" + password + "\", \"remember\": false}";
@@ -99,14 +113,15 @@ public class OrchsymLoginIdentityProvider implements LoginIdentityProvider {
     
             };
             String responseBody = httpclient.execute(post, responseHandler);
-        } catch (IOException | URISyntaxException e) {
-            throw new IdentityAccessException("The Orchsym authentication provider is not initialized.");
-        } finally {
             try {
                 httpclient.close();
             } catch (IOException e) {
                 // ignore exception
             }
+        } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException e1) {
+            throw new IdentityAccessException("Unable to initialize SSL context.", e1);
+        } catch (IOException | URISyntaxException e) {
+            throw new IdentityAccessException("The Orchsym authentication provider is not initialized.", e);
         }
     }
 
