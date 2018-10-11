@@ -18,7 +18,7 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <div id="graph-controls">
     <div id="navigation-control" class="graph-control">
-    	<fmt:message key="partials.canvas.navigation.Navigate" var="navigate"/>
+        <fmt:message key="partials.canvas.navigation.Navigate" var="navigate"/>
         <div class="graph-control-docked pointer fa fa-compass" title="${navigate}"
              ng-click="appCtrl.serviceProvider.graphControlsCtrl.expand($event)">
         </div>
@@ -34,7 +34,7 @@
         </div>
         <div class="graph-control-content hidden">
             <div id="navigation-buttons">
-            	<fmt:message key="partials.canvas.navigation.zoom-in-button" var="zoomin"/>
+                <fmt:message key="partials.canvas.navigation.zoom-in-button" var="zoomin"/>
                 <div id="naviagte-zoom-in" class="action-button" title="${zoomin}"
                      ng-click="appCtrl.serviceProvider.graphControlsCtrl.navigateCtrl.zoomIn();">
                     <button><div class="graph-control-action-icon icon icon-zoom-in"></div></button>
@@ -63,7 +63,7 @@
         </div>
     </div>
     <div id="operation-control" class="graph-control">
-    	<fmt:message key="partials.canvas.navigation.Operate" var="operate"/>
+        <fmt:message key="partials.canvas.navigation.Operate" var="operate"/>
         <div class="graph-control-docked pointer fa fa-hand-o-up" title="${operate}"
              ng-click="appCtrl.serviceProvider.graphControlsCtrl.expand($event)">
         </div>
@@ -91,7 +91,7 @@
             </div>
             <div id="operation-buttons">
                 <div>
-                	<fmt:message key="partials.canvas.navigation.configuration" var="configuration"/>
+                    <fmt:message key="partials.canvas.navigation.configuration" var="configuration"/>
                     <div id="operate-configure" class="action-button" title="${configuration}">
                         <button ng-click="appCtrl.serviceProvider.graphControlsCtrl.openConfigureOrDetailsView();"
                                 ng-disabled="!(appCtrl.serviceProvider.graphControlsCtrl.canConfigureOrOpenDetails())">
@@ -175,6 +175,20 @@
                         <button ng-click="appCtrl.nf.Actions['fillColor'](appCtrl.nf.CanvasUtils.getSelection());"
                                 ng-disabled="!appCtrl.nf.CanvasUtils.isColorable(appCtrl.nf.CanvasUtils.getSelection());">
                             <div class="graph-control-action-icon icon icon-change-color"></div></button>
+                    </div>
+                    <div class="button-spacer-large">&nbsp;</div>
+                    <fmt:message key="展开" var="expand"/>
+                    <div id="operate-expand" class="action-button" title="${expand}">
+                        <button ng-click="appCtrl.nf.Actions['expand'](appCtrl.nf.CanvasUtils.getSelection());"
+                                ng-disabled="!appCtrl.nf.CanvasUtils.areDeletable(appCtrl.nf.CanvasUtils.getSelection());">
+                            <div class="graph-control-action-icon fa fa-plus"></div></button>
+                    </div>
+                    <div class="button-spacer-large">&nbsp;</div>
+                    <fmt:message key="收起" var="collapse"/>
+                    <div id="operate-collapse" class="action-button" title="${collapse}">
+                        <button ng-click="appCtrl.nf.Actions['collapse'](appCtrl.nf.CanvasUtils.getSelection());"
+                                ng-disabled="!appCtrl.nf.CanvasUtils.areDeletable(appCtrl.nf.CanvasUtils.getSelection());">
+                            <div class="graph-control-action-icon fa fa-minus"></div></button>
                     </div>
                     <div class="button-spacer-large">&nbsp;</div>
                     <fmt:message key="partials.canvas.navigation.delete" var="delete"/>

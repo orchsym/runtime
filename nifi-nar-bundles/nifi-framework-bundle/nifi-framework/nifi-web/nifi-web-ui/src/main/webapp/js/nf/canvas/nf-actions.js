@@ -959,6 +959,26 @@
          *
          * @param {selection} selection     The selection containing the component to be removed
          */
+        'expand': function (selection) {
+            selection.each(function(d){
+                var processor = d3.select(this)
+                var expandEle = processor.select('text.processor-expand')
+                if(expandEle.empty()){
+                    return false
+                }
+                expandEle.dispatch('click')
+            })
+        },
+        'collapse': function (selection) {
+            selection.each(function(d){
+                var processor = d3.select(this)
+                var expandEle = processor.select('text.processor-collapse')
+                if(expandEle.empty()){
+                    return false
+                }
+                expandEle.dispatch('click')
+            })
+        },
         'delete': function (selection) {
             if (nfCommon.isUndefined(selection) || selection.empty()) {
                 nfDialog.showOkDialog({

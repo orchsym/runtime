@@ -338,6 +338,7 @@
          //自定义展开按钮
         processor.append('text')
             .attrs({
+                'class': 'processor-expand',
                 'x': 80,
                 'y': 20,
                 'style': 'font-size:20px'
@@ -762,6 +763,7 @@
             //自定义收缩按钮
             processor.append('text')
                 .attrs({
+                    'class': 'processor-collapse',
                     'x': 319,
                     'y': 30,
                     'style': 'font-size:34px;'
