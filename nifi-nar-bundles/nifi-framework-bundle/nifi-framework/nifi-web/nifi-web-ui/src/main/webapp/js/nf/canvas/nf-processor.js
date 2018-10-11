@@ -286,7 +286,7 @@
             .attrs({
                 'x': 50,
                 'y': 110,
-                'width': 150,
+                'width': 200,
                 'height': 14,
                 'class': 'processor-name',
                 'style': 'text-anchor: middle;',
@@ -913,11 +913,26 @@
 
                             // reset the processor name to handle any previous state
                             processorName.text(null).selectAll('title').remove();
-
+                            var name = d.component.name
+                            if (!processor.select('text.processor-expand').empty() && d.component.type) {
+                                var arr = d.component.type.split('.')
+                                var typeName = arr[arr.length -1]
+                                if (typeName !== name) {
+                                    name = name + '(' + typeName + ')'
+                                }
+                            }
                             // apply ellipsis to the processor name as necessary
-                            nfCanvasUtils.ellipsis(processorName, d.component.name.toLowerCase());
+                            nfCanvasUtils.ellipsis(processorName, name);
                         }).append('title').text(function (d) {
-                            return d.component.name;
+                            var name = d.component.name
+                            if (!processor.select('text.processor-expand').empty() && d.component.type) {
+                                var arr = d.component.type.split('.')
+                                var typeName = arr[arr.length -1]
+                                if (typeName !== name) {
+                                    name = name + '(' + typeName + ')'
+                                }
+                            }
+                            return name
                         });
 
                     // update the processor type
