@@ -521,29 +521,20 @@
             if (updatePath === true) {
                 // calculate the start and end points
                 var sourceComponentId = nfCanvasUtils.getConnectionSourceComponentId(d);
-                var sourceDom = d3.select('#id-' + sourceComponentId);
                 var sourceData = d3.select('#id-' + sourceComponentId).datum();
                 var end;
+
                 // get the appropriate end anchor point
                 var endAnchor;
                 if (d.bends.length > 0) {
                     endAnchor = d.bends[d.bends.length - 1];
                 } else {
-                    var destinationComponentId = nfCanvasUtils.getConnectionDestinationComponentId(d);
-                    var destination = d3.select('#id-' + destinationComponentId)
-                    var bigView = destination.select('g.processor-canvas-big-processor');
-                    if(!bigView.empty()) {
-                        var halfWidth = sourceData.dimensions.width / 2;
-                        var halfHeight = sourceData.dimensions.height / 2;
-                    } else {
-                        var halfWidth = 50;
-                        var halfHeight = 44;
-                    }
                     endAnchor = {
-                        x: sourceData.position.x + halfWidth,
-                        y: sourceData.position.y + halfHeight
+                        x: sourceData.position.x + (sourceData.dimensions.width / 2),
+                        y: sourceData.position.y + (sourceData.dimensions.height / 2)
                     };
                 }
+
                 // if we are currently dragging the endpoint to a new target, use that
                 // position, otherwise we need to calculate it for the current target
                 if (nfCommon.isDefinedAndNotNull(d.end) && d.end.dragging === true) {
@@ -552,7 +543,6 @@
 
                     // if we're not over a connectable destination use the current point
                     var newDestination = d3.select('g.hover.connectable-destination');
-                    console.log(newDestination)
                     if (!newDestination.empty()) {
                         var newDestinationData = newDestination.datum();
 
@@ -563,30 +553,21 @@
                             'width': newDestinationData.dimensions.width,
                             'height': newDestinationData.dimensions.height
                         });
+
                         // update the coordinates with the new point
                         end.x = newEnd.x;
                         end.y = newEnd.y;
                     }
                 } else {
-
                     var destinationComponentId = nfCanvasUtils.getConnectionDestinationComponentId(d);
-                    var destination = d3.select('#id-' + destinationComponentId)
                     var destinationData = d3.select('#id-' + destinationComponentId).datum();
 
-                    var bigView = destination.select('g.processor-canvas-big-processor');
-                    if(!bigView.empty()){
-                        var width = destinationData.dimensions.width;
-                        var height = destinationData.dimensions.height;
-                    }else {
-                        var width = 100;
-                        var height = 88;
-                    }
                     // get the position on the destination perimeter
                     end = nfCanvasUtils.getPerimeterPoint(endAnchor, {
                         'x': destinationData.position.x,
                         'y': destinationData.position.y,
-                        'width': width,
-                        'height': height
+                        'width': destinationData.dimensions.width,
+                        'height': destinationData.dimensions.height
                     });
                 }
 
@@ -598,21 +579,14 @@
                     startAnchor = end;
                 }
 
-                var bigView = sourceDom.select('g.processor-canvas-big-processor');
-                if(!bigView.empty()){
-                    var width = sourceData.dimensions.width;
-                    var height = sourceData.dimensions.height;
-                }else {
-                    var width = 100;
-                    var height = 88;
-                }
                 // get the position on the source perimeter
                 var start = nfCanvasUtils.getPerimeterPoint(startAnchor, {
                     'x': sourceData.position.x,
                     'y': sourceData.position.y,
-                    'width': width,
-                    'height': height
+                    'width': sourceData.dimensions.width,
+                    'height': sourceData.dimensions.height
                 });
+
                 // store the updated endpoints
                 d.start = start;
                 d.end = end;
@@ -1634,6 +1608,7 @@
                 .on('drag', function (d) {
                     d.x = d3.event.x;
                     d.y = d3.event.y;
+
                     // redraw this connection
                     d3.select(this.parentNode).call(updateConnections, {
                         'updatePath': true,
@@ -1668,6 +1643,7 @@
                                         y: bend.y
                                     };
                                 });
+
                                 // refresh the connection
                                 connection.call(updateConnections, {
                                     'updatePath': true,
@@ -1698,6 +1674,7 @@
                     d3.select('g.hover').classed('connectable-destination', function () {
                         return nfCanvasUtils.isValidConnectionDestination(d3.select(this));
                     });
+
                     // redraw this connection
                     d3.select(this.parentNode).call(updateConnections, {
                         'updatePath': true,
@@ -1715,6 +1692,7 @@
 
                     // attempt to select a new destination
                     var destination = d3.select('g.connectable-destination');
+
                     // resets the connection if we're not over a new destination
                     if (destination.empty()) {
                         connection.call(updateConnections, {
@@ -1793,6 +1771,7 @@
                                         headerText: nf._.msg('nf-connection.Connection'),
                                         dialogContent: nfCommon.escapeHtml(xhr.responseText)
                                     });
+
                                     // reset the connection
                                     connection.call(updateConnections, {
                                         'updatePath': true,
@@ -1886,6 +1865,7 @@
 
                         // record the closest bend
                         d.labelIndex = closestBendIndex;
+
                         // refresh the connection
                         d3.select(this.parentNode).call(updateConnections, {
                             'updatePath': true,
@@ -1916,6 +1896,7 @@
                             }).fail(function () {
                                 // restore the previous label index
                                 d.labelIndex = d.component.labelIndex;
+
                                 // refresh the connection
                                 connection.call(updateConnections, {
                                     'updatePath': true,
