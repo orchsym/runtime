@@ -222,7 +222,7 @@ g.connection {
 }
 
 g.connection rect.body {
-    fill: #ffffff;
+    fill: 'none';
 }
 
 g.connection rect.body.unauthorized {
@@ -289,7 +289,7 @@ text.connection-from-run-status.is-missing-port, text.connection-to-run-status.i
 }
 
 g.connection rect.backpressure-tick {
-    fill: #3e3e3e;
+    fill: 'none';
 }
 
 g.connection rect.backpressure-tick.not-configured {
@@ -297,7 +297,7 @@ g.connection rect.backpressure-tick.not-configured {
 }
 
 g.connection rect.backpressure-object, g.connection rect.backpressure-data-size {
-    fill: #d8d8d8;
+    fill: 'none';
 }
 
 g.connection rect.backpressure-object.not-configured, g.connection rect.backpressure-data-size.not-configured {
