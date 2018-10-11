@@ -259,7 +259,7 @@
                 'r': 30,
                 'cx': 50,
                 'cy': 44,
-                'fill': '#60D2A8'
+                'fill': '#506773',
             })
 
         // processor icon
@@ -280,27 +280,7 @@
                 'y': 20
             });
 
-        //自定义展开按钮
-        processor.append('text')
-            .attrs({
-                'x': 80,
-                'y': 20,
-                'style': 'font-size:20px'
-            })
-            .text('+')
-            .on('click',function(d){
-                processor.selectAll('*').remove()
-                paintBigProcessor(processor, processorData)
-                var processorEntities = processor.datum();
-                nfProcessor.set(processorEntities);
-                getDragSelection();
-                var dragSelection = d3.select('rect.drag-selection');
-                if (dragSelection.empty()) {
-                    return;
-                }
-                updateComponentsPosition(dragSelection);
-                dragSelection.remove();
-            });
+       
         // processor name
         processor.append('text')
             .attrs({
@@ -337,6 +317,45 @@
                 },
             })
             .text('\uf24a');
+
+        // processor disabled modal
+        processor.append('rect')
+            .attrs({
+                'class': 'processor-disabled-modal',
+                'width': function (d) {
+                    return smallDimensions.width;
+                },
+                'height': function (d) {
+                    return smallDimensions.height;
+                },
+                'filter': 'url(#component-drop-shadow)',
+                'stroke-width': 0,
+                'opacity': '0.4',
+                'fill': '#CCCCCC',
+                'style': 'display:none',
+            });
+
+         //自定义展开按钮
+        processor.append('text')
+            .attrs({
+                'x': 80,
+                'y': 20,
+                'style': 'font-size:20px'
+            })
+            .text('+')
+            .on('click',function(d){
+                processor.selectAll('*').remove()
+                paintBigProcessor(processor, processorData)
+                var processorEntities = processor.datum();
+                nfProcessor.set(processorEntities);
+                getDragSelection();
+                var dragSelection = d3.select('rect.drag-selection');
+                if (dragSelection.empty()) {
+                    return;
+                }
+                updateComponentsPosition(dragSelection);
+                dragSelection.remove();
+            });
     // -------------------------------------------------------------------------------------------------------------------------------------------------------
     };
 
@@ -366,28 +385,6 @@
                 },
                 'filter': 'url(#component-drop-shadow)',
                 'stroke-width': 0
-            });
-        //自定义收缩按钮
-        processor.append('text')
-            .attrs({
-                'x': 319,
-                'y': 30,
-                'style': 'font-size:34px;'
-            })
-            .text('-')
-            .on('click',function(d){
-                processor.selectAll('*').remove()
-                paintSmallProcessor(processor, processorData)
-                var processorEntities = processor.datum();
-                nfProcessor.set(processorEntities);
-                // get the drag selection
-                getDragSelection()
-                var dragSelection = d3.select('rect.drag-selection');
-                if (dragSelection.empty()) {
-                    return;
-                }
-                updateComponentsPosition(dragSelection);
-                dragSelection.remove();
             });
 
             // processor name
@@ -745,7 +742,45 @@
                 })
                 .text('\uf24a');
 
+            // processor disabled modal
+            processor.append('rect')
+                .attrs({
+                    'class': 'processor-disabled-modal',
+                    'width': function (d) {
+                        return dimensions.width;
+                    },
+                    'height': function (d) {
+                        return dimensions.height;
+                    },
+                    'filter': 'url(#component-drop-shadow)',
+                    'stroke-width': 0,
+                    'opacity': '0.4',
+                    'fill': '#CCCCCC',
+                    'style': 'display:none',
+                });
 
+            //自定义收缩按钮
+            processor.append('text')
+                .attrs({
+                    'x': 319,
+                    'y': 30,
+                    'style': 'font-size:34px;'
+                })
+                .text('-')
+                .on('click',function(d){
+                    processor.selectAll('*').remove()
+                    paintSmallProcessor(processor, processorData)
+                    var processorEntities = processor.datum();
+                    nfProcessor.set(processorEntities);
+                    // get the drag selection
+                    getDragSelection()
+                    var dragSelection = d3.select('rect.drag-selection');
+                    if (dragSelection.empty()) {
+                        return;
+                    }
+                    updateComponentsPosition(dragSelection);
+                    dragSelection.remove();
+                });
             // // select
             // var selection = select();
             // // enter
@@ -1086,6 +1121,40 @@
         if (updated.empty()) {
             return;
         }
+
+        // updated.select('rect.border')
+        //     .attrs({
+        //         'fill': function (d) {
+        //             var fill = '#FFFFFF'
+        //             if (d.status.aggregateSnapshot.runStatus === 'Disabled') {
+        //                 fill = 'none'
+        //             }
+        //             return fill
+        //         }
+        //     })
+
+        // updated.select('rect.body')
+            // .attrs({
+            //     'fill': function (d) {
+            //         var fill = '#FFFFFF'
+            //         if (d.status.aggregateSnapshot.runStatus === 'Disabled') {
+            //             fill = '#CCCCCC'
+            //         }
+            //         return fill
+            //     }
+            // })
+
+        updated.select('rect.processor-disabled-modal')
+            .attrs({
+                'style': function (d) {
+                    if(d.status.aggregateSnapshot.runStatus === 'Disabled') {
+                        return 'display:block'
+                    } else {
+                        return 'display:none'
+                    }
+                }
+            })
+
 
         // update the run status
         updated.select('text.run-status-icon')
