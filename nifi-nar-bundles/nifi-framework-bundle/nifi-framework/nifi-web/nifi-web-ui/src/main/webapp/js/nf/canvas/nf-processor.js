@@ -304,11 +304,12 @@
         // processor name
         processor.append('text')
             .attrs({
-                'x': 0,
+                'x': 50,
                 'y': 110,
                 'width': 150,
                 'height': 14,
-                'class': 'processor-name'
+                'class': 'processor-name',
+                'style': 'text-anchor: middle;',
             });
         // bulletin background
         processor.append('rect')
@@ -868,6 +869,7 @@
 
                 if (processorData.permissions.canRead) {
                     // update the processor name
+
                     processor.select('text.processor-name')
                         .each(function (d) {
                             var processorName = d3.select(this);
@@ -876,7 +878,7 @@
                             processorName.text(null).selectAll('title').remove();
 
                             // apply ellipsis to the processor name as necessary
-                            nfCanvasUtils.ellipsis(processorName, d.component.name);
+                            nfCanvasUtils.ellipsis(processorName, d.component.name.toLowerCase());
                         }).append('title').text(function (d) {
                             return d.component.name;
                         });
