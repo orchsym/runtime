@@ -110,10 +110,8 @@
 
             // determine the appropriate bounding box
             var minX = null, maxX = null, minY = null, maxY = null;
-            console.log(selection)
             selection.each(function (d) {
                 var ele = d3.select(this)
-                console.log(ele)
                 var smallView = ele.select('g.processor-canvas-small-processor');
                 if (minX === null || d.position.x < minX) {
                     minX = d.position.x;
@@ -261,7 +259,7 @@
                 'r': 30,
                 'cx': 50,
                 'cy': 44,
-                'fill': '#506773'
+                'fill': '#60D2A8'
             })
 
         // processor icon
@@ -291,7 +289,6 @@
             })
             .text('+')
             .on('click',function(d){
-                console.log(processor.datum())
                 processor.selectAll('*').remove()
                 paintBigProcessor(processor, processorData)
                 var processorEntities = processor.datum();
@@ -1327,7 +1324,6 @@
          * @argument {object} options                Configuration options
          */
         set: function (processorEntities, options) {
-            console.log(processorEntities)
             var selectAll = false;
             var transition = false;
             var overrideRevisionCheck = false;
