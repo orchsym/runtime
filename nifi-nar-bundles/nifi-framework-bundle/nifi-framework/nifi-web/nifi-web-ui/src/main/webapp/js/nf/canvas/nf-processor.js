@@ -268,7 +268,7 @@
                 'x': 35,
                 'y': 55,
                 'fill': '#FFFFFF',
-                'class': 'processor-icon'
+                'class': 'processor-icon',
             })
             .text('\ue826');
 
@@ -279,6 +279,18 @@
                 'x': 10,
                 'y': 20
             });
+
+        // tooltip icon
+        processor.append('text')
+            .attrs({
+                'class': 'io-tooltip-icon',
+                'x': 10,
+                'y': 70,
+                'fill': 'red',
+                'font-family': 'FontAwesome',
+            })
+            .text('\ue209');
+
 
        
         // processor name
@@ -922,7 +934,7 @@
                                 }
                             }
                             // apply ellipsis to the processor name as necessary
-                            nfCanvasUtils.ellipsis(processorName, name);
+                            nfCanvasUtils.ellipsis(processorName, d.component.name);
                         }).append('title').text(function (d) {
                             var name = d.component.name
                             if (!processor.select('text.processor-expand').empty() && d.component.type) {
@@ -932,7 +944,7 @@
                                     name = name + '(' + typeName + ')'
                                 }
                             }
-                            return name
+                            return d.component.name
                         });
 
                     // update the processor type
@@ -1171,6 +1183,63 @@
                     }
                 }
             })
+
+        updated.select('text.io-tooltip-icon')
+            .each(function(d) {
+                // get the tip
+                var tip = d3.select('#processor-io-tip-' + d.id);
+
+                // if there are validation errors generate a tooltip
+                if (d.permissions.canRead && !nfCommon.isEmpty(d.component.validationErrors)) {
+                    // create the tip if necessary
+                    if (tip.empty()) {
+                        tip = d3.select('#processor-tooltips').append('div')
+                            .attr('id', function () {
+                                return 'processor-io-tip-' + d.id;
+                            })
+                            .attr('class', 'tooltip nifi-tooltip');
+                    }
+
+                    // update the tip
+                    tip.html(function () {
+                        // var list = nfCommon.formatUnorderedList(d.component.validationErrors);
+                        // debugger
+                        // if (list === null || list.length === 0) {
+                        //     return '';
+                        // } else {
+                        //     return $('<div></div>').append(list).html();
+                        // }
+                        var arr = d.component.type.split('.')
+                        var typeName = arr[arr.length -1]
+
+                        var $html = '<span class="io-tooltip-information">'+
+                                    '<span style="display:block;font-weight:bold;font-size:14px;margin-bottom:5px">'+ typeName +'</span>'+
+                                    '<li>'+
+                                    '<span>输入:</span><span>'+nfCommon.substringBeforeFirst(d.status.aggregateSnapshot.input, ' ')+' ' + nfCommon.substringAfterFirst(d.status.aggregateSnapshot.input, ' ')+'</span>'+
+                                    '</li>'+
+                                    '<li>'+
+                                    '<span>读写:</span><span>'+d.status.aggregateSnapshot.read + ' / ' + d.status.aggregateSnapshot.written+'</span>'+
+                                    '</li>'+
+                                    '<li>'+
+                                    '<span>输出:</span><span>'+nfCommon.substringBeforeFirst(d.status.aggregateSnapshot.output, ' ')+' ' + nfCommon.substringAfterFirst(d.status.aggregateSnapshot.output, ' ')+'</span>'+
+                                    '</li>'+
+                                    '<li>'+
+                                    '<span>任务/时间:</span><span>'+d.status.aggregateSnapshot.tasks + ' / ' + d.status.aggregateSnapshot.tasksDuration+'</span>'+
+                                    '</li>'+
+                                    '</span>';
+
+                        return $('<div></div>').append($html).html();
+                    });
+                    // add the tooltip
+                    nfCanvasUtils.canvasTooltip(tip, d3.select(this));
+                } else {
+                    // remove the tip if necessary
+                    if (!tip.empty()) {
+                        tip.remove();
+                    }
+                }
+            })
+
 
 
         // update the run status

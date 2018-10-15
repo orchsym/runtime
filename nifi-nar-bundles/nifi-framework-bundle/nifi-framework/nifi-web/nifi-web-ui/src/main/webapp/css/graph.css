@@ -209,9 +209,23 @@ text.is-primary {
     font-weight: bold;
 }
 
-text.run-status-icon {
+text.run-status-icon, text.io-tooltip-icon {
     font-size: 13px;
 }
+
+.io-tooltip-information{
+    line-height: 1.4em;
+}
+
+.io-tooltip-information li span{
+    display: inline-block;
+}
+
+.io-tooltip-information li span:nth-child(1){
+    display: inline-block;
+    width: 80px;
+}
+
 
 /*
     Connection

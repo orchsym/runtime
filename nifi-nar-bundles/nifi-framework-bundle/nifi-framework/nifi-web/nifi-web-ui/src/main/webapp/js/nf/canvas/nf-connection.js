@@ -57,7 +57,7 @@
 
     // the dimensions for the connection label
     var dimensions = {
-        width: 200
+        width: 130
     };
 
     // width of a backpressure indicator - half of width, left/right padding, left/right border
@@ -811,18 +811,17 @@
                                 'class': 'body',
                                 'width': dimensions.width,
                                 'x': 0,
-                                'y': 0,
-                                'fill': 'none',
+                                'y': 0
                             });
 
                         // processor border
-                        // connectionLabelContainer.append('rect')
-                        //     .attrs({
-                        //         'class': 'border',
-                        //         'width': dimensions.width,
-                        //         'fill': 'transparent',
-                        //         'stroke': 'transparent'
-                        //     });
+                        connectionLabelContainer.append('rect')
+                            .attrs({
+                                'class': 'border',
+                                'width': dimensions.width,
+                                'fill': 'transparent',
+                                'stroke': 'transparent'
+                            });
                     }
 
                     var labelCount = 0;
@@ -854,8 +853,7 @@
                                     .attrs({
                                         'class': 'connection-label-background',
                                         'width': dimensions.width,
-                                        'height': rowHeight,
-                                        'fill': 'none',
+                                        'height': rowHeight
                                     }));
 
                                 // border
@@ -863,8 +861,7 @@
                                     .attrs({
                                         'class': 'connection-label-border',
                                         'width': dimensions.width,
-                                        'height': 1,
-                                        'fill': 'none',
+                                        'height': 1
                                     }));
 
                                 connectionFrom.append('text')
@@ -965,8 +962,7 @@
                                     .attrs({
                                         'class': 'connection-label-background',
                                         'width': dimensions.width,
-                                        'height': rowHeight,
-                                        'fill': 'none',
+                                        'height': rowHeight
                                     }));
 
                                 // border
@@ -974,8 +970,7 @@
                                     .attrs({
                                         'class': 'connection-label-border',
                                         'width': dimensions.width,
-                                        'height': 1,
-                                        'fill': 'none',
+                                        'height': 1
                                     }));
 
                                 connectionTo.append('text')
@@ -1071,8 +1066,7 @@
                             if (connectionName.empty()) {
                                 connectionName = connectionLabelContainer.append('g')
                                     .attrs({
-                                        'class': 'connection-name-container',
-                                        'fill': 'none',
+                                        'class': 'connection-name-container'
                                     });
 
                                 // background
@@ -1080,8 +1074,7 @@
                                     .attrs({
                                         'class': 'connection-label-background',
                                         'width': dimensions.width,
-                                        'height': rowHeight,
-                                        'fill':'none',
+                                        'height': rowHeight
                                     }));
 
                                 // border
@@ -1089,22 +1082,21 @@
                                     .attrs({
                                         'class': 'connection-label-border',
                                         'width': dimensions.width,
-                                        'height': 1,
-                                        'fill': 'none',
+                                        'height': 1
                                     }));
 
-                                // connectionName.append('text')
-                                //     .attrs({
-                                //         'class': 'stats-label',
-                                //         'x': 5,
-                                //         'y': 14
-                                //     })
-                                //     .text(nf._.msg('nf-connection.Name'));
+                                connectionName.append('text')
+                                    .attrs({
+                                        'class': 'stats-label',
+                                        'x': 5,
+                                        'y': 14
+                                    })
+                                    .text(nf._.msg('nf-connection.Name'));
 
                                 connectionName.append('text')
                                     .attrs({
                                         'class': 'stats-value connection-name',
-                                        'x': 50,
+                                        'x': 40,
                                         'y': 14,
                                         'width': 142
                                     });
@@ -1162,8 +1154,7 @@
                             .attrs({
                                 'class': 'connection-label-background',
                                 'width': dimensions.width,
-                                'height': rowHeight + HEIGHT_FOR_BACKPRESSURE,
-                                'fill': 'none',
+                                'height': rowHeight + HEIGHT_FOR_BACKPRESSURE
                             }));
 
                         // border
@@ -1171,22 +1162,21 @@
                             .attrs({
                                 'class': 'connection-label-border',
                                 'width': dimensions.width,
-                                'height': 1,
-                                'fill':'none',
+                                'height': 1
                             }));
 
-                        // queued.append('text')
-                        //     .attrs({
-                        //         'class': 'stats-label',
-                        //         'x': 5,
-                        //         'y': 14
-                        //     })
-                        //     .text(nf._.msg('nf-connection.Queued'));
+                        queued.append('text')
+                            .attrs({
+                                'class': 'stats-label',
+                                'x': 5,
+                                'y': 14
+                            })
+                            .text(nf._.msg('nf-connection.Queued'));
 
                         var queuedText = queued.append('text')
                             .attrs({
                                 'class': 'stats-value queued',
-                                'x': 85,
+                                'x': 40,
                                 'y': 14
                             });
 
@@ -1225,8 +1215,7 @@
                                 'width': 1,
                                 'height': 3,
                                 'x': 5,
-                                'y': yBackpressureOffset,
-                                'fill': 'none',
+                                'y': yBackpressureOffset
                             });
 
                         // bar
@@ -1237,8 +1226,7 @@
                                 'width': backpressureBarWidth,
                                 'height': 3,
                                 'x': backpressureCountOffset,
-                                'y': yBackpressureOffset,
-                                'fill':'none',
+                                'y': yBackpressureOffset
                             })
                             .append('title');
 
@@ -1249,8 +1237,7 @@
                                 'width': 1,
                                 'height': 3,
                                 'x': backpressureCountOffset + backpressureBarWidth,
-                                'y': yBackpressureOffset,
-                                'fill': 'none',
+                                'y': yBackpressureOffset
                             });
 
                         // percent full
@@ -1272,8 +1259,7 @@
                                 'width': 1,
                                 'height': 3,
                                 'x': (dimensions.width / 2) + 10,
-                                'y': yBackpressureOffset,
-                                'fill': 'none',
+                                'y': yBackpressureOffset
                             });
 
                         // bar
@@ -1284,8 +1270,7 @@
                                 'width': backpressureBarWidth,
                                 'height': 3,
                                 'x': backpressureDataSizeOffset,
-                                'y': yBackpressureOffset,
-                                'fill': 'none',
+                                'y': yBackpressureOffset
                             })
                             .append('title');
 
@@ -1296,8 +1281,7 @@
                                 'width': 1,
                                 'height': 3,
                                 'x': backpressureDataSizeOffset + backpressureBarWidth,
-                                'y': yBackpressureOffset,
-                                'fill': 'none',
+                                'y': yBackpressureOffset
                             });
 
                         // percent full
@@ -1317,14 +1301,13 @@
                     // update the queued vertical positioning as necessary
                     queued.attr('transform', function () {
                         var y = (rowHeight * labelCount++);
-                        return 'translate(20, ' + 0 + ')';
+                        return 'translate(0, ' + y + ')';
                     });
 
                     // update the height based on the labels being rendered
                     connectionLabelContainer.select('rect.body')
                         .attr('height', function () {
-                            // return (rowHeight * labelCount) + HEIGHT_FOR_BACKPRESSURE;
-                            return 22
+                            return (rowHeight * labelCount) + HEIGHT_FOR_BACKPRESSURE;
                         })
                         .classed('unauthorized', function () {
                             return d.permissions.canRead === false;
@@ -1339,20 +1322,20 @@
 
                     // update the coloring of the backgrounds
                     $.each(backgrounds, function (i, background) {
-                        // if (i % 2 === 0) {
-                        //     background.attr('fill', '#f4f6f7');
-                        // } else {
-                        //     background.attr('fill', '#ffffff');
-                        // }
+                        if (i % 2 === 0) {
+                            background.attr('fill', '#f4f6f7');
+                        } else {
+                            background.attr('fill', '#ffffff');
+                        }
                     });
 
                     // update the coloring of the label borders
                     $.each(borders, function (i, border) {
-                        // if (i > 0) {
-                        //     border.attr('fill', '#c7d2d7');
-                        // } else {
-                        //     border.attr('fill', 'transparent');
-                        // }
+                        if (i > 0) {
+                            border.attr('fill', '#c7d2d7');
+                        } else {
+                            border.attr('fill', 'transparent');
+                        }
                     });
 
                     // determine whether or not to show the expiration icon

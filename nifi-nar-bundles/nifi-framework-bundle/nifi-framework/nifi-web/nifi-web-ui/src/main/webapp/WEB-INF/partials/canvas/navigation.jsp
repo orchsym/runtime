@@ -177,14 +177,14 @@
                             <div class="graph-control-action-icon icon icon-change-color"></div></button>
                     </div>
                     <div class="button-spacer-large">&nbsp;</div>
-                    <fmt:message key="展开" var="expand"/>
+                    <fmt:message key="\u5c55\u5f00" var="expand"/>
                     <div id="operate-expand" class="action-button" title="${expand}">
                         <button ng-click="appCtrl.nf.Actions['expand'](appCtrl.nf.CanvasUtils.getSelection());"
                                 ng-disabled="!appCtrl.nf.CanvasUtils.areDeletable(appCtrl.nf.CanvasUtils.getSelection());">
                             <div class="graph-control-action-icon fa fa-plus"></div></button>
                     </div>
                     <div class="button-spacer-large">&nbsp;</div>
-                    <fmt:message key="收起" var="collapse"/>
+                    <fmt:message key="\u6536\u8d77" var="collapse"/>
                     <div id="operate-collapse" class="action-button" title="${collapse}">
                         <button ng-click="appCtrl.nf.Actions['collapse'](appCtrl.nf.CanvasUtils.getSelection());"
                                 ng-disabled="!appCtrl.nf.CanvasUtils.areDeletable(appCtrl.nf.CanvasUtils.getSelection());">
