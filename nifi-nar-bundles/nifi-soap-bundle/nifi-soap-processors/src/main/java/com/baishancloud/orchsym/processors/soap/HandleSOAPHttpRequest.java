@@ -38,6 +38,7 @@ import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
@@ -75,6 +76,7 @@ import com.baishancloud.orchsym.processors.soap.util.FormatUtil;
  *
  */
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
+@Marks(categories={"网络/网络通信"}, createdDate="2018-09-07")
 @Tags({ "SOAP", "Request", "http", "https", "Web Service", "WSDL" })
 @CapabilityDescription("Starts an HTTP Server and listens for SOAP Requests. For each request, creates a FlowFile and transfers to 'success'. "
         + "This Processor is designed to be used in conjunction with the HandleSOAPHttpResponse Processor in order to create a Web Service")

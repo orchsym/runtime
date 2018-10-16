@@ -95,6 +95,7 @@ public class NiFiWebApiResourceConfig extends ResourceConfig {
         register(ctx.getBean("provenanceEventResource"));
         register(ctx.getBean("countersResource"));
         register(ctx.getBean("systemDiagnosticsResource"));
+        register(ctx.getBean("componentMarksResource"));
         register(ctx.getBean("accessResource"));
         register(ctx.getBean("accessPolicyResource"));
         register(ctx.getBean("tenantsResource"));

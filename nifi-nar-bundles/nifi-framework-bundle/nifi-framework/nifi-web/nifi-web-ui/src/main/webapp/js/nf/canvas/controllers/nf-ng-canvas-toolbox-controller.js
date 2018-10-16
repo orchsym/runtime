@@ -82,6 +82,7 @@
                     controller: '../nifi-api/controller',
                     processorTypes: '../nifi-api/flow/processor-types',
                     classification: 'json/classification.json',
+                    marks: '../nifi-api/component-marks/classification'
                 }
             };
         }

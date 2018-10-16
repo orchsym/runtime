@@ -22,6 +22,7 @@ import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
@@ -44,6 +45,7 @@ import org.apache.nifi.processors.standard.ListenTCP.TCPContextEvent;
 import org.apache.nifi.util.StopWatch;
 
 @InputRequirement(Requirement.INPUT_REQUIRED)
+@Marks(categories={"网络/网络通信"}, createdDate="2018-05-16")
 @Tags({ "TCP", "response", "web service" })
 @CapabilityDescription("Sends an TCP Response to the TCP listener that generated a FlowFile. This Processor is designed to be used in conjunction with "
         + "the ListenTCP in order to create a web service.")

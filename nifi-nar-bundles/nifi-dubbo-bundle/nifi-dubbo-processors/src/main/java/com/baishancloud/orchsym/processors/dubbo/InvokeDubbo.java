@@ -25,6 +25,7 @@ import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.behavior.SideEffectFree;
 import org.apache.nifi.annotation.behavior.SupportsBatching;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
@@ -66,6 +67,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  */
 @SideEffectFree
 @SupportsBatching
+@Marks(categories={"数据处理/数据抓取", "网络/网络通信"}, createdDate="2018-06-11")
 @Tags({ "dubbo", "get", "json" })
 @InputRequirement(Requirement.INPUT_ALLOWED)
 @CapabilityDescription("Execute provided request against the Dubbo comsumer. The result will be left in it's orginal form. " + "If it is triggered by an incoming FlowFile, then attributes of "

@@ -13,6 +13,7 @@ import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.behavior.SideEffectFree;
 import org.apache.nifi.annotation.behavior.SupportsBatching;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.ValidationResult;
@@ -41,6 +42,7 @@ import ca.uhn.hl7v2.validation.impl.ValidationContextFactory;
 
 @SideEffectFree
 @SupportsBatching
+@Marks(categories={"转换控制/数据转换"}, createdDate="2018-08-07")
 @InputRequirement(Requirement.INPUT_REQUIRED)
 @Tags({"HL7", "health level 7", "healthcare", "convert", "xml", "pipe", "attributes"})
 @CapabilityDescription("Convert HL7 pipe message to XML message,also can convert XML message to a standard HL7 pipe message.")

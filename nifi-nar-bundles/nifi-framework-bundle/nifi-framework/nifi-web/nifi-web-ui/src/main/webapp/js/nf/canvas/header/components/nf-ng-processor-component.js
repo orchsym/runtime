@@ -481,7 +481,7 @@
                         /**
                  * 进行A-Z排序
                  */
-                         var ysort = function(arr) {
+                        var ysort = function(arr) {
                         　　if (arr.length <= 1) { return arr; }
                         　　var pivotIndex = Math.floor(arr.length / 2);
                         　　var pivot = arr.splice(pivotIndex, 1)[0];
@@ -495,6 +495,49 @@
                         　　　　}
                         　　}
                         　　return ysort(left).concat([pivot], ysort(right));
+                        }
+
+                        
+                        var indexForObj = function(objArr, obj) {
+                            for (var i=0; i<objArr.length; i++) {
+                                var itemObj = objArr[i]
+                                if (itemObj.name == obj.name) {
+                                    return i
+                                }
+                            }
+                            return -1
+                        }
+                        //合并返回的classification信息
+                        var mergeResponse = function(respnseBase, respnseAdd) {
+
+                            for (var i=0; i<respnseAdd.length; i++) {
+                                var item = respnseAdd[i]
+                                var index = indexForObj(respnseBase, item)
+                                if (index == -1) {
+                                    respnseBase.push(item)
+                                } else {
+                                    var classificationBase = respnseBase[index].classification
+                                    var classificationToAdd = item.classification
+                                    classificationToAdd.forEach(function(classificationItem) {
+                                        var classificationIndex = indexForObj(classificationBase, classificationItem)
+                                        if (classificationIndex == -1) {
+                                            classificationBase.push(classificationItem)
+                                        } else {
+                                            var componentsBase = classificationBase[classificationIndex].components
+                                            var componentsToAdd = classificationItem.components
+                                            for (var i=0; i<componentsToAdd.length; i++) {
+                                                var component = componentsToAdd[i]
+                                                if (componentsBase.indexOf(component) == -1) {
+                                                    //not contained
+                                                    componentsBase.push(component)
+                                                }
+                                            };
+                                        }
+
+                                    })
+                                }
+                            };
+                            return respnseBase
                         }
 
                         $.ajax({
@@ -584,50 +627,62 @@
                                 url: serviceProvider.headerCtrl.toolboxCtrl.config.urls.classification,
                                 dataType: 'json',
                             }).done(function (response) {
-                                var allComponent = []
-                                response = response.map(function(item){
-                                    item.classification = item.classification.sort()
 
-                                    item.classification.map(function(doc){
-                                        doc.open = true
-                                        doc.components = doc.components.sort()
-                                        doc.components = doc.components.map(function(value){
-                                            var obj = {
-                                                name: value,
-                                                icon: doc.icon
-                                            }
-                                            allComponent.push(obj)
-                                            return obj
+                                var responseBase = response
+                                $.ajax({
+                                    type: 'GET',
+                                    url: serviceProvider.headerCtrl.toolboxCtrl.config.urls.marks,
+                                    dataType: 'json',
+                                }).done(function (response) {
+
+                                    //合并来着classification.json与nifi-api/component-marks/classification请求返回的内容
+                                    var respnseMerged = mergeResponse(responseBase, response)
+
+                                    var allComponent = []
+                                    respnse = respnseMerged.map(function(item){
+                                        item.classification = item.classification.sort()
+
+                                        item.classification.map(function(doc){
+                                            doc.open = true
+                                            doc.components = doc.components.sort()
+                                            doc.components = doc.components.map(function(value){
+                                                var obj = {
+                                                    name: value,
+                                                    icon: doc.icon
+                                                }
+                                                allComponent.push(obj)
+                                                return obj
+                                            })
+                                            return doc
                                         })
-                                        return doc
+                                        return item
                                     })
-                                    return item
-                                })
-                                var allComponents = ysort(allComponent)
+                                    var allComponents = ysort(allComponent)
 
-                                for(var i=1; i<allComponents.length; i++){
-                                    if(allComponents[i].name == allComponents[i-1].name){
-                                        allComponents.splice(i,1)
-                                        i--
-                                    }
-                                }
-
-                                var obj = {
-                                    name: '所有组件',
-                                    icon: 'search.svg',
-                                    classification: [
-                                        {
-                                            name: '所有组件',
-                                            open: true,
-                                            components: allComponents,
-                                            icon: 'search.svg'
+                                    for(var i=1; i<allComponents.length; i++){
+                                        if(allComponents[i].name == allComponents[i-1].name){
+                                            allComponents.splice(i,1)
+                                            i--
                                         }
-                                    ]
-                                }
-                                response.unshift(obj)
-                                serviceProvider.graphControlsCtrl.backupComponentList = obj.classification
-                                serviceProvider.graphControlsCtrl.componentList = obj.classification
-                                serviceProvider.graphControlsCtrl.componentDuanwuData = response
+                                    }
+
+                                    var obj = {
+                                        name: '所有组件',
+                                        icon: 'search.svg',
+                                        classification: [
+                                            {
+                                                name: '所有组件',
+                                                open: true,
+                                                components: allComponents,
+                                                icon: 'search.svg'
+                                            }
+                                        ]
+                                    }
+                                    respnse.unshift(obj)
+                                    serviceProvider.graphControlsCtrl.backupComponentList = obj.classification
+                                    serviceProvider.graphControlsCtrl.componentList = obj.classification
+                                    serviceProvider.graphControlsCtrl.componentDuanwuData = respnse
+                                })
                             })
 
                             

@@ -20,6 +20,7 @@ import org.apache.nifi.annotation.behavior.SideEffectFree;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
@@ -51,7 +52,8 @@ import com.baishancloud.orchsym.sap.server.SAPServerException;
  *
  */
 @SideEffectFree
-@Tags({ "SAP", "TCP", "RFC", "ABAP", "JCo", "JSON", "Orchsym" })
+@Marks(categories={"数据处理/数据抓取", "网络/网络通信"}, createdDate="2018-07-30")
+@Tags({ "SAP", "TCP", "RFC", "ABAP", "JCo", "JSON" })
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
 @CapabilityDescription("通过配置SAP连接来启动SAP JCo服务器，提供给ABAP的TCP/IP连接来调用服务器注册的远程动态函数。")
 @WritesAttributes({ @WritesAttribute(attribute = ListenSAPTCP.KEY_CONTEXT_ID, description = "The sending context id of the messages.") })

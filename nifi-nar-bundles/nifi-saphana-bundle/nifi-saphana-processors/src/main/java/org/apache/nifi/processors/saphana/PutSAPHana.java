@@ -48,6 +48,7 @@ import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.dbcp.DBCPService;
@@ -64,6 +65,7 @@ import org.apache.nifi.processors.database.util.DBUtil;
 import org.apache.nifi.processors.saphana.enums.OperationEnum;
 
 @EventDriven
+@Marks(categories={"数据处理/数据输出", "数据库/数据库"}, createdDate="2018-05-10")
 @InputRequirement(Requirement.INPUT_REQUIRED)
 @Tags({ "sql", "select", "jdbc", "put", "database", "sap", "hana" })
 @CapabilityDescription("Incomming FlowFile need to be Avro format." + " All the data will be write into sap hana database with table")

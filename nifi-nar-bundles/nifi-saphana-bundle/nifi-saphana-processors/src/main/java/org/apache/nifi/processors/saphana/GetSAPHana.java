@@ -42,6 +42,7 @@ import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.components.PropertyDescriptor;
@@ -60,6 +61,7 @@ import org.apache.nifi.processors.database.util.JdbcCommon;
 import org.apache.nifi.util.StopWatch;
 
 @EventDriven
+@Marks(categories={"数据处理/数据抓取", "数据库/数据库"}, createdDate="2018-05-10")
 @InputRequirement(Requirement.INPUT_ALLOWED)
 @Tags({"sql", "select", "jdbc", "query", "database","sap","hana"})
 @CapabilityDescription("Execute provided SQL select query. Query result will be converted to Avro format."

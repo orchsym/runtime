@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.avro.AvroTypeUtil;
 
@@ -41,7 +42,8 @@ import com.sap.conn.jco.JCoFunction;
  * 
  * @author GU Guoqiang
  */
-@Tags({ "SAP", "RFC", "ABAP", "JCo", "client", "connection", "pooling", "Orchsym" })
+@Marks(createdDate = "2018-07-30")
+@Tags({ "SAP", "RFC", "ABAP", "JCo", "client", "connection", "pooling" })
 @CapabilityDescription("Provides SAP Connection Pooling Service. Connections can be asked from pool and returned after usage.")
 public class SAPClientConnectionPool extends SAPConnectionPool implements SAPClientConnectionPoolService {
     protected volatile JCoDestination destination;

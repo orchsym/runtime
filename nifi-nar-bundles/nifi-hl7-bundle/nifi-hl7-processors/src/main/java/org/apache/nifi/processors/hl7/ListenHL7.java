@@ -17,6 +17,7 @@ import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.behavior.SideEffectFree;
 import org.apache.nifi.annotation.behavior.SupportsBatching;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
@@ -47,6 +48,7 @@ import ca.uhn.hl7v2.validation.impl.ValidationContextFactory;
 
 @SideEffectFree
 @SupportsBatching
+@Marks(categories={"数据处理/数据抓取"}, createdDate="2018-08-07")
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
 @Tags({"HL7", "health level 7", "healthcare", "ack", "attributes"})
 @CapabilityDescription("HL7 message listener.Generate a simple acknowledgment message from reveived message.")

@@ -15,6 +15,7 @@ import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.behavior.SideEffectFree;
 import org.apache.nifi.annotation.behavior.SupportsBatching;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.expression.ExpressionLanguageScope;
@@ -42,6 +43,7 @@ import ca.uhn.hl7v2.validation.impl.ValidationContextFactory;
 
 @SideEffectFree
 @SupportsBatching
+@Marks(categories={"数据处理/数据输出"}, createdDate="2018-08-07")
 @InputRequirement(Requirement.INPUT_REQUIRED)
 @Tags({"HL7", "health level 7", "healthcare", "ack", "attributes","put","send"})
 @CapabilityDescription("Put HL7 message.")

@@ -8,11 +8,17 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
+import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.Validator;
 import org.apache.nifi.controller.AbstractControllerService;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 
+@Marks(createdDate = "2018-05-16")
+@Tags({ "cache", "key", "value" })
+@CapabilityDescription("Enable to cache the key with Object value in service")
 public class CommonKeyValueLookupService extends AbstractControllerService implements KeyValueLookupService {
 
     private static final String KEY = "key";

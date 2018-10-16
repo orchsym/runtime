@@ -40,6 +40,7 @@ import org.apache.nifi.annotation.behavior.SideEffectFree;
 import org.apache.nifi.annotation.behavior.SupportsBatching;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.Validator;
 import org.apache.nifi.flowfile.FlowFile;
@@ -67,6 +68,7 @@ import java.security.spec.X509EncodedKeySpec;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+@Marks(categories={"转换控制/数据转换", "网络/网络通信"}, createdDate="2018-09-17")
 @Tags({"sign", "encryption"})
 @CapabilityDescription("Digitally sign the specified content")
 public class SignatureProcessor extends AbstractProcessor {

@@ -38,6 +38,11 @@ public class DocumentedTypeDTO {
     private Set<ExplicitRestrictionDTO> explicitRestrictions;
     private String deprecationReason;
     private Set<String> tags;
+    //marks
+    private String vendor = "";
+    private Set<String> categories;
+    private String createdDate;
+    private String note;
 
     /**
      * @return An optional description of the corresponding type
@@ -168,6 +173,51 @@ public class DocumentedTypeDTO {
 
     public void setTags(final Set<String> tags) {
         this.tags = tags;
+    }
+
+    //marks
+    @ApiModelProperty(
+            value = "The description of the  vendor."
+    )
+    public String getVendor() {
+        return vendor;
+    }
+
+    public void setVendor(String vendor) {
+        this.vendor = vendor;
+    }
+
+    @ApiModelProperty(
+            value = "The categories associated with this type."
+    )
+    public Set<String> getCategories() {
+        return categories;
+    }
+
+    public void setCategories(final Set<String> categories) {
+        this.categories = categories;
+    }
+
+    @ApiModelProperty(
+            value = "The description of the createdDate."
+    )
+    public String getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(String createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    @ApiModelProperty(
+            value = "The description of the note."
+    )
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
     }
 
     @Override

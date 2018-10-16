@@ -37,6 +37,7 @@ import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.SupportsBatching;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
@@ -60,6 +61,7 @@ import java.util.*;
 
 
 @SupportsBatching
+@Marks(categories={"网络/网络通信"}, createdDate="2018-05-02")
 @InputRequirement(InputRequirement.Requirement.INPUT_ALLOWED)
 @Tags({"SOAP", "Get", "Ingest", "Ingress"})
 @CapabilityDescription("Execute provided request against the SOAP endpoint. The result will be left in it's orginal form. " +

@@ -22,6 +22,7 @@ import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.behavior.SideEffectFree;
 import org.apache.nifi.annotation.behavior.SupportsBatching;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.Validator;
@@ -49,7 +50,8 @@ import com.baishancloud.orchsym.sap.client.SAPClientConnectionPoolService;
  */
 @SideEffectFree
 @SupportsBatching
-@Tags({ "SAP", "RFC", "ABAP", "JCo", "JSON", "Orchsym" })
+@Marks(categories={"数据处理/数据抓取"}, createdDate="2018-07-30")
+@Tags({ "SAP", "RFC", "ABAP", "JCo", "JSON"})
 @InputRequirement(Requirement.INPUT_ALLOWED)
 @CapabilityDescription("通过配置SAP连接和RFC功能远程调用函数（Funnction）并将结果输出为JSON格式。"//
         + "如果函数需要输入参数，则必须提供输入流，然后逐条记录将作为输入参数给函数调用，即通过输入记录中的名字和值来对应函数的输入参数。")

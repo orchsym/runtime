@@ -25,6 +25,7 @@ import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.logging.ComponentLog;
@@ -45,6 +46,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 
+@Marks(categories={"数据处理/数据抓取", "转换控制/数据转换"}, createdDate="2018-09-02")
 @Tags({"encode", "urlencode"})
 @CapabilityDescription("Encodes or decodes json content to and from urlencode, the content must be json")
 @InputRequirement(Requirement.INPUT_REQUIRED)

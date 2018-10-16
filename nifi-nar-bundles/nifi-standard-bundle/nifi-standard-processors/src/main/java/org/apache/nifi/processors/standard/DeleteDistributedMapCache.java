@@ -34,6 +34,7 @@ import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.components.AllowableValue;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.distributed.cache.client.DistributedMapCacheClient;
@@ -50,6 +51,7 @@ import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
+@Marks(categories={"数据处理/消息事件", "转换控制/数据转换"}, createdDate="2018-09-27")
 @EventDriven
 @SupportsBatching
 @Tags({"map", "cache", "delete", "distributed"})

@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.lifecycle.OnDisabled;
 import org.apache.nifi.annotation.lifecycle.OnEnabled;
 import org.apache.nifi.components.PropertyDescriptor;
@@ -84,6 +85,7 @@ import org.apache.nifi.apiregistry.spec.PropertySpec;
 import org.apache.nifi.apiregistry.spec.ParamSpec;
 import org.apache.nifi.apiregistry.spec.RespSpec;
 
+@Marks(createdDate="2018-04-23")
 @Tags({ "api registry"})
 @CapabilityDescription("This service is for api registry")
 public class StandardApiRegistryService extends AbstractControllerService implements ApiRegistryService {

@@ -22,6 +22,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.expression.ExpressionLanguageScope;
@@ -46,7 +47,8 @@ import com.baishancloud.orchsym.processors.sap.option.ResponseOption;
  * @author GU Guoqiang
  *
  */
-@Tags({ "SAP", "TCP", "RFC", "ABAP", "Response", "JCo", "Orchsym" })
+@Marks(categories={"数据处理/数据输出", "网络/网络通信"}, createdDate="2018-07-30")
+@Tags({ "SAP", "TCP", "RFC", "ABAP", "Response", "JCo" })
 @InputRequirement(Requirement.INPUT_REQUIRED)
 public class HandleSAPTCPResponse extends AbstractSAPProcessor {
 

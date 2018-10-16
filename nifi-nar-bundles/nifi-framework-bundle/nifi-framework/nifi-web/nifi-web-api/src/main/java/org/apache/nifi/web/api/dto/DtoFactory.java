@@ -16,6 +16,7 @@
  */
 package org.apache.nifi.web.api.dto;
 
+import java.lang.annotation.Annotation;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -40,6 +41,7 @@ import org.apache.nifi.annotation.behavior.Stateful;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.DeprecationNotice;
 import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.authorization.AccessPolicy;
 import org.apache.nifi.authorization.Authorizer;
 import org.apache.nifi.authorization.AuthorizerCapabilityDetection;
@@ -2649,6 +2651,24 @@ public final class DtoFactory {
     }
 
     /**
+     * set the makrs from the specified class.
+    */
+    private void setMarks(Class cls, DocumentedTypeDTO dto) {
+        final Set<String> categories = new HashSet<>();
+        Annotation annotation = cls.getAnnotation(Marks.class);
+        Marks marks = (Marks)annotation;
+        if (marks != null) {
+            for (final String category : marks.categories()) {
+                categories.add(category);
+            }
+            dto.setVendor(marks.vendor());
+            dto.setCategories(categories);
+            dto.setCreatedDate(marks.createdDate());
+            dto.setNote(marks.note());
+        }
+    }
+
+    /**
      * Creates a bundle DTO from the specified class.
      *
      * @param coordinate bundle coordinates
@@ -2731,6 +2751,7 @@ public final class DtoFactory {
             dto.setExplicitRestrictions(getExplicitRestrictions(cls));
             dto.setDeprecationReason(getDeprecationReason(cls));
             dto.setTags(getTags(cls));
+            setMarks(cls, dto);
             types.add(dto);
         }
 

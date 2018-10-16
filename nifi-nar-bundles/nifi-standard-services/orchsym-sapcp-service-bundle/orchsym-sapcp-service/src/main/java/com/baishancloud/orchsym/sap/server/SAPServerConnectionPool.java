@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.controller.ConfigurationContext;
@@ -34,7 +35,8 @@ import com.sap.conn.jco.server.JCoServer;
  * @author GU Guoqiang
  *
  */
-@Tags({ "SAP", "RFC", "ABAP", "TCP", "JCo", "server", "connection", "pooling", "Orchsym" })
+@Marks(createdDate = "2018-07-30")
+@Tags({ "SAP", "RFC", "ABAP", "TCP", "JCo", "server", "connection", "pooling"})
 @CapabilityDescription("Provides SAP Connection Pooling Service. Connections can be asked from pool and returned after usage.")
 public class SAPServerConnectionPool extends SAPConnectionPool implements SAPServerConnectionPoolService {
     static final String SERVER_NAME = "OServer";

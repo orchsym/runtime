@@ -26,6 +26,7 @@ import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.behavior.SideEffectFree;
 import org.apache.nifi.annotation.behavior.SupportsBatching;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.avro.AvroTypeUtil;
@@ -70,6 +71,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 
 @SideEffectFree
 @SupportsBatching
+@Marks(categories={"转换控制/数据转换"}, createdDate="2018-05-10")
 @Tags({ "map", "avro", "json", "xml", "flow" })
 @InputRequirement(Requirement.INPUT_REQUIRED)
 @CapabilityDescription("Enable to map the flows to another one.")
