@@ -37,8 +37,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 public @interface Marks {
+    static final String ORCHSYM = "Orchsym";
 
-    String vendor() default "Orchsym"; //eg: "Orchsym", "BaishanCloud"
+    String vendor() default ORCHSYM; // eg: "Orchsym", "BaishanCloud"
     String[] categories() default ""; //eg:  {"数据处理/数据抓取", "网络/网络通信"}
     String createdDate() default ""; //eg: "2018-9-20"
     String note() default ""; //备注，扩展字段
