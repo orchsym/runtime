@@ -284,7 +284,7 @@
         processor.append('text')
             .attrs({
                 'class': 'io-tooltip-icon',
-                'x': 10,
+                'x': 12,
                 'y': 70,
                 'fill': 'red',
                 'font-family': 'FontAwesome',
@@ -903,7 +903,7 @@
             // update the component behavior as appropriate
             nfCanvasUtils.editable(processor, nfConnectable, nfDraggable);
             // if this processor is visible, render everything
-            if (processor.classed('visible')) {
+            if (processor.classed('visible') || true) {
                 if (details.empty()) {
                     details = processor.append('g').attr('class', 'processor-canvas-details');
                     var bigView = processor.select('g.processor-canvas-big-processor');
@@ -1203,7 +1203,6 @@
                     // update the tip
                     tip.html(function () {
                         // var list = nfCommon.formatUnorderedList(d.component.validationErrors);
-                        // debugger
                         // if (list === null || list.length === 0) {
                         //     return '';
                         // } else {
