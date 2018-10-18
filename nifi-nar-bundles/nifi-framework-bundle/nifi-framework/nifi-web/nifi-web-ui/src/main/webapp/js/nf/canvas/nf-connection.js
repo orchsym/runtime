@@ -883,7 +883,7 @@
                                 connectionFrom.append('text')
                                     .attrs({
                                         'class': 'connection-from-run-status',
-                                        'x': 185,
+                                        'x': 115,
                                         'y': 14
                                     });
                             } else {
