@@ -864,18 +864,18 @@
                                         'height': 1
                                     }));
 
-                                connectionFrom.append('text')
-                                    .attrs({
-                                        'class': 'stats-label',
-                                        'x': 5,
-                                        'y': 14
-                                    })
-                                    .text(nf._.msg('nf-connection.From'));
+                                // connectionFrom.append('text')
+                                //     .attrs({
+                                //         'class': 'stats-label',
+                                //         'x': 5,
+                                //         'y': 14
+                                //     })
+                                //     .text(nf._.msg('nf-connection.From'));
 
                                 connectionFrom.append('text')
                                     .attrs({
                                         'class': 'stats-value connection-from',
-                                        'x': 43,
+                                        'x': 5,
                                         'y': 14,
                                         'width': 130
                                     });
@@ -973,18 +973,18 @@
                                         'height': 1
                                     }));
 
-                                connectionTo.append('text')
-                                    .attrs({
-                                        'class': 'stats-label',
-                                        'x': 5,
-                                        'y': 14
-                                    })
-                                    .text(nf._.msg('nf-connection.To'));
+                                // connectionTo.append('text')
+                                //     .attrs({
+                                //         'class': 'stats-label',
+                                //         'x': 5,
+                                //         'y': 14
+                                //     })
+                                //     .text(nf._.msg('nf-connection.To'));
 
                                 connectionTo.append('text')
                                     .attrs({
                                         'class': 'stats-value connection-to',
-                                        'x': 25,
+                                        'x': 5,
                                         'y': 14,
                                         'width': 145
                                     });
@@ -992,7 +992,7 @@
                                 connectionTo.append('text')
                                     .attrs({
                                         'class': 'connection-to-run-status',
-                                        'x': 185,
+                                        'x': 115,
                                         'y': 14
                                     });
                             } else {
@@ -1085,18 +1085,18 @@
                                         'height': 1
                                     }));
 
-                                connectionName.append('text')
-                                    .attrs({
-                                        'class': 'stats-label',
-                                        'x': 5,
-                                        'y': 14
-                                    })
-                                    .text(nf._.msg('nf-connection.Name'));
+                                // connectionName.append('text')
+                                //     .attrs({
+                                //         'class': 'stats-label',
+                                //         'x': 5,
+                                //         'y': 14
+                                //     })
+                                //     .text(nf._.msg('nf-connection.Name'));
 
                                 connectionName.append('text')
                                     .attrs({
                                         'class': 'stats-value connection-name',
-                                        'x': 40,
+                                        'x': 5,
                                         'y': 14,
                                         'width': 142
                                     });
@@ -1165,18 +1165,18 @@
                                 'height': 1
                             }));
 
-                        queued.append('text')
-                            .attrs({
-                                'class': 'stats-label',
-                                'x': 5,
-                                'y': 14
-                            })
-                            .text(nf._.msg('nf-connection.Queued'));
+                        // queued.append('text')
+                        //     .attrs({
+                        //         'class': 'stats-label',
+                        //         'x': 5,
+                        //         'y': 14
+                        //     })
+                        //     .text(nf._.msg('nf-connection.Queued'));
 
                         var queuedText = queued.append('text')
                             .attrs({
                                 'class': 'stats-value queued',
-                                'x': 40,
+                                'x': 5,
                                 'y': 14
                             });
 

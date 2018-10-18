@@ -284,12 +284,12 @@
         processor.append('text')
             .attrs({
                 'class': 'io-tooltip-icon',
-                'x': 12,
-                'y': 70,
-                'fill': 'red',
+                'x': 11,
+                'y': 75,
+                'fill': '#5BB85D',
                 'font-family': 'FontAwesome',
             })
-            .text('\ue209');
+            .text('\uf192');
 
 
        
@@ -1151,28 +1151,6 @@
             return;
         }
 
-        // updated.select('rect.border')
-        //     .attrs({
-        //         'fill': function (d) {
-        //             var fill = '#FFFFFF'
-        //             if (d.status.aggregateSnapshot.runStatus === 'Disabled') {
-        //                 fill = 'none'
-        //             }
-        //             return fill
-        //         }
-        //     })
-
-        // updated.select('rect.body')
-            // .attrs({
-            //     'fill': function (d) {
-            //         var fill = '#FFFFFF'
-            //         if (d.status.aggregateSnapshot.runStatus === 'Disabled') {
-            //             fill = '#CCCCCC'
-            //         }
-            //         return fill
-            //     }
-            // })
-
         updated.select('rect.processor-disabled-modal')
             .attrs({
                 'style': function (d) {
@@ -1190,7 +1168,7 @@
                 var tip = d3.select('#processor-io-tip-' + d.id);
 
                 // if there are validation errors generate a tooltip
-                if (d.permissions.canRead && !nfCommon.isEmpty(d.component.validationErrors)) {
+                if ((d.permissions.canRead && !nfCommon.isEmpty(d.component.validationErrors)) || true) {
                     // create the tip if necessary
                     if (tip.empty()) {
                         tip = d3.select('#processor-tooltips').append('div')
@@ -1202,12 +1180,6 @@
 
                     // update the tip
                     tip.html(function () {
-                        // var list = nfCommon.formatUnorderedList(d.component.validationErrors);
-                        // if (list === null || list.length === 0) {
-                        //     return '';
-                        // } else {
-                        //     return $('<div></div>').append(list).html();
-                        // }
                         var arr = d.component.type.split('.')
                         var typeName = arr[arr.length -1]
 
@@ -1238,7 +1210,6 @@
                     }
                 }
             })
-
 
 
         // update the run status

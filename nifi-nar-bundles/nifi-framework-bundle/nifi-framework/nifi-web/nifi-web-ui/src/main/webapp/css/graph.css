@@ -209,12 +209,20 @@ text.is-primary {
     font-weight: bold;
 }
 
-text.run-status-icon, text.io-tooltip-icon {
+text.run-status-icon {
     font-size: 13px;
+}
+
+text.io-tooltip-icon {
+    font-size: 14px;
 }
 
 .io-tooltip-information{
     line-height: 1.4em;
+}
+
+.io-tooltip-information li{
+    list-style: none;
 }
 
 .io-tooltip-information li span{
