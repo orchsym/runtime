@@ -487,10 +487,10 @@ public class RunOrchsymRuntime extends RunNiFi {
     }
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static void printInfo(String message) {
-        System.out.println();
-        System.out.println(message);
-        System.out.println();
+    private static void printErr(String message) {
+        System.err.println();
+        System.err.println(message);
+        System.err.println();
     }
 
     private static File getLicFile() {
@@ -501,12 +501,12 @@ public class RunOrchsymRuntime extends RunNiFi {
         // FIXME for lic
         File licFile = getLicFile();
         if (!licFile.exists()) {
-            printInfo("License not found!");
+            printErr("License not found!");
             return;
         }
         final String message = new LicChecker().check(new FileInputStream(licFile));
         if (message != null) { // have error
-            printInfo(message);
+            printErr(message);
             return;
         }
 
