@@ -16,10 +16,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.nifi.annotation.documentation.Marks;
-import org.apache.nifi.authorization.Authorizer;
-import org.apache.nifi.authorization.RequestAction;
-import org.apache.nifi.authorization.resource.Authorizable;
-import org.apache.nifi.authorization.user.NiFiUserUtils;
 import org.apache.nifi.controller.FlowController;
 import org.apache.nifi.groups.ProcessGroup;
 import org.apache.nifi.web.NiFiServiceFacade;
@@ -46,7 +42,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import io.swagger.annotations.Authorization;
 
 /**
  * RESTful endpoint for statistics the flows and components.
@@ -63,10 +58,7 @@ public class StatsResource extends ApplicationResource {
     public static final String CODE_MESSAGE_403 = "Client is not authorized to make this request.";
     public static final String CODE_MESSAGE_409 = "The request was valid but NiFi was not in the appropriate state to process it. Retrying the same request later may be successful.";
 
-    public static final String AUTH_READ = "Read - " + PATH;
-
     private NiFiServiceFacade serviceFacade;
-    private Authorizer authorizer;
     private FlowController flowController;
 
     public StatsResource() {
@@ -77,10 +69,6 @@ public class StatsResource extends ApplicationResource {
         this.serviceFacade = serviceFacade;
     }
 
-    public void setAuthorizer(Authorizer authorizer) {
-        this.authorizer = authorizer;
-    }
-
     public void setFlowController(FlowController flowController) {
         this.flowController = flowController;
     }
@@ -89,10 +77,12 @@ public class StatsResource extends ApplicationResource {
      * Authorizes access to the flow.
      */
     private void authorizeFlow() {
-        serviceFacade.authorizeAccess(lookup -> {
-            final Authorizable flow = lookup.getFlow();
-            flow.authorize(authorizer, RequestAction.READ, NiFiUserUtils.getNiFiUser());
-        });
+        // FIXME, don't check the auth, should be available always
+
+        // serviceFacade.authorizeAccess(lookup -> {
+        // final Authorizable flow = lookup.getFlow();
+        // flow.authorize(authorizer, RequestAction.READ, NiFiUserUtils.getNiFiUser());
+        // });
     }
 
     /**
@@ -104,8 +94,8 @@ public class StatsResource extends ApplicationResource {
     @Consumes(MediaType.WILDCARD)
     @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Gets the summaries", //
-            response = StatsCountersEntity.class, //
-            authorizations = { @Authorization(value = AUTH_READ) })
+            response = StatsCountersEntity.class //
+    )
     @ApiResponses(value = { //
             @ApiResponse(code = 400, message = CODE_MESSAGE_400), //
             @ApiResponse(code = 401, message = CODE_MESSAGE_401), //
@@ -196,8 +186,8 @@ public class StatsResource extends ApplicationResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/processors")
     @ApiOperation(value = "Gets all processors", //
-            response = StatsProcessorsEntity.class, //
-            authorizations = { @Authorization(value = AUTH_READ) })
+            response = StatsProcessorsEntity.class //
+    )
     @ApiResponses(value = { //
             @ApiResponse(code = 400, message = CODE_MESSAGE_400), //
             @ApiResponse(code = 401, message = CODE_MESSAGE_401), //
@@ -228,8 +218,8 @@ public class StatsResource extends ApplicationResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/services")
     @ApiOperation(value = "Gets all Services", //
-            response = StatsServicesEntity.class, //
-            authorizations = { @Authorization(value = AUTH_READ) })
+            response = StatsServicesEntity.class //
+    )
     @ApiResponses(value = { //
             @ApiResponse(code = 400, message = CODE_MESSAGE_400), //
             @ApiResponse(code = 401, message = CODE_MESSAGE_401), //
@@ -260,8 +250,8 @@ public class StatsResource extends ApplicationResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/vars")
     @ApiOperation(value = "Gets all vars", //
-            response = StatsVarsEntity.class, //
-            authorizations = { @Authorization(value = AUTH_READ) })
+            response = StatsVarsEntity.class //
+    )
     @ApiResponses(value = { //
             @ApiResponse(code = 400, message = CODE_MESSAGE_400), //
             @ApiResponse(code = 401, message = CODE_MESSAGE_401), //
@@ -309,7 +299,7 @@ public class StatsResource extends ApplicationResource {
 
         final long processorMarkedCount = processorTypes.stream().filter(dto -> Marks.ORCHSYM.equals(dto.getVendor())).count();
         summaryDTO.setProcessorOwnedCount(processorMarkedCount);
-        
+
         final long controllerMarkedCount = serviceTypes.stream().filter(dto -> Marks.ORCHSYM.equals(dto.getVendor())).count();
         summaryDTO.setControllerOwnedCount(controllerMarkedCount);
 
@@ -319,7 +309,8 @@ public class StatsResource extends ApplicationResource {
     private long getGroupCount(String parentGroupId, boolean all) {
         final ProcessGroup processGroup = flowController.getGroup(parentGroupId);
         long count = 0;
-        if (all || !processGroup.getProcessors().isEmpty()) { // have components, else ignore
+        // have components, else ignore
+        if (all || processGroup != null && processGroup.getProcessors() != null && !processGroup.getProcessors().isEmpty()) {
             count = processGroup.getProcessGroups().size();
         }
         for (ProcessGroup group : processGroup.getProcessGroups()) {
@@ -330,8 +321,10 @@ public class StatsResource extends ApplicationResource {
 
     private long getLabelCount(String parentGroupId) {
         final ProcessGroup processGroup = flowController.getGroup(parentGroupId);
-        long count = processGroup.getLabels().size();
-
+        long count = 0L;
+        if (processGroup != null && processGroup.getLabels() != null) {
+            count = processGroup.getLabels().size();
+        }
         for (ProcessGroup group : processGroup.getProcessGroups()) {
             count += getLabelCount(group.getIdentifier());
         }
@@ -340,8 +333,10 @@ public class StatsResource extends ApplicationResource {
 
     private long getConnectionCount(String parentGroupId) {
         final ProcessGroup processGroup = flowController.getGroup(parentGroupId);
-        long count = processGroup.getConnections().size();
-
+        long count = 0L;
+        if (processGroup != null && processGroup.getConnections() != null) {
+            count = processGroup.getConnections().size();
+        }
         for (ProcessGroup group : processGroup.getProcessGroups()) {
             count += getConnectionCount(group.getIdentifier());
         }
@@ -350,8 +345,10 @@ public class StatsResource extends ApplicationResource {
 
     private long getFunnelCount(String parentGroupId) {
         final ProcessGroup processGroup = flowController.getGroup(parentGroupId);
-        long count = processGroup.getFunnels().size();
-
+        long count = 0L;
+        if (processGroup != null && processGroup.getFunnels() != null) {
+            count = processGroup.getFunnels().size();
+        }
         for (ProcessGroup group : processGroup.getProcessGroups()) {
             count += getFunnelCount(group.getIdentifier());
         }
@@ -370,7 +367,10 @@ public class StatsResource extends ApplicationResource {
 
         List<VarCounterDTO> allVars = new ArrayList<>();
 
-        final long size = (long) var.getVariableRegistry().getVariables().size();
+        long size = 0L;
+        if (var.getVariableRegistry() != null && var.getVariableRegistry().getVariables() != null) {
+            size = (long) var.getVariableRegistry().getVariables().size();
+        }
         if (size > 0) {
             VarCounterDTO dto = new VarCounterDTO();
             if (!simple)

@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
@@ -35,9 +36,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.nifi.authorization.Authorizer;
-import org.apache.nifi.authorization.RequestAction;
-import org.apache.nifi.authorization.resource.Authorizable;
-import org.apache.nifi.authorization.user.NiFiUserUtils;
 import org.apache.nifi.web.NiFiServiceFacade;
 import org.apache.nifi.web.api.dto.DocumentedTypeDTO;
 
@@ -45,14 +43,18 @@ import com.google.gson.Gson;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import net.sourceforge.pinyin4j.PinyinHelper;
 
 /**
  * RESTful endpoint for retrieving system diagnostics.
  */
-@Path("/component-marks")
-@Api(value = "/component-marks", description = "Endpoint for accessing components marks.")
+@Path(ComponentMarksResource.PATH)
+@Api(value = ComponentMarksResource.PATH, //
+        description = "Endpoint for accessing components marks.")
 public class ComponentMarksResource extends ApplicationResource {
+    public static final String PATH = "/component-marks";
 
     // first level index
     public static final String FIRST_DATA_PROCESS = "数据处理";
@@ -77,44 +79,42 @@ public class ComponentMarksResource extends ApplicationResource {
     public static final String SECNOD_EXECUTE = "执行";
 
     private NiFiServiceFacade serviceFacade;
-    private Authorizer authorizer;
 
-    private Map<String, String> levelOneIconMap;
-    private Map<String, String> levelTwoIconMap;
+    private static final Map<String, String> levelOneIconMap;
+    private static final Map<String, String> levelTwoIconMap;
 
-    private void authorizeSystem() {
-        serviceFacade.authorizeAccess(lookup -> {
-            final Authorizable system = lookup.getSystem();
-            system.authorize(authorizer, RequestAction.READ, NiFiUserUtils.getNiFiUser());
-        });
+    static {
+        levelOneIconMap = new HashMap<>();
+        levelOneIconMap.put(FIRST_DATA_PROCESS, "001.svg");
+        levelOneIconMap.put(FIRST_TRANSFORM_CONTROL, "002.svg");
+        levelOneIconMap.put(FIRST_DATA_BASE, "003.svg");
+        levelOneIconMap.put(FIRST_NETWORK, "004.svg");
+        levelOneIconMap.put(FIRST_FILE_PROCESS, "005.svg");
+        levelOneIconMap.put(FIRST_BIG_DATA, "006.svg");
+        levelOneIconMap.put(FIRST_EXECUTE, "007.svg");
+
+        levelTwoIconMap = new HashMap<>();
+        levelTwoIconMap.put(SECNOD_DATA_FETCH, "01.svg");
+        levelTwoIconMap.put(SECNOD_DATA_OUTPUT, "03.svg");
+        levelTwoIconMap.put(SECNOD_MESSAGE_EVENT, "02.svg");
+        levelTwoIconMap.put(SECNOD_DATA_TRANSFORM, "04.svg");
+        levelTwoIconMap.put(SECNOD_PROCESS_CONTROL, "05.svg");
+        levelTwoIconMap.put(SECNOD_DATA_BASE, "06.svg");
+        levelTwoIconMap.put(SECNOD_TELE_COMMUNICATION, "08.svg");
+        levelTwoIconMap.put(SECNOD_CLOUD, "09.svg");
+        levelTwoIconMap.put(SECNOD_FILE, "10.svg");
+        levelTwoIconMap.put(SECNOD_LOG, "11.svg");
+        levelTwoIconMap.put(SECNOD_BIG_DATA, "12.svg");
+        levelTwoIconMap.put(SECNOD_EXECUTE, "13.svg");
     }
 
-    private void makeupIconMap() {
-        if (levelOneIconMap == null) {
-            levelOneIconMap = new HashMap<>();
-            levelOneIconMap.put(FIRST_DATA_PROCESS, "001.svg");
-            levelOneIconMap.put(FIRST_TRANSFORM_CONTROL, "002.svg");
-            levelOneIconMap.put(FIRST_DATA_BASE, "003.svg");
-            levelOneIconMap.put(FIRST_NETWORK, "004.svg");
-            levelOneIconMap.put(FIRST_FILE_PROCESS, "005.svg");
-            levelOneIconMap.put(FIRST_BIG_DATA, "006.svg");
-            levelOneIconMap.put(FIRST_EXECUTE, "007.svg");
-        }
-        if (levelTwoIconMap == null) {
-            levelTwoIconMap = new HashMap<>();
-            levelTwoIconMap.put(SECNOD_DATA_FETCH, "01.svg");
-            levelTwoIconMap.put(SECNOD_DATA_OUTPUT, "03.svg");
-            levelTwoIconMap.put(SECNOD_MESSAGE_EVENT, "02.svg");
-            levelTwoIconMap.put(SECNOD_DATA_TRANSFORM, "04.svg");
-            levelTwoIconMap.put(SECNOD_PROCESS_CONTROL, "05.svg");
-            levelTwoIconMap.put(SECNOD_DATA_BASE, "06.svg");
-            levelTwoIconMap.put(SECNOD_TELE_COMMUNICATION, "08.svg");
-            levelTwoIconMap.put(SECNOD_CLOUD, "09.svg");
-            levelTwoIconMap.put(SECNOD_FILE, "10.svg");
-            levelTwoIconMap.put(SECNOD_LOG, "11.svg");
-            levelTwoIconMap.put(SECNOD_BIG_DATA, "12.svg");
-            levelTwoIconMap.put(SECNOD_EXECUTE, "13.svg");
-        }
+    private void authorizeSystem() {
+        // FIXME, don't check the auth, should be available always
+
+        // serviceFacade.authorizeAccess(lookup -> {
+        // final Authorizable system = lookup.getSystem();
+        // system.authorize(authorizer, RequestAction.READ, NiFiUserUtils.getNiFiUser());
+        // });
     }
 
     /**
@@ -125,10 +125,26 @@ public class ComponentMarksResource extends ApplicationResource {
     @GET
     @Consumes(MediaType.WILDCARD)
     @Produces(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Gets the components marks for the system is running on", response = MarkEntity.class)
-    public Response getComponentsMarks(@QueryParam("type") final String filterType, @QueryParam("name") final String filterName, @QueryParam("vendor") final String filterVendor) {
-
+    @ApiOperation(//
+            value = "Gets the components marks for the system is running on", //
+            response = MarkEntity.class //
+    )
+    @ApiResponses(value = { //
+            @ApiResponse(code = 400, message = StatsResource.CODE_MESSAGE_400), //
+            @ApiResponse(code = 401, message = StatsResource.CODE_MESSAGE_401), //
+            @ApiResponse(code = 403, message = StatsResource.CODE_MESSAGE_403), //
+            @ApiResponse(code = 409, message = StatsResource.CODE_MESSAGE_409) //
+    })
+    public Response getComponentsMarks(//
+            @QueryParam("type") final String filterType, //
+            @QueryParam("name") final String filterName, //
+            @QueryParam("vendor") final String filterVendor//
+    ) {
         authorizeSystem();
+
+        if (isReplicateRequest()) {
+            return replicate(HttpMethod.GET);
+        }
         // create the response
         Set<DocumentedTypeDTO> processorTypes = serviceFacade.getProcessorTypes(null, null, null);
         Set<DocumentedTypeDTO> serviceTypes = serviceFacade.getControllerServiceTypes(null, null, null, null, null, null, null);
@@ -156,11 +172,23 @@ public class ComponentMarksResource extends ApplicationResource {
     @Consumes(MediaType.WILDCARD)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/classification")
-    @ApiOperation(value = "Gets the components classification for the system is running on", response = MarkEntity.class)
+    @ApiOperation(//
+            value = "Gets the components classification for the system is running on", //
+            response = MarkEntity.class //
+    )
+    @ApiResponses(value = { //
+            @ApiResponse(code = 400, message = StatsResource.CODE_MESSAGE_400), //
+            @ApiResponse(code = 401, message = StatsResource.CODE_MESSAGE_401), //
+            @ApiResponse(code = 403, message = StatsResource.CODE_MESSAGE_403), //
+            @ApiResponse(code = 409, message = StatsResource.CODE_MESSAGE_409) //
+    })
     public Response getComponentsClassification() {
-
-        makeupIconMap();
         authorizeSystem();
+
+        if (isReplicateRequest()) {
+            return replicate(HttpMethod.GET);
+        }
+
         // create the response
         Set<DocumentedTypeDTO> processorTypes = serviceFacade.getProcessorTypes(null, null, null);
         Map<String, CategoryItem> categoryItems = new HashMap<String, CategoryItem>();
@@ -312,10 +340,6 @@ public class ComponentMarksResource extends ApplicationResource {
 
     public void setServiceFacade(NiFiServiceFacade serviceFacade) {
         this.serviceFacade = serviceFacade;
-    }
-
-    public void setAuthorizer(Authorizer authorizer) {
-        this.authorizer = authorizer;
     }
 
     class MarkEntity {
