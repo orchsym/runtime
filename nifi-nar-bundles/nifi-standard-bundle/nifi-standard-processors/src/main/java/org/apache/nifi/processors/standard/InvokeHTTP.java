@@ -1024,18 +1024,20 @@ public final class InvokeHTTP extends AbstractProcessor {
 
         //set cookie header
         boolean cookieEnabled = context.getProperty(COOKIE_ENABLED).asBoolean();
-        if (cookieEnabled) {
+        if (cookieEnabled && requestFlowFile != null) {
             String cookiesString = requestFlowFile.getAttribute(COOKIE_KEY);
-            String cookies = "";
-            List<String> cookiesList = new ArrayList<String>(Arrays.asList(cookiesString.split("&&")));
-            for (String cookieStr : cookiesList) {
-                List<String> cookiePart = new ArrayList<String>(Arrays.asList(cookieStr.split(";")));
-                if(cookiePart.size() > 0) {
-                    cookies += cookiePart.get(0);
-                    cookies += ";";
+            if (cookiesString != null) {
+                String cookies = "";
+                List<String> cookiesList = new ArrayList<String>(Arrays.asList(cookiesString.split("&&")));
+                for (String cookieStr : cookiesList) {
+                    List<String> cookiePart = new ArrayList<String>(Arrays.asList(cookieStr.split(";")));
+                    if(cookiePart.size() > 0) {
+                        cookies += cookiePart.get(0);
+                        cookies += ";";
+                    }
                 }
+                requestBuilder = requestBuilder.addHeader("Cookie", cookies);
             }
-            requestBuilder = requestBuilder.addHeader("Cookie", cookies);
         }
 
         // set the request method
