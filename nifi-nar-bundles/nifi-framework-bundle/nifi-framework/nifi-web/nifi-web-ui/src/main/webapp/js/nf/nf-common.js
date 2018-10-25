@@ -88,15 +88,15 @@
         // handle logout
         $('#user-logout').on('click', function () {
             nfStorage.removeItem('jwt');
-            window.location = '../nifi/login';
+            window.location = '../runtime/login';
         });
 
         // handle home
         $('#user-home').on('click', function () {
             if (top !== window) {
-                parent.window.location = '../nifi';
+                parent.window.location = '../runtime';
             } else {
-                window.location = '../nifi';
+                window.location = '../runtime';
             }
         });
     });

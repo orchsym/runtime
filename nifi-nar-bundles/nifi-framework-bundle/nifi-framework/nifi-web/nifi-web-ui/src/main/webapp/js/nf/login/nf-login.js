@@ -119,9 +119,9 @@
                 if (accessStatus.status === 'ACTIVE') {
                     // reload as appropriate - no need to schedule token refresh as the page is reloading
                     if (top !== window) {
-                        parent.window.location = '/nifi';
+                        parent.window.location = '/runtime';
                     } else {
-                        window.location = '/nifi';
+                        window.location = '/runtime';
                     }
                 } else {
                     $('#login-message-title').text(nf._.msg('nf-login.Message1'));

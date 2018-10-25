@@ -254,7 +254,7 @@
 
             var query = function (ids) {
                 var url = new URL(window.location);
-                var origin = nfCommon.substringBeforeLast(url.href, '/nifi');
+                var origin = nfCommon.substringBeforeLast(url.href, '/runtime');
                 var endpoint = origin + '/nifi-api/flow/bulletin-board?' + $.param({
                     sourceId: ids.join('|')
                 });
