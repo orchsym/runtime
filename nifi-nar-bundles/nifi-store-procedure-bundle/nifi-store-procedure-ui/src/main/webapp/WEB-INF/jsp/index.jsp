@@ -113,6 +113,11 @@
 
 		var paramList = []
 		var methodName = ''
+
+		var token = 'Bearer '
+		if(JSON.parse(localStorage.getItem('jwt'))){
+			token = token + JSON.parse(localStorage.getItem('jwt'))['item']
+		}
 		// $(function(){
 		// 	console.log(processorId)
 		// 	$.ajax({
@@ -148,6 +153,9 @@
 	            type: 'GET',
 	            url: 'api/store/procedure/processor/details?processorId=' + processorId,
 	            async: false,
+	            headers:{
+	            	Authorization: token,
+	            },
 		        }).done(function (response) {
 		        	console.log(response)
 		        	
@@ -288,7 +296,10 @@
 					type: 'PUT',
 					url: 'api/store/procedure/processor/properties?processorId='+processorId+'&revisionId='+revisionId+'&clientId='+clientId,
 					data: JSON.stringify(request),
-					contentType: 'application/json'
+					contentType: 'application/json',
+					headers:{
+		            	Authorization: token,
+		            },
 				}).done(function (response) {
 	            	alert('保存成功')
 	        	});

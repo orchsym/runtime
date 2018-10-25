@@ -84,6 +84,10 @@
 		var processorId = $('#processor-id').html()
 		var revisionId = $('#revision').html()
 		var clientId = $('#client-id').html()
+		var token = 'Bearer '
+		if(JSON.parse(localStorage.getItem('jwt'))){
+			token = token + JSON.parse(localStorage.getItem('jwt'))['item']
+		}
 
 		function customAlert(par){
 	        var W = screen.availWidth;
@@ -104,6 +108,9 @@
 	            url: 'api/puttcp/info?' + $.param({
                 processorId: processorId
             }),
+	            headers:{
+	            	Authorization: token,
+	            },
 	            async: false,
 		        }).done(function (response) {
 		            $scope.list = response.infos
@@ -182,7 +189,10 @@
 					type: 'POST',
 					url: 'api/puttcp/info',
 					data: data,
-					contentType: 'application/json'
+					contentType: 'application/json',
+					headers:{
+		            	Authorization: token,
+		            },
 				}).then(function (response) {
 		            console.log(response);
 		        }, function (xhr, status, error) {

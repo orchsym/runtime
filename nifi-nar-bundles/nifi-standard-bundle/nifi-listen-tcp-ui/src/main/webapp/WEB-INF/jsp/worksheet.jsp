@@ -70,6 +70,11 @@
 		var processorId = $('#processor-id').html()
 		var revisionId = $('#revision').html()
 		var clientId = $('#client-id').html()
+		var token = 'Bearer '
+		if(JSON.parse(localStorage.getItem('jwt'))){
+			token = token + JSON.parse(localStorage.getItem('jwt'))['item']
+		}
+
 
 		function customAlert(par){
 	        var W = screen.availWidth;
@@ -87,6 +92,9 @@
 			$scope.list = [];
 			$.ajax({
 	            type: 'GET',
+	            headers:{
+	            	Authorization: token,
+	            },
 	            url: 'api/listentcp/info?' + $.param({
                 processorId: processorId
             }),
@@ -149,6 +157,9 @@
 				$.ajax({
 					type: 'POST',
 					url: 'api/listentcp/info',
+					headers: {
+						Authorization: token,
+					},
 					data: data,
 					contentType: 'application/json'
 				}).then(function (response) {

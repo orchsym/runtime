@@ -4,6 +4,10 @@
 $(function(){
     var Swagger = {};
     var ApiTools = {};
+    var token = 'Bearer '
+    if(JSON.parse(localStorage.getItem('jwt'))){
+            token = token + JSON.parse(localStorage.getItem('jwt'))['item']
+    }
 
     ApiTools.path = {
         node: $("input[name=path]")
@@ -670,7 +674,10 @@ $(function(){
             url: url,
             data: JSON.stringify(Swagger),
             processData: false,
-            contentType: 'application/json'
+            contentType: 'application/json',
+            headers:{
+                Authorization: token,
+            },
         }).then(function (response) {
             console.log(response);
             Initialization();
@@ -990,7 +997,10 @@ $(function(){
             type: 'GET',
             url: 'api/property/info?' + $.param({
                 processorId: getProcessorId()
-            })
+            }),
+            headers:{
+                Authorization: token,
+            },
         }).done(function (response) {
             Swagger = response;
             Swagger.respModels.forEach(function(item){

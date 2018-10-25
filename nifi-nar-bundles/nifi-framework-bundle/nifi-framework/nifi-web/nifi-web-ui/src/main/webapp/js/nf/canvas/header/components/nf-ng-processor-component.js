@@ -639,7 +639,7 @@
                                     var respnseMerged = mergeResponse(responseBase, response)
 
                                     var allComponent = []
-                                    respnse = respnseMerged.map(function(item){
+                                    var respnse = respnseMerged.map(function(item){
                                         item.classification = item.classification.sort()
 
                                         item.classification.map(function(doc){
