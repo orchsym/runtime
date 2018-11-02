@@ -82,6 +82,7 @@ public abstract class NiFiProperties {
     public static final String BACKPRESSURE_COUNT = "nifi.queue.backpressure.count";
     public static final String BACKPRESSURE_SIZE = "nifi.queue.backpressure.size";
     public static final String HEADLESS = "nifi.headless";
+    public static final String EXCEPTION_TOLERANCE_COUNT = "nifi.exception.tolerance.count";
 
     // content repository properties
     public static final String REPOSITORY_CONTENT_PREFIX = "nifi.content.repository.directory.";
@@ -276,6 +277,7 @@ public abstract class NiFiProperties {
     public static final String DEFAULT_FLOW_CONFIGURATION_ARCHIVE_MAX_STORAGE = "500 MB";
     public static final String DEFAULT_SECURITY_USER_OIDC_CONNECT_TIMEOUT = "5 secs";
     public static final String DEFAULT_SECURITY_USER_OIDC_READ_TIMEOUT = "5 secs";
+    public static final int DEFAULT_EXCEPTION_TOLERANCE_COUNT = 50;
 
     // cluster common defaults
     public static final String DEFAULT_CLUSTER_PROTOCOL_HEARTBEAT_INTERVAL = "5 sec";
@@ -1413,6 +1415,10 @@ public abstract class NiFiProperties {
 
     public boolean isHeadlessMode() {
         return Boolean.parseBoolean(getProperty(HEADLESS));
+    }
+
+    public int getExceptionToleranceCount() {
+        return getIntegerProperty(EXCEPTION_TOLERANCE_COUNT, DEFAULT_EXCEPTION_TOLERANCE_COUNT);
     }
 
     /**

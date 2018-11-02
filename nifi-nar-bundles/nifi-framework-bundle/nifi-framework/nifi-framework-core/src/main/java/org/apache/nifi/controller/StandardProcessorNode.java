@@ -148,6 +148,9 @@ public class StandardProcessorNode extends ProcessorNode implements Connectable 
     private final long onScheduleTimeoutMillis;
     private final Map<Thread, ActiveTask> activeThreads = new HashMap<>(48);
 
+    private AtomicInteger currentExceptionCount = new AtomicInteger(0);
+    private final int exceptionToleranceCount;
+
     public StandardProcessorNode(final LoggableComponent<Processor> processor, final String uuid,
                                  final ValidationContextFactory validationContextFactory, final ProcessScheduler scheduler,
                                  final ControllerServiceProvider controllerServiceProvider, final NiFiProperties nifiProperties,
@@ -186,6 +189,8 @@ public class StandardProcessorNode extends ProcessorNode implements Connectable 
         this.processGroup = new AtomicReference<>();
         processScheduler = scheduler;
         penalizationPeriod = new AtomicReference<>(DEFAULT_PENALIZATION_PERIOD);
+
+        exceptionToleranceCount = nifiProperties.getExceptionToleranceCount();
 
         final String timeoutString = nifiProperties.getProperty(NiFiProperties.PROCESSOR_SCHEDULING_TIMEOUT);
         onScheduleTimeoutMillis = timeoutString == null ? 60000 : FormatUtils.getTimeDuration(timeoutString.trim(), TimeUnit.MILLISECONDS);
@@ -1482,10 +1487,14 @@ public class StandardProcessorNode extends ProcessorNode implements Connectable 
 
                         scheduledState.set(ScheduledState.STOPPED);
                     }
+                    //success, reset currentExceptionCount to zero
+                    currentExceptionCount.getAndSet(0);
                 } finally {
                     schedulingAgentCallback.onTaskComplete();
                 }
             } catch (final Exception e) {
+
+                currentExceptionCount.incrementAndGet();
                 procLog.error("Failed to properly initialize Processor. If still scheduled to run, NiFi will attempt to "
                     + "initialize and run the Processor again after the 'Administrative Yield Duration' has elapsed. Failure is due to " + e, e);
 
@@ -1499,13 +1508,14 @@ public class StandardProcessorNode extends ProcessorNode implements Connectable 
                         deactivateThread();
                     }
                 }
-
                 // make sure we only continue retry loop if STOP action wasn't initiated
-                if (scheduledState.get() != ScheduledState.STOPPING) {
+                if ((scheduledState.get() != ScheduledState.STOPPING) && (exceptionToleranceCount == 0 || currentExceptionCount.get() < exceptionToleranceCount)) {
                     // re-initiate the entire process
                     final Runnable initiateStartTask = () -> initiateStart(taskScheduler, administrativeYieldMillis, processContext, schedulingAgentCallback);
                     taskScheduler.schedule(initiateStartTask, administrativeYieldMillis, TimeUnit.MILLISECONDS);
                 } else {
+                    //stopped, reset currentExceptionCount to zero
+                    currentExceptionCount.getAndSet(0);
                     scheduledState.set(ScheduledState.STOPPED);
                 }
             }
@@ -1568,6 +1578,7 @@ public class StandardProcessorNode extends ProcessorNode implements Connectable 
     public CompletableFuture<Void> stop(final ProcessScheduler processScheduler, final ScheduledExecutorService executor, final ProcessContext processContext,
             final SchedulingAgent schedulingAgent, final LifecycleState scheduleState) {
 
+        currentExceptionCount.getAndSet(0);
         final Processor processor = processorRef.get().getProcessor();
         LOG.info("Stopping processor: " + processor.getClass());
         desiredState = ScheduledState.STOPPED;

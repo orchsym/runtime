@@ -19,6 +19,7 @@ package org.apache.nifi.controller.tasks;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.nifi.components.state.StateManager;
 import org.apache.nifi.connectable.Connectable;
@@ -66,6 +67,8 @@ public class ConnectableTask {
     private final ProcessContext processContext;
     private final FlowController flowController;
     private final int numRelationships;
+    private AtomicInteger currentExceptionCount = new AtomicInteger(0);
+    private int exceptionToleranceCount;
 
 
     public ConnectableTask(final SchedulingAgent schedulingAgent, final Connectable connectable,
@@ -86,6 +89,14 @@ public class ConnectableTask {
         }
 
         repositoryContext = contextFactory.newProcessContext(connectable, new AtomicLong(0L));
+    }
+
+    public void setExceptionToleranceCount(int exceptionToleranceCount) {
+        this.exceptionToleranceCount = exceptionToleranceCount;
+    }
+
+    public int getExceptionToleranceCount() {
+        return this.exceptionToleranceCount;
     }
 
     public Connectable getConnectable() {
@@ -202,6 +213,7 @@ public class ConnectableTask {
                 while (shouldRun) {
                     connectable.onTrigger(processContext, activeSessionFactory);
                     invocationCount++;
+                    currentExceptionCount.getAndSet(0);//reset currentExceptionCount to zero when onTrigger success
 
                     if (!batch) {
                         return InvocationResult.DO_NOT_YIELD;
@@ -236,8 +248,14 @@ public class ConnectableTask {
                 final ComponentLog procLog = new SimpleProcessLogger(connectable.getIdentifier(), connectable.getRunnableComponent());
                 procLog.info("Failed to process session due to task being terminated", new Object[] {tte});
             } catch (final ProcessException pe) {
+                currentExceptionCount.incrementAndGet() ;
                 final ComponentLog procLog = new SimpleProcessLogger(connectable.getIdentifier(), connectable.getRunnableComponent());
                 procLog.error("Failed to process session due to {}", new Object[] {pe});
+                if (exceptionToleranceCount != 0 && currentExceptionCount.get() >= exceptionToleranceCount) {
+                    //throw the exception, stop execution
+                    currentExceptionCount.getAndSet(0);
+                    throw pe;   
+                }
             } catch (final Throwable t) {
                 // Use ComponentLog to log the event so that a bulletin will be created for this processor
                 final ComponentLog procLog = new SimpleProcessLogger(connectable.getIdentifier(), connectable.getRunnableComponent());

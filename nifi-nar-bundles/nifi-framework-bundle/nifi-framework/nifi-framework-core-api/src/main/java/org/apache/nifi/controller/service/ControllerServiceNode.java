@@ -97,10 +97,12 @@ public interface ControllerServiceNode extends ConfiguredComponent, Configurable
      *            initiate service enabling task as well as its re-tries
      * @param administrativeYieldMillis
      *            the amount of milliseconds to wait for administrative yield
+     * @param exceptionToleranceCount
+     *            the tolerance count of exception, will disable the service when excess the count
      *
      * @return a CompletableFuture that can be used to wait for the service to finish enabling
      */
-    CompletableFuture<Void> enable(ScheduledExecutorService scheduler, long administrativeYieldMillis);
+    CompletableFuture<Void> enable(ScheduledExecutorService scheduler, long administrativeYieldMillis, int exceptionToleranceCount);
 
     /**
      * Will disable this service. Disabling of the service typically means

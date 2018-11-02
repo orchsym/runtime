@@ -31,6 +31,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -76,6 +77,7 @@ public class StandardControllerServiceNode extends AbstractConfiguredComponent i
     private final ControllerServiceProvider serviceProvider;
     private final ServiceStateTransition stateTransition = new ServiceStateTransition();
     private final AtomicReference<String> versionedComponentId = new AtomicReference<>();
+    private AtomicInteger currentExceptionCount = new AtomicInteger(0);
 
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
     private final Lock readLock = rwLock.readLock();
@@ -401,7 +403,7 @@ public class StandardControllerServiceNode extends AbstractConfiguredComponent i
      * as it reached ENABLED state.
      */
     @Override
-    public CompletableFuture<Void> enable(final ScheduledExecutorService scheduler, final long administrativeYieldMillis) {
+    public CompletableFuture<Void> enable(final ScheduledExecutorService scheduler, final long administrativeYieldMillis, final int exceptionToleranceCount) {
         final CompletableFuture<Void> future = new CompletableFuture<>();
 
         if (this.stateTransition.transitionToEnabling(ControllerServiceState.DISABLED, future)) {
@@ -433,7 +435,10 @@ public class StandardControllerServiceNode extends AbstractConfiguredComponent i
                         } else {
                             LOG.debug("Successfully enabled {}", service);
                         }
+                        currentExceptionCount.getAndSet(0);
                     } catch (Exception e) {
+
+                        currentExceptionCount.incrementAndGet();
                         future.completeExceptionally(e);
 
                         final Throwable cause = e instanceof InvocationTargetException ? e.getCause() : e;
@@ -441,14 +446,15 @@ public class StandardControllerServiceNode extends AbstractConfiguredComponent i
                         componentLog.error("Failed to invoke @OnEnabled method due to {}", cause);
                         LOG.error("Failed to invoke @OnEnabled method of {} due to {}", getControllerServiceImplementation(), cause.toString());
                         invokeDisable(configContext);
-
-                        if (isActive()) {
+                        if (isActive() && (exceptionToleranceCount == 0 || currentExceptionCount.get() < exceptionToleranceCount)) {
                             scheduler.schedule(this, administrativeYieldMillis, TimeUnit.MILLISECONDS);
                         } else {
                             try (final NarCloseable nc = NarCloseable.withComponentNarLoader(getControllerServiceImplementation().getClass(), getIdentifier())) {
                                 ReflectionUtils.quietlyInvokeMethodsWithAnnotation(OnDisabled.class, getControllerServiceImplementation(), configContext);
                             }
                             stateTransition.disable();
+                            //stop re-enable service, and set currentExceptionCount to 0
+                            currentExceptionCount.getAndSet(0);
                         }
                     }
                 }
@@ -485,7 +491,7 @@ public class StandardControllerServiceNode extends AbstractConfiguredComponent i
         synchronized (this.active) {
             this.active.set(false);
         }
-
+        currentExceptionCount.getAndSet(0);
         final CompletableFuture<Void> future = new CompletableFuture<>();
         if (this.stateTransition.transitionToDisabling(ControllerServiceState.ENABLED, future)) {
             final ConfigurationContext configContext = new StandardConfigurationContext(this, this.serviceProvider, null, getVariableRegistry());

@@ -43,6 +43,7 @@ public class TimerDrivenSchedulingAgent extends AbstractSchedulingAgent {
     private final FlowController flowController;
     private final RepositoryContextFactory contextFactory;
     private final StringEncryptor encryptor;
+    private final int exceptionToleranceCount;
 
     private volatile String adminYieldDuration = "1 sec";
 
@@ -52,6 +53,7 @@ public class TimerDrivenSchedulingAgent extends AbstractSchedulingAgent {
         this.flowController = flowController;
         this.contextFactory = contextFactory;
         this.encryptor = encryptor;
+        this.exceptionToleranceCount = nifiProperties.getExceptionToleranceCount();
 
         final String boredYieldDuration = nifiProperties.getBoredYieldDuration();
         try {
@@ -83,6 +85,7 @@ public class TimerDrivenSchedulingAgent extends AbstractSchedulingAgent {
     public void doSchedule(final Connectable connectable, final LifecycleState scheduleState) {
         final List<ScheduledFuture<?>> futures = new ArrayList<>();
         final ConnectableTask connectableTask = new ConnectableTask(this, connectable, flowController, contextFactory, scheduleState, encryptor);
+        connectableTask.setExceptionToleranceCount(this.exceptionToleranceCount);
 
         for (int i = 0; i < connectable.getMaxConcurrentTasks(); i++) {
             // Determine the task to run and create it.

@@ -77,6 +77,7 @@ public final class StandardProcessScheduler implements ProcessScheduler {
     private final long administrativeYieldMillis;
     private final String administrativeYieldDuration;
     private final StateManagerProvider stateManagerProvider;
+    private final int exceptionToleranceCount;
 
     private final ConcurrentMap<Object, LifecycleState> lifecycleStates = new ConcurrentHashMap<>();
     private final ScheduledExecutorService frameworkTaskExecutor;
@@ -98,6 +99,7 @@ public final class StandardProcessScheduler implements ProcessScheduler {
 
         administrativeYieldDuration = nifiProperties.getAdministrativeYieldDuration();
         administrativeYieldMillis = FormatUtils.getTimeDuration(administrativeYieldDuration, TimeUnit.MILLISECONDS);
+        exceptionToleranceCount = nifiProperties.getExceptionToleranceCount();
 
         frameworkTaskExecutor = new FlowEngine(4, "Framework Task Thread");
     }
@@ -601,7 +603,7 @@ public final class StandardProcessScheduler implements ProcessScheduler {
     @Override
     public CompletableFuture<Void> enableControllerService(final ControllerServiceNode service) {
         LOG.info("Enabling " + service);
-        return service.enable(this.componentLifeCycleThreadPool, this.administrativeYieldMillis);
+        return service.enable(this.componentLifeCycleThreadPool, this.administrativeYieldMillis, this.exceptionToleranceCount);
     }
 
     @Override
