@@ -187,7 +187,7 @@
                     <fmt:message key="收起" var="collapse"/>
                     <div id="operate-collapse" class="action-button" title="${collapse}">
                         <button ng-click="appCtrl.nf.Actions['collapse'](appCtrl.nf.CanvasUtils.getSelection());"
-                                ng-disabled="!appCtrl.nf.CanvasUtils.getSelection().empty() && !appCtrl.nf.CanvasUtils.canModify(appCtrl.nf.CanvasUtils.getSelection());">
+                                ng-disabled="!appCtrl.nf.CanvasUtils.areDeletable(appCtrl.nf.CanvasUtils.getSelection());">
                             <div class="graph-control-action-icon fa fa-minus"></div></button>
                     </div>
                     <div class="button-spacer-large">&nbsp;</div>

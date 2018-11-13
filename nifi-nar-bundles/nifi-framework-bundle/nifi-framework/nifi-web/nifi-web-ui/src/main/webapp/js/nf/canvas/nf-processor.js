@@ -1180,24 +1180,27 @@
 
                     // update the tip
                     tip.html(function () {
-                        var arr = d.component.type.split('.')
-                        var typeName = arr[arr.length -1]
+                        $html = ''
+                        if(d.component && d.component.type) {
+                            var arr = d.component.type.split('.')
+                            var typeName = arr[arr.length -1]
 
-                        var $html = '<span class="io-tooltip-information">'+
-                                    '<span style="display:block;font-weight:bold;font-size:14px;margin-bottom:5px">'+ typeName +'</span>'+
-                                    '<li>'+
-                                    '<span>输入:</span><span>'+nfCommon.substringBeforeFirst(d.status.aggregateSnapshot.input, ' ')+' ' + nfCommon.substringAfterFirst(d.status.aggregateSnapshot.input, ' ')+'</span>'+
-                                    '</li>'+
-                                    '<li>'+
-                                    '<span>读写:</span><span>'+d.status.aggregateSnapshot.read + ' / ' + d.status.aggregateSnapshot.written+'</span>'+
-                                    '</li>'+
-                                    '<li>'+
-                                    '<span>输出:</span><span>'+nfCommon.substringBeforeFirst(d.status.aggregateSnapshot.output, ' ')+' ' + nfCommon.substringAfterFirst(d.status.aggregateSnapshot.output, ' ')+'</span>'+
-                                    '</li>'+
-                                    '<li>'+
-                                    '<span>任务/时间:</span><span>'+d.status.aggregateSnapshot.tasks + ' / ' + d.status.aggregateSnapshot.tasksDuration+'</span>'+
-                                    '</li>'+
-                                    '</span>';
+                            var $html = '<span class="io-tooltip-information">'+
+                                        '<span style="display:block;font-weight:bold;font-size:14px;margin-bottom:5px">'+ typeName +'</span>'+
+                                        '<li>'+
+                                        '<span>输入:</span><span>'+nfCommon.substringBeforeFirst(d.status.aggregateSnapshot.input, ' ')+' ' + nfCommon.substringAfterFirst(d.status.aggregateSnapshot.input, ' ')+'</span>'+
+                                        '</li>'+
+                                        '<li>'+
+                                        '<span>读写:</span><span>'+d.status.aggregateSnapshot.read + ' / ' + d.status.aggregateSnapshot.written+'</span>'+
+                                        '</li>'+
+                                        '<li>'+
+                                        '<span>输出:</span><span>'+nfCommon.substringBeforeFirst(d.status.aggregateSnapshot.output, ' ')+' ' + nfCommon.substringAfterFirst(d.status.aggregateSnapshot.output, ' ')+'</span>'+
+                                        '</li>'+
+                                        '<li>'+
+                                        '<span>任务/时间:</span><span>'+d.status.aggregateSnapshot.tasks + ' / ' + d.status.aggregateSnapshot.tasksDuration+'</span>'+
+                                        '</li>'+
+                                        '</span>';
+                        }
 
                         return $('<div></div>').append($html).html();
                     });

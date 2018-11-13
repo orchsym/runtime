@@ -146,7 +146,6 @@
             controller: '../nifi-api/controller'
         }
     };
-
     /**
      * Initializes the drop request status dialog.
      */
@@ -163,7 +162,39 @@
         });
     };
 
+    var initDeleteModel = function() {
+           var $mengban = '<div id="deleteMengBan" class="modal-glass hidden" style="background-color: rgb(80, 103, 115); z-index: 1300;"></div>';
+           var $html = '<div id="deleteModal" class="hidden"  style="z-index: 1301;min-height: 100px;height:18.153%;min-width:320px;width:20.1765%;position:absolute;left:505.5px;top:319px;background-color:#FFFFFF;">' +
+                            '<div class="dialog-header"><span class="dialog-header-text">'+nf._.msg('nf-actions.DeleteTitle')+'</span></div>'+
+                            '<div class="dialog-content">'+nf._.msg('nf-actions.Delete')+'</div>'+
+                            '<div class="dialog-buttons"><div id="deleteOk" class="button ok" style="background: rgb(114, 142, 155); color: rgb(255, 255, 255);">确定</div><div id="deleteCancel" class="button cancel" style="background: rgb(227, 232, 235); color: rgb(0, 72, 73);" >取消</div></div>'+
+                        '</div>';
+            $("body").append($mengban)
+            $("body").append($html)
 
+            $('#deleteOk').hover(function(){
+                $('#deleteOk').css('backgroundColor', 'rgb(0, 72, 73)')
+            }, function(){
+                $('#deleteOk').css('backgroundColor', 'rgb(114, 142, 155)')
+            })
+
+            $('#deleteCancel').hover(function(){
+                $('#deleteCancel').css('backgroundColor', 'rgb(199, 210, 215)')
+            }, function(){
+                $('#deleteCancel').css('backgroundColor', 'rgb(227, 232, 235)')
+            })
+
+            $('#deleteOk').on('click', function(){
+                $('#deleteModal').addClass('hidden')
+                $('#deleteMengBan').addClass('hidden')
+                nfActions.deleteConfirm()
+
+            });
+            $('#deleteCancel').on('click', function(){
+                $('#deleteModal').addClass('hidden')
+                $('#deleteMengBan').addClass('hidden')
+            })
+    };
     /**
      * Updates the resource with the specified entity.
      *
@@ -209,6 +240,7 @@
          */
         init: function () {
             initializeDropRequestStatusDialog();
+            initDeleteModel();
         },
 
         /**
@@ -980,6 +1012,12 @@
             })
         },
         'delete': function (selection) {
+            $('#deleteModal').removeClass('hidden')
+            $('#deleteMengBan').removeClass('hidden')
+            this.selection = selection
+        },
+        'deleteConfirm': function() {
+            var selection = this.selection
             if (nfCommon.isUndefined(selection) || selection.empty()) {
                 nfDialog.showOkDialog({
                     headerText: nf._.msg('nf-actions.Header5'),
@@ -1082,7 +1120,6 @@
                 }
             }
         },
-
         /**
          * Deletes the flow files in the specified connection.
          *
