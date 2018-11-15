@@ -91,6 +91,8 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.apache.nifi.controller.ControllerServiceLookup;
 import org.apache.nifi.util.NiFiProperties;
 
+import org.springframework.web.util.UriTemplate;
+
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
 @Tags({"http", "https", "request", "listen", "ingress", "web service"})
 @CapabilityDescription("Starts an HTTP Server and listens for HTTP Requests. For each request, creates a FlowFile and transfers to 'success'. "
@@ -174,7 +176,7 @@ public class HandleHttpRequest extends AbstractProcessor {
                     + "specified and the path of the HTTP Requests does not match this Regular Expression, the Processor will respond with a "
                     + "404: NotFound")
             .required(false)
-            .addValidator(StandardValidators.REGULAR_EXPRESSION_VALIDATOR)
+            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .expressionLanguageSupported(ExpressionLanguageScope.NONE)
             .build();
     public static final PropertyDescriptor ALLOW_GET = new PropertyDescriptor.Builder()
@@ -541,10 +543,16 @@ public class HandleHttpRequest extends AbstractProcessor {
         return pathPattern;
     }
 
+    protected UriTemplate getUriTemplate(final ProcessContext context) {
+        final String pathRegex = context.getProperty(PATH_REGEX).getValue();
+        final UriTemplate pathTemplate = (pathRegex == null) ? null : new UriTemplate(pathRegex);
+        return pathTemplate;
+    }
+
     protected void handleHttp(final ProcessContext context, final String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response)
             throws IOException, ServletException {
         final Set<String> allowedMethods = getAllowedMethods(context);
-        final Pattern pathPattern = getPathPattern(context);
+        final UriTemplate pathTemplate = getUriTemplate(context);
 
         final String requestUri = request.getRequestURI();
         if (!allowedMethods.contains(request.getMethod().toUpperCase())) {
@@ -553,18 +561,22 @@ public class HandleHttpRequest extends AbstractProcessor {
             return;
         }
 
-        if (pathPattern != null) {
+        if (pathTemplate != null) {
             final URI uri;
             try {
                 uri = new URI(requestUri);
             } catch (final URISyntaxException e) {
                 throw new ServletException(e);
             }
+            if (!pathTemplate.matches(uri.getPath())) {
 
-            if (!pathPattern.matcher(uri.getPath()).matches()) {
-                response.sendError(Status.NOT_FOUND.getStatusCode());
-                getLogger().info("Sending back NOT_FOUND response to {}; request was {} {}", new Object[] { request.getRemoteAddr(), request.getMethod(), requestUri });
-                return;
+                //check if match with pattern
+                final Pattern pathPattern = getPathPattern(context);
+                if (pathPattern != null && !pathPattern.matcher(uri.getPath()).matches()) {
+                    response.sendError(Status.NOT_FOUND.getStatusCode());
+                    getLogger().info("Sending back NOT_FOUND response to {}; request was {} {}", new Object[] { request.getRemoteAddr(), request.getMethod(), requestUri });
+                    return;
+                }
             }
         }
 
@@ -698,6 +710,21 @@ public class HandleHttpRequest extends AbstractProcessor {
                 final String paramName = paramEnumeration.nextElement();
                 final String value = request.getParameter(paramName);
                 attributes.put("http.param." + paramName, value);
+            }
+
+            //set path param
+            final UriTemplate pathTemplate = getUriTemplate(context);
+            if (pathTemplate != null) {
+                URI uri = null;
+                try {
+                    uri = new URI(request.getRequestURI());
+                } catch (final URISyntaxException e) {
+                    getLogger().warn("Failed to parse URI {} due to {}", new Object[]{request.getRequestURI(), e});
+                }
+                Map<String, String> pathParamMap = pathTemplate.match(uri.getPath());
+                for (String key : pathParamMap.keySet()) {
+                    attributes.put("http.path.param." + key, pathParamMap.get(key));
+                }   
             }
 
             final Cookie[] cookies = request.getCookies();
