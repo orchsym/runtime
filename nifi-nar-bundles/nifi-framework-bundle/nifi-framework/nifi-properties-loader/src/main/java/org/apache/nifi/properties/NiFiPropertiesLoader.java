@@ -16,11 +16,8 @@
  */
 package org.apache.nifi.properties;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
@@ -206,18 +203,8 @@ public class NiFiPropertiesLoader {
             throw new IllegalArgumentException("NiFi properties file missing or unreadable");
         }
 
-        Properties orchsym_properties = new Properties();
-        Properties rawProperties = new Properties();
-        InputStream inStream = null;
         try {
-            inStream = new BufferedInputStream(new FileInputStream(file));
-            orchsym_properties.load(inStream);
-            for(Object key :orchsym_properties.keySet()){
-                if(key != null && key.toString().trim().length() > 0){
-                    String keyStr = key.toString().trim();
-                    rawProperties.put(keyStr.replace("orchsym", "nifi"), orchsym_properties.getProperty(key.toString()));
-                }
-            }
+            Properties rawProperties = NiFiProperties.createBasicProperties(file.getAbsolutePath(), null);
             logger.info("Loaded {} properties from {}", rawProperties.size(), file.getAbsolutePath());
 
             ProtectedNiFiProperties protectedNiFiProperties = new ProtectedNiFiProperties(rawProperties);
@@ -226,16 +213,6 @@ public class NiFiPropertiesLoader {
             logger.error("Cannot load properties file due to " + ex.getLocalizedMessage());
             throw new RuntimeException("Cannot load properties file due to "
                     + ex.getLocalizedMessage(), ex);
-        } finally {
-            if (null != inStream) {
-                try {
-                    inStream.close();
-                } catch (final Exception ex) {
-                    /**
-                     * do nothing *
-                     */
-                }
-            }
         }
     }
 

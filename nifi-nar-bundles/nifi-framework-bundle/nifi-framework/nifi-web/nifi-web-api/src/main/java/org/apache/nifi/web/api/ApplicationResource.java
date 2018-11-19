@@ -77,6 +77,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -1125,6 +1126,15 @@ public abstract class ApplicationResource {
     protected Response.ResponseBuilder setCommonHeaders(final Response.ResponseBuilder builder, final Integer transportProtocolVersion, final HttpRemoteSiteListener transactionManager) {
         return builder.header(HttpHeaders.PROTOCOL_VERSION, transportProtocolVersion)
                 .header(HttpHeaders.SERVER_SIDE_TRANSACTION_TTL, transactionManager.getTransactionTtlSec());
+    }
+
+    protected Locale getRequestLocale() {
+        final Locale reqLocale = org.apache.nifi.util.StringUtils.parseLocale(getFirstHeaderValue("locale"));
+        if (reqLocale != null) {
+            return reqLocale;
+        }
+
+        return properties.getLocale(); //use the setting one by default
     }
 
     protected class ResponseCreator {

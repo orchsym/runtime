@@ -18,11 +18,15 @@ package org.apache.nifi.web.api.dto;
 
 import io.swagger.annotations.ApiModelProperty;
 import org.apache.nifi.web.api.dto.util.DateTimeAdapter;
+import org.apache.nifi.web.api.dto.util.LocaleAdapter;
+import org.apache.nifi.web.api.dto.util.LocalDateAdapter;
 import org.apache.nifi.web.api.dto.util.TimezoneAdapter;
 
 import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.util.Date;
+import java.util.Locale;
+import java.time.LocalDate;
 
 /**
  * Contains details about this NiFi including the title and version.
@@ -41,6 +45,10 @@ public class AboutDTO {
     private String buildRevision;
     private String buildBranch;
     private Date buildTimestamp;
+    
+    private Locale locale;
+    private String productVersion;
+    private LocalDate buildDate;
 
     /* getters / setters */
     /**
@@ -165,4 +173,42 @@ public class AboutDTO {
     public void setBuildTimestamp(Date buildTimestamp) {
         this.buildTimestamp = buildTimestamp;
     }
+
+    @XmlJavaTypeAdapter(LocaleAdapter.class)
+    @ApiModelProperty(
+            value = "Build Platform default Locale",
+            dataType = "string"
+    )
+    public Locale getLocale() {
+        return locale;
+    }
+
+    public void setLocale(Locale locale) {
+        this.locale = locale;
+    }
+
+    @ApiModelProperty(
+            value = "Product Version"
+    )
+    public String getProductVersion() {
+        return productVersion;
+    }
+
+    public void setProductVersion(String productVersion) {
+        this.productVersion = productVersion;
+    }
+
+    @XmlJavaTypeAdapter(LocalDateAdapter.class)
+    @ApiModelProperty(
+            value = "Build Date",
+            dataType = "string"
+    )
+    public LocalDate getBuildDate() {
+        return buildDate;
+    }
+
+    public void setBuildDate(LocalDate buildDate) {
+        this.buildDate = buildDate;
+    }
+    
 }

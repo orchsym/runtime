@@ -63,6 +63,7 @@ import org.apache.nifi.documentation.DocGenerator;
 import org.apache.nifi.lifecycle.LifeCycleStartException;
 import org.apache.nifi.nar.ExtensionManager;
 import org.apache.nifi.nar.ExtensionMapping;
+import org.apache.nifi.nar.i18n.MessagesProvider;
 import org.apache.nifi.processor.DataUnit;
 import org.apache.nifi.security.util.KeyStoreUtils;
 import org.apache.nifi.services.FlowService;
@@ -837,6 +838,7 @@ public class JettyServer implements NiFiServer {
         try {
             ExtensionManager.discoverExtensions(systemBundle, bundles);
             ExtensionManager.logClassLoaderMapping();
+            MessagesProvider.discoverExtensions(props.getLocale(), bundles);
 
             DocGenerator.generate(props, extensionMapping);
 

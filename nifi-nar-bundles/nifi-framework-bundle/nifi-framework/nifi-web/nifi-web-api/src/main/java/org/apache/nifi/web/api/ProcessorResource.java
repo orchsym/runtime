@@ -30,6 +30,7 @@ import org.apache.nifi.authorization.RequestAction;
 import org.apache.nifi.authorization.resource.Authorizable;
 import org.apache.nifi.authorization.user.NiFiUser;
 import org.apache.nifi.authorization.user.NiFiUserUtils;
+import org.apache.nifi.nar.i18n.MessagesProvider;
 import org.apache.nifi.ui.extension.UiExtension;
 import org.apache.nifi.ui.extension.UiExtensionMapping;
 import org.apache.nifi.web.NiFiServiceFacade;
@@ -65,6 +66,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -345,9 +347,17 @@ public class ProcessorResource extends ApplicationResource {
             final Authorizable processor = lookup.getProcessor(id).getAuthorizable();
             processor.authorize(authorizer, RequestAction.READ, NiFiUserUtils.getNiFiUser());
         });
+        
+        final long threadId = Thread.currentThread().getId();
+        MessagesProvider.setLocale(threadId, getRequestLocale());
 
-        // get the property descriptor
-        final PropertyDescriptorDTO descriptor = serviceFacade.getProcessorPropertyDescriptor(id, propertyName);
+        PropertyDescriptorDTO descriptor;
+        try {
+            // get the property descriptor
+            descriptor = serviceFacade.getProcessorPropertyDescriptor(id, propertyName);
+        } finally {
+            MessagesProvider.removeLocale(threadId);
+        }
 
         // generate the response entity
         final PropertyDescriptorEntity entity = new PropertyDescriptorEntity();

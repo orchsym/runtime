@@ -60,6 +60,7 @@ import org.apache.nifi.components.ValidationContext;
 import org.apache.nifi.components.ValidationResult;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
+import org.apache.nifi.flowfile.attributes.BooleanAllowableValues;
 import org.apache.nifi.flowfile.attributes.CoreAttributes;
 import org.apache.nifi.logging.ComponentLog;
 import org.apache.nifi.processor.AbstractProcessor;
@@ -115,16 +116,18 @@ public class PutEmail extends AbstractProcessor {
             .description("Flag indicating whether authentication should be used")
             .required(true)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-            .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
-            .defaultValue("true")
+            .allowableValues(BooleanAllowableValues.list())
+            .addValidator(BooleanAllowableValues.validator())
+            .defaultValue(BooleanAllowableValues.TRUE.value())
             .build();
     public static final PropertyDescriptor SMTP_TLS = new PropertyDescriptor.Builder()
             .name("SMTP TLS")
             .description("Flag indicating whether TLS should be enabled")
             .required(true)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-            .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
-            .defaultValue("false")
+            .allowableValues(BooleanAllowableValues.list())
+            .addValidator(BooleanAllowableValues.validator())
+            .defaultValue(BooleanAllowableValues.FALSE.value())
             .build();
     public static final PropertyDescriptor SMTP_SOCKET_FACTORY = new PropertyDescriptor.Builder()
             .name("SMTP Socket Factory")
@@ -140,7 +143,7 @@ public class PutEmail extends AbstractProcessor {
             .required(true)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .defaultValue("NiFi")
+            .defaultValue("Orchsym")
             .build();
     public static final PropertyDescriptor CONTENT_TYPE = new PropertyDescriptor.Builder()
             .name("Content Type")
@@ -183,7 +186,7 @@ public class PutEmail extends AbstractProcessor {
             .description("The email subject")
             .required(true)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-            .defaultValue("Message from NiFi")
+            .defaultValue("Message from Orchsym")
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
     public static final PropertyDescriptor MESSAGE = new PropertyDescriptor.Builder()
@@ -206,8 +209,9 @@ public class PutEmail extends AbstractProcessor {
             .description("Specifies whether or not the FlowFile content should be the message of the email. If true, the 'Message' property is ignored.")
             .required(true)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-            .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
-            .defaultValue("false")
+            .allowableValues(BooleanAllowableValues.list())
+            .addValidator(BooleanAllowableValues.validator())
+            .defaultValue(BooleanAllowableValues.FALSE.value())
             .build();
     public static final PropertyDescriptor INCLUDE_ALL_ATTRIBUTES = new PropertyDescriptor.Builder()
             .name("Include All Attributes In Message")

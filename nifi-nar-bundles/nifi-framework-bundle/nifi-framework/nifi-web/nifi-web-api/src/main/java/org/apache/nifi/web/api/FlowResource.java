@@ -41,6 +41,7 @@ import org.apache.nifi.controller.service.ControllerServiceNode;
 import org.apache.nifi.controller.service.ControllerServiceState;
 import org.apache.nifi.groups.ProcessGroup;
 import org.apache.nifi.nar.NarClassLoaders;
+import org.apache.nifi.nar.i18n.MessagesProvider;
 import org.apache.nifi.registry.client.NiFiRegistryException;
 import org.apache.nifi.util.NiFiProperties;
 import org.apache.nifi.web.IllegalClusterResourceRequestException;
@@ -124,6 +125,10 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
@@ -1345,15 +1350,34 @@ public class FlowResource extends ApplicationResource {
             final BundleDetails frameworkDetails = frameworkBundle.getBundleDetails();
 
             // set the version
-            aboutDTO.setVersion(frameworkDetails.getCoordinate().getVersion());
+            final String bundleVersion = frameworkDetails.getCoordinate().getVersion();
+            aboutDTO.setVersion(bundleVersion);
 
             // Get build info
+            final String buildRevision = frameworkDetails.getBuildRevision();
             aboutDTO.setBuildTag(frameworkDetails.getBuildTag());
-            aboutDTO.setBuildRevision(frameworkDetails.getBuildRevision());
+            aboutDTO.setBuildRevision(buildRevision);
             aboutDTO.setBuildBranch(frameworkDetails.getBuildBranch());
-            aboutDTO.setBuildTimestamp(frameworkDetails.getBuildTimestampDate());
+            final Date buildTimestampDate = frameworkDetails.getBuildTimestampDate();
+            aboutDTO.setBuildTimestamp(buildTimestampDate);
+            
+            Instant instant = buildTimestampDate.toInstant();
+            ZoneId zone = ZoneId.systemDefault();
+            LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, zone);
+            LocalDate localDate = localDateTime.toLocalDate();
+            aboutDTO.setBuildDate(localDate);
+            
+            String productVersion = "2.0.1"; // currently set one fix one temp
+            final int lineIndex = bundleVersion.indexOf('-');
+            if (lineIndex > 0) {
+                productVersion += bundleVersion.substring(lineIndex);
+            }
+            productVersion += '-' + buildRevision;
+            aboutDTO.setProductVersion(productVersion);
         }
 
+        aboutDTO.setLocale(properties.getLocale()); //default locale
+        
         // create the response entity
         final AboutEntity entity = new AboutEntity();
         entity.setAbout(aboutDTO);

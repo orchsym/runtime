@@ -31,6 +31,7 @@ import org.apache.nifi.authorization.resource.Authorizable;
 import org.apache.nifi.authorization.user.NiFiUserUtils;
 import org.apache.nifi.controller.ScheduledState;
 import org.apache.nifi.controller.service.ControllerServiceState;
+import org.apache.nifi.nar.i18n.MessagesProvider;
 import org.apache.nifi.ui.extension.UiExtension;
 import org.apache.nifi.ui.extension.UiExtensionMapping;
 import org.apache.nifi.web.NiFiServiceFacade;
@@ -69,6 +70,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -245,8 +247,16 @@ public class ControllerServiceResource extends ApplicationResource {
             controllerService.authorize(authorizer, RequestAction.READ, NiFiUserUtils.getNiFiUser());
         });
 
-        // get the property descriptor
-        final PropertyDescriptorDTO descriptor = serviceFacade.getControllerServicePropertyDescriptor(id, propertyName);
+        final long threadId = Thread.currentThread().getId();
+        MessagesProvider.setLocale(threadId, getRequestLocale());
+
+        PropertyDescriptorDTO descriptor;
+        try {
+            // get the property descriptor
+            descriptor = serviceFacade.getControllerServicePropertyDescriptor(id, propertyName);
+        } finally {
+            MessagesProvider.removeLocale(threadId);
+        }
 
         // generate the response entity
         final PropertyDescriptorEntity entity = new PropertyDescriptorEntity();

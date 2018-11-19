@@ -57,6 +57,7 @@ import org.apache.nifi.components.ValidationResult;
 import org.apache.nifi.components.Validator;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
+import org.apache.nifi.flowfile.attributes.BooleanAllowableValues;
 import org.apache.nifi.logging.ComponentLog;
 import org.apache.nifi.processor.AbstractProcessor;
 import org.apache.nifi.processor.ProcessContext;
@@ -142,24 +143,27 @@ public class EvaluateXQuery extends AbstractProcessor {
             .name("Output: Omit XML Declaration")
             .description("Specifies whether the processor should output an XML declaration when transforming a result tree.")
             .required(true)
-            .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
-            .defaultValue("false")
+            .allowableValues(BooleanAllowableValues.list())
+            .addValidator(BooleanAllowableValues.validator())
+            .defaultValue(BooleanAllowableValues.FALSE.value())
             .build();
 
     public static final PropertyDescriptor XML_OUTPUT_INDENT = new PropertyDescriptor.Builder()
             .name("Output: Indent")
             .description("Specifies whether the processor may add additional whitespace when outputting a result tree.")
             .required(true)
-            .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
-            .defaultValue("false")
+            .allowableValues(BooleanAllowableValues.list())
+            .addValidator(BooleanAllowableValues.validator())
+            .defaultValue(BooleanAllowableValues.FALSE.value())
             .build();
 
     public static final PropertyDescriptor VALIDATE_DTD = new PropertyDescriptor.Builder()
             .name("Validate DTD")
             .description("Specifies whether or not the XML content should be validated against the DTD.")
             .required(true)
-            .allowableValues("true", "false")
-            .defaultValue("true")
+            .allowableValues(BooleanAllowableValues.list())
+            .addValidator(BooleanAllowableValues.validator())
+            .defaultValue(BooleanAllowableValues.TRUE.value())
             .build();
 
     public static final Relationship REL_MATCH = new Relationship.Builder()

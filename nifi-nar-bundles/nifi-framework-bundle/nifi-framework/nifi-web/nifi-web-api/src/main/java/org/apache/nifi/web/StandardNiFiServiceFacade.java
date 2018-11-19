@@ -2916,7 +2916,7 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
             descriptor = new PropertyDescriptor.Builder().name(property).addValidator(Validator.INVALID).dynamic(true).build();
         }
 
-        return dtoFactory.createPropertyDescriptorDto(descriptor, processor.getProcessGroup().getIdentifier());
+        return dtoFactory.createPropertyDescriptorDto(processor, descriptor, processor.getProcessGroup().getIdentifier());
     }
 
     @Override
@@ -3660,7 +3660,7 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
         }
 
         final String groupId = controllerService.getProcessGroup() == null ? null : controllerService.getProcessGroup().getIdentifier();
-        return dtoFactory.createPropertyDescriptorDto(descriptor, groupId);
+        return dtoFactory.createPropertyDescriptorDto(controllerService, descriptor, groupId);
     }
 
     @Override
@@ -3702,7 +3702,7 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
             descriptor = new PropertyDescriptor.Builder().name(property).addValidator(Validator.INVALID).dynamic(true).build();
         }
 
-        return dtoFactory.createPropertyDescriptorDto(descriptor, null);
+        return dtoFactory.createPropertyDescriptorDto(reportingTask, descriptor, null);
     }
 
     @Override

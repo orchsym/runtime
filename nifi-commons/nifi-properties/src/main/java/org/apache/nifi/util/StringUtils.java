@@ -17,6 +17,7 @@
 package org.apache.nifi.util;
 
 import java.util.Collection;
+import java.util.Locale;
 
 /**
  * String Utils based on the Apache Commons Lang String Utils.
@@ -96,6 +97,18 @@ public class StringUtils {
                 sb.append(padding);
             }
             return sb.toString();
+        }
+        return null;
+    }
+
+    public static Locale parseLocale(String value) {
+        if (!isBlank(value)) {
+            final String[] arr = value.split("_");
+            if (arr.length > 1) {
+                return new Locale(arr[0], arr[1]);
+            } else if (arr.length == 1) {
+                return new Locale(value);
+            }
         }
         return null;
     }

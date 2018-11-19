@@ -1,10 +1,20 @@
 package org.apache.nifi.web.api;
 
+import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.Consumes;
@@ -12,12 +22,16 @@ import javax.ws.rs.GET;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.controller.FlowController;
 import org.apache.nifi.groups.ProcessGroup;
+import org.apache.nifi.nar.i18n.MessagesProvider;
+import org.apache.nifi.util.FileUtils;
 import org.apache.nifi.web.NiFiServiceFacade;
 import org.apache.nifi.web.api.dto.ControllerServiceDTO;
 import org.apache.nifi.web.api.dto.DocumentedTypeDTO;
@@ -291,16 +305,28 @@ public class StatsResource extends ApplicationResource {
         summaryDTO.setSyncFailureCount(processGroup.getSyncFailureCount());
         summaryDTO.setUpToDateCount(processGroup.getUpToDateCount());
 
+        final Predicate<? super DocumentedTypeDTO> zhDescPredicate = type -> MessagesProvider.getDescription(Locale.CHINESE, type.getType()) != null;
+
+        Map<String, Long> processorI18nCount = new HashMap<>();
         final Set<DocumentedTypeDTO> processorTypes = serviceFacade.getProcessorTypes(null, null, null);
         summaryDTO.setProcessorCount((long) processorTypes.size());
+        processorI18nCount.put(Locale.CHINESE.getLanguage(), processorTypes.stream().filter(zhDescPredicate).count());
+        summaryDTO.setProcessorI18nCount(processorI18nCount);
+        
+        Map<String, Long> controllerI18nCount = new HashMap<>();
+        final Set<DocumentedTypeDTO> controllerTypes = serviceFacade.getControllerServiceTypes(null, null, null, null, null, null, null);
+        summaryDTO.setControllerCount((long) controllerTypes.size());
+        controllerI18nCount.put(Locale.CHINESE.getLanguage(), controllerTypes.stream().filter(zhDescPredicate).count());
+        summaryDTO.setControllerI18nCount(controllerI18nCount);
+        
+        // serviceFacade.getReportingTaskTypes(null, null, null);
 
-        final Set<DocumentedTypeDTO> serviceTypes = serviceFacade.getControllerServiceTypes(null, null, null, null, null, null, null);
-        summaryDTO.setControllerCount((long) serviceTypes.size());
+        final Predicate<? super DocumentedTypeDTO> ownedPredicate = dto -> Marks.ORCHSYM.equals(dto.getVendor());
 
-        final long processorMarkedCount = processorTypes.stream().filter(dto -> Marks.ORCHSYM.equals(dto.getVendor())).count();
+        final long processorMarkedCount = processorTypes.stream().filter(ownedPredicate).count();
         summaryDTO.setProcessorOwnedCount(processorMarkedCount);
 
-        final long controllerMarkedCount = serviceTypes.stream().filter(dto -> Marks.ORCHSYM.equals(dto.getVendor())).count();
+        final long controllerMarkedCount = controllerTypes.stream().filter(ownedPredicate).count();
         summaryDTO.setControllerOwnedCount(controllerMarkedCount);
 
         return summaryDTO;
@@ -503,4 +529,101 @@ public class StatsResource extends ApplicationResource {
 
         return processorCounterList;
     }
+
+    @GET
+    @Consumes(MediaType.WILDCARD)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/md")
+    public Response generateMarkdown(@QueryParam("lang") final String lang, @QueryParam("country") final String country, @QueryParam("all") final String all) {
+        File mdOutputDir = new File("./work/md");
+
+        return doGenerator(lang, country, "com.orchsym.docs.generator.md.MdDocsGenerator", mdOutputDir, all);
+    }
+
+    @GET
+    @Consumes(MediaType.WILDCARD)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/html")
+    public Response generateHtmlDoc(@QueryParam("lang") final String lang, @QueryParam("country") final String country, @QueryParam("all") final String all) {
+        File htmlOutputDir = new File("./work/html");
+
+        return doGenerator(lang, country, "com.orchsym.docs.generator.html.HtmlDocsGenerator", htmlOutputDir, all);
+    }
+
+    @GET
+    @Consumes(MediaType.WILDCARD)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/i18n")
+    public Response generateI18n(@QueryParam("lang") final String lang, @QueryParam("country") final String country, @QueryParam("all") final String all) {
+        File i18nOutputDir = new File("./work/i18n");
+
+        return doGenerator(lang, country, "com.orchsym.i18n.messages.generator.MessagesGenerator", i18nOutputDir, all);
+    }
+
+    @GET
+    @Consumes(MediaType.WILDCARD)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/gen")
+    public Response generateDocs() {
+        generateMarkdown(Locale.ENGLISH.getLanguage(), null, Boolean.TRUE.toString());
+        generateMarkdown(Locale.CHINESE.getLanguage(), null, Boolean.TRUE.toString());
+
+        generateHtmlDoc(Locale.ENGLISH.getLanguage(), null, Boolean.TRUE.toString());
+        generateHtmlDoc(Locale.CHINESE.getLanguage(), null, Boolean.TRUE.toString());
+
+        generateI18n(Locale.ENGLISH.getLanguage(), null, Boolean.TRUE.toString());
+        generateI18n(Locale.CHINESE.getLanguage(), null, Boolean.TRUE.toString());
+
+        return generateOkResponse("Successfully to generate at " + LocalDateTime.now()).build();
+    }
+
+    private Response doGenerator(String lang, String country, String generatorClass, File baseOutDir, String all) {
+        try {
+            boolean onlyI18n = (all == null); // if set and don't case the value all consider as generate all
+
+            Locale locale = null;
+            if (StringUtils.isNotBlank(lang)) {
+                if (StringUtils.isNotBlank(country)) {
+                    locale = new Locale(lang, country);
+                } else {
+                    locale = new Locale(lang);
+                }
+            }
+            if (locale != null) {
+                baseOutDir = new File(baseOutDir, locale.getLanguage() + (StringUtils.isBlank(locale.getCountry()) ? "" : "_" + locale.getCountry()));
+            }
+            if (baseOutDir.exists()) { // clean up
+                FileUtils.deleteFile(baseOutDir, true);
+            }
+            final ClassLoader classLoader = MessagesProvider.class.getClassLoader(); // make sure the classloader rightly.
+            final Class<?> genClass = Class.forName(generatorClass, false, classLoader);
+            final Constructor<?> genConstructor = genClass.getDeclaredConstructor(Locale.class);
+            genConstructor.setAccessible(true);
+            final Object mdGenerator = genConstructor.newInstance(locale);
+
+            if (onlyI18n) {// because false by default
+                // FilteredGenerator
+                try {
+                    final Class<?> filterClass = Class.forName("com.orchsym.generator.api.FilteredGenerator", false, classLoader);
+                    final Method onlyI18nMethod = filterClass.getDeclaredMethod("setOnlyI18n", boolean.class);
+                    onlyI18nMethod.setAccessible(true);
+                    onlyI18nMethod.invoke(mdGenerator, onlyI18n);
+                } catch (Throwable e) {
+                    // if no filter, will ignore
+                }
+            }
+
+            final Method generateMethod = genClass.getDeclaredMethod("generate", File.class);
+            generateMethod.setAccessible(true);
+            generateMethod.invoke(mdGenerator, baseOutDir);
+        } catch (Throwable e) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(sw.toString()).build();
+
+        }
+        return generateOkResponse("Successfully to generate at " + LocalDateTime.now()).build();
+    }
+
 }

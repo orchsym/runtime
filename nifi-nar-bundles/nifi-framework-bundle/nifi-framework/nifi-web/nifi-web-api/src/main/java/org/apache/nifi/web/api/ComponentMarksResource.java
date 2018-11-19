@@ -16,15 +16,24 @@
  */
 package org.apache.nifi.web.api;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -35,10 +44,19 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.apache.nifi.authorization.Authorizer;
+import org.apache.nifi.i18n.Messages;
+import org.apache.nifi.nar.i18n.MessagesProvider;
+import org.apache.nifi.util.StringUtils;
 import org.apache.nifi.web.NiFiServiceFacade;
 import org.apache.nifi.web.api.dto.DocumentedTypeDTO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Functions;
 import com.google.gson.Gson;
 
 import io.swagger.annotations.Api;
@@ -54,58 +72,110 @@ import net.sourceforge.pinyin4j.PinyinHelper;
 @Api(value = ComponentMarksResource.PATH, //
         description = "Endpoint for accessing components marks.")
 public class ComponentMarksResource extends ApplicationResource {
+    private static final Logger logger = LoggerFactory.getLogger(ComponentMarksResource.class);
     public static final String PATH = "/component-marks";
 
-    // first level index
-    public static final String FIRST_DATA_PROCESS = "数据处理";
-    public static final String FIRST_TRANSFORM_CONTROL = "转换控制";
-    public static final String FIRST_DATA_BASE = "数据库";
-    public static final String FIRST_FILE_PROCESS = "文件处理";
-    public static final String FIRST_NETWORK = "网络";
-    public static final String FIRST_BIG_DATA = "大数据";
-    public static final String FIRST_EXECUTE = "执行";
-    // second level index
-    public static final String SECNOD_DATA_FETCH = "数据抓取";
-    public static final String SECNOD_DATA_OUTPUT = "数据输出";
-    public static final String SECNOD_MESSAGE_EVENT = "消息事件";
-    public static final String SECNOD_DATA_TRANSFORM = "数据转换";
-    public static final String SECNOD_PROCESS_CONTROL = "流程控制";
-    public static final String SECNOD_DATA_BASE = "数据库";
-    public static final String SECNOD_TELE_COMMUNICATION = "网络通信";
-    public static final String SECNOD_CLOUD = "云";
-    public static final String SECNOD_FILE = "文件";
-    public static final String SECNOD_LOG = "日志";
-    public static final String SECNOD_BIG_DATA = "大数据";
-    public static final String SECNOD_EXECUTE = "执行";
+    enum Category {
+        DATA_PROCESS, CONVERT_CONTROL, DATABASE, FILE_PROCESS, NETWORK, BIG_DATA, EXECUTE,
+
+        DATA_FETCH, DATA_OUTPUT, MESSAGE_EVENT, DATA_CONVERT, PROCESS_CONTROL, COMMUNICATION, CLOUD, FILE, LOG,;
+
+        public String getLabel(Locale locale) {
+            return Messages.getString(locale, "Components.Category." + this.name());
+        }
+
+        public static Category get(Locale locale, String label) {
+            for (Category c : Category.values()) {
+                if (label.equals(c.getLabel(locale))) {
+                    return c;
+                }
+            }
+            return null;
+        }
+    }
 
     private NiFiServiceFacade serviceFacade;
 
-    private static final Map<String, String> levelOneIconMap;
-    private static final Map<String, String> levelTwoIconMap;
+    private static final Map<Category, String> levelOneIconMap;
+    private static final Map<Category, String> levelTwoIconMap;
+    private static final Map<Category, CategoryItem> CATEGORY_BUILT_IN_ITEMS;
+    private static final Map<Locale, List<CategoryItem>> localeItemsMap = new Hashtable<>();
 
     static {
         levelOneIconMap = new HashMap<>();
-        levelOneIconMap.put(FIRST_DATA_PROCESS, "001.svg");
-        levelOneIconMap.put(FIRST_TRANSFORM_CONTROL, "002.svg");
-        levelOneIconMap.put(FIRST_DATA_BASE, "003.svg");
-        levelOneIconMap.put(FIRST_NETWORK, "004.svg");
-        levelOneIconMap.put(FIRST_FILE_PROCESS, "005.svg");
-        levelOneIconMap.put(FIRST_BIG_DATA, "006.svg");
-        levelOneIconMap.put(FIRST_EXECUTE, "007.svg");
+        levelOneIconMap.put(Category.DATA_PROCESS, "001.svg");
+        levelOneIconMap.put(Category.CONVERT_CONTROL, "002.svg");
+        levelOneIconMap.put(Category.DATABASE, "003.svg");
+        levelOneIconMap.put(Category.NETWORK, "004.svg");
+        levelOneIconMap.put(Category.FILE_PROCESS, "005.svg");
+        levelOneIconMap.put(Category.BIG_DATA, "006.svg");
+        levelOneIconMap.put(Category.EXECUTE, "007.svg");
 
         levelTwoIconMap = new HashMap<>();
-        levelTwoIconMap.put(SECNOD_DATA_FETCH, "01.svg");
-        levelTwoIconMap.put(SECNOD_DATA_OUTPUT, "03.svg");
-        levelTwoIconMap.put(SECNOD_MESSAGE_EVENT, "02.svg");
-        levelTwoIconMap.put(SECNOD_DATA_TRANSFORM, "04.svg");
-        levelTwoIconMap.put(SECNOD_PROCESS_CONTROL, "05.svg");
-        levelTwoIconMap.put(SECNOD_DATA_BASE, "06.svg");
-        levelTwoIconMap.put(SECNOD_TELE_COMMUNICATION, "08.svg");
-        levelTwoIconMap.put(SECNOD_CLOUD, "09.svg");
-        levelTwoIconMap.put(SECNOD_FILE, "10.svg");
-        levelTwoIconMap.put(SECNOD_LOG, "11.svg");
-        levelTwoIconMap.put(SECNOD_BIG_DATA, "12.svg");
-        levelTwoIconMap.put(SECNOD_EXECUTE, "13.svg");
+        levelTwoIconMap.put(Category.DATA_FETCH, "01.svg");
+        levelTwoIconMap.put(Category.DATA_OUTPUT, "03.svg");
+        levelTwoIconMap.put(Category.MESSAGE_EVENT, "02.svg");
+        levelTwoIconMap.put(Category.DATA_CONVERT, "04.svg");
+        levelTwoIconMap.put(Category.PROCESS_CONTROL, "05.svg");
+        levelTwoIconMap.put(Category.DATABASE, "06.svg");
+        levelTwoIconMap.put(Category.COMMUNICATION, "08.svg");
+        levelTwoIconMap.put(Category.CLOUD, "09.svg");
+        levelTwoIconMap.put(Category.FILE, "10.svg");
+        levelTwoIconMap.put(Category.LOG, "11.svg");
+        levelTwoIconMap.put(Category.BIG_DATA, "12.svg");
+        levelTwoIconMap.put(Category.EXECUTE, "13.svg");
+
+        CATEGORY_BUILT_IN_ITEMS = loadCategoryBuiltInItems();
+    }
+
+    private static Map<Category, CategoryItem> loadCategoryBuiltInItems() {
+        Map<Category, CategoryItem> items = new LinkedHashMap<>();
+        try {
+            final ObjectMapper mapper = new ObjectMapper();
+            final InputStream stream = ComponentMarksResource.class.getResourceAsStream("/json/classification.json");
+            JsonFactory factory = new JsonFactory();
+            JsonParser parser = factory.createParser(stream);
+            parser.nextToken();
+            while (parser.nextToken() == JsonToken.START_OBJECT) {
+                CategoryItem item = mapper.readValue(parser, CategoryItem.class);
+                final Category cat = Category.valueOf(item.name);
+                if (cat == null) {
+                    logger.error("Can't find the matched category: " + item.name);
+                    continue;
+                }
+                items.put(cat, item);
+
+            }
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+        }
+        return items;
+    }
+
+    private Map<String, CategoryItem> copyBuiltInItems(final Locale requestLocale) {
+        return CATEGORY_BUILT_IN_ITEMS.values().stream().map(item -> {
+            CategoryItem ci = new CategoryItem();
+            ci.icon = item.icon;
+            final Category cat = Category.valueOf(item.name);
+            if (cat != null) {
+                ci.name = cat.getLabel(requestLocale);
+            } else {
+                ci.name = item.name;
+            }
+            ci.classification = item.classification.stream().map(subItem -> {
+                SubCategoryItem sci = new SubCategoryItem();
+                sci.icon = subItem.icon;
+                final Category subCat = Category.valueOf(subItem.name);
+                if (cat != null) {
+                    sci.name = subCat.getLabel(requestLocale);
+                } else {
+                    sci.name = subItem.name;
+                }
+                sci.components = new ArrayList<>(subItem.components);
+                return sci;
+            }).collect(Collectors.toList());
+            return ci;
+        }).collect(Collectors.toMap(t -> t.name, Function.identity()));
     }
 
     private void authorizeSystem() {
@@ -140,24 +210,30 @@ public class ComponentMarksResource extends ApplicationResource {
             @QueryParam("name") final String filterName, //
             @QueryParam("vendor") final String filterVendor//
     ) {
-        authorizeSystem();
+        // authorizeSystem();
 
         if (isReplicateRequest()) {
             return replicate(HttpMethod.GET);
         }
+
+        final Locale requestLocale = this.getRequestLocale();
+
         // create the response
         Set<DocumentedTypeDTO> processorTypes = serviceFacade.getProcessorTypes(null, null, null);
         Set<DocumentedTypeDTO> serviceTypes = serviceFacade.getControllerServiceTypes(null, null, null, null, null, null, null);
 
-        ArrayList<MarkEntity> processorMarks = getMarkEntities(processorTypes, "processor", filterType, filterName, filterVendor);
-        ArrayList<MarkEntity> serviceMarks = getMarkEntities(serviceTypes, "controllerService", filterType, filterName, filterVendor);
+        fixRequestLocale(requestLocale, processorTypes);
+        fixRequestLocale(requestLocale, serviceTypes);
 
-        ArrayList<MarkEntity> result = new ArrayList<>();
+        List<MarkEntity> processorMarks = filterAndCreateMarkEntities(processorTypes, "processor", filterType, filterName, filterVendor);
+        List<MarkEntity> serviceMarks = filterAndCreateMarkEntities(serviceTypes, "controllerService", filterType, filterName, filterVendor);
+
+        List<MarkEntity> result = new ArrayList<>();
         result.addAll(processorMarks);
         result.addAll(serviceMarks);
+        Collections.sort(result, entityComparator);
 
         // generate the response
-        Collections.sort(result, ComponentMarksResource.getCompByName());
         Gson gson = new Gson();
         String resultStr = gson.toJson(result);
         return Response.ok(resultStr).build();
@@ -183,19 +259,69 @@ public class ComponentMarksResource extends ApplicationResource {
             @ApiResponse(code = 409, message = StatsResource.CODE_MESSAGE_409) //
     })
     public Response getComponentsClassification() {
-        authorizeSystem();
+        // authorizeSystem();
 
         if (isReplicateRequest()) {
             return replicate(HttpMethod.GET);
         }
 
-        // create the response
-        Set<DocumentedTypeDTO> processorTypes = serviceFacade.getProcessorTypes(null, null, null);
+        final Locale requestLocale = this.getRequestLocale();
+        List<CategoryItem> items = localeItemsMap.get(requestLocale);
+        if (items == null) {
+            synchronized (logger) {
+
+                Set<DocumentedTypeDTO> processorTypes = serviceFacade.getProcessorTypes(null, null, null);
+                fixRequestLocale(requestLocale, processorTypes);
+
+                final Collection<CategoryItem> categoryItems = createCategoryItems(requestLocale, processorTypes);
+
+                // merge
+                items = mergeBuiltIn(requestLocale, categoryItems);
+
+                // sort
+                Comparator<Item> itemComparator = itemGeneraleComparator;
+                if (Locale.CHINESE.getLanguage().equals(requestLocale.getLanguage())) {
+                    itemComparator = itemZhComparator;
+                }
+                items.sort(itemComparator);
+                for (CategoryItem item : items) {
+                    item.classification.sort(itemComparator);
+                    item.classification.forEach(c -> Collections.sort(c.components));
+                }
+
+                localeItemsMap.put(requestLocale, items);
+            }
+
+        }
+
+        // generate the response
+        Gson gson = new Gson();
+        String resultStr = gson.toJson(items);
+        return Response.ok(resultStr).build();
+    }
+
+    private void fixRequestLocale(final Locale requestLocale, Set<DocumentedTypeDTO> types) {
+        if (types == null || types.isEmpty()) {
+            return;
+        }
+        for (DocumentedTypeDTO type : types) {
+            final Set<String> marksCategories = MessagesProvider.getMarksCategoriesSet(requestLocale, type.getType());
+            if (marksCategories != null && !marksCategories.isEmpty()) {
+                type.setCategories(marksCategories); // update
+            }
+            final String marksVendor = MessagesProvider.getMarksVendor(requestLocale, type.getType());
+            if (!StringUtils.isBlank(marksVendor)) {
+                type.setVendor(marksVendor);
+            }
+        }
+    }
+
+    private Collection<CategoryItem> createCategoryItems(final Locale requestLocale, Set<DocumentedTypeDTO> processorTypes) {
         Map<String, CategoryItem> categoryItems = new HashMap<String, CategoryItem>();
         for (DocumentedTypeDTO dto : processorTypes) {
             String type = dto.getType();
-            String[] typeArr = type.split("\\.");
-            String processorName = typeArr.length > 0 ? typeArr[typeArr.length - 1] : "";
+            String processorName = type.lastIndexOf('.') > 0 ? type.substring(type.lastIndexOf('.') + 1) : type;
+
             Set<String> categories = dto.getCategories();
             if (categories == null) {
                 continue;
@@ -208,15 +334,19 @@ public class ComponentMarksResource extends ApplicationResource {
                 if (categoryItem == null) {
                     categoryItem = new CategoryItem();
                     categoryItem.name = nameIndex1;
-                    categoryItem.icon = levelOneIconMap.get(nameIndex1);
+                    final Category cat = Category.get(requestLocale, nameIndex1);
+                    if (cat != null)
+                        categoryItem.icon = levelOneIconMap.get(cat);
                 }
-                ArrayList<SubCategoryItem> classification = categoryItem.classification;
+                List<SubCategoryItem> classification = categoryItem.classification;
                 int index = indexForName(classification, nameIndex2);
                 SubCategoryItem subCategoryItem = null;
                 if (index == -1) {
                     subCategoryItem = new SubCategoryItem();
                     subCategoryItem.name = nameIndex2;
-                    subCategoryItem.icon = levelTwoIconMap.get(nameIndex2);
+                    final Category cat = Category.get(requestLocale, nameIndex2);
+                    if (cat != null)
+                        subCategoryItem.icon = levelTwoIconMap.get(cat);
                     classification.add(subCategoryItem);
                 } else {
                     subCategoryItem = classification.get(index);
@@ -225,38 +355,51 @@ public class ComponentMarksResource extends ApplicationResource {
                 categoryItems.put(nameIndex1, categoryItem);
             }
         }
-
-        // sort
-        CategoryItem[] items = categoryItems.values().toArray(new CategoryItem[0]);
-        Arrays.sort(items, new Comparator<CategoryItem>() {
-            @Override
-            public int compare(CategoryItem o1, CategoryItem o2) {
-                return compareName(o1.name, o2.name);
-            }
-        });
-        for (CategoryItem item : items) {
-            ArrayList<SubCategoryItem> classification = item.classification;
-            SubCategoryItem[] subCategoryItems = classification.toArray(new SubCategoryItem[0]);
-            Arrays.sort(subCategoryItems, new Comparator<SubCategoryItem>() {
-                @Override
-                public int compare(SubCategoryItem o1, SubCategoryItem o2) {
-                    return compareName(o1.name, o2.name);
-                }
-            });
-            item.classification = new ArrayList<>(Arrays.asList((subCategoryItems)));
-            for (SubCategoryItem subItem : item.classification) {
-                Collections.sort(subItem.components);
-            }
-        }
-        // generate the response
-        Gson gson = new Gson();
-        String resultStr = gson.toJson(items);
-        return Response.ok(resultStr).build();
+        return categoryItems.values();
     }
 
-    private ArrayList<MarkEntity> getMarkEntities(Set<DocumentedTypeDTO> dtos, String componentType, String filterType, String filterName, String filterVendor) {
+    private List<CategoryItem> mergeBuiltIn(final Locale requestLocale, Collection<CategoryItem> categoryItems) {
+        final Map<String, CategoryItem> builtInItems = copyBuiltInItems(requestLocale);
 
-        ArrayList<MarkEntity> marksEntities = new ArrayList<>();
+        // merge
+        categoryItems.stream().filter(c -> builtInItems.containsKey(c.name)).forEach(item -> {
+            final CategoryItem biItem = builtInItems.get(item.name);
+            if (biItem != null) {
+                if (biItem.icon == null) {
+                    biItem.icon = item.icon;
+                }
+
+                final Map<String, SubCategoryItem> biSubItemsMap = biItem.classification.stream().collect(Collectors.toMap(s -> s.name, Function.identity()));
+
+                // merge
+                item.classification.stream().filter(c -> biSubItemsMap.containsKey(c.name)).forEach(c -> {
+                    SubCategoryItem biSubItem = biSubItemsMap.get(c.name);
+                    if (biSubItem != null) {
+                        if (biSubItem.icon == null) {
+                            biSubItem.icon = c.icon;
+                        }
+                        biSubItem.components.addAll(c.components);
+                    } else {
+                        biItem.classification.add(c); // add directly
+                    }
+                });
+
+                // add others
+                biItem.classification.addAll(item.classification.stream().filter(c -> !biSubItemsMap.containsKey(c.name)).collect(Collectors.toList()));
+
+            } else {
+                builtInItems.put(item.name, item); // add directly
+            }
+        });
+
+        // add others
+        categoryItems.stream().filter(c -> !builtInItems.containsKey(c.name)).forEach(c -> builtInItems.put(c.name, c));
+
+        return builtInItems.values().stream().collect(Collectors.toList());
+    }
+
+    private List<MarkEntity> filterAndCreateMarkEntities(Set<DocumentedTypeDTO> dtos, String componentType, String filterType, String filterName, String filterVendor) {
+        List<MarkEntity> marksEntities = new ArrayList<>();
         if (filterType != null && !componentType.equalsIgnoreCase(filterType)) {
             return marksEntities;
         }
@@ -298,33 +441,7 @@ public class ComponentMarksResource extends ApplicationResource {
         return marksEntities;
     }
 
-    public static Comparator<MarkEntity> getCompByName() {
-        Comparator<MarkEntity> comp = new Comparator<MarkEntity>() {
-            @Override
-            public int compare(MarkEntity s1, MarkEntity s2) {
-                return s1.name.compareTo(s2.name);
-            }
-        };
-        return comp;
-    }
-
-    int compareName(String name1, String name2) {
-        char c1 = name1.charAt(0);
-        char c2 = name2.charAt(0);
-        return concatPinyinStringArray(PinyinHelper.toHanyuPinyinStringArray(c1)).compareTo(concatPinyinStringArray(PinyinHelper.toHanyuPinyinStringArray(c2)));
-    }
-
-    String concatPinyinStringArray(String[] pinyinArray) {
-        StringBuffer pinyinSbf = new StringBuffer();
-        if ((pinyinArray != null) && (pinyinArray.length > 0)) {
-            for (int i = 0; i < pinyinArray.length; i++) {
-                pinyinSbf.append(pinyinArray[i]);
-            }
-        }
-        return pinyinSbf.toString();
-    }
-
-    int indexForName(ArrayList<SubCategoryItem> array, String name) {
+    int indexForName(List<SubCategoryItem> array, String name) {
         int index = -1;
         for (int i = 0; i < array.size(); i++) {
             SubCategoryItem item = array.get(i);
@@ -342,7 +459,18 @@ public class ComponentMarksResource extends ApplicationResource {
         this.serviceFacade = serviceFacade;
     }
 
-    class MarkEntity {
+    static Comparator<MarkEntity> entityComparator = new Comparator<MarkEntity>() {
+        @Override
+        public int compare(MarkEntity s1, MarkEntity s2) {
+            final int typeComparator = s1.type.compareToIgnoreCase(s2.type);
+            if (typeComparator != 0) {
+                return typeComparator;
+            }
+            return s1.name.compareTo(s2.name);
+        }
+    };
+
+    static class MarkEntity {
         public String type = ""; // "processor" or "controllerService"
         public String vendor = "";
         public String createdDate = "";
@@ -351,16 +479,45 @@ public class ComponentMarksResource extends ApplicationResource {
         public String note = "";
     }
 
-    class CategoryItem {
+    static Comparator<Item> itemGeneraleComparator = new Comparator<Item>() {
+        @Override
+        public int compare(Item s1, Item s2) {
+            return s1.name.compareToIgnoreCase(s2.name);
+        }
+    };
+
+    static Comparator<Item> itemZhComparator = new Comparator<Item>() {
+        @Override
+        public int compare(Item s1, Item s2) {
+            int first = compare(s1.name.charAt(0), s2.name.charAt(0));
+            if (first != 0) {
+                return first;
+            }
+
+            // check the second
+            if (s1.name.length() > 1 && s2.name.length() > 1) {
+                return compare(s1.name.charAt(1), s2.name.charAt(1));
+            }
+            return itemGeneraleComparator.compare(s1, s2);
+        }
+
+        int compare(char c1, char c2) {
+            return Arrays.stream(PinyinHelper.toHanyuPinyinStringArray(c1)).collect(Collectors.joining(""))
+                    .compareToIgnoreCase(Arrays.stream(PinyinHelper.toHanyuPinyinStringArray(c2)).collect(Collectors.joining("")));
+        }
+    };
+
+    static class Item {
         public String icon;
         public String name;
-        public ArrayList<SubCategoryItem> classification = new ArrayList<>();
+    }
+
+    static class CategoryItem extends Item {
+        public List<SubCategoryItem> classification = new ArrayList<>();
 
     }
 
-    class SubCategoryItem {
-        public String icon;
-        public String name;
-        public ArrayList<String> components = new ArrayList<>();;
+    static class SubCategoryItem extends Item {
+        public List<String> components = new ArrayList<>();;
     }
 }

@@ -1,5 +1,7 @@
 package org.apache.nifi.web.api.dto.stats;
 
+import java.util.Map;
+
 /**
  * @author GU Guoqiang
  *
@@ -27,12 +29,14 @@ public class SummaryCounterDTO {
     private Long processorUsedCount;
     private Long processorUsedTotalCount;
     private Long processorUsedPropertiesCount;
+    private Map<String, Long> processorI18nCount;
 
     private Long controllerCount; // all controller services for runtime to load
     private Long controllerOwnedCount; // provide by us
     private Long controllerUsedCount;
     private Long controllerUsedTotalCount;
     private Long controllerUsedPropertiesCount;
+    private Map<String, Long> controllerI18nCount;
 
     private Long connectionCount;
     private Long funnelCount;
@@ -280,6 +284,22 @@ public class SummaryCounterDTO {
 
     public void setTemplateCount(Long templateCount) {
         this.templateCount = templateCount;
+    }
+
+    public Map<String, Long> getProcessorI18nCount() {
+        return processorI18nCount;
+    }
+
+    public void setProcessorI18nCount(Map<String, Long> processorI18nCount) {
+        this.processorI18nCount = processorI18nCount;
+    }
+
+    public Map<String, Long> getControllerI18nCount() {
+        return controllerI18nCount;
+    }
+
+    public void setControllerI18nCount(Map<String, Long> controllerI18nCount) {
+        this.controllerI18nCount = controllerI18nCount;
     }
 
 }

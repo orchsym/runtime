@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -81,8 +82,10 @@ public abstract class NiFiProperties {
     public static final String PROCESSOR_SCHEDULING_TIMEOUT = "nifi.processor.scheduling.timeout";
     public static final String BACKPRESSURE_COUNT = "nifi.queue.backpressure.count";
     public static final String BACKPRESSURE_SIZE = "nifi.queue.backpressure.size";
-    public static final String HEADLESS = "nifi.headless";
-    public static final String EXCEPTION_TOLERANCE_COUNT = "nifi.exception.tolerance.count";
+
+    public static final String HEADLESS = "orchsym.headless";
+    public static final String EXCEPTION_TOLERANCE_COUNT = "orchsym.exception.tolerance.count";
+    public static final String LOCALE = "orchsym.locale";
 
     // content repository properties
     public static final String REPOSITORY_CONTENT_PREFIX = "nifi.content.repository.directory.";
@@ -1422,6 +1425,18 @@ public abstract class NiFiProperties {
     }
 
     /**
+     * Default locale of runtime to start
+     */
+    public Locale getLocale() {
+        final Locale setLocale = StringUtils.parseLocale(getProperty(LOCALE));
+        if (setLocale != null) {
+            return setLocale;
+        } else {
+            return Locale.getDefault();
+        }
+    }
+
+    /**
      * Creates an instance of NiFiProperties. This should likely not be called
      * by any classes outside of the NiFi framework but can be useful by the
      * framework for default property loading behavior or helpful in tests
@@ -1437,50 +1452,9 @@ public abstract class NiFiProperties {
      * @return NiFiProperties
      */
     public static NiFiProperties createBasicNiFiProperties(final String propertiesFilePath, final Map<String, String> additionalProperties) {
-        final Map<String, String> addProps = (additionalProperties == null) ? Collections.EMPTY_MAP : additionalProperties;
-        final Properties properties = new Properties();
-        final Properties orchsym_properties = new Properties();
-        final String nfPropertiesFilePath = (propertiesFilePath == null)
-                ? System.getProperty(NiFiProperties.PROPERTIES_FILE_PATH)
-                : propertiesFilePath;
-        if (nfPropertiesFilePath != null) {
-            final File propertiesFile = new File(nfPropertiesFilePath.trim());
-            if (!propertiesFile.exists()) {
-                throw new RuntimeException("Properties file doesn't exist \'"
-                        + propertiesFile.getAbsolutePath() + "\'");
-            }
-            if (!propertiesFile.canRead()) {
-                throw new RuntimeException("Properties file exists but cannot be read \'"
-                        + propertiesFile.getAbsolutePath() + "\'");
-            }
-            InputStream inStream = null;
-            try {
-                inStream = new BufferedInputStream(new FileInputStream(propertiesFile));
-                orchsym_properties.load(inStream);
-                for(Object key :orchsym_properties.keySet()){
-                    if(key != null && key.toString().trim().length() > 0){
-                        String keyStr = key.toString().trim();
-                        properties.put(keyStr.replace("orchsym", "nifi"), orchsym_properties.getProperty(key.toString()));
-                    }
-                }
-            } catch (final Exception ex) {
-                throw new RuntimeException("Cannot load properties file due to "
-                        + ex.getLocalizedMessage(), ex);
-            } finally {
-                if (null != inStream) {
-                    try {
-                        inStream.close();
-                    } catch (final Exception ex) {
-                        /**
-                         * do nothing *
-                         */
-                    }
-                }
-            }
-        }
-        addProps.entrySet().stream().forEach((entry) -> {
-            properties.setProperty(entry.getKey(), entry.getValue());
-        });
+        final String nfPropertiesFilePath = (propertiesFilePath == null) ? System.getProperty(NiFiProperties.PROPERTIES_FILE_PATH) : propertiesFilePath;
+        
+        final Properties properties = createBasicProperties(nfPropertiesFilePath, additionalProperties);
         return new NiFiProperties() {
             @Override
             public String getProperty(String key) {
@@ -1494,10 +1468,79 @@ public abstract class NiFiProperties {
         };
     }
 
+    @SuppressWarnings("unchecked")
+    public static Properties createBasicProperties(final String propertiesFilePath, final Map<String, String> additionalProperties) {
+        final Map<String, String> addProps = (additionalProperties == null) ? Collections.EMPTY_MAP : additionalProperties;
+
+        final Properties properties = new Properties();
+        if (propertiesFilePath != null) {
+            final File propertiesFile = new File(propertiesFilePath.trim());
+            if (!propertiesFile.exists()) {
+                throw new RuntimeException("Properties file doesn't exist \'" + propertiesFile.getAbsolutePath() + "\'");
+            }
+            if (!propertiesFile.canRead()) {
+                throw new RuntimeException("Properties file exists but cannot be read \'" + propertiesFile.getAbsolutePath() + "\'");
+            }
+
+            final Properties orchsym_properties = new Properties();
+            InputStream inStream = null;
+            try {
+                inStream = new BufferedInputStream(new FileInputStream(propertiesFile));
+                orchsym_properties.load(inStream);
+                for (Object key : orchsym_properties.keySet()) {
+                    if (key != null && key.toString().trim().length() > 0) {
+                        String keyStr = key.toString().trim();
+                        final String value = orchsym_properties.getProperty(key.toString());
+
+                        setProperty(properties, keyStr, value);
+                    }
+                }
+            } catch (final Exception ex) {
+                throw new RuntimeException("Cannot load properties file due to " + ex.getLocalizedMessage(), ex);
+            } finally {
+                if (null != inStream) {
+                    try {
+                        inStream.close();
+                    } catch (final Exception ex) {
+                        /**
+                         * do nothing *
+                         */
+                    }
+                }
+            }
+        }
+        addProps.entrySet().stream().forEach((entry) -> {
+            setProperty(properties, entry.getKey(), entry.getValue());
+        });
+
+        return properties;
+    }
+
+    /**
+     * make sure can find the value via any keys with start with "orchsym.xxx" or "nifi.xxx"
+     */
+    private static void setProperty(final Properties properties, String key, String value) {
+        final String nifiKey = replaceOrchsym(key);
+        final String orchsymKey = replaceNiFi(key);
+        properties.put(nifiKey, value);
+        properties.put(orchsymKey, value);
+        if (!properties.containsKey(key))
+            properties.put(key, value); // original key, maybe other keys
+    }
+
+    public static String replaceNiFi(String key) {
+        return key.replaceFirst("^nifi\\.", "orchsym.");
+    }
+
+    public static String replaceOrchsym(String key) {
+        return key.replaceFirst("^orchsym\\.", "nifi.");
+    }
+
     /**
      * This method is used to validate the NiFi properties when the file is loaded
      * for the first time. The objective is to stop NiFi startup in case a property
      * is not correctly configured and could cause issues afterwards.
+     * make sure can find the value via any keys with start with "orchsym.xxx" or "nifi.xxx"
      */
     public void validate() {
         // REMOTE_INPUT_HOST should be a valid hostname

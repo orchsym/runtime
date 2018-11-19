@@ -29,6 +29,7 @@ import org.apache.nifi.authorization.ComponentAuthorizable;
 import org.apache.nifi.authorization.RequestAction;
 import org.apache.nifi.authorization.resource.Authorizable;
 import org.apache.nifi.authorization.user.NiFiUserUtils;
+import org.apache.nifi.nar.i18n.MessagesProvider;
 import org.apache.nifi.ui.extension.UiExtension;
 import org.apache.nifi.ui.extension.UiExtensionMapping;
 import org.apache.nifi.web.NiFiServiceFacade;
@@ -231,9 +232,17 @@ public class ReportingTaskResource extends ApplicationResource {
             final Authorizable reportingTask = lookup.getReportingTask(id).getAuthorizable();
             reportingTask.authorize(authorizer, RequestAction.READ, NiFiUserUtils.getNiFiUser());
         });
+        
+        final long threadId = Thread.currentThread().getId();
+        MessagesProvider.setLocale(threadId, getRequestLocale());
 
-        // get the property descriptor
-        final PropertyDescriptorDTO descriptor = serviceFacade.getReportingTaskPropertyDescriptor(id, propertyName);
+        PropertyDescriptorDTO descriptor;
+        try {
+            // get the property descriptor
+            descriptor = serviceFacade.getReportingTaskPropertyDescriptor(id, propertyName);
+        } finally {
+            MessagesProvider.removeLocale(threadId);
+        }
 
         // generate the response entity
         final PropertyDescriptorEntity entity = new PropertyDescriptorEntity();
