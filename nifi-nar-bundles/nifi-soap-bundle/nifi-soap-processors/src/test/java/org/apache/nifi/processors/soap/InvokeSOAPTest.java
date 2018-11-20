@@ -249,7 +249,7 @@ public class InvokeSOAPTest {
     }
 
     @Test
-    public void testAddArguments(){
+    public void testAddArguments() throws Exception{
         //addArgumentsToMethod(ProcessContext context, OMFactory fac, OMNamespace omNamespace, OMElement method)
         final String namespaceUrl = "http://localhost.com/stockquote.wsdl";
         final String namespacePrefix = "nifi";
@@ -288,7 +288,7 @@ public class InvokeSOAPTest {
                 "<SOAP-ENV:Envelope SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
                 "    <SOAP-ENV:Body>\n" +
                 "        <ns1:LatLonListZipCodeResponse xmlns:ns1=\"http://graphical.weather.gov/xml/DWMLgen/wsdl/ndfdXML.wsdl\">\n" +
-                "            <listLatLonOut xsi:type=\"xsd:string\">&lt;?xml version=&apos;1.0&apos;?&gt;&lt;dwml version=&apos;1.0&apos; xmlns:xsd=&apos;http://www.w3.org/2001/XMLSchema&apos; xmlns:xsi=&apos;http://www.w3.org/2001/XMLSchema-instance&apos; xsi:noNamespaceSchemaLocation=&apos;http://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd&apos;&gt;&lt;latLonList&gt;35.9153,-79.0838&lt;/latLonList&gt;&lt;/dwml&gt;</listLatLonOut>\n" +
+                "<listLatLonOut xsi:type=\"xsd:string\"><?xml version=\"1.0\"?><dwml version=\"1.0\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"http://graphical.weather.gov/xml/DWMLgen/schema/DWML.xsd\"><latLonList>35.9153,-79.0838</latLonList></dwml></listLatLonOut>\n" +
                 "        </ns1:LatLonListZipCodeResponse>\n" +
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>";

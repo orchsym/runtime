@@ -16,22 +16,30 @@
  */
 package org.apache.nifi.processors.soap;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.axiom.om.OMAbstractFactory;
 import org.apache.axiom.om.OMElement;
 import org.apache.axiom.om.OMFactory;
 import org.apache.axiom.om.OMNamespace;
+import org.apache.axiom.om.util.AXIOMUtil;
 import org.apache.axis2.AxisFault;
 import org.apache.axis2.Constants;
 import org.apache.axis2.addressing.EndpointReference;
 import org.apache.axis2.client.Options;
 import org.apache.axis2.client.ServiceClient;
-
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpConnectionManager;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-
 import org.apache.axis2.transport.http.HTTPConstants;
 import org.apache.axis2.transport.http.impl.httpclient3.HttpTransportPropertiesImpl;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.nifi.annotation.behavior.DynamicProperty;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.SupportsBatching;
@@ -54,10 +62,6 @@ import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.io.OutputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
-import org.apache.nifi.util.StopWatch;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.*;
 
 
 @SupportsBatching
@@ -103,6 +107,17 @@ public class InvokeSOAP extends AbstractProcessor {
             .required(true)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+            .build();
+
+    protected static final PropertyDescriptor ELEMENT_QUALIFIED = new PropertyDescriptor
+            .Builder()
+            .name("Element is qualified")
+            .description("If qualified, elements and attributes are in the targetNamespace of the schema.")
+            .required(true)
+            .allowableValues("true", "false")
+            .defaultValue("false")
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+            .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
             .build();
 
     protected static final PropertyDescriptor USER_NAME = new PropertyDescriptor
@@ -197,9 +212,10 @@ public class InvokeSOAP extends AbstractProcessor {
         descriptors.add(ENDPOINT_URL);
         descriptors.add(TARGET_NAMESPACE);
         descriptors.add(METHOD_NAME);
-        descriptors.add(KEEP_ALIVE);
+        descriptors.add(ELEMENT_QUALIFIED);
         descriptors.add(USER_NAME);
         descriptors.add(PASSWORD);
+        descriptors.add(KEEP_ALIVE);
         descriptors.add(USER_AGENT);
         descriptors.add(SO_TIMEOUT);
         descriptors.add(CONNECTION_TIMEOUT);
@@ -391,8 +407,9 @@ public class InvokeSOAP extends AbstractProcessor {
         }
     }
 
-    void addArgumentsToMethod(final FlowFile ff, ProcessContext context, OMFactory fac, OMNamespace omNamespace, OMElement method) {
+    void addArgumentsToMethod(final FlowFile ff, ProcessContext context, OMFactory fac, OMNamespace omNamespace, OMElement method) throws Exception {
         final ComponentLog logger = getLogger();
+        boolean isQualifed = context.getProperty(ELEMENT_QUALIFIED).asBoolean();
         for (final Map.Entry<PropertyDescriptor, String> entry : context.getProperties().entrySet()) {
             PropertyDescriptor descriptor = entry.getKey();
             if (descriptor.isDynamic() && descriptor.isExpressionLanguageSupported()) {
@@ -403,8 +420,12 @@ public class InvokeSOAP extends AbstractProcessor {
                     dynamicValue = context.getProperty(descriptor).evaluateAttributeExpressions().getValue();
                 if (null != logger)
                     logger.debug("Processing dynamic property: " + descriptor.getName() + " with value: " + dynamicValue);
-                OMElement value = getSoapMethod(fac, omNamespace, descriptor.getName());
-                value.addChild(fac.createOMText(value, dynamicValue));
+                OMElement value;
+                if(isQualifed)
+                    value = getSoapMethod(fac, omNamespace, descriptor.getName());
+                else
+                    value = getSoapMethod(fac, null, descriptor.getName());
+                value.addChild(AXIOMUtil.stringToOM(dynamicValue));
                 method.addChild(value);
             }
         }

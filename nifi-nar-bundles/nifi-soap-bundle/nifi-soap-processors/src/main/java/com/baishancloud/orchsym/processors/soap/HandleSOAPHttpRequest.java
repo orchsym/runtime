@@ -109,7 +109,7 @@ public class HandleSOAPHttpRequest extends HandleHttpRequest {
     public static final PropertyDescriptor SOAP_PORT = new PropertyDescriptor.Builder()//
             .name("soap-listening-port")//$NON-NLS-1$
             .displayName(HandleHttpRequest.PORT.getName())//
-            .description(Messages.getString("HandleSOAPHttpRequest.listeningPortDesc"))//$NON-NLS-1$
+            .description("The Port to listen on for incoming SOAP HTTP requests")//
             .required(true)//
             .addValidator(HandleHttpRequest.PORT.getValidators().get(0))//
             .expressionLanguageSupported(HandleHttpRequest.PORT.getExpressionLanguageScope())//
@@ -128,16 +128,16 @@ public class HandleSOAPHttpRequest extends HandleHttpRequest {
 
     public static final PropertyDescriptor SOAP_WSDL_OPTIONS = new PropertyDescriptor.Builder()//
             .name("soap-wsdl-options")//$NON-NLS-1$
-            .displayName(Messages.getString("HandleSOAPHttpRequest.wsdlOptions"))//$NON-NLS-1$
-            .description(Messages.getString("HandleSOAPHttpRequest.wsdlOptionsDesc"))//$NON-NLS-1$
+            .displayName("WSDL Defination Options")//
+            .description("The options of WSDL defination, support local wsdl file, remote URL and custom wsdl contents")//
             .required(true)//
             .allowableValues(EWSDLOptions.getAll()).defaultValue(EWSDLOptions.URI.getValue())//
             .build();
 
     public static final PropertyDescriptor SOAP_WSDL_URI = new PropertyDescriptor.Builder()//
             .name("soap-wsdl-uri")//$NON-NLS-1$
-            .displayName(Messages.getString("HandleSOAPHttpRequest.wsdlUri"))//$NON-NLS-1$
-            .description(Messages.getString("HandleSOAPHttpRequest.wsdlUriDesc"))//$NON-NLS-1$
+            .displayName("WSDL URI")//
+            .description("The value can be local file path and remote URL or such")//
             .required(false)//
             .addValidator(StandardValidators.URI_VALIDATOR)//
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
@@ -145,8 +145,8 @@ public class HandleSOAPHttpRequest extends HandleHttpRequest {
 
     public static final PropertyDescriptor SOAP_WSDL_CONTENTS = new PropertyDescriptor.Builder()//
             .name("soap-wsdl-contents")//$NON-NLS-1$
-            .displayName(Messages.getString("HandleSOAPHttpRequest.customContents"))//$NON-NLS-1$
-            .description(Messages.getString("HandleSOAPHttpRequest.customContentsDesc"))//$NON-NLS-1$
+            .displayName("WSDL custom contents")//
+            .description("The value must be valid full contents of WSDL")//
             .required(false)//
             .addValidator(Validator.VALID)//
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
@@ -154,8 +154,8 @@ public class HandleSOAPHttpRequest extends HandleHttpRequest {
 
     public static final PropertyDescriptor SOAP_ENVELOPE_OPTIONS = new PropertyDescriptor.Builder()//
             .name("soap-envelope-options")//$NON-NLS-1$
-            .displayName(Messages.getString("HandleSOAPHttpRequest.envelopeOptions"))//$NON-NLS-1$
-            .description(Messages.getString("HandleSOAPHttpRequest.envelopeOptionsDesc"))//$NON-NLS-1$
+            .displayName("Envelope Options")//
+            .description("The options of the SOAP request envelope to deal with")//
             .required(true)//
             .addValidator(Validator.VALID)//
             .allowableValues(EEnvelopeOptions.getAll()).defaultValue(EEnvelopeOptions.RAW.getValue())//

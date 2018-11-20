@@ -5,17 +5,15 @@ import java.util.Arrays;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.components.AllowableValue;
 
-import com.baishancloud.orchsym.processors.soap.i18n.Messages;
-
 /**
  * @author GU Guoqiang
  *
  */
 public enum EEnvelopeOptions {
 
-    RAW(Messages.getString("EEnvelopeOptions.raw")), //$NON-NLS-1$
-    BODY(Messages.getString("EEnvelopeOptions.onlyBody")), //$NON-NLS-1$
-    JSON(Messages.getString("EEnvelopeOptions.jsonBody")); //$NON-NLS-1$
+    RAW("Raw"), //$NON-NLS-1$
+    BODY("Body only"), //$NON-NLS-1$
+    JSON("Convert Body to JSON"); //$NON-NLS-1$
     private String displayName;
 
     private EEnvelopeOptions(String displayName) {

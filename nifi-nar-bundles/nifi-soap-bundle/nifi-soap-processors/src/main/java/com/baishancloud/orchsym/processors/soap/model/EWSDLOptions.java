@@ -4,8 +4,6 @@ import java.util.Arrays;
 
 import org.apache.nifi.components.AllowableValue;
 
-import com.baishancloud.orchsym.processors.soap.i18n.Messages;
-
 /**
  * @author GU Guoqiang
  *
@@ -13,7 +11,7 @@ import com.baishancloud.orchsym.processors.soap.i18n.Messages;
 public enum EWSDLOptions {
 
     URI, //
-    CONTENTS(Messages.getString("EWSDLOptions.custom")); //$NON-NLS-1$
+    CONTENTS("Custom Contents"); //$NON-NLS-1$
     private String displayName;
 
     private EWSDLOptions() {

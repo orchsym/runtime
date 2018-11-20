@@ -88,16 +88,16 @@ public class HandleSOAPHttpResponse extends HandleHttpResponse {
 
     public static final PropertyDescriptor INPUT_OPTIONS = new PropertyDescriptor.Builder()//
             .name("soap-input-options")//$NON-NLS-1$
-            .displayName(Messages.getString("HandleSOAPHttpResponse.inputOption"))//$NON-NLS-1$
-            .description(Messages.getString("HandleSOAPHttpResponse.inputOptionDesc"))//$NON-NLS-1$
+            .displayName("Input Options")//$NON-NLS-1$
+            .description("Limit the contents of input FlowFile to response to soap")//$NON-NLS-1$
             .required(true)//
             .allowableValues(EInputOptions.getAll()).defaultValue(EInputOptions.RAW.getValue())//
             .build();
 
     public static final PropertyDescriptor PRETTY_PRINT = new PropertyDescriptor.Builder()//
             .name("soap-pretty-print")//$NON-NLS-1$
-            .displayName(Messages.getString("HandleSOAPHttpResponse.prettyPrint"))//$NON-NLS-1$
-            .description(Messages.getString("HandleSOAPHttpResponse.prettyPrintDesc"))//$NON-NLS-1$
+            .displayName("Pretty Print Response")//$NON-NLS-1$
+            .description("Specifies whether or not the contents should be pretty printed to response")//$NON-NLS-1$
             .required(false)//
             .addValidator(StandardValidators.BOOLEAN_VALIDATOR)//
             .allowableValues(Boolean.TRUE.toString(), Boolean.FALSE.toString()).defaultValue(Boolean.TRUE.toString())//
@@ -105,8 +105,8 @@ public class HandleSOAPHttpResponse extends HandleHttpResponse {
 
     public static final PropertyDescriptor XML_ROOT_TAG = new PropertyDescriptor.Builder()//
             .name("soap-root-tag")//$NON-NLS-1$
-            .displayName(Messages.getString("HandleSOAPHttpResponse.rootTag"))//$NON-NLS-1$
-            .description(Messages.getString("HandleSOAPHttpResponse.rootTagDesc"))//$NON-NLS-1$
+            .displayName("Body Root Tag")//$NON-NLS-1$
+            .description("Specifies XML root tag to convert the input flow as Body")//$NON-NLS-1$
             .required(false)//
             .addValidator(Validator.VALID)//
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY) //

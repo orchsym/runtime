@@ -5,16 +5,14 @@ import java.util.Arrays;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.components.AllowableValue;
 
-import com.baishancloud.orchsym.processors.soap.i18n.Messages;
-
 /**
  * @author GU Guoqiang
  *
  */
 public enum EInputOptions {
 
-    RAW(Messages.getString("EInputOptions.rawContents")), //$NON-NLS-1$
-    BODY(Messages.getString("EInputOptions.bodyContents")); //$NON-NLS-1$
+    RAW("Raw contents"), //$NON-NLS-1$
+    BODY("Contents as Body"); //$NON-NLS-1$
     private String displayName;
 
     private EInputOptions(String displayName) {
