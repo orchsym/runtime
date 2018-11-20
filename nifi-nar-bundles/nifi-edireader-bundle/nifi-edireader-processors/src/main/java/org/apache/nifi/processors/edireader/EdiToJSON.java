@@ -51,6 +51,7 @@ public class EdiToJSON extends AbstractProcessor {
             .displayName("Pretty print results")
             .description("Whether to get query result data in pretty-printed json or an optimized unformatted single line")
             .required(true)
+            .allowableValues("true", "false")
             .defaultValue("false")
             .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
             .build();

@@ -55,7 +55,7 @@ public class ExtractEdiToAttributes extends AbstractProcessor {
     private static final Relationship REL_FAILURE = new Relationship.Builder().name("failure").description("failure").build();
 
     public static final PropertyDescriptor PRETTY_PRINT = new PropertyDescriptor.Builder().name("pretty-print").displayName("Pretty print results")
-            .description("Whether to get query result data in pretty-printed json or an optimized unformatted single line").required(true).defaultValue("false")
+            .description("Whether to get query result data in pretty-printed json or an optimized unformatted single line").required(true).allowableValues("true","false").defaultValue("false")
             .addValidator(StandardValidators.BOOLEAN_VALIDATOR).build();
 
     @Override
