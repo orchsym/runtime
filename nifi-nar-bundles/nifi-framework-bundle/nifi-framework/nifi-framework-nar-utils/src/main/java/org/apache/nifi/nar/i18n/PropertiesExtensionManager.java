@@ -55,7 +55,6 @@ class PropertiesExtensionManager {
     static final List<URL> foundURLs = new ArrayList<>();
 
     static void discoverExtensions(final Set<Bundle> narBundles) {
-
         // get the current context class loader
         ClassLoader currentContextClassLoader = Thread.currentThread().getContextClassLoader();
 
@@ -86,7 +85,7 @@ class PropertiesExtensionManager {
 
             if (typeBundleLookup.containsKey(tl)) {
                 final PropertyBundle oldTL = typeBundleLookup.get(tl);
-                logger.error("Have existed the properties: " + oldTL.url + " in " + oldTL.bundle.getBundleDetails());
+                logger.warn("Have existed the properties: " + oldTL.url + " in " + oldTL.bundle.getBundleDetails());
             } else {
                 typeBundleLookup.put(tl, new PropertyBundle(url, bundle));
             }

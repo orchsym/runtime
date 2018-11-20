@@ -23,13 +23,19 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 final class PropertiesServiceLoader implements Iterable<URL> {
+    private static final Logger logger = LoggerFactory.getLogger(PropertiesServiceLoader.class);
 
     private final ClassLoader loader;
 
@@ -51,26 +57,35 @@ final class PropertiesServiceLoader implements Iterable<URL> {
      * This method is intended for use in situations in which new providers can be installed into a running Java virtual machine.
      */
     public void reload() {
-        URL baseURL = getResource(MessagesProvider.PATH_I18N);
-        if (baseURL == null) {
-            return;
-        }
-        final String urlStr = baseURL.toString();
-        final int jarIndex = urlStr.indexOf("!/");
-        if (jarIndex > 0) { // in jar
-            String jarPath = urlStr.substring(0, jarIndex + 2);
-            foundPropURLs = getPropertiesURLs(jarPath).iterator();
-        } else {// in dir
-            File i18nDir = new File(baseURL.getPath());
-            if (i18nDir.exists()) {
-                foundPropURLs = getPropertiesURLs(i18nDir).iterator();
+        try {
+            if (loader == null) {
+                return;
             }
+            // try to find all i18n folder in jars
+            Enumeration<URL> i18nURLs = loader.getResources(MessagesProvider.PATH_I18N);
+            if (i18nURLs == null || !i18nURLs.hasMoreElements()) {
+                return;
+            }
+            Set<URL> foundURLs = new HashSet<>();
+            while (i18nURLs.hasMoreElements()) {
+                final URL url = i18nURLs.nextElement();
+                final String urlStr = url.toString();
+                final int jarIndex = urlStr.indexOf("!/");
+                if (jarIndex > 0) { // in jar
+                    String jarPath = urlStr.substring(0, jarIndex + 2); // must with "!/"
+                    foundURLs.addAll(getPropertiesURLs(jarPath));
+                } else {// in dir
+                    File i18nDir = new File(url.getPath());
+                    if (i18nDir.exists()) {
+                        foundURLs.addAll(getPropertiesURLs(i18nDir));
+                    }
+                }
+            }
+            foundPropURLs = foundURLs.iterator();
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
         }
 
-    }
-
-    private URL getResource(String name) {
-        return loader == null ? ClassLoader.getSystemResource(name) : loader.getResource(name);
     }
 
     /**
@@ -88,12 +103,13 @@ final class PropertiesServiceLoader implements Iterable<URL> {
                 JarEntry entry = jarEntrys.nextElement();
                 String name = entry.getName();
                 if (!entry.isDirectory() && name.startsWith(MessagesProvider.PATH_I18N) && name.endsWith(MessagesProvider.EXT)) {
-                    final URL resource = getResource(name);
-                    propURLs.add(resource);
+                    final URL resource = loader.getResource(name); // try to find the first one
+                    if (resource != null)
+                        propURLs.add(resource);
                 }
             }
         } catch (IOException e) {
-            //
+            logger.error(e.getMessage(), e);
         }
         return propURLs;
     }
@@ -116,7 +132,7 @@ final class PropertiesServiceLoader implements Iterable<URL> {
                         }
                     }
                 } catch (MalformedURLException e) {
-                    //
+                    logger.error(e.getMessage(), e);
                 }
             }
         }

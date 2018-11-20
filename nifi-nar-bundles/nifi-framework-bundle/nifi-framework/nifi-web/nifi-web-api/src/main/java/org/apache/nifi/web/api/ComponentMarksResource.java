@@ -56,7 +56,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Functions;
 import com.google.gson.Gson;
 
 import io.swagger.annotations.Api;
@@ -178,14 +177,14 @@ public class ComponentMarksResource extends ApplicationResource {
         }).collect(Collectors.toMap(t -> t.name, Function.identity()));
     }
 
-    private void authorizeSystem() {
-        // FIXME, don't check the auth, should be available always
+    // private void authorizeSystem() {
+    // FIXME, don't check the auth, should be available always
 
-        // serviceFacade.authorizeAccess(lookup -> {
-        // final Authorizable system = lookup.getSystem();
-        // system.authorize(authorizer, RequestAction.READ, NiFiUserUtils.getNiFiUser());
-        // });
-    }
+    // serviceFacade.authorizeAccess(lookup -> {
+    // final Authorizable system = lookup.getSystem();
+    // system.authorize(authorizer, RequestAction.READ, NiFiUserUtils.getNiFiUser());
+    // });
+    // }
 
     /**
      * Gets the components marks for this NiFi instance.
@@ -222,8 +221,8 @@ public class ComponentMarksResource extends ApplicationResource {
         Set<DocumentedTypeDTO> processorTypes = serviceFacade.getProcessorTypes(null, null, null);
         Set<DocumentedTypeDTO> serviceTypes = serviceFacade.getControllerServiceTypes(null, null, null, null, null, null, null);
 
-        fixRequestLocale(requestLocale, processorTypes);
-        fixRequestLocale(requestLocale, serviceTypes);
+        processorTypes.stream().forEach(dto -> fixRequestLocale(requestLocale, dto));
+        serviceTypes.stream().forEach(dto -> fixRequestLocale(requestLocale, dto));
 
         List<MarkEntity> processorMarks = filterAndCreateMarkEntities(processorTypes, "processor", filterType, filterName, filterVendor);
         List<MarkEntity> serviceMarks = filterAndCreateMarkEntities(serviceTypes, "controllerService", filterType, filterName, filterVendor);
@@ -271,9 +270,12 @@ public class ComponentMarksResource extends ApplicationResource {
             synchronized (logger) {
 
                 Set<DocumentedTypeDTO> processorTypes = serviceFacade.getProcessorTypes(null, null, null);
-                fixRequestLocale(requestLocale, processorTypes);
+                Set<DocumentedTypeDTO> processorTypesWithCategories = processorTypes.stream()//
+                        .filter(dto -> dto.getCategories() != null && dto.getCategories().size() > 0)//
+                        .collect(Collectors.toSet());
+                processorTypesWithCategories.forEach(dto -> fixRequestLocale(requestLocale, dto));
 
-                final Collection<CategoryItem> categoryItems = createCategoryItems(requestLocale, processorTypes);
+                final Collection<CategoryItem> categoryItems = createCategoryItems(requestLocale, processorTypesWithCategories);
 
                 // merge
                 items = mergeBuiltIn(requestLocale, categoryItems);
@@ -300,19 +302,21 @@ public class ComponentMarksResource extends ApplicationResource {
         return Response.ok(resultStr).build();
     }
 
-    private void fixRequestLocale(final Locale requestLocale, Set<DocumentedTypeDTO> types) {
-        if (types == null || types.isEmpty()) {
-            return;
+    private void fixRequestLocale(final Locale requestLocale, DocumentedTypeDTO type) {
+        Set<String> marksCategories = MessagesProvider.getMarksCategoriesSet(requestLocale, type.getType());
+        if (marksCategories == null || marksCategories.isEmpty()) {
+            // same as Category.getLabel, will try to load the messages.properties(en) by default;
+            marksCategories = MessagesProvider.getMarksCategoriesSet(Locale.ENGLISH, type.getType());
         }
-        for (DocumentedTypeDTO type : types) {
-            final Set<String> marksCategories = MessagesProvider.getMarksCategoriesSet(requestLocale, type.getType());
-            if (marksCategories != null && !marksCategories.isEmpty()) {
-                type.setCategories(marksCategories); // update
-            }
-            final String marksVendor = MessagesProvider.getMarksVendor(requestLocale, type.getType());
-            if (!StringUtils.isBlank(marksVendor)) {
-                type.setVendor(marksVendor);
-            }
+        if (marksCategories != null && !marksCategories.isEmpty()) {
+            type.setCategories(marksCategories); // update
+        }
+        String marksVendor = MessagesProvider.getMarksVendor(requestLocale, type.getType());
+        if (StringUtils.isBlank(marksVendor)) {
+            marksVendor = MessagesProvider.getMarksVendor(Locale.ENGLISH, type.getType());
+        }
+        if (!StringUtils.isBlank(marksVendor)) {
+            type.setVendor(marksVendor);
         }
     }
 
@@ -322,11 +326,7 @@ public class ComponentMarksResource extends ApplicationResource {
             String type = dto.getType();
             String processorName = type.lastIndexOf('.') > 0 ? type.substring(type.lastIndexOf('.') + 1) : type;
 
-            Set<String> categories = dto.getCategories();
-            if (categories == null) {
-                continue;
-            }
-            for (String category : categories) {
+            for (String category : dto.getCategories()) {
                 String[] categoryArr = category.split("/");
                 String nameIndex1 = categoryArr.length > 0 ? categoryArr[0] : "";
                 String nameIndex2 = categoryArr.length > 1 ? categoryArr[1] : "";
