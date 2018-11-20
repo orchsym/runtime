@@ -101,6 +101,7 @@
         <module>nifi-store-procedure-bundle</module>
         <module>orchsym-sap-bundle</module>
         <module>nifi-opcua-bundle</module>
+        <module>nifi-edireader-bundle</module>
     </modules>
     <build>
         <plugins>
