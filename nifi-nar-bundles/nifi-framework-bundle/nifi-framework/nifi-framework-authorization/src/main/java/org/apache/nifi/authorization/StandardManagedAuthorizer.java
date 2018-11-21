@@ -21,6 +21,9 @@ import org.apache.nifi.authorization.exception.AuthorizationAccessException;
 import org.apache.nifi.authorization.exception.AuthorizerCreationException;
 import org.apache.nifi.authorization.exception.AuthorizerDestructionException;
 import org.apache.nifi.authorization.exception.UninheritableAuthorizationsException;
+import org.apache.nifi.authorization.User;
+import org.apache.nifi.authorization.ConfigurableUserGroupProvider;
+import org.apache.nifi.authorization.ConfigurableAccessPolicyProvider;
 import org.apache.nifi.components.PropertyValue;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -39,6 +42,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
+import java.util.UUID;
 
 public class StandardManagedAuthorizer implements ManagedAuthorizer {
 
@@ -91,15 +95,54 @@ public class StandardManagedAuthorizer implements ManagedAuthorizer {
 
         final User user = userAndGroups.getUser();
         if (user == null) {
-            return AuthorizationResult.denied(String.format("Unknown user with identity '%s'.", request.getIdentity()));
+            if (request.isAnonymous()) {
+                if (request.getRequestedResource().getName().equals("HandleHttpRequest")) {
+                    //该请求可能是请求api的swagger信息，没有携带authentication信息，为匿名用户，给予通过
+                    return AuthorizationResult.approved();
+                }
+                return AuthorizationResult.denied(String.format("user identity can't be '%s'.", request.getIdentity()));
+            }
+            User newUser = new User.Builder().identifier(generateUuid()).identity(request.getIdentity()).build();
+            // create new user and add to userGroup
+            ((ConfigurableUserGroupProvider)userGroupProvider).addUser(newUser);
+            //set access pilicy for the new user
+            setUserDefaultAccesPilicy(accessPolicyProvider, newUser);
+            
+            return AuthorizationResult.approved();
         }
 
         final Set<Group> userGroups = userAndGroups.getGroups();
         if (policy.getUsers().contains(user.getIdentifier()) || containsGroup(userGroups, policy)) {
             return AuthorizationResult.approved();
         }
-
         return AuthorizationResult.denied(request.getExplanationSupplier().get());
+    }
+
+    private String generateUuid() {
+        UUID uuid = UUID.randomUUID(); 
+        return uuid.toString();
+    }
+
+    private void setUserDefaultAccesPilicy(AccessPolicyProvider accessPolicyProvider, User user) {
+        for (AccessPolicy policy : accessPolicyProvider.getAccessPolicies()) {
+            if (policy.getResource().equals("/flow")
+                || policy.getResource().equals("/tenants")
+                || policy.getResource().equals("/policies")
+                || policy.getResource().equals("/controller")) {
+                AccessPolicy.Builder builder = new AccessPolicy.Builder()
+                    .identifier(policy.getIdentifier())
+                    .resource(policy.getResource())
+                    .action(policy.getAction());
+                for (String userStr : policy.getUsers()) {
+                    builder.addUser(userStr);
+                }
+                builder.addUser(user.getIdentifier());
+                for (String groupStr : policy.getGroups()) {
+                    builder.addGroup(groupStr);
+                }
+                ((ConfigurableAccessPolicyProvider)accessPolicyProvider).updateAccessPolicy(builder.build());
+            }
+        }
     }
 
     /**
