@@ -595,6 +595,17 @@ public class FileAccessPolicyProvider implements ConfigurableAccessPolicyProvide
         // grant the user read/write access to the /controller resource
         addUserToAccessPolicy(authorizations, ResourceType.Controller.getValue(), initialAdmin.getIdentifier(), READ_CODE);
         addUserToAccessPolicy(authorizations, ResourceType.Controller.getValue(), initialAdmin.getIdentifier(), WRITE_CODE);
+
+        //grant the admin some additional access right
+        addUserToAccessPolicy(authorizations, ResourceType.Provenance.getValue(), initialAdmin.getIdentifier(), READ_CODE);
+        addUserToAccessPolicy(authorizations, ResourceType.Counters.getValue(), initialAdmin.getIdentifier(), READ_CODE);
+        addUserToAccessPolicy(authorizations, ResourceType.Counters.getValue(), initialAdmin.getIdentifier(), WRITE_CODE);
+        addUserToAccessPolicy(authorizations, ResourceType.SiteToSite.getValue(), initialAdmin.getIdentifier(), READ_CODE);
+        addUserToAccessPolicy(authorizations, ResourceType.SiteToSite.getValue(), initialAdmin.getIdentifier(), WRITE_CODE);
+        addUserToAccessPolicy(authorizations, ResourceType.Proxy.getValue(), initialAdmin.getIdentifier(), READ_CODE);
+        addUserToAccessPolicy(authorizations, ResourceType.Proxy.getValue(), initialAdmin.getIdentifier(), WRITE_CODE);
+        addUserToAccessPolicy(authorizations, ResourceType.System.getValue(), initialAdmin.getIdentifier(), READ_CODE);
+        addUserToAccessPolicy(authorizations, ResourceType.System.getValue(), initialAdmin.getIdentifier(), WRITE_CODE);   
     }
 
     /**
