@@ -25,6 +25,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.annotation.documentation.Marks;
@@ -312,13 +313,13 @@ public class StatsResource extends ApplicationResource {
         summaryDTO.setProcessorCount((long) processorTypes.size());
         processorI18nCount.put(Locale.CHINESE.getLanguage(), processorTypes.stream().filter(zhDescPredicate).count());
         summaryDTO.setProcessorI18nCount(processorI18nCount);
-        
+
         Map<String, Long> controllerI18nCount = new HashMap<>();
         final Set<DocumentedTypeDTO> controllerTypes = serviceFacade.getControllerServiceTypes(null, null, null, null, null, null, null);
         summaryDTO.setControllerCount((long) controllerTypes.size());
         controllerI18nCount.put(Locale.CHINESE.getLanguage(), controllerTypes.stream().filter(zhDescPredicate).count());
         summaryDTO.setControllerI18nCount(controllerI18nCount);
-        
+
         // serviceFacade.getReportingTaskTypes(null, null, null);
 
         final Predicate<? super DocumentedTypeDTO> ownedPredicate = dto -> Marks.ORCHSYM.equals(dto.getVendor());
@@ -565,16 +566,33 @@ public class StatsResource extends ApplicationResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/gen")
     public Response generateDocs() {
-        generateMarkdown(Locale.ENGLISH.getLanguage(), null, Boolean.TRUE.toString());
-        generateMarkdown(Locale.CHINESE.getLanguage(), null, Boolean.TRUE.toString());
+        Response response = generateMarkdown(Locale.ENGLISH.getLanguage(), null, Boolean.TRUE.toString());
+        if (response.getStatus() != Status.OK.getStatusCode()) {
+            return response;
+        }
+        response = generateMarkdown(Locale.CHINESE.getLanguage(), null, Boolean.TRUE.toString());
+        if (response.getStatus() != Status.OK.getStatusCode()) {
+            return response;
+        }
+        response = generateHtmlDoc(Locale.ENGLISH.getLanguage(), null, Boolean.TRUE.toString());
+        if (response.getStatus() != Status.OK.getStatusCode()) {
+            return response;
+        }
+        response = generateHtmlDoc(Locale.CHINESE.getLanguage(), null, Boolean.TRUE.toString());
+        if (response.getStatus() != Status.OK.getStatusCode()) {
+            return response;
+        }
 
-        generateHtmlDoc(Locale.ENGLISH.getLanguage(), null, Boolean.TRUE.toString());
-        generateHtmlDoc(Locale.CHINESE.getLanguage(), null, Boolean.TRUE.toString());
+        response = generateI18n(Locale.ENGLISH.getLanguage(), null, Boolean.TRUE.toString());
+        if (response.getStatus() != Status.OK.getStatusCode()) {
+            return response;
+        }
+        response = generateI18n(Locale.CHINESE.getLanguage(), null, Boolean.TRUE.toString());
+        if (response.getStatus() != Status.OK.getStatusCode()) {
+            return response;
+        }
 
-        generateI18n(Locale.ENGLISH.getLanguage(), null, Boolean.TRUE.toString());
-        generateI18n(Locale.CHINESE.getLanguage(), null, Boolean.TRUE.toString());
-
-        return generateOkResponse("Successfully to generate at " + LocalDateTime.now()).build();
+        return generateOkResponse("Successfully to generate all docs at " + LocalDateTime.now()).build();
     }
 
     private Response doGenerator(String lang, String country, String generatorClass, File baseOutDir, String all) {
