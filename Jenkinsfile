@@ -31,7 +31,7 @@ pipeline {
 
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Build Started ${env.EMOJI_BUILD_START} commit: ${env.GIT_COMMIT}*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}"
+          message: "${env.RUNTIME_EMOJI} *Build Started ${env.EMOJI_BUILD_START} commit: ${env.GIT_COMMIT}*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}"
         )
       }
     }
@@ -47,7 +47,7 @@ pipeline {
 
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Compile Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nGenerated `${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz`"
+          message: "${env.RUNTIME_EMOJI} *Compile Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nGenerated `${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz`"
         )
       }
     }
@@ -58,7 +58,7 @@ pipeline {
       steps {
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Copy to Ansible host*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+          message: "${env.RUNTIME_EMOJI} *Copy to Ansible host*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
         )
 
         sh """
@@ -67,7 +67,7 @@ pipeline {
 
         slackSend(
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Copy finished*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+          message: "${env.RUNTIME_EMOJI} *Copy finished*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
         )
       }
     }
@@ -78,16 +78,16 @@ pipeline {
       steps {
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Updating `Dev` (`${env.ORCHSYM_DEV_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_START}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+          message: "${env.RUNTIME_EMOJI} *Updating `Dev` (`${env.RUNTIME_DEV_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_START}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
         )
 
         sh """
-          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name orchsym-dev --service ${env.PROJECT_NAME}/${env.VERSION_NAME}"
+          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name ${env.RUNTIME_DEV_NAME} --service ${env.PROJECT_NAME}/${env.RUNTIME_DEV_VERSION}"
         """
 
         slackSend(
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Updated `Dev` (`${env.ORCHSYM_DEV_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_SUCCESS}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+          message: "${env.RUNTIME_EMOJI} *Updated `Dev` (`${env.RUNTIME_DEV_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_SUCCESS}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
         )
       }
     }
@@ -96,7 +96,19 @@ pipeline {
       when { branch "${env.RUNTIME_TEST_VERSION}" }
 
       steps {
-        echo "TODO"
+        slackSend (
+          color: 'good',
+          message: "${env.RUNTIME_EMOJI} *Updating `Test` (`${env.RUNTIME_TEST_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_START}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        )
+
+        sh """
+          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name ${env.RUNTIME_TEST_NAME} --service ${env.PROJECT_NAME}/${env.RUNTIME_TEST_VERSION}"
+        """
+
+        slackSend(
+          color: 'good',
+          message: "${env.RUNTIME_EMOJI} *Updated `Test` (`${env.RUNTIME_TEST_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_SUCCESS}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        )
       }
     }
 
@@ -106,16 +118,16 @@ pipeline {
       steps {
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Updating `Stage` (`${env.ORCHSYM_STAGE_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_START}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+          message: "${env.RUNTIME_EMOJI} *Updating `Stage` (`${env.RUNTIME_STAGE_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_START}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
         )
 
         sh """
-          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name orchsym-stage --service ${env.PROJECT_NAME}/${env.RUNTIME_STAGE_VERSION} --skip-download"
+          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name ${env.RUNTIME_STAGE_NAME} --service ${env.PROJECT_NAME}/${env.RUNTIME_STAGE_VERSION}"
         """
 
         slackSend(
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Updated `Stage` (`${env.ORCHSYM_STAGE_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_SUCCESS}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+          message: "${env.RUNTIME_EMOJI} *Updated `Stage` (`${env.RUNTIME_STAGE_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_SUCCESS}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
         )
       }
     }
@@ -124,7 +136,19 @@ pipeline {
       when { branch "${env.RUNTIME_PROD_VERSION}" }
 
       steps {
-        echo "TODO"
+        slackSend (
+          color: 'good',
+          message: "${env.RUNTIME_EMOJI} *Updating `Prod` (`${env.RUNTIME_PROD_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_START}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        )
+
+        sh """
+          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name ${env.RUNTIME_PROD_NAME} --service ${env.PROJECT_NAME}/${env.RUNTIME_PROD_VERSION}"
+        """
+
+        slackSend(
+          color: 'good',
+          message: "${env.RUNTIME_EMOJI} *Updated `Prod` (`${env.RUNTIME_PROD_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_SUCCESS}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        )
       }
     }
 
@@ -134,7 +158,7 @@ pipeline {
       steps {
         slackSend(
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Build/Push docker image*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+          message: "${env.RUNTIME_EMOJI} *Build/Push docker image*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
         )
 
         sh "echo Generated Docker Images: >> ${env.BUILD_OUTPUT_FILE}"
@@ -153,7 +177,7 @@ pipeline {
 
         slackSend(
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Build/Push docker image finished*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+          message: "${env.RUNTIME_EMOJI} *Build/Push docker image finished*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
         )
       }
     }
@@ -164,7 +188,7 @@ pipeline {
       steps {
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Upload to Samba*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`"
+          message: "${env.RUNTIME_EMOJI} *Upload to Samba*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`"
         )
 
         sh """
@@ -173,7 +197,7 @@ pipeline {
 
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Upload to Samba Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can get it from Samba Server `//${env.SAMBA_SERVER}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz`"
+          message: "${env.RUNTIME_EMOJI} *Upload to Samba Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can get it from Samba Server `//${env.SAMBA_SERVER}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz`"
         )
       }
     }
@@ -184,7 +208,7 @@ pipeline {
       steps {
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME}*Upload to S2*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`"
+          message: "${env.RUNTIME_EMOJI}*Upload to S2*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`"
         )
 
         sh """
@@ -193,7 +217,7 @@ pipeline {
 
         slackSend (
           color: 'good',
-          message: "${env.EMOJI_SERVICE_RUNTIME} *Upload to S2 Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can download it from ${env.DOWNLOAD_PACKAGES_URL_BASE}/services/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz"
+          message: "${env.RUNTIME_EMOJI} *Upload to S2 Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can download it from ${env.DOWNLOAD_PACKAGES_URL_BASE}/services/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz"
         )
       }
     }
@@ -215,21 +239,21 @@ pipeline {
     aborted {
       slackSend (
         color: 'good',
-        message: "${env.EMOJI_SERVICE_RUNTIME} *Build Aborted* Jenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}\n${env.build_output}"
+        message: "${env.RUNTIME_EMOJI} *Build Aborted* Jenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}\n${env.build_output}"
       )
     }
 
     unstable {
       slackSend (
         color: 'good',
-        message: "${env.EMOJI_SERVICE_RUNTIME} *Build Unstable* Jenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}\n${env.build_output}"
+        message: "${env.RUNTIME_EMOJI} *Build Unstable* Jenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}\n${env.build_output}"
       )
     }
 
     success {
       slackSend (
         color: 'good',
-        message: "${env.EMOJI_SERVICE_RUNTIME} *Build Succeed* ${env.EMOJI_BUILD_SUCCESS} Jenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}\n${env.build_output}"
+        message: "${env.RUNTIME_EMOJI} *Build Succeed* ${env.EMOJI_BUILD_SUCCESS} Jenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}\n${env.build_output}"
       )
     }
 
@@ -237,7 +261,7 @@ pipeline {
     failure {
       slackSend (
         color: 'danger',
-        message: "${env.EMOJI_SERVICE_RUNTIME} *Build Failed* ${env.EMOJI_BUILD_FAILURE} Jenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}"
+        message: "${env.RUNTIME_EMOJI} *Build Failed* ${env.EMOJI_BUILD_FAILURE} Jenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}"
       )
     }
 
