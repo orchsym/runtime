@@ -167,7 +167,7 @@
            var $html = '<div id="deleteModal" class="hidden"  style="z-index: 1301;min-height: 100px;height:18.153%;min-width:320px;width:20.1765%;position:absolute;left:505.5px;top:319px;background-color:#FFFFFF;">' +
                             '<div class="dialog-header"><span class="dialog-header-text">'+nf._.msg('nf-actions.DeleteTitle')+'</span></div>'+
                             '<div class="dialog-content">'+nf._.msg('nf-actions.Delete')+'</div>'+
-                            '<div class="dialog-buttons"><div id="deleteOk" class="button ok" style="background: rgb(114, 142, 155); color: rgb(255, 255, 255);">确定</div><div id="deleteCancel" class="button cancel" style="background: rgb(227, 232, 235); color: rgb(0, 72, 73);" >取消</div></div>'+
+                            '<div class="dialog-buttons"><div id="deleteOk" class="button ok" style="background: rgb(114, 142, 155); color: rgb(255, 255, 255);">'+nf._.msg('nf-dialog.Ok')+'</div><div id="deleteCancel" class="button cancel" style="background: rgb(227, 232, 235); color: rgb(0, 72, 73);" >'+nf._.msg('nf-dialog.Cancel')+'</div></div>'+
                         '</div>';
             $("body").append($mengban)
             $("body").append($html)
@@ -1445,8 +1445,8 @@
             // ensure every component is writable
             if (nfCanvasUtils.canModify(selection) === false) {
                 nfDialog.showOkDialog({
-                    headerText: 'Component Position',
-                    dialogContent: 'Must be authorized to modify every component selected.'
+                    headerText: nf._.msg('nf-draggable.ComponentPosition'),
+                    dialogContent: nf._.msg('nf-editor.NoAuthorMessage')
                 });
                 return;
             }
@@ -1513,8 +1513,8 @@
             // ensure every component is writable
             if (nfCanvasUtils.canModify(selection) === false) {
                 nfDialog.showOkDialog({
-                    headerText: 'Component Position',
-                    dialogContent: 'Must be authorized to modify every component selected.'
+                	headerText: nf._.msg('nf-draggable.ComponentPosition'),
+                    dialogContent: nf._.msg('nf-editor.NoAuthorMessage')
                 });
                 return;
             }

@@ -371,7 +371,7 @@
                     nfUniversalCapture.removeAllPropertyDetailDialogs();
 
                     // update the property table size in case this is the first time its rendered
-                    if ($(this).text() === 'Properties') {
+                    if ($(this).text() === nf._.msg('nf-reporting-task.Properties')) {
                         $('#reporting-task-properties').propertytable('resetTableSize');
                     }
 
@@ -793,8 +793,8 @@
         promptToDeleteReportingTask: function (reportingTaskEntity) {
             // prompt for deletion
             nfDialog.showYesNoDialog({
-                headerText: 'Delete Reporting Task',
-                dialogContent: 'Delete reporting task \'' + nfCommon.escapeHtml(reportingTaskEntity.component.name) + '\'?',
+                headerText: nf._.msg('nf-reporting-task.DeleteReportingTask'),
+                dialogContent: nf._.msg('nf-reporting-task.DeleteReportingTask')+' \'' + nfCommon.escapeHtml(reportingTaskEntity.component.name) + '\'?',
                 yesHandler: function () {
                     nfReportingTask.remove(reportingTaskEntity);
                 }

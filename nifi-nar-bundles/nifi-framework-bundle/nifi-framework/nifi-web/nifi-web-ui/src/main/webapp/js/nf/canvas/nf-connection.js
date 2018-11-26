@@ -1444,7 +1444,7 @@
                 if (nfCommon.isDefinedAndNotNull(d.status.aggregateSnapshot.percentUseBytes)) {
                     return 'Queue is ' + d.status.aggregateSnapshot.percentUseBytes + '% full based on Back Pressure Data Size Threshold';
                 } else {
-                    return 'Back Pressure Data Size Threshold is not configured';
+                    return nf._.msg('nf-connection.BackPressureDataSizeNotConfig');
                 }
             });
         }).promise();
@@ -1484,7 +1484,7 @@
                 if (nfCommon.isDefinedAndNotNull(d.status.aggregateSnapshot.percentUseCount)) {
                     return 'Queue is ' + d.status.aggregateSnapshot.percentUseCount + '% full based on Back Pressure Object Threshold';
                 } else {
-                    return 'Back Pressure Object Threshold is not configured';
+                    return nf._.msg('nf-connection.BackPressureObjectNotConfig');
                 }
             });
         }).promise();

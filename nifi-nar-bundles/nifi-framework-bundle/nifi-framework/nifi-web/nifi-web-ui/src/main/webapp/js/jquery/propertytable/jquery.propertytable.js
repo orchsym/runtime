@@ -139,9 +139,9 @@
 
             // build the custom checkbox
             isEmpty = $('<div class="nf-checkbox string-check"/>').appendTo(stringCheckPanel);
-            $('<span class="string-check-label nf-checkbox-label">&nbsp;Set empty string</span>').appendTo(stringCheckPanel);
+            $('<span class="string-check-label nf-checkbox-label">&nbsp;'+nf._.msg('jquery-propertytable.SetEmptyString')+'</span>').appendTo(stringCheckPanel);
 
-            var ok = $('<div class="button">Ok</div>').css({
+            var ok = $('<div class="button">'+nf._.msg('jquery-propertytable.Ok')+'</div>').css({
                 'color': '#fff',
                 'background': '#728E9B'
             }).hover(
@@ -150,7 +150,7 @@
                 }, function () {
                     $(this).css('background', '#728E9B');
                 }).on('click', scope.save);
-            var cancel = $('<div class="secondary-button">Cancel</div>').css({
+            var cancel = $('<div class="secondary-button">'+nf._.msg('jquery-propertytable.Cancel')+'</div>').css({
                 'color': '#004849',
                 'background': '#E3E8EB'
             }).hover(
@@ -369,9 +369,9 @@
 
             // build the custom checkbox
             isEmpty = $('<div class="nf-checkbox string-check"/>').appendTo(stringCheckPanel);
-            $('<span class="string-check-label nf-checkbox-label">&nbsp;Set empty string</span>').appendTo(stringCheckPanel);
+            $('<span class="string-check-label nf-checkbox-label">&nbsp;'+nf._.msg('jquery-propertytable.SetEmptyString')+'</span>').appendTo(stringCheckPanel);
 
-            var ok = $('<div class="button">Ok</div>').css({
+            var ok = $('<div class="button">'+nf._.msg('jquery-propertytable.Ok')+'</div>').css({
                 'color': '#fff',
                 'background': '#728E9B'
             }).hover(
@@ -380,7 +380,7 @@
                 }, function () {
                     $(this).css('background', '#728E9B');
                 }).on('click', scope.save);
-            var cancel = $('<div class="secondary-button">Cancel</div>').css({
+            var cancel = $('<div class="secondary-button">'+nf._.msg('jquery-propertytable.Cancel')+'</div>').css({
                 'color': '#004849',
                 'background': '#E3E8EB'
             }).hover(
@@ -580,7 +580,7 @@
             // ensure the options there is at least one option
             if (options.length === 0) {
                 options.push({
-                    text: 'No value',
+                    text: nf._.msg('jquery-propertytable.NoValueSet'),
                     value: null,
                     optionClass: 'unset',
                     disabled: true
@@ -590,7 +590,7 @@
             // if this descriptor identifies a controller service, provide a way to create one
             if (nfCommon.isDefinedAndNotNull(propertyDescriptor.identifiesControllerService)) {
                 options.push({
-                    text: 'Create new service...',
+                    text: nf._.msg('jquery-propertytable.Message3')+'...',
                     value: undefined,
                     optionClass: 'unset'
                 });
@@ -621,7 +621,7 @@
             }).appendTo(wrapper);
 
             // add buttons for handling user input
-            var cancel = $('<div class="secondary-button">Cancel</div>').css({
+            var cancel = $('<div class="secondary-button">'+nf._.msg('jquery-propertytable.Cancel')+'</div>').css({
                 'color': '#004849',
                 'background': '#E3E8EB'
             }).hover(
@@ -630,7 +630,7 @@
                 }, function () {
                     $(this).css('background', '#E3E8EB');
                 }).on('click', scope.cancel);
-            var ok = $('<div class="button">Ok</div>').css({
+            var ok = $('<div class="button">'+nf._.msg('jquery-propertytable.Ok')+'</div>').css({
                 'color': '#fff',
                 'background': '#728E9B'
             }).hover(
@@ -793,7 +793,7 @@
                     // ensure the options there is at least one option
                     if (options.length === 0) {
                         options.push({
-                            text: 'No value',
+                            text: nf._.msg('jquery-propertytable.NoValueSet'),
                             value: null,
                             optionClass: 'unset',
                             disabled: true
@@ -818,7 +818,7 @@
                         }
                     }).appendTo(wrapper);
 
-                    $('<div class="button">Ok</div>').css({
+                    $('<div class="button">'+nf._.msg('jquery-propertytable.Ok')+'</div>').css({
                         'position': 'relative',
                         'top': '10px',
                         'left': '20px'
@@ -917,7 +917,7 @@
                     };
 
                     // add an ok button that will remove the entire pop up
-                    var ok = $('<div class="button">Ok</div>').css({
+                    var ok = $('<div class="button">'+nf._.msg('jquery-propertytable.Ok')+'</div>').css({
                         'position': 'relative',
                         'top': '10px',
                         'left': '20px'
@@ -977,45 +977,45 @@
             // ensure there are some applicable controller services
             if (options.length === 0) {
                 nfDialog.showOkDialog({
-                    headerText: 'Controller Service',
-                    dialogContent: 'No controller service types found that are applicable for this property.'
+                    headerText: nf._.msg('jquery-propertytable.ControllerService'),
+                    dialogContent: nf._.msg('jquery-propertytable.Message2')
                 });
             } else {
                 var newControllerServiceDialogMarkup =
                     '<div id="new-inline-controller-service-dialog" class="hidden dialog medium-dialog cancellable">' +
                         '<div class="dialog-content">' +
                             '<div>' +
-                                '<div class="setting-name">Requires Controller Service</div>' +
+                                '<div class="setting-name">'+nf._.msg('jquery-propertytable.RequiresControllerServic')+'</div>' +
                                 '<div class="setting-field">' +
                                     '<div class="new-inline-controller-service-requirement"></div>' +
                                 '</div>' +
                             '</div>' +
                             '<div>' +
-                                '<div class="setting-name">Compatible Controller Services</div>' +
+                                '<div class="setting-name">'+nf._.msg('jquery-propertytable.CompatibleControllerService')+'</div>' +
                                 '<div class="setting-field">' +
                                     '<div class="new-inline-controller-service-combo"></div>' +
                                 '</div>' +
                             '</div>' +
                             '<div>' +
-                                '<div class="setting-name">Controller Service Name</div>' +
+                                '<div class="setting-name">'+nf._.msg('jquery-propertytable.ControllerServiceName')+'</div>' +
                                 '<div class="setting-field">' +
                                     '<input type="text" class="new-inline-controller-service-name"/>' +
                                 '</div>' +
                             '</div>' +
                             '<div>' +
-                                '<div class="setting-name">Bundle</div>' +
+                                '<div class="setting-name">'+nf._.msg('nf-controller-services.Bundle')+'</div>' +
                                 '<div class="setting-field">' +
                                     '<div class="new-inline-controller-service-bundle"></div>' +
                                 '</div>' +
                             '</div>' +
                             '<div>' +
-                                '<div class="setting-name">Tags</div>' +
+                                '<div class="setting-name">'+nf._.msg('nf-controller-services.Tags')+'</div>' +
                                 '<div class="setting-field">' +
                                     '<div class="new-inline-controller-service-tags"></div>' +
                                 '</div>' +
                             '</div>' +
                             '<div>' +
-                                '<div class="setting-name">Description</div>' +
+                                '<div class="setting-name">'+nf._.msg('nf-settings.Description')+'</div>' +
                                 '<div class="setting-field">' +
                                     '<div class="new-inline-controller-service-description"></div>' +
                                 '</div>' +
@@ -1073,10 +1073,10 @@
                 });
 
                 newControllerServiceDialog.modal({
-                    headerText: 'Add Controller Service',
+                    headerText: nf._.msg('jquery-propertytable.AddControllerService'),
                     scrollableContentStyle: 'scrollable',
                     buttons: [{
-                        buttonText: 'Create',
+                        buttonText: nf._.msg('jquery-propertytable.Create'),
                         color: {
                             base: '#728E9B',
                             hover: '#004849',
@@ -1089,7 +1089,7 @@
                         }
                     },
                         {
-                            buttonText: 'Cancel',
+                            buttonText: nf._.msg('jquery-propertytable.Cancel'),
                             color: {
                                 base: '#E3E8EB',
                                 hover: '#C7D2D7',
@@ -1218,7 +1218,7 @@
 
                 // determine if the property is sensitive
                 if (nfCommon.isSensitiveProperty(propertyDescriptor)) {
-                    valueMarkup = '<span class="table-cell sensitive">Sensitive value set</span>';
+                    valueMarkup = '<span class="table-cell sensitive">'+nf._.msg('nf-common.sensitiveText')+'</span>';
                 } else {
                     var resolvedAllowableValue = false;
 
@@ -1236,17 +1236,17 @@
                     }
 
                     if (value === '') {
-                        valueMarkup = '<span class="table-cell blank">Empty string set</span>';
+                        valueMarkup = '<span class="table-cell blank">'+nf._.msg('jquery-propertytable.EmptyStringSet')+'</span>';
                     } else {
                         if (!resolvedAllowableValue && nfCommon.isDefinedAndNotNull(propertyDescriptor.identifiesControllerService)) {
-                            valueMarkup = '<span class="table-cell blank">Incompatible Controller Service Configured</div>';
+                            valueMarkup = '<span class="table-cell blank">'+nf._.msg('jquery-propertytable.IncompatibleMessage')+'</div>';
                         } else {
                             valueMarkup = '<div class="table-cell value"><pre class="ellipsis">' + nfCommon.escapeHtml(value) + '</pre></div>';
                         }
                     }
                 }
             } else {
-                valueMarkup = '<span class="unset">No value set</span>';
+                valueMarkup = '<span class="unset">'+nf._.msg('jquery-propertytable.NoValueSet')+'</span>';
             }
 
             // format the contents
@@ -1299,7 +1299,7 @@
                 $.each(propertyDescriptor.allowableValues, function (_, allowableValueEntity) {
                     var allowableValue = allowableValueEntity.allowableValue;
                     if (allowableValue.value === dataContext.value) {
-                        markup += '<div class="pointer go-to-service fa fa-long-arrow-right" title="Go To" style="margin-top: 2px" ></div>';
+                        markup += '<div class="pointer go-to-service fa fa-long-arrow-right" title="'+nf._.msg('jquery-propertytable.GoTo')+'" style="margin-top: 2px" ></div>';
                         return false;
                     }
                 });
@@ -1672,7 +1672,7 @@
 
                     // build the component
                     var header = $('<div class="properties-header"></div>').appendTo(propertyTableContainer);
-                    $('<div class="required-property-note">Required field</div>').appendTo(header);
+                    $('<div class="required-property-note">' + nf._.msg('jquery-propertytable.RequiredField') + '</div>').appendTo(header);
 
                     // build the table
                     var table = $('<div class="property-table"></div>').appendTo(propertyTableContainer);
@@ -1786,8 +1786,8 @@
                                         propertyGrid.editActiveCell();
                                     } else {
                                         nfDialog.showOkDialog({
-                                            headerText: 'Property Exists',
-                                            dialogContent: 'A property with this name already exists.'
+                                            headerText: nf._.msg('jquery-propertytable.PropertyExists'),
+                                            dialogContent: nf._.msg('jquery-propertytable.Message')
                                         });
 
                                         // select the existing properties row
@@ -1798,8 +1798,8 @@
                                 }
                             } else {
                                 nfDialog.showOkDialog({
-                                    headerText: 'Property Name',
-                                    dialogContent: 'Property name must be specified.'
+                                    headerText: nf._.msg('jquery-propertytable.PropertyName'),
+                                    dialogContent: nf._.msg('jquery-propertytable.Message1') 
                                 });
                             }
 

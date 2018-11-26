@@ -122,9 +122,9 @@
 
             // build the custom checkbox
             isEmpty = $('<div class="nf-checkbox string-check"/>').appendTo(stringCheckPanel);
-            $('<span class="string-check-label nf-checkbox-label">&nbsp;Set empty string</span>').appendTo(stringCheckPanel);
+            $('<span class="string-check-label nf-checkbox-label">&nbsp;'+nf._.msg('jquery-propertytable.SetEmptyString')+'</span>').appendTo(stringCheckPanel);
 
-            var ok = $('<div class="button">Ok</div>').css({
+            var ok = $('<div class="button">'+nf._.msg('jquery-propertytable.Ok')+'</div>').css({
                 'color': '#fff',
                 'background': '#728E9B'
             }).hover(
@@ -133,7 +133,7 @@
                 }, function () {
                     $(this).css('background', '#728E9B');
                 }).on('click', scope.save);
-            var cancel = $('<div class="secondary-button">Cancel</div>').css({
+            var cancel = $('<div class="secondary-button">'+nf._.msg('jquery-propertytable.Cancel')+'</div>').css({
                 'color': '#004849',
                 'background': '#E3E8EB'
             }).hover(
@@ -300,7 +300,7 @@
         };
 
         // add an ok button that will remove the entire pop up
-        var ok = $('<div class="button">Ok</div>').css({
+        var ok = $('<div class="button">'+nf._.msg('jquery-propertytable.Ok')+'</div>').css({
             'position': 'relative',
             'top': '10px',
             'left': '20px'
@@ -374,12 +374,12 @@
 
         var valueFormatter = function (row, cell, value, columnDef, dataContext) {
             if (dataContext.isOverridden) {
-                return '<div class="overridden" title="This value has been overridden by another variable in a descendant Process Group">' + nfCommon.escapeHtml(value) + '</div>';
+                return '<div class="overridden" title="'+nf._.msg('nf-common.VarOverridden')+'">' + nfCommon.escapeHtml(value) + '</div>';
             } else {
                 if (value === '') {
-                    return '<span class="table-cell blank">Empty string set</span>';
+                    return '<span class="table-cell blank">'+nf._.msg('nf-common.Message14')+'</span>';
                 } else if (value === null) {
-                    return '<span class="unset">No value set</span>';
+                    return '<span class="unset">'+nf._.msg('nf-common.Message13')+'</span>';
                 } else {
                     return nfCommon.escapeHtml(value);
                 }
@@ -398,12 +398,12 @@
             var markup = '';
 
             if (dataContext.isEditable === true) {
-                markup += '<div title="Delete" class="delete-variable pointer fa fa-trash" style="margin-top: 2px;" ></div>';
+                markup += '<div title="'+nf._.msg('nf-actions.DeleteTitle')+'" class="delete-variable pointer fa fa-trash" style="margin-top: 2px;" ></div>';
             } else {
                 var currentProcessGroupId = $('#variable-registry-process-group-id').text();
 
                 if (dataContext.processGroupId !== currentProcessGroupId) {
-                    markup += '<div title="Go To" class="go-to-variable pointer fa fa-long-arrow-right" style="margin-top: 2px;" ></div>';
+                    markup += '<div title="'+nf._.msg('jquery-propertytable.GoTo')+'" class="go-to-variable pointer fa fa-long-arrow-right" style="margin-top: 2px;" ></div>';
                 }
             }
 
@@ -625,8 +625,8 @@
                 } else {
                     // see if those changes should be saved
                     nfDialog.showYesNoDialog({
-                        headerText: 'Variables',
-                        dialogContent: 'Save changes before leaving variable configuration?',
+                        headerText: nf._.msg('nf-variable-registry.title'),
+                        dialogContent: nf._.msg('nf-variable-registry.SaveMessage'),
                         noHandler: function () {
                             close();
                             deferred.resolve();
@@ -814,9 +814,9 @@
 
         // affected component will be undefined when a new variable is added
         if (nfCommon.isUndefined(affectedComponents)) {
-            $('<li class="affected-component-container"><span class="unset">Pending Apply</span></li>').appendTo(processorContainer);
-            $('<li class="affected-component-container"><span class="unset">Pending Apply</span></li>').appendTo(controllerServiceContainer);
-            $('<li class="affected-component-container"><span class="unset">Pending Apply</span></li>').appendTo(unauthorizedComponentsContainer);
+            $('<li class="affected-component-container"><span class="unset">'+nf._.msg('nf-actions.PendingApply')+'</span></li>').appendTo(processorContainer);
+            $('<li class="affected-component-container"><span class="unset">'+nf._.msg('nf-actions.PendingApply')+'</span></li>').appendTo(controllerServiceContainer);
+            $('<li class="affected-component-container"><span class="unset">'+nf._.msg('nf-actions.PendingApply')+'</span></li>').appendTo(unauthorizedComponentsContainer);
         } else {
             var referencingComponentsForBulletinRetrieval = [];
 
@@ -841,7 +841,7 @@
             });
 
             if (affectedProcessors.length === 0) {
-                $('<li class="affected-component-container"><span class="unset">None</span></li>').appendTo(processorContainer);
+                $('<li class="affected-component-container"><span class="unset">'+nf._.msg('nf-actions.None')+'</span></li>').appendTo(processorContainer);
             } else {
                 // sort the affected processors
                 affectedProcessors.sort(nameComparator);
@@ -853,7 +853,7 @@
             }
 
             if (affectedControllerServices.length === 0) {
-                $('<li class="affected-component-container"><span class="unset">None</span></li>').appendTo(controllerServiceContainer);
+                $('<li class="affected-component-container"><span class="unset">'+nf._.msg('nf-actions.None')+'</span></li>').appendTo(controllerServiceContainer);
             } else {
                 // sort the affected controller services
                 affectedControllerServices.sort(nameComparator);
@@ -865,7 +865,7 @@
             }
 
             if (unauthorizedAffectedComponents.length === 0) {
-                $('<li class="affected-component-container"><span class="unset">None</span></li>').appendTo(unauthorizedComponentsContainer);
+                $('<li class="affected-component-container"><span class="unset">'+nf._.msg('nf-actions.None')+'</span></li>').appendTo(unauthorizedComponentsContainer);
             } else {
                 // sort the unauthorized affected components
                 unauthorizedAffectedComponents.sort(function (a, b) {
@@ -1136,9 +1136,9 @@
                 var unauthorizedComponentsContainer = $('#variable-registry-affected-unauthorized-components').empty();
 
                 // indicate no affected components
-                $('<li class="affected-component-container"><span class="unset">None</span></li>').appendTo(processorContainer);
-                $('<li class="affected-component-container"><span class="unset">None</span></li>').appendTo(controllerServiceContainer);
-                $('<li class="affected-component-container"><span class="unset">None</span></li>').appendTo(unauthorizedComponentsContainer);
+                $('<li class="affected-component-container"><span class="unset">'+nf._.msg('nf-actions.None')+'</span></li>').appendTo(processorContainer);
+                $('<li class="affected-component-container"><span class="unset">'+nf._.msg('nf-actions.None')+'</span></li>').appendTo(controllerServiceContainer);
+                $('<li class="affected-component-container"><span class="unset">'+nf._.msg('nf-actions.None')+'</span></li>').appendTo(unauthorizedComponentsContainer);
 
                 // update the selection context
                 $('#affected-components-context').addClass('unset').text('None');
@@ -1202,7 +1202,7 @@
             // updates the button model to show the close button
             var updateToCloseButtonModel = function () {
                 $('#variable-registry-dialog').modal('setButtonModel', [{
-                    buttonText: 'Close',
+                    buttonText: nf._.msg('nf-dialog.Close'),
                     color: {
                         base: '#728E9B',
                         hover: '#004849',
@@ -1221,7 +1221,7 @@
 
             // update the button model to show the cancel button
             $('#variable-registry-dialog').modal('setButtonModel', [{
-                buttonText: 'Cancel',
+                buttonText: nf._.msg('nf-dialog.Cancel'),
                 color: {
                     base: '#E3E8EB',
                     hover: '#C7D2D7',
@@ -1270,8 +1270,8 @@
                         if (updateRequest.complete === true) {
                             if (errored) {
                                 nfDialog.showOkDialog({
-                                    headerText: 'Variable Update Error',
-                                    dialogContent: 'Unable to complete variable update request: ' + nfCommon.escapeHtml(updateRequest.failureReason)
+                                    headerText: nf._.msg('nf-variable-registry.UpdateError'),
+                                    dialogContent: nf._.msg('nf-variable-registry.UnableUpdate')+': ' + nfCommon.escapeHtml(updateRequest.failureReason)
                                 });
                             }
 

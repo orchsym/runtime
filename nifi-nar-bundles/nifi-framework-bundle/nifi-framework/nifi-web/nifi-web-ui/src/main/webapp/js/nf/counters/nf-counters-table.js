@@ -138,7 +138,7 @@
     var resetCounter = function (item) {
         // prompt reset confirmation
         nfDialog.showYesNoDialog({
-            headerText: 'Reset Counter',
+            headerText: nf._.msg('nf-counters.ResetCounters'),
             dialogContent: 'Reset counter \'' + nfCommon.escapeHtml(item.name) + '\' to default value?',
             yesHandler: function () {
                 $.ajax({

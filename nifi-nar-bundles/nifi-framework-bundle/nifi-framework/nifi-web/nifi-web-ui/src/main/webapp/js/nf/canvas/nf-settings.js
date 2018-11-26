@@ -625,7 +625,7 @@
                     if (nfCommon.isBlank(reportingTaskType.description)) {
                         $('#reporting-task-type-description')
                             .attr('title', '')
-                            .html('<span class="unset">No description specified</span>');
+                            .html('<span class="unset">'+nf._.msg('nf-settings.Message6')+'</span>');
                     } else {
                         $('#reporting-task-type-description')
                             .width($('#reporting-task-description-container').innerWidth() - 1)
@@ -686,9 +686,9 @@
                     var restrictionTip = $('<div></div>');
 
                     if (nfCommon.isBlank(item.usageRestriction)) {
-                        restrictionTip.append($('<p style="margin-bottom: 3px;"></p>').text('Requires the following permissions:'));
+                        restrictionTip.append($('<p style="margin-bottom: 3px;"></p>').text(nf._.msg('nf-settings.RequirePermissions')+':'));
                     } else {
-                        restrictionTip.append($('<p style="margin-bottom: 3px;"></p>').text(item.usageRestriction + ' Requires the following permissions:'));
+                        restrictionTip.append($('<p style="margin-bottom: 3px;"></p>').text(item.usageRestriction + nf._.msg('nf-settings.RequirePermissions')+':'));
                     }
 
                     var restrictions = [];
@@ -698,7 +698,7 @@
                             restrictions.push("'" + requiredPermission.label + "' - " + nfCommon.escapeHtml(explicitRestriction.explanation));
                         });
                     } else {
-                        restrictions.push('Access to restricted components regardless of restrictions.');
+                        restrictions.push(nf._.msg('nf-settings.AccessRestrictedComponents'));
                     }
                     restrictionTip.append(nfCommon.formatUnorderedList(restrictions));
 
@@ -1070,7 +1070,7 @@
                 sortable: true,
                 width: 90,
                 maxWidth: 90,
-                toolTip: 'Sorts based on presence of bulletins'
+                toolTip: nf._.msg('nf-settings.SortBulletins')
             },
             {
                 id: 'name',
@@ -1284,10 +1284,10 @@
 
             if (nfCommon.canModifyController()) {
                 // edit registry
-                markup += '<div title="Edit" class="pointer edit-registry fa fa-pencil" style="margin-top: 2px; margin-right: 3px;" ></div>';
+                markup += '<div title="'+nf._msg('nf-settings.Edit')+'" class="pointer edit-registry fa fa-pencil" style="margin-top: 2px; margin-right: 3px;" ></div>';
 
                 // remove registry
-                markup += '<div title="Remove" class="pointer remove-registry fa fa-trash" style="margin-top: 2px; margin-right: 3px;" ></div>';
+                markup += '<div title="'+nf._msg('nf-settings.Remove')+'" class="pointer remove-registry fa fa-trash" style="margin-top: 2px; margin-right: 3px;" ></div>';
             }
 
             return markup;
@@ -1453,8 +1453,8 @@
     var promptToRemoveRegistry = function (registryEntity) {
         // prompt for deletion
         nfDialog.showYesNoDialog({
-            headerText: 'Delete Registry',
-            dialogContent: 'Delete registry \'' + nfCommon.escapeHtml(registryEntity.component.name) + '\'?',
+            headerText: ns._.msg('nf-settings.DeleteRegistry'),
+            dialogContent: ns._.msg('nf-settings.DeleteRegistry')+' \'' + nfCommon.escapeHtml(registryEntity.component.name) + '\'?',
             yesHandler: function () {
                 removeRegistry(registryEntity);
             }
@@ -1488,8 +1488,8 @@
      */
     var loadSettings = function () {
         var setUnauthorizedText = function () {
-            $('#read-only-maximum-timer-driven-thread-count-field').addClass('unset').text('Unauthorized');
-            $('#read-only-maximum-event-driven-thread-count-field').addClass('unset').text('Unauthorized');
+            $('#read-only-maximum-timer-driven-thread-count-field').addClass('unset').text(nf._.msg('nf-common.Unauthorized'));
+            $('#read-only-maximum-event-driven-thread-count-field').addClass('unset').text(nf._.msg('nf-common.Unauthorized'));
         };
 
         var setEditable = function (editable) {
