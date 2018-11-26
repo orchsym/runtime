@@ -89,10 +89,12 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
+import java.security.SecureRandom;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -233,6 +235,14 @@ public final class InvokeHTTP extends AbstractProcessor {
                     + " It is also used to connect to HTTPS Proxy.")
             .required(false)
             .identifiesControllerService(SSLContextService.class)
+            .build();
+
+    public static final PropertyDescriptor IGNORE_CERTIFICATE_AUTHENTICATION = new PropertyDescriptor.Builder()
+            .name("Use HTTPS And Ignore Certificate Authentication")
+            .description("Ignore certificate authentication when https request")
+            .required(false)
+            .defaultValue("false")
+            .allowableValues("true", "false")
             .build();
 
     public static final PropertyDescriptor PROP_PROXY_TYPE = new PropertyDescriptor.Builder()
@@ -439,6 +449,7 @@ public final class InvokeHTTP extends AbstractProcessor {
             PROP_METHOD,
             PROP_URL,
             PROP_SSL_CONTEXT_SERVICE,
+            IGNORE_CERTIFICATE_AUTHENTICATION,
             PROP_CONNECT_TIMEOUT,
             PROP_READ_TIMEOUT,
             PROP_DATE_HEADER,
@@ -642,18 +653,34 @@ public final class InvokeHTTP extends AbstractProcessor {
         // Set whether to follow redirects
         okHttpClientBuilder.followRedirects(context.getProperty(PROP_FOLLOW_REDIRECTS).asBoolean());
 
-        final SSLContextService sslService = context.getProperty(PROP_SSL_CONTEXT_SERVICE).asControllerService(SSLContextService.class);
-        final SSLContext sslContext = sslService == null ? null : sslService.createSSLContext(ClientAuth.NONE);
+        final boolean shouldIgnoreAuthentication = context.getProperty(IGNORE_CERTIFICATE_AUTHENTICATION).asBoolean();
+        SSLContext sslContext = null;
+        SSLContextService sslService = null;
+        if (shouldIgnoreAuthentication) {
+            sslContext = SSLContext.getInstance("SSL");
+        } else {
+            sslService = context.getProperty(PROP_SSL_CONTEXT_SERVICE).asControllerService(SSLContextService.class);
+            sslContext = sslService == null ? null : sslService.createSSLContext(ClientAuth.NONE);
+        }
 
         // check if the ssl context is set and add the factory if so
         if (sslContext != null) {
-            setSslSocketFactory(okHttpClientBuilder, sslService, sslContext, isHttpsProxy);
+            setSslSocketFactory(okHttpClientBuilder, sslService, sslContext, isHttpsProxy, shouldIgnoreAuthentication);
         }
 
-        // check the trusted hostname property and override the HostnameVerifier
-        String trustedHostname = trimToEmpty(context.getProperty(PROP_TRUSTED_HOSTNAME).getValue());
-        if (!trustedHostname.isEmpty()) {
-            okHttpClientBuilder.hostnameVerifier(new OverrideHostnameVerifier(trustedHostname, OkHostnameVerifier.INSTANCE));
+        if (shouldIgnoreAuthentication && sslContext != null) {
+            okHttpClientBuilder.hostnameVerifier(new HostnameVerifier() {
+                @Override
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            });
+        } else {
+            // check the trusted hostname property and override the HostnameVerifier
+            String trustedHostname = trimToEmpty(context.getProperty(PROP_TRUSTED_HOSTNAME).getValue());
+            if (!trustedHostname.isEmpty()) {
+                okHttpClientBuilder.hostnameVerifier(new OverrideHostnameVerifier(trustedHostname, OkHostnameVerifier.INSTANCE));
+            }
         }
 
         setAuthenticator(okHttpClientBuilder, context);
@@ -671,60 +698,75 @@ public final class InvokeHTTP extends AbstractProcessor {
         In-depth documentation on Java Secure Socket Extension (JSSE) Classes and interfaces:
             https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#JSSEClasses
      */
-    private void setSslSocketFactory(OkHttpClient.Builder okHttpClientBuilder, SSLContextService sslService, SSLContext sslContext, boolean setAsSocketFactory)
+    private void setSslSocketFactory(OkHttpClient.Builder okHttpClientBuilder, SSLContextService sslService, SSLContext sslContext, boolean setAsSocketFactory, boolean shouldIgnoreAuthentication)
             throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyManagementException {
 
         final KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         final TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance("X509");
         // initialize the KeyManager array to null and we will overwrite later if a keystore is loaded
         KeyManager[] keyManagers = null;
+        final X509TrustManager x509TrustManager;
+        if (!shouldIgnoreAuthentication && sslService != null) {
+            // we will only initialize the keystore if properties have been supplied by the SSLContextService
+            if (sslService.isKeyStoreConfigured()) {
+                final String keystoreLocation = sslService.getKeyStoreFile();
+                final String keystorePass = sslService.getKeyStorePassword();
+                final String keystoreType = sslService.getKeyStoreType();
 
-        // we will only initialize the keystore if properties have been supplied by the SSLContextService
-        if (sslService.isKeyStoreConfigured()) {
-            final String keystoreLocation = sslService.getKeyStoreFile();
-            final String keystorePass = sslService.getKeyStorePassword();
-            final String keystoreType = sslService.getKeyStoreType();
+                // prepare the keystore
+                final KeyStore keyStore = KeyStore.getInstance(keystoreType);
 
-            // prepare the keystore
-            final KeyStore keyStore = KeyStore.getInstance(keystoreType);
+                try (FileInputStream keyStoreStream = new FileInputStream(keystoreLocation)) {
+                    keyStore.load(keyStoreStream, keystorePass.toCharArray());
+                }
 
-            try (FileInputStream keyStoreStream = new FileInputStream(keystoreLocation)) {
-                keyStore.load(keyStoreStream, keystorePass.toCharArray());
+                keyManagerFactory.init(keyStore, keystorePass.toCharArray());
+                keyManagers = keyManagerFactory.getKeyManagers();
             }
 
-            keyManagerFactory.init(keyStore, keystorePass.toCharArray());
-            keyManagers = keyManagerFactory.getKeyManagers();
-        }
+            // we will only initialize the truststure if properties have been supplied by the SSLContextService
+            if (sslService.isTrustStoreConfigured()) {
+                // load truststore
+                final String truststoreLocation = sslService.getTrustStoreFile();
+                final String truststorePass = sslService.getTrustStorePassword();
+                final String truststoreType = sslService.getTrustStoreType();
 
-        // we will only initialize the truststure if properties have been supplied by the SSLContextService
-        if (sslService.isTrustStoreConfigured()) {
-            // load truststore
-            final String truststoreLocation = sslService.getTrustStoreFile();
-            final String truststorePass = sslService.getTrustStorePassword();
-            final String truststoreType = sslService.getTrustStoreType();
+                KeyStore truststore = KeyStore.getInstance(truststoreType);
+                truststore.load(new FileInputStream(truststoreLocation), truststorePass.toCharArray());
+                trustManagerFactory.init(truststore);
+            }
 
-            KeyStore truststore = KeyStore.getInstance(truststoreType);
-            truststore.load(new FileInputStream(truststoreLocation), truststorePass.toCharArray());
-            trustManagerFactory.init(truststore);
-        }
+             /*
+                TrustManagerFactory.getTrustManagers returns a trust manager for each type of trust material. Since we are getting a trust manager factory that uses "X509"
+                as it's trust management algorithm, we are able to grab the first (and thus the most preferred) and use it as our x509 Trust Manager
 
-         /*
-            TrustManagerFactory.getTrustManagers returns a trust manager for each type of trust material. Since we are getting a trust manager factory that uses "X509"
-            as it's trust management algorithm, we are able to grab the first (and thus the most preferred) and use it as our x509 Trust Manager
+                https://docs.oracle.com/javase/8/docs/api/javax/net/ssl/TrustManagerFactory.html#getTrustManagers--
+             */
+                TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
+                if (trustManagers[0] != null) {
+                    x509TrustManager = (X509TrustManager) trustManagers[0];
+                } else {
+                    throw new IllegalStateException("List of trust managers is null");
+                }
 
-            https://docs.oracle.com/javase/8/docs/api/javax/net/ssl/TrustManagerFactory.html#getTrustManagers--
-         */
-        final X509TrustManager x509TrustManager;
-        TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
-        if (trustManagers[0] != null) {
-            x509TrustManager = (X509TrustManager) trustManagers[0];
+                // if keystore properties were not supplied, the keyManagers array will be null
+                sslContext.init(keyManagers, trustManagerFactory.getTrustManagers(), null);
         } else {
-            throw new IllegalStateException("List of trust managers is null");
+            x509TrustManager = new X509TrustManager() {
+                @Override
+                public void checkClientTrusted(X509Certificate[] chain, String authType) {
+                }
+                @Override
+                public void checkServerTrusted(X509Certificate[] chain, String authType) {
+                }
+                @Override
+                public X509Certificate[] getAcceptedIssuers() {
+                    X509Certificate[] x509Certificates = new X509Certificate[0];
+                    return x509Certificates;
+                }
+            };
+            sslContext.init(null, new TrustManager[]{x509TrustManager}, new SecureRandom());
         }
-
-        // if keystore properties were not supplied, the keyManagers array will be null
-        sslContext.init(keyManagers, trustManagerFactory.getTrustManagers(), null);
-
         final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
         okHttpClientBuilder.sslSocketFactory(sslSocketFactory, x509TrustManager);
         if (setAsSocketFactory) {
