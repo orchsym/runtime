@@ -82,7 +82,7 @@ pipeline {
         )
 
         sh """
-          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name ${env.RUNTIME_DEV_NAME} --service ${env.PROJECT_NAME}/${env.RUNTIME_DEV_VERSION}"
+          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name ${env.RUNTIME_DEV_NAME} --service ${env.PROJECT_NAME}/${env.VERSION_NAME}"
         """
 
         slackSend(
@@ -102,7 +102,7 @@ pipeline {
         )
 
         sh """
-          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name ${env.RUNTIME_TEST_NAME} --service ${env.PROJECT_NAME}/${env.RUNTIME_TEST_VERSION}"
+          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name ${env.RUNTIME_TEST_NAME} --service ${env.PROJECT_NAME}/${env.VERSION_NAME}"
         """
 
         slackSend(
@@ -122,7 +122,7 @@ pipeline {
         )
 
         sh """
-          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name ${env.RUNTIME_STAGE_NAME} --service ${env.PROJECT_NAME}/${env.RUNTIME_STAGE_VERSION}"
+          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name ${env.RUNTIME_STAGE_NAME} --service ${env.PROJECT_NAME}/${env.VERSION_NAME}"
         """
 
         slackSend(
@@ -142,7 +142,7 @@ pipeline {
         )
 
         sh """
-          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name ${env.RUNTIME_PROD_NAME} --service ${env.PROJECT_NAME}/${env.RUNTIME_PROD_VERSION}"
+          ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name ${env.RUNTIME_PROD_NAME} --service ${env.PROJECT_NAME}/${env.VERSION_NAME}"
         """
 
         slackSend(
