@@ -13,6 +13,7 @@
 	<packaging>pom</packaging>
 
 	<modules>
+		<module>nifi-edireader-lib</module>
 		<module>nifi-edireader-nar</module>
 		<module>nifi-edireader-processors</module>
 	</modules>
