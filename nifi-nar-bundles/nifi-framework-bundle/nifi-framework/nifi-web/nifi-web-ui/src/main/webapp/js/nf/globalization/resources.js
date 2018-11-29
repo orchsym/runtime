@@ -15,8 +15,41 @@
  * limitations under the License.
  */
 
+window.locale = "";
+window.defaultLocale = "";
+window.productVersion = "";
+window.buildDate = "";
+var configurationUrl = "../nifi-api/flow/about";
+
+$.ajax({
+    type: 'GET',
+    url: configurationUrl,
+    dataType: 'json',
+    async: false,
+    success: function(res){
+        try{
+            defaultLocale = res.about.locale.substring(0, 2).toLocaleLowerCase()
+            productVersion = res.about.productVersion
+            buildDate = res.about.buildDate
+        }catch (e) {
+            console.error('Data format does not meet expectations.')
+        }
+        
+    }
+})
+
 nf._ = (function () {
-    var locale = "cn";
+    function getCookie(name) 
+    { 
+        var arr,reg=new RegExp("(^| )"+name+"=([^;]*)(;|$)");
+     
+        if(arr=document.cookie.match(reg))
+     
+            return unescape(arr[2]); 
+        else 
+            return null; 
+    } 
+    locale = getCookie('locale') || defaultLocale;
     var en = {
         "nf-actions.UpdateResource": "Update Resource",
         "nf-actions.Refreshing": "Refreshing",
@@ -57,6 +90,8 @@ nf._ = (function () {
         "nf-actions.Delete": "Unsupport to undo after delete, are you sure to delete the selected components or modules?",
         "nf-actions.PendingApply": "Pending Apply",
         "nf-actions.None": "None",
+        "nf-actions.Ok": "Ok",
+        "nf-actions.Cancel": "Cancel",
         "nf-variable-registry.title": "Variables",
         "nf-variable-registry.new": "New Variable",
         "nf-variable-registry.scope": "Scope",
@@ -79,6 +114,10 @@ nf._ = (function () {
         "nf-canvas-graph-controls-controller.MultipleSelected": "Multiple Selected",
         "nf-canvas-global-menu-controller.About": "About Flow Files",
         "nf-canvas-global-menu-controller.OK": "OK",
+        "nf-canvas-global-menu-controller.dialogContent": "The digital hive orchestration platform adopts the operation mode of the application components to visualize and drag and drop, realizes the reorganization and reorganization of the enterprise business, logic and process, thereby shortening the internal innovation cycle, improving the collaboration efficiency and quickly meeting the business requirements.",
+        "nf-canvas-global-menu-controller.supportEmail": "Email technical support: orchsym-support@baishancloud.com",
+        "nf-canvas-global-menu-controller.version": 'Version',
+        "nf-canvas-global-menu-controller.updateTime": "Update time",
         "nf-canvas-operate-controller.SUCCESS": "SUCCESS",
         "nf-canvas-operate-controller.SuccessContent": "The template was successfully imported.",
         "nf-canvas-operate-controller.Upload": "Upload template",
@@ -115,6 +154,38 @@ nf._ = (function () {
         "nf-canvas-header.Fill": "Fill",
         "nf-canvas-header.Apply": "Apply",
         "nf-canvas-header.Cancel": "Cancel",
+        "nf-canvas-header.Summary": "Summary",
+        "nf-canvas-header.Counter": "Counters",
+        "nf-canvas-header.BulletinBoard": "Bulletin Board",
+        "nf-canvas-header.DataProvenance": "Data Provenance",
+        "nf-canvas-header.ControllerSettings": "Controller Settings",
+        "nf-canvas-header.OperationHistory": "Operation history",
+        "nf-canvas-header.Templates": "Templates",
+        "nf-canvas-header.About": "About",
+        "nf-canvas-header.Policies": "Policies",
+        "nf-canvas-header.Users": "Users",
+        "nf-canvas-header.Cluster": "Cluster",
+        "nf-canvas-navigate.Navigate": "Navigate",
+        "nf-canvas-navigate.zoom-in-button": "Zoom In",
+        "nf-canvas-navigate.zoom-out-button": "Zoom Out",
+        "nf-canvas-navigate.zoom-fit-button": "Fit",
+        "nf-canvas-navigate.zoom-actual-button": "Actual Size",
+        "nf-canvas-navigate.Operate": "Operate",
+        "nf-canvas-navigate.Delete": "Delete",
+        "nf-canvas-navigate.Configuration": "Configuration",
+        "nf-canvas-navigate.Accesspolicies": "Access Policies",
+        "nf-canvas-navigate.Enable": "Enable",
+        "nf-canvas-navigate.Disable": "Disable",
+        "nf-canvas-navigate.Start": "Start",
+        "nf-canvas-navigate.Stop": "Stop",
+        "nf-canvas-navigate.CreateTemplate": "Create Template",
+        "nf-canvas-navigate.UploadTemplate": "Upload Template",
+        "nf-canvas-navigate.Copy": "Copy",
+        "nf-canvas-navigate.Paste": "Paste",
+        "nf-canvas-navigate.Group": "Group",
+        "nf-canvas-navigate.Expand": "Expand",
+        "nf-canvas-navigate.Collapse": "Collapse",
+        "nf-canvas-navigate.fillcolor": "Fill Color",
         "nf-group-component.AddProcessGroup": "Add Process Group",
         "nf-group-component.Add": "Add",
         "nf-group-component.Cancel": "Cancel",
@@ -134,6 +205,56 @@ nf._ = (function () {
         "nf-processor-component.Version": "Version",
         "nf-processor-component.Tags": "Tags",
         "nf-processor-component.NoDescriptionSpecified": "No Description Specified",
+        "nf-processor-component.AllProcessor": "All components",
+        "nf-processor-configuration.Id": "Id",
+        "nf-processor-configuration.Type": "Type",
+        "nf-processor-configuration.Name": "Name",
+        "nf-processor-configuration.Enabled": "Enabled",
+        "nf-processor-configuration.AutoTerminateRelationships": "Disable relationships",
+        "nf-processor-configuration.AutoTerminateRelationships.title": "When no one to use the FlowFile, should disable the relationship. If want to use the relationship, please enable it.",
+        "nf-processor-configuration.Bundle": "Bundle",
+        "nf-processor-configuration.PenaltyDuration": "Penalty duration",
+        "nf-processor-configuration.PenaltyDuration.title": "The amount of time used when this processor penalizes a FlowFile.",
+        "nf-processor-configuration.YieldDuration": "Yield duration",
+        "nf-processor-configuration.YieldDuration.title": "When a processor yields, it will not be scheduled again until this amount of time elapses.",
+        "nf-processor-configuration.BulletinLevel": "Bulletin level",
+        "nf-processor-configuration.BulletinLevel.title": "The level at which this processor will generate bulletins.",
+        "nf-processor-configuration.SchedulingStrategy": "Scheduling strategy",
+        "nf-processor-configuration.SchedulingStrategy.title": "The strategy used to schedule this processor.",
+        "nf-processor-configuration.ConcurrentTasks": "Concurrent tasks",
+        "nf-processor-configuration.ConcurrentTasks.title": "The number of tasks that should be concurrently scheduled for this port.",
+        "nf-processor-configuration.RunSchedule": "Run schedule",
+        "nf-processor-configuration.RunSchedule.title": "The amount of time that should elapse between task executions.",
+        "nf-processor-configuration.RunDuration": "Run duration",
+        "nf-processor-configuration.RunDuration.title": "When scheduled to run, the processor will continue running for up to this duration. A run duration of 0ms will execute once when scheduled.",
+        "nf-processor-configuration.LowerLatency": "Lower latency",
+        "nf-processor-configuration.HigherThroughput": "Higher throughput",
+        "nf-port-configuration.PortNumber": "Port Number",
+        "nf-port-configuration.Enabled": "Enabled",
+        "nf-port-configuration.Id": "Id",
+        "nf-port-configuration.ConcurrentTasks": "Concurrent tasks",
+        "nf-port-configuration.ConcurrentTasks.title": "The number of tasks that should be concurrently scheduled for this port.",
+        "nf-port-configuration.Comments": "Comments",
+        "nf-new-group.ProcessGroupName": "Process group name",
+        "nf-new-port.PortNumber": "Port number",
+        "nf-new-remote.URL": "URL",
+        "nf-new-remote.URL.title": "Specify the remote target Orchsym URLs. Multiple URLs can be specified in comma-separated format. Different protocols cannot be mixed. If remote Orchsym is a cluster, two or more node URLs are recommended for better connection establishment availability.",
+        "nf-new-remote.Transport": "Transfer Protocol",
+        "nf-new-remote.Transport.title": "Specifies that the transport protocol uses this remote processing group to communicate.",
+        "nf-new-remote.LocalNetwork": "Local Network Interface",
+        "nf-new-remote.LocalNetwork.title": "The local network interface to send/receive data. If not specified, any local address is used. If clustered, all nodes must have an interface with this identifier.",
+        "nf-new-remote.HttpProxyHostname": "Http server proxy address",
+        "nf-new-remote.HttpProxyHostname.title": "Specifies the name of the proxy server to use. If not specified, HTTP traffic is sent directly to the target where the application occurs.",
+        "nf-new-remote.HttpProxyPort": "Http server proxy port",
+        "nf-new-remote.HttpProxyPort.title": "Specifies the port number of the proxy server, optional. If not specified, the default is 80 ports.",
+        "nf-new-remote.HttpProxyUser": "Http proxy user name",
+        "nf-new-remote.HttpProxyUser.title": "Specifies the user name to connect to the proxy server, optional.",
+        "nf-new-remote.HttpProxyPassword": "Http proxy password",
+        "nf-new-remote.HttpProxyPassword.title": "Specify the password to connect to the proxy server, optional.",
+        "nf-new-remote.timeout": "Time out",
+        "nf-new-remote.timeout.title": "When communication with this remote process group takes longer, it will time out.",
+        "nf-new-remote.yield": "Yield duration",
+        "nf-new-remote.yield.title": "Referencing components must be disabled/stopped in order to disable this service.",
         "nf-remote-process-group-component.ConfigurationError": "Configuration Error",
         "nf-remote-process-group-component.AddRemoteProcessGroup": "Add Remote Process Group",
         "nf-remote-process-group-component.Add": "Add",
@@ -1027,7 +1148,7 @@ nf._ = (function () {
         "tag.filter.allgroup": "all groups"
 
     };
-    var cn = {
+    var zh = {
         "nf-actions.UpdateResource": "更新来源",
         "nf-actions.Refreshing": "正在刷新",
         "nf-actions.RemoteGroupProcess": "远程模块",
@@ -1067,6 +1188,8 @@ nf._ = (function () {
         "nf-actions.Delete": "删除后不可撤销，确定删除所选组件或模块吗？",
         "nf-actions.PendingApply": "等待生效",
         "nf-actions.None": "无",
+        "nf-actions.Ok": "确定",
+        "nf-actions.Cancel": "取消",
         "nf-variable-registry.title": "变量",
         "nf-variable-registry.new": "新建变量",
         "nf-variable-registry.scope": "作用范围",
@@ -1089,6 +1212,10 @@ nf._ = (function () {
         "nf-canvas-graph-controls-controller.MultipleSelected": "已选择多个",
         "nf-canvas-global-menu-controller.About": "关于",
         "nf-canvas-global-menu-controller.OK": "确认",
+        "nf-canvas-global-menu-controller.dialogContent": "数聚蜂巢编排平台采用应用组件可视化拖拽的操作方式，实现对企业业务、逻辑、流程的编排重组，从而缩短企业内部创新周期，提高协作效率，快速满足业务需求。",
+        "nf-canvas-global-menu-controller.version": '版本',
+        "nf-canvas-global-menu-controller.updateTime": "更新时间",
+        "nf-canvas-global-menu-controller.supportEmail": "电子邮件技术支持: orchsym-support@baishancloud.com",
         "nf-canvas-operate-controller.SUCCESS": "成功",
         "nf-canvas-operate-controller.SuccessContent": "模板成功导入.",
         "nf-canvas-operate-controller.Upload": "上传模板",
@@ -1125,6 +1252,38 @@ nf._ = (function () {
         "nf-canvas-header.Fill": "填充",
         "nf-canvas-header.Apply": "适用",
         "nf-canvas-header.Cancel": "取消",
+        "nf-canvas-header.Summary": "总览",
+        "nf-canvas-header.Counter": "计数器",
+        "nf-canvas-header.BulletinBoard": "公告板",
+        "nf-canvas-header.DataProvenance": "数据溯源",
+        "nf-canvas-header.ControllerSettings": "数据流配置",
+        "nf-canvas-header.OperationHistory": "操作历史",
+        "nf-canvas-header.Templates": "模板",
+        "nf-canvas-header.About": "关于",
+        "nf-canvas-header.Policies": "安全策略",
+        "nf-canvas-header.Users": "用户",
+        "nf-canvas-header.Cluster": "集群",
+        "nf-canvas-navigate.Navigate": "导航",
+        "nf-canvas-navigate.zoom-in-button": "放大",
+        "nf-canvas-navigate.zoom-out-button": "缩小",
+        "nf-canvas-navigate.zoom-fit-button": "自适应",
+        "nf-canvas-navigate.zoom-actual-button": "实际大小",
+        "nf-canvas-navigate.Operate": "操作",
+        "nf-canvas-navigate.Delete": "删除",
+        "nf-canvas-navigate.Configuration": "配置",
+        "nf-canvas-navigate.Accesspolicies": "访问策略",
+        "nf-canvas-navigate.Enable": "启用",
+        "nf-canvas-navigate.Disable": "禁用",
+        "nf-canvas-navigate.Start": "开始",
+        "nf-canvas-navigate.Stop": "停止",
+        "nf-canvas-navigate.CreateTemplate": "创建模板",
+        "nf-canvas-navigate.UploadTemplate": "上传模板",
+        "nf-canvas-navigate.Copy": "复制",
+        "nf-canvas-navigate.Paste": "粘贴",
+        "nf-canvas-navigate.Group": "模块",
+        "nf-canvas-navigate.Expand": "展开",
+        "nf-canvas-navigate.Collapse": "收起",
+        "nf-canvas-navigate.fillcolor": "颜色填充",
         "nf-group-component.AddProcessGroup": "添加模块",
         "nf-group-component.Add": "添加",
         "nf-group-component.Cancel": "取消",
@@ -1144,6 +1303,56 @@ nf._ = (function () {
         "nf-processor-component.Version": "版本",
         "nf-processor-component.Tags": "标签",
         "nf-processor-component.NoDescriptionSpecified": "未指定说明",
+        "nf-processor-component.AllProcessor": "所有组件",
+        "nf-processor-configuration.Id": "Id",
+        "nf-processor-configuration.Type": "类型",
+        "nf-processor-configuration.Name": "名称",
+        "nf-processor-configuration.Enabled": "已打开",
+        "nf-processor-configuration.AutoTerminateRelationships": "禁用连线",
+        "nf-processor-configuration.AutoTerminateRelationships.title": "当不使用连线或不需要输出时，应当禁用相应的数据流连线。需要输出时，请务必启用相应的数据流连线",
+        "nf-processor-configuration.Bundle": "包",
+        "nf-processor-configuration.PenaltyDuration": "延迟周期",
+        "nf-processor-configuration.PenaltyDuration.title": "组件延迟某个流文件的等待时间",
+        "nf-processor-configuration.YieldDuration": "等待时长",
+        "nf-processor-configuration.YieldDuration.title": "当一个组件处于等待状态，等待周期结束后这个组件才会再一次被调度",
+        "nf-processor-configuration.BulletinLevel": "公告级别",
+        "nf-processor-configuration.BulletinLevel.title": "这个组件产生公告时所需的日志级别",
+        "nf-processor-configuration.SchedulingStrategy": "调度策略",
+        "nf-processor-configuration.SchedulingStrategy.title": "用于这个组件的调度策略",
+        "nf-processor-configuration.ConcurrentTasks": "并行任务",
+        "nf-processor-configuration.ConcurrentTasks.title": "当前组件多线程并行执行的任务数",
+        "nf-processor-configuration.RunSchedule": "运行安排",
+        "nf-processor-configuration.RunSchedule.title": "每个任务执行的调度间隔时间",
+        "nf-processor-configuration.RunDuration": "执行时长",
+        "nf-processor-configuration.RunDuration.title": "当任务被调度执行时，组件会持续执行到指定时长。运行时长设置为0ms时，任务将只被执行一次",
+        "nf-processor-configuration.LowerLatency": "更低的延迟",
+        "nf-processor-configuration.HigherThroughput": "更高吞吐量",
+        "nf-port-configuration.PortNumber": "端口号",
+        "nf-port-configuration.Enabled": "打开",
+        "nf-port-configuration.Id": "Id",
+        "nf-port-configuration.ConcurrentTasks": "当前任务",
+        "nf-port-configuration.ConcurrentTasks.title": "当前端口执行的任务数",
+        "nf-port-configuration.Comments": "注释",
+        "nf-new-group.ProcessGroupName": "模块名称",
+        "nf-new-port.PortNumber": "端口号",
+        "nf-new-remote.URL": "网址",
+        "nf-new-remote.URL.title": "指定远程目标Orchsym Studio URL. 可以以逗号分隔格式指定多个URL. 不同的协议不能混合. 如果远程Orchsym Studio是群集，则建议使用两个或更多节点URL以实现更好的连接建立可用性.",
+        "nf-new-remote.Transport": "传输协议",
+        "nf-new-remote.Transport.title": "指定传输协议使用该远程处理组通信",
+        "nf-new-remote.LocalNetwork": "本地网络接口",
+        "nf-new-remote.LocalNetwork.title": "本地网络接口发送/接收数据. 如果未指定，则使用任何本地地址. 如果是集群，则所有节点必须具有带有此标识符的接口.",
+        "nf-new-remote.HttpProxyHostname": "HTTP代理服务器地址",
+        "nf-new-remote.HttpProxyHostname.title": "指定要使用的代理服务器名. 如果不指定, HTTP流量直接发送到目标发生Orchsym Studio应用上.",
+        "nf-new-remote.HttpProxyPort": "HTTP代理服务器端口",
+        "nf-new-remote.HttpProxyPort.title": "指定代理服务器的端口号,可选.如果没有指定,默认 80端口.",
+        "nf-new-remote.HttpProxyUser": "HTTP代理用户名",
+        "nf-new-remote.HttpProxyUser.title": "指定要连接到代理服务器的用户名,可选.",
+        "nf-new-remote.HttpProxyPassword": "HTTP代理密码",
+        "nf-new-remote.HttpProxyPassword.title": "指定要连接到代理服务器的密码,可选.",
+        "nf-new-remote.timeout": "超时时间",
+        "nf-new-remote.timeout.title": "当与这个远程进程组的通信花费的时间较长时,它将超时.",
+        "nf-new-remote.yield": "等待时长",
+        "nf-new-remote.yield.title": "停止服务前请先将引用组件关闭或者禁用",
         "nf-remote-process-group-component.ConfigurationError": "配置错误",
         "nf-remote-process-group-component.AddRemoteProcessGroup": "添加远程模块",
         "nf-remote-process-group-component.Add": "添加",
@@ -2036,13 +2245,15 @@ nf._ = (function () {
         "jquery-tagcloud.NoTagsSpecified": "未指定标签",
         "tag.filter.allgroup": "所有分类"
     };
+    window.en = en 
+    window.zh = zh
     return {
         msg: function (key) {
             if (locale === "en") {
                 return en[key];
             }
-            if ((locale === "cn")) {
-                return cn[key];
+            if ((locale === "zh")) {
+                return zh[key];
             }
         }
     };

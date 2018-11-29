@@ -62,6 +62,7 @@
             this.templateComponent = templateComponent;
             this.labelComponent = labelComponent;
 
+
             /**
              * Config for the toolbox
              */
@@ -81,7 +82,6 @@
                     api: '../nifi-api',
                     controller: '../nifi-api/controller',
                     processorTypes: '../nifi-api/flow/processor-types',
-                    classification: 'json/classification.json',
                     marks: '../nifi-api/component-marks/classification'
                 }
             };

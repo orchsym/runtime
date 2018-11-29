@@ -19,9 +19,10 @@
 <div id="new-remote-process-group-dialog" class="hidden large-dialog">
     <div class="dialog-content">
         <div class="setting">
-            <div class="setting-name"><fmt:message key="partials.canvas.new-remote-process-group-dialog.URL"/>
-            <fmt:message key="partials.canvas.new-remote-process-group-dialog.circle" var="circle"/>
-                <div class="fa fa-question-circle" alt="Info" title="${circle}"></div>
+            <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.URL'] }}
+                <div class="fa fa-question-circle" alt="Info" 
+                     title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.URL.title'] }}">    
+                </div>
              </div>
             <div class="setting-field">
                 <input id="new-remote-process-group-uris" type="text" placeholder="https://remotehost:8080/nifi"/>
@@ -30,9 +31,10 @@
         <div class="setting">
             <div class="remote-process-group-setting-left">
                 <div class="setting-name">
-                    <fmt:message key="partials.canvas.new-remote-process-group-dialog.Transport"/>
-                <fmt:message key="partials.canvas.disable-controller-service-dialog.Scope.setting-field.title" var="Transport"/>
-                <div class="fa fa-question-circle" alt="Info" title="${Transport}"></div>
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.Transport'] }}
+                <div class="fa fa-question-circle" alt="Info" 
+                     title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.Transport.title'] }}">
+                </div>
                 </div>
                 <div class="setting-field">
                     <div id="new-remote-process-group-transport-protocol-combo"></div>
@@ -40,9 +42,10 @@
             </div>
             <div class="remote-process-group-setting-right">
                 <div class="setting-name">
-                    <fmt:message key="partials.canvas.new-remote-process-group-dialog.LocalNetwork"/>
-                <fmt:message key="partials.canvas.new-remote-process-group-dialog.LocalNetworkTitle" var="LocalNetworkTitle"/>
-                    <div class="fa fa-question-circle" alt="Info" title="${LocalNetworkTitle}"></div>
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.LocalNetwork'] }}
+                    <div class="fa fa-question-circle" alt="Info" 
+                         title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.LocalNetwork.title'] }}">
+                    </div>
                 </div>
                 <div class="setting-field">
                     <input type="text" class="small-setting-input" id="new-remote-process-group-local-network-interface"/>
@@ -53,9 +56,8 @@
         <div class="setting">
             <div class="remote-process-group-setting-left">
                 <div class="setting-name">
-                    <fmt:message key="partials.canvas.new-remote-process-group-dialog.HttpProxyHostname"/>
-                    <fmt:message key="partials.canvas.disable-controller-service-dialog.Scope.setting-field.title" var="HttpProxyHostname"/>
-                    <div class="fa fa-question-circle" alt="Info" title="${HttpProxyHostname}"></div>
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.HttpProxyHostname'] }}
+                    <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.HttpProxyHostname.title'] }}"></div>
                 </div>
                 <div class="setting-field">
                     <input type="text" class="small-setting-input" id="new-remote-process-group-proxy-host"/>
@@ -63,9 +65,8 @@
             </div>
             <div class="remote-process-group-setting-right">
                 <div class="setting-name">
-                    <fmt:message key="partials.canvas.new-remote-process-group-dialog.HttpProxyPort"/>
-                    <fmt:message key="partials.canvas.disable-controller-service-dialog.Scope.setting-field.title" var="HttpProxyPort"/>
-                    <div class="fa fa-question-circle" alt="Info" title="${HttpProxyPort}"></div>
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.HttpProxyPort'] }}
+                    <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.HttpProxyPort.title'] }}"></div>
                 </div>
                 <div class="setting-field">
                     <input type="text" class="small-setting-input" id="new-remote-process-group-proxy-port"/>
@@ -76,9 +77,8 @@
         <div class="setting">
             <div class="remote-process-group-setting-left">
                 <div class="setting-name">
-                    <fmt:message key="partials.canvas.new-remote-process-group-dialog.HttpProxyUser"/>
-                    <fmt:message key="partials.canvas.disable-controller-service-dialog.Scope.setting-field.title" var="HttpProxyUser"/>
-                    <div class="fa fa-question-circle" alt="Info" title="${HttpProxyUser}"></div>
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.HttpProxyUser'] }}
+                    <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.HttpProxyUser.title'] }}"></div>
                 </div>
                 <div class="setting-field">
                     <input type="text" class="small-setting-input" id="new-remote-process-group-proxy-user"/>
@@ -86,9 +86,8 @@
             </div>
             <div class="remote-process-group-setting-right">
                 <div class="setting-name">
-                    <fmt:message key="partials.canvas.new-remote-process-group-dialog.HttpProxyPassword"/>
-                    <fmt:message key="partials.canvas.disable-controller-service-dialog.Scope.setting-field.title" var="HttpProxyPassword"/>
-                    <div class="fa fa-question-circle" alt="Info" title="${HttpProxyPassword}"></div>
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.HttpProxyPassword'] }}
+                    <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.HttpProxyPassword.title'] }}"></div>
                 </div>
                 <div class="setting-field">
                     <input type="password" class="small-setting-input" id="new-remote-process-group-proxy-password"/>
@@ -99,9 +98,8 @@
         <div class="setting">
             <div class="remote-process-group-setting-left">
                 <div class="setting-name">
-                    <fmt:message key="partials.canvas.new-remote-process-group-dialog.timeout"/>
-                    <fmt:message key="partials.canvas.disable-controller-service-dialog.Scope.setting-field.title" var="timeout"/>
-                    <div class="fa fa-question-circle" alt="Info" title="${timeout}"></div>
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.timeout'] }}
+                    <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.timeout.title'] }}"></div>
                 </div>
                 <div class="setting-field">
                     <input type="text" class="small-setting-input" id="new-remote-process-group-timeout"/>
@@ -109,9 +107,8 @@
             </div>
             <div class="remote-process-group-setting-right">
                 <div class="setting-name">
-                    <fmt:message key="partials.canvas.new-remote-process-group-dialog.yield"/>
-                    <fmt:message key="partials.canvas.disable-controller-service-dialog.Scope.setting-field.title" var="yield"/>
-                    <div class="fa fa-question-circle" alt="Info" title="${yield}"></div>
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.yield'] }}
+                    <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-remote.yield.title'] }}"></div>
                 </div>
                 <div class="setting-field">
                     <input type="text" class="small-setting-input" id="new-remote-process-group-yield-duration"/>

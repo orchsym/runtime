@@ -19,7 +19,7 @@
 <div id="new-port-dialog" class="hidden small-dialog">
     <div class="dialog-content">
         <div class="setting">
-            <div class="setting-name"><span id="new-port-type"><fmt:message key="partials.canvas.new-port-dialog.Input"/></span>&nbsp;<fmt:message key="partials.canvas.new-port-dialog.portname"/></div>
+            <div class="setting-name"><span id="new-port-type"><fmt:message key="partials.canvas.new-port-dialog.Input"/></span>&nbsp;{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-port.PortNumber'] }}</div>
             <div class="setting-field">
                 <input id="new-port-name" type="text"/>
             </div>

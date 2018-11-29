@@ -23,17 +23,17 @@
                 <img src="./images/logo.svg"/>
             </div>
             <div id="about-version" layout="row" layout-align="end end" style="width:100%;height:40%">
-                <p style="font-size:12px; color:white; padding-right: 10px">版本： 2.0.1 &nbsp;&nbsp;更新时间：2018/6/29</p>
+                <p style="font-size:12px; color:white; padding-right: 10px">{{appCtrl.serviceProvider.globalMenuCtrl.getProjectVersion()}} &nbsp;&nbsp;{{appCtrl.serviceProvider.globalMenuCtrl.getBuildDate()}}</p>
             </div>
         </div>
     </div>
-    <div class="dialog-content">
+    <div class="dialog-content" style="position: initial;padding: 15px;">
         <div id="nf-about-content">
             <p>
-                数聚蜂巢编排平台采用应用组件可视化拖拽的操作方式，实现对企业业务、逻辑、流程的编排重组，从而缩短企业内部创新周期，提高协作效率，快速满足业务需求。
+                {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-canvas-global-menu-controller.dialogContent'] }}
                 <br><br>
             </p>
-            <p>电子邮件技术支持：orchsym-support@baishancloud.com</p>
+            <p>{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-canvas-global-menu-controller.supportEmail'] }}</p>
         </div>
     </div>
 </div>

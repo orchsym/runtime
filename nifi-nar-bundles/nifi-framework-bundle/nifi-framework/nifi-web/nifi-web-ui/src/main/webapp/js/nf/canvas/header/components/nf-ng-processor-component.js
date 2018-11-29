@@ -474,7 +474,7 @@
 
                         var generalRestriction = nfCommon.getPolicyTypeListing('restricted-components');
                         serviceProvider.graphControlsCtrl.isComponentOpen = false
-                        serviceProvider.graphControlsCtrl.bigClassificationName = '所有组件'
+                        serviceProvider.graphControlsCtrl.bigClassificationName = nf._.msg('nf-processor-component.AllProcessor')
                         // load the available processor types, this select is shown in the
                         // new processor dialog when a processor is dragged onto the screen
 
@@ -624,21 +624,16 @@
 
                             $.ajax({
                                 type: 'GET',
-                                url: serviceProvider.headerCtrl.toolboxCtrl.config.urls.classification,
+                                url: serviceProvider.headerCtrl.toolboxCtrl.config.urls.marks,
                                 dataType: 'json',
+                                headers:{
+                                    Locale: locale,
+                                },
                             }).done(function (response) {
 
-                                var responseBase = response
-                                $.ajax({
-                                    type: 'GET',
-                                    url: serviceProvider.headerCtrl.toolboxCtrl.config.urls.marks,
-                                    dataType: 'json',
-                                }).done(function (response) {
+                                var respnseMerged = response
 
-                                    //合并来着classification.json与nifi-api/component-marks/classification请求返回的内容
-                                    var respnseMerged = mergeResponse(responseBase, response)
-
-                                    var allComponent = []
+                                var allComponent = []
                                     var respnse = respnseMerged.map(function(item){
                                         item.classification = item.classification.sort()
 
@@ -667,11 +662,11 @@
                                     }
 
                                     var obj = {
-                                        name: '所有组件',
+                                        name: nf._.msg('nf-processor-component.AllProcessor'),
                                         icon: 'search.svg',
                                         classification: [
                                             {
-                                                name: '所有组件',
+                                                name: nf._.msg('nf-processor-component.AllProcessor'),
                                                 open: true,
                                                 components: allComponents,
                                                 icon: 'search.svg'
@@ -682,7 +677,23 @@
                                     serviceProvider.graphControlsCtrl.backupComponentList = obj.classification
                                     serviceProvider.graphControlsCtrl.componentList = obj.classification
                                     serviceProvider.graphControlsCtrl.componentDuanwuData = respnse
-                                })
+
+
+
+                                // $.ajax({
+                                //     type: 'GET',
+                                //     url: serviceProvider.headerCtrl.toolboxCtrl.config.urls.marks,
+                                //     dataType: 'json',
+                                //     headers:{
+                                //         Locale: locale,
+                                //     },
+                                // }).done(function (response) {
+
+                                //     //合并来着classification.json与nifi-api/component-marks/classification请求返回的内容
+                                //     var respnseMerged = mergeResponse(responseBase, response)
+
+                                    
+                                // })
                             })
 
                             

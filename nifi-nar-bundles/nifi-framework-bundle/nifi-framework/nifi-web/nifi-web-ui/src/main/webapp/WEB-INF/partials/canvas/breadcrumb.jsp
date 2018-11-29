@@ -27,7 +27,8 @@
             get-version-control-tooltip="appCtrl.serviceProvider.breadcrumbsCtrl.getVersionControlTooltip">
         </nf-breadcrumbs> 
     </div>
-    <div layout="row" layout-align="end center">
+    <div layout="row" layout-align="end center" style="height: 31px; border-bottom: 1px solid #FFFFFF;">
+        <div id="language" ng-click="appCtrl.serviceProvider.breadcrumbsCtrl.switchLanguage()">{{appCtrl.serviceProvider.breadcrumbsCtrl.getLanguage()}}</div>
         <div id="search-container">
             <button id="search-button" ng-click="appCtrl.serviceProvider.headerCtrl.flowStatusCtrl.search.toggleSearchField();"><i class="icon icon-search"></i></button>
             <input id="search-field" type="text" placeholder=""/>

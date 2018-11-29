@@ -23,37 +23,38 @@
             <div id="processor-standard-settings-tab-content" class="configuration-tab">
                 <div class="settings-left">
                     <div class="setting">
-                        <div class="setting-name"><fmt:message key="partials.canvas.processor-configuration.Name"/></div>
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.Name'] }}</div>
                         <div id="processor-name-container" class="setting-field">
                             <input type="text" id="processor-name" name="processor-name"/>
                             <div class="processor-enabled-container">
                                 <div id="processor-enabled" class="nf-checkbox checkbox-unchecked"></div>
-                                <span class="nf-checkbox-label"> <fmt:message key="partials.canvas.processor-configuration.Enabled"/></span>
+                                <span class="nf-checkbox-label">{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.Enabled'] }}</span>
                             </div>
                         </div>
                     </div>
                     <div class="setting">
-                        <div class="setting-name"><fmt:message key="partials.canvas.processor-configuration.Id"/></div>
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.Id'] }}</div>
                         <div class="setting-field">
                             <span id="processor-id"></span>
                         </div>
                     </div>
                     <div class="setting">
-                        <div class="setting-name"><fmt:message key="partials.canvas.processor-configuration.Type"/></div>
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.Type'] }}</div>
                         <div class="setting-field">
                             <span id="processor-type"></span>
                         </div>
                     </div>
                     <div class="setting">
-                        <div class="setting-name"><fmt:message key="partials.processor-details.read-only-processor-bundle"/></div>
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.Bundle'] }}</div>
                         <div id="processor-bundle" class="setting-field"></div>
                     </div>
                     <div class="setting">
                         <div class="penalty-duration-setting">
                             <div class="setting-name">
-                                <fmt:message key="partials.canvas.processor-configuration.PenaltyDuration"/>
-                                <fmt:message key="partials.canvas.processor-configuration.PenaltyDuration.title" var="title_PenaltyDuration"/>
-                                <div class="fa fa-question-circle" alt="Info" title="${title_PenaltyDuration}"></div>
+                                {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.PenaltyDuration'] }}
+                                <div class="fa fa-question-circle" 
+                                     alt="Info" 
+                                     title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.PenaltyDuration.title'] }}"></div>
                             </div>
                             <div class="setting-field">
                                 <input type="text" id="penalty-duration" name="penalty-duration" class="small-setting-input"/>
@@ -61,9 +62,11 @@
                         </div>
                         <div class="yield-duration-setting">
                             <div class="setting-name">
-                                <fmt:message key="partials.canvas.processor-configuration.YieldDuration"/>
-                                <fmt:message key="partials.canvas.processor-configuration.YieldDuration.title" var="title_YieldDuration"/>
-                                <div class="fa fa-question-circle" alt="Info" title="${title_YieldDuration}"></div>
+                                {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.YieldDuration'] }}
+                                <div class="fa fa-question-circle" 
+                                     alt="Info" 
+                                     title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.YieldDuration.title'] }}">
+                                </div>
                             </div>
                             <div class="setting-field">
                                 <input type="text" id="yield-duration" name="yield-duration" class="small-setting-input"/>
@@ -74,9 +77,10 @@
                     <div class="setting">
                         <div class="bulletin-setting">
                             <div class="setting-name">
-                                <fmt:message key="partials.canvas.processor-configuration.BulletinLevel"/>
-                                <fmt:message key="partials.canvas.processor-configuration.BulletinLevel.title" var="title_BulletinLevel"/>
-                                <div class="fa fa-question-circle" alt="Info" title="${title_BulletinLevel}"></div>
+                                {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.BulletinLevel'] }}
+                                <div class="fa fa-question-circle" alt="Info" 
+                                     title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.BulletinLevel.title'] }}">
+                                </div>
                             </div>
                             <div class="setting-field">
                                 <div id="bulletin-level-combo"></div>
@@ -89,9 +93,10 @@
                 <div class="settings-right">
                     <div class="setting">
                         <div class="setting-name">
-                            <fmt:message key="partials.canvas.processor-configuration.AutoTerminateRelationships"/>
-                            <fmt:message key="partials.canvas.processor-configuration.AutoTerminateRelationships.title" var="title_AutoTerminateRelationships"/>
-                            <div class="fa fa-question-circle" alt="Info" title="${title_AutoTerminateRelationships}"></div>
+                            {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.AutoTerminateRelationships'] }}
+                            <div class="fa fa-question-circle" alt="Info" 
+                            title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.AutoTerminateRelationships.title'] }}">
+                            </div>
                         </div>
                         <div class="setting-field">
                             <div id="auto-terminate-relationship-names"></div>
@@ -104,9 +109,10 @@
                     <div class="setting">
                         <div class="scheduling-strategy-setting">
                             <div class="setting-name">
-                                <fmt:message key="partials.canvas.processor-configuration.SchedulingStrategy"/>
-                                <fmt:message key="partials.canvas.processor-configuration.SchedulingStrategy.title" var="title_SchedulingStrategy"/>
-                                <div class="fa fa-question-circle" alt="Info" title="${title_SchedulingStrategy}"></div>
+                                {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.SchedulingStrategy'] }}
+                                <div class="fa fa-question-circle" alt="Info" 
+                                     title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.SchedulingStrategy.title'] }}">         
+                                </div>
                             </div>
                             <div class="setting-field">
                                 <div type="text" id="scheduling-strategy-combo"></div>
@@ -121,9 +127,8 @@
                     <div id="timer-driven-options" class="setting">
                         <div class="concurrently-schedulable-tasks-setting">
                             <div class="setting-name">
-                                <fmt:message key="partials.canvas.processor-configuration.ConcurrentTasks"/>
-                                <fmt:message key="partials.canvas.processor-configuration.ConcurrentTasks.title" var="title_ConcurrentTasks"/>
-                                <div class="fa fa-question-circle" alt="Info" title="${title_ConcurrentTasks}"></div>
+                                {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.ConcurrentTasks'] }}
+                                <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.ConcurrentTasks.title'] }}"></div>
                             </div>
                             <div class="setting-field">
                                 <input type="text" id="timer-driven-concurrently-schedulable-tasks" name="timer-driven-concurrently-schedulable-tasks" class="small-setting-input"/>
@@ -131,9 +136,8 @@
                         </div>
                         <div class="scheduling-period-setting">
                             <div class="setting-name">
-                                <fmt:message key="partials.canvas.processor-configuration.RunSchedule"/>
-                                <fmt:message key="partials.canvas.processor-configuration.RunSchedule.title.1" var="RunSchedule1"/>
-                                <div class="fa fa-question-circle" alt="Info" title="${RunSchedule1}"></div>
+                                {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.RunSchedule'] }}
+                                <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.RunSchedule.title'] }}"></div>
                             </div>
                             <div class="setting-field">
                                 <input type="text" id="timer-driven-scheduling-period" name="timer-driven-scheduling-period" class="small-setting-input"/>
@@ -195,10 +199,9 @@
                 <div id="run-duration-setting-container" class="settings-right">
                     <div class="setting">
                         <div class="setting-name">
-                            <fmt:message key="partials.canvas.processor-configuration.RunDuration"/>
-                            <fmt:message key="partials.canvas.processor-configuration.RunDuration.title" var="title_RunDuration"/>
+                            {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.RunDuration'] }}
                             <div class="fa fa-question-circle" alt="Info"
-                                 title="${title_RunDuration}"></div>
+                                 title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.RunDuration.title'] }}"></div>
                         </div>
                         <div class="setting-field" style="overflow: visible;">
                             <div id="run-duration-container">
@@ -215,8 +218,8 @@
                                 </div>
                                 <div id="run-duration-slider"></div>
                                 <div id="run-duration-explanation">
-                                    <div id="min-run-duration-explanation"><fmt:message key="partials.canvas.processor-configuration.LowerLatency"/></div>
-                                    <div id="max-run-duration-explanation"><fmt:message key="partials.canvas.processor-configuration.HigherThroughput"/></div>
+                                    <div id="min-run-duration-explanation">{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.LowerLatency'] }}</div>
+                                    <div id="max-run-duration-explanation">{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-processor-configuration.HigherThroughput'] }}</div>
                                     <div class="clear"></div>
                                 </div>
                                 <div id="run-duration-data-loss" class="hidden">

@@ -377,6 +377,8 @@
                         this.getElement().modal({
                             scrollableContentStyle: 'scrollable',
                             headerText: nf._.msg('nf-canvas-global-menu-controller.About'),
+                            dialogContent: '<p>' + nf._.msg('nf-canvas-global-menu-controller.dialogContent')+'<br><br></p><p>'+
+                                            nf._.msg('nf-canvas-global-menu-controller')+'</p>',
                             handler: {
                                 resize: resizeAbout
                             },
@@ -427,14 +429,40 @@
             constructor: GlobalMenuCtrl,
 
             /**
+             *  Register the globalmenu controller.
+             */
+            register: function () {
+                if (serviceProvider.globalMenuCtrl === undefined) {
+                    serviceProvider.register('globalMenuCtrl', globalMenuCtrl);
+                }
+            },
+
+            /**
              * Initialize the global menu controls.
              */
             init: function () {
                 this.about.init();
+            },
+            getProjectVersion: function () {
+                return nf._.msg('nf-canvas-global-menu-controller.version') + ': ' + window.productVersion;
+            },
+            getBuildDate: function () {
+                return nf._.msg('nf-canvas-global-menu-controller.updateTime') + ': ' +  window.buildDate;
+            },
+            getAboutContent: function () {
+                return nf._.msg('nf-canvas-global-menu-controller.aboutContent')
+            },
+            getdialogContent: function () {
+                return nf._.msg('nf-canvas-global-menu-controller.dialogContent')
+            },
+            getSupportEmail: function () {
+                return nf._.msg('nf-canvas-global-menu-controller.supportEmail')
             }
         }
 
         var globalMenuCtrl = new GlobalMenuCtrl();
+        globalMenuCtrl.constant = window[locale];
+        globalMenuCtrl.register();
         return globalMenuCtrl;
     };
 }));

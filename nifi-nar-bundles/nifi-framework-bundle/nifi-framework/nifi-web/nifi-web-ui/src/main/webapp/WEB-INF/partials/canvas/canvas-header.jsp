@@ -101,20 +101,20 @@
                     <md-menu-item layout-align="space-around center">
                         <a id="reporting-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.summary.shell.launch();">
-                            <i class="fa fa-table"></i><fmt:message key="partials.canvas.canvas-header.reporting-link"/>
+                            <i class="fa fa-table"></i>{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-canvas-header.Summary'] }}
                         </a>
                     </md-menu-item>
                     <md-menu-item layout-align="space-around center">
                         <a id="counters-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.counters.shell.launch();"
                            ng-class="{disabled: !appCtrl.nf.Common.canAccessCounters()}">
-                            <i class="icon icon-menu-counters"></i><fmt:message key="partials.canvas.canvas-header.counters-link"/>
+                            <i class="icon icon-menu-counters"></i>{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-canvas-header.Counter'] }}
                         </a>
                     </md-menu-item>
                     <md-menu-item layout-align="space-around center">
                         <a id="bulletin-board-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.bulletinBoard.shell.launch();">
-                            <i class="icon icon-bell"></i><fmt:message key="partials.canvas.canvas-header.bulletin-board-link"/>
+                            <i class="icon icon-bell"></i>{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-canvas-header.BulletinBoard'] }}
                         </a>
                     </md-menu-item>
                     <md-menu-divider></md-menu-divider>
@@ -123,14 +123,14 @@
                         <a id="provenance-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.dataProvenance.shell.launch();"
                            ng-class="{disabled: !appCtrl.nf.Common.canAccessProvenance()}">
-                            <i class="icon icon-provenance"></i><fmt:message key="partials.canvas.canvas-header.provenance-link"/>
+                            <i class="icon icon-provenance"></i>{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-canvas-header.DataProvenance'] }}
                         </a>
                     </md-menu-item>
                     <md-menu-divider></md-menu-divider>
                     <md-menu-item layout-align="space-around center">
                         <a id="flow-settings-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.controllerSettings.shell.launch();">
-                            <i class="icon icon-menu-contorller-settings"></i><fmt:message key="partials.canvas.canvas-header.flow-settings-link"/>
+                            <i class="icon icon-menu-contorller-settings"></i>{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-canvas-header.ControllerSettings'] }}
                         </a>
                     </md-menu-item>
                     <md-menu-item ng-if="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.cluster.visible();"
@@ -138,13 +138,13 @@
                         <a id="cluster-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.cluster.shell.launch();"
                            ng-class="{disabled: !appCtrl.nf.Common.canAccessController()}">
-                            <i class="fa fa-cubes"></i><fmt:message key="partials.canvas.canvas-header.cluster-link"/>
+                            <i class="fa fa-cubes"></i>{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-canvas-header.Cluster'] }}
                         </a>
                     </md-menu-item>
                     <md-menu-item layout-align="space-around center">
                         <a id="history-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.flowConfigHistory.shell.launch();">
-                            <i class="icon icon-menu-history"></i><fmt:message key="partials.canvas.canvas-header.history-link"/>
+                            <i class="icon icon-menu-history"></i>{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-canvas-header.OperationHistory'] }}
                         </a>
                     </md-menu-item>
                     <md-menu-divider ng-if="appCtrl.nf.CanvasUtils.isConfigurableAuthorizer()"></md-menu-divider>
@@ -152,28 +152,28 @@
                         <a id="users-link" layout="row"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.users.shell.launch();"
                            ng-class="{disabled: !(appCtrl.nf.Common.canAccessTenants())}">
-                            <i class="fa fa-users"></i><fmt:message key="partials.canvas.canvas-header.users-link"/>
+                            <i class="fa fa-users"></i>{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-canvas-header.Users'] }}
                         </a>
                     </md-menu-item>
                     <md-menu-item layout-align="space-around center" ng-if="appCtrl.nf.CanvasUtils.isConfigurableAuthorizer()">
                         <a id="policies-link" layout="row"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.policies.shell.launch();"
                            ng-class="{disabled: !(appCtrl.nf.Common.canAccessTenants() && appCtrl.nf.Common.canModifyPolicies())}">
-                            <i class="fa fa-key"></i><fmt:message key="partials.canvas.canvas-header.policies-link"/>
+                            <i class="fa fa-key"></i>{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-canvas-header.Policies'] }}
                         </a>
                     </md-menu-item>
                     <md-menu-divider></md-menu-divider>
                     <md-menu-item layout-align="space-around center">
                         <a id="templates-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.templates.shell.launch();">
-                            <i class="icon icon-template"></i><fmt:message key="partials.canvas.canvas-header.templates-link"/>
+                            <i class="icon icon-template"></i>{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-canvas-header.Templates'] }}
                         </a>
                     </md-menu-item>
                     <md-menu-divider></md-menu-divider>
                     <md-menu-item layout-align="space-around center">
                         <a id="about-link"
                            ng-click="appCtrl.serviceProvider.headerCtrl.globalMenuCtrl.about.modal.show();">
-                            <i class="icon icon-menu-about"></i><fmt:message key="partials.canvas.canvas-header.about-link"/>
+                            <i class="icon icon-menu-about"></i>{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-canvas-header.About'] }}
                         </a>
                     </md-menu-item>
                 </md-menu-content>

@@ -19,7 +19,7 @@
 <div id="new-process-group-dialog" class="hidden small-dialog">
     <div class="dialog-content">
         <div class="setting">
-            <div class="setting-name"><fmt:message key="partials.canvas.new-process-group-dialog.ProcessGroupName"/></div>
+            <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-new-group.ProcessGroupName'] }}</div>
             <div class="setting-field">
                 <input id="new-process-group-name" type="text"/>
             </div>

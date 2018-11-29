@@ -42,6 +42,17 @@
             this.breadcrumbs = [];
         }
 
+        function getCookie(name) 
+        { 
+            var arr,reg=new RegExp("(^| )"+name+"=([^;]*)(;|$)");
+         
+            if(arr=document.cookie.match(reg))
+         
+                return unescape(arr[2]); 
+            else 
+                return null; 
+        }
+
         BreadcrumbsCtrl.prototype = {
             constructor: BreadcrumbsCtrl,
 
@@ -149,6 +160,18 @@
              */
             getBreadcrumbs: function () {
                 return this.breadcrumbs;
+            },
+
+            /**
+             * Get the language.
+             */
+             getLanguage: function () {
+                return locale == 'zh' ? 'English' : '中文'
+             },
+
+            switchLanguage: function () {
+                locale == 'zh' ? document.cookie = 'locale=en' : document.cookie = 'locale=zh';
+                location.reload();
             },
 
             /**
