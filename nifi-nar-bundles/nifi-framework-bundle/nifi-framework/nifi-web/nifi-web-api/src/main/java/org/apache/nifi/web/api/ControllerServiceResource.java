@@ -31,6 +31,7 @@ import org.apache.nifi.authorization.resource.Authorizable;
 import org.apache.nifi.authorization.user.NiFiUserUtils;
 import org.apache.nifi.controller.ScheduledState;
 import org.apache.nifi.controller.service.ControllerServiceState;
+import org.apache.nifi.i18n.DtoI18nHelper;
 import org.apache.nifi.nar.i18n.MessagesProvider;
 import org.apache.nifi.ui.extension.UiExtension;
 import org.apache.nifi.ui.extension.UiExtensionMapping;
@@ -72,6 +73,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -189,6 +191,17 @@ public class ControllerServiceResource extends ApplicationResource {
         // get the controller service
         final ControllerServiceEntity entity = serviceFacade.getControllerService(id);
         populateRemainingControllerServiceEntityContent(entity);
+        
+        //fix i18n
+        final Locale requestLocale = this.getRequestLocale();
+        if (requestLocale != null && !MessagesProvider.getDefaultLocale().equals(requestLocale)) {
+            if (entity.getComponent() != null && entity.getComponent().getDescriptors() != null) {
+                final String type = entity.getComponent().getType();
+                for (Entry<String, PropertyDescriptorDTO> de : entity.getComponent().getDescriptors().entrySet()) {
+                    DtoI18nHelper.fix(requestLocale, type, de.getValue());
+                }
+            }
+        }
 
         return generateOkResponse(entity).build();
     }
@@ -247,15 +260,16 @@ public class ControllerServiceResource extends ApplicationResource {
             controllerService.authorize(authorizer, RequestAction.READ, NiFiUserUtils.getNiFiUser());
         });
 
-        final long threadId = Thread.currentThread().getId();
-        MessagesProvider.setLocale(threadId, getRequestLocale());
+        PropertyDescriptorDTO descriptor = serviceFacade.getControllerServicePropertyDescriptor(id, propertyName);
 
-        PropertyDescriptorDTO descriptor;
-        try {
-            // get the property descriptor
-            descriptor = serviceFacade.getControllerServicePropertyDescriptor(id, propertyName);
-        } finally {
-            MessagesProvider.removeLocale(threadId);
+        // fix for i18n
+        final Locale requestLocale = this.getRequestLocale();
+        if (requestLocale != null && !MessagesProvider.getDefaultLocale().equals(requestLocale)) {
+            final ControllerServiceEntity controllerService = serviceFacade.getControllerService(id);
+            if (controllerService != null) {
+                final String type = controllerService.getComponent().getType();
+                DtoI18nHelper.fix(requestLocale, type, descriptor);
+            }
         }
 
         // generate the response entity
@@ -311,6 +325,19 @@ public class ControllerServiceResource extends ApplicationResource {
 
         // get the component state
         final ComponentStateDTO state = serviceFacade.getControllerServiceState(id);
+
+        // fix i18n
+        final Locale requestLocale = this.getRequestLocale();
+        if (requestLocale != null && !MessagesProvider.getDefaultLocale().equals(requestLocale)) {
+            final ControllerServiceEntity controllerService = serviceFacade.getControllerService(id);
+            if (controllerService != null) {
+                final String type = controllerService.getComponent().getType();
+                final String statefulDesc = MessagesProvider.getStatefulDesc(requestLocale, type);
+                if (StringUtils.isNotBlank(statefulDesc)) {
+                    state.setStateDescription(statefulDesc);
+                }
+            }
+        }
 
         // generate the response entity
         final ComponentStateEntity entity = new ComponentStateEntity();

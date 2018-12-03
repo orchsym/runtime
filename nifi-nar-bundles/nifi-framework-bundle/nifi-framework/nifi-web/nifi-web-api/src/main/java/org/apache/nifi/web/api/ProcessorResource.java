@@ -30,6 +30,7 @@ import org.apache.nifi.authorization.RequestAction;
 import org.apache.nifi.authorization.resource.Authorizable;
 import org.apache.nifi.authorization.user.NiFiUser;
 import org.apache.nifi.authorization.user.NiFiUserUtils;
+import org.apache.nifi.i18n.DtoI18nHelper;
 import org.apache.nifi.nar.i18n.MessagesProvider;
 import org.apache.nifi.ui.extension.UiExtension;
 import org.apache.nifi.ui.extension.UiExtensionMapping;
@@ -207,6 +208,9 @@ public class ProcessorResource extends ApplicationResource {
         final ProcessorEntity entity = serviceFacade.getProcessor(id);
         populateRemainingProcessorEntityContent(entity);
 
+        // fix i18n
+        DtoI18nHelper.fix(this.getRequestLocale(), entity.getComponent());
+
         // generate the response
         return generateOkResponse(entity).build();
     }
@@ -348,15 +352,16 @@ public class ProcessorResource extends ApplicationResource {
             processor.authorize(authorizer, RequestAction.READ, NiFiUserUtils.getNiFiUser());
         });
         
-        final long threadId = Thread.currentThread().getId();
-        MessagesProvider.setLocale(threadId, getRequestLocale());
 
-        PropertyDescriptorDTO descriptor;
-        try {
-            // get the property descriptor
-            descriptor = serviceFacade.getProcessorPropertyDescriptor(id, propertyName);
-        } finally {
-            MessagesProvider.removeLocale(threadId);
+        PropertyDescriptorDTO descriptor = serviceFacade.getProcessorPropertyDescriptor(id, propertyName);
+        
+        // fix i18n
+        final Locale requestLocale = this.getRequestLocale();
+        if (requestLocale != null && !MessagesProvider.getDefaultLocale().equals(requestLocale)) {
+            final ProcessorEntity processor = serviceFacade.getProcessor(id);
+            if (processor != null) {
+                DtoI18nHelper.fix(this.getRequestLocale(), processor.getComponent());
+            }
         }
 
         // generate the response entity
@@ -413,6 +418,19 @@ public class ProcessorResource extends ApplicationResource {
 
         // get the component state
         final ComponentStateDTO state = serviceFacade.getProcessorState(id);
+
+        // fix i18n
+        final Locale requestLocale = this.getRequestLocale();
+        if (requestLocale != null && !MessagesProvider.getDefaultLocale().equals(requestLocale)) {
+            final ProcessorEntity processor = serviceFacade.getProcessor(id);
+            if (processor != null) {
+                final String type = processor.getComponent().getType();
+                final String statefulDesc = MessagesProvider.getStatefulDesc(requestLocale, type);
+                if (StringUtils.isNotBlank(statefulDesc)) {
+                    state.setStateDescription(statefulDesc);
+                }
+            }
+        }
 
         // generate the response entity
         final ComponentStateEntity entity = new ComponentStateEntity();

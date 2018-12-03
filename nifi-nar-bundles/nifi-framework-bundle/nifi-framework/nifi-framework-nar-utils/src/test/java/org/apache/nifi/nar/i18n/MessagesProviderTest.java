@@ -33,6 +33,7 @@ public class MessagesProviderTest {
                 { "A'B'", "AB" }, //
                 { "A\"B\"", "AB" }, //
                 { "A[B]", "AB" }, //
+                { "A{B}", "AB" }, //
 
                 { "A\u200bB", "AB" }, //
                 { "\u200bA\u200bB", "AB" }, //

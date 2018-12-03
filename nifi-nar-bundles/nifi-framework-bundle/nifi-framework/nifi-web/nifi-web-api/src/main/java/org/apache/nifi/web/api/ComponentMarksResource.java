@@ -44,9 +44,9 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.apache.nifi.i18n.DtoI18nHelper;
 import org.apache.nifi.i18n.Messages;
 import org.apache.nifi.nar.i18n.MessagesProvider;
-import org.apache.nifi.util.StringUtils;
 import org.apache.nifi.web.NiFiServiceFacade;
 import org.apache.nifi.web.api.dto.DocumentedTypeDTO;
 import org.slf4j.Logger;
@@ -221,8 +221,10 @@ public class ComponentMarksResource extends ApplicationResource {
         Set<DocumentedTypeDTO> processorTypes = serviceFacade.getProcessorTypes(null, null, null);
         Set<DocumentedTypeDTO> serviceTypes = serviceFacade.getControllerServiceTypes(null, null, null, null, null, null, null);
 
-        processorTypes.stream().forEach(dto -> fixRequestLocale(requestLocale, dto));
-        serviceTypes.stream().forEach(dto -> fixRequestLocale(requestLocale, dto));
+        if (requestLocale != null && !requestLocale.equals(MessagesProvider.getDefaultLocale())) {
+            processorTypes.forEach(dto -> DtoI18nHelper.fix(requestLocale, dto));
+            serviceTypes.forEach(dto -> DtoI18nHelper.fix(requestLocale, dto));
+        }
 
         List<MarkEntity> processorMarks = filterAndCreateMarkEntities(processorTypes, "processor", filterType, filterName, filterVendor);
         List<MarkEntity> serviceMarks = filterAndCreateMarkEntities(serviceTypes, "controllerService", filterType, filterName, filterVendor);
@@ -273,7 +275,9 @@ public class ComponentMarksResource extends ApplicationResource {
                 Set<DocumentedTypeDTO> processorTypesWithCategories = processorTypes.stream()//
                         .filter(dto -> dto.getCategories() != null && dto.getCategories().size() > 0)//
                         .collect(Collectors.toSet());
-                processorTypesWithCategories.forEach(dto -> fixRequestLocale(requestLocale, dto));
+                
+                if (requestLocale != null && !requestLocale.equals(MessagesProvider.getDefaultLocale()))
+                    processorTypesWithCategories.forEach(dto -> DtoI18nHelper.fix(requestLocale, dto));
 
                 final Collection<CategoryItem> categoryItems = createCategoryItems(requestLocale, processorTypesWithCategories);
 
@@ -300,24 +304,6 @@ public class ComponentMarksResource extends ApplicationResource {
         Gson gson = new Gson();
         String resultStr = gson.toJson(items);
         return Response.ok(resultStr).build();
-    }
-
-    private void fixRequestLocale(final Locale requestLocale, DocumentedTypeDTO type) {
-        Set<String> marksCategories = MessagesProvider.getMarksCategoriesSet(requestLocale, type.getType());
-        if (marksCategories == null || marksCategories.isEmpty()) {
-            // same as Category.getLabel, will try to load the messages.properties(en) by default;
-            marksCategories = MessagesProvider.getMarksCategoriesSet(Locale.ENGLISH, type.getType());
-        }
-        if (marksCategories != null && !marksCategories.isEmpty()) {
-            type.setCategories(marksCategories); // update
-        }
-        String marksVendor = MessagesProvider.getMarksVendor(requestLocale, type.getType());
-        if (StringUtils.isBlank(marksVendor)) {
-            marksVendor = MessagesProvider.getMarksVendor(Locale.ENGLISH, type.getType());
-        }
-        if (!StringUtils.isBlank(marksVendor)) {
-            type.setVendor(marksVendor);
-        }
     }
 
     private Collection<CategoryItem> createCategoryItems(final Locale requestLocale, Set<DocumentedTypeDTO> processorTypes) {

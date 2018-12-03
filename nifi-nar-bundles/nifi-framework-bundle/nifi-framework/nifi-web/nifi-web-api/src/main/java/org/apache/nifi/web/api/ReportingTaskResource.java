@@ -29,6 +29,7 @@ import org.apache.nifi.authorization.ComponentAuthorizable;
 import org.apache.nifi.authorization.RequestAction;
 import org.apache.nifi.authorization.resource.Authorizable;
 import org.apache.nifi.authorization.user.NiFiUserUtils;
+import org.apache.nifi.i18n.DtoI18nHelper;
 import org.apache.nifi.nar.i18n.MessagesProvider;
 import org.apache.nifi.ui.extension.UiExtension;
 import org.apache.nifi.ui.extension.UiExtensionMapping;
@@ -40,6 +41,8 @@ import org.apache.nifi.web.api.dto.ComponentStateDTO;
 import org.apache.nifi.web.api.dto.PropertyDescriptorDTO;
 import org.apache.nifi.web.api.dto.ReportingTaskDTO;
 import org.apache.nifi.web.api.entity.ComponentStateEntity;
+import org.apache.nifi.web.api.entity.ControllerServiceEntity;
+import org.apache.nifi.web.api.entity.ProcessorEntity;
 import org.apache.nifi.web.api.entity.PropertyDescriptorEntity;
 import org.apache.nifi.web.api.entity.ReportingTaskEntity;
 import org.apache.nifi.web.api.request.ClientIdParameter;
@@ -62,6 +65,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -233,15 +237,15 @@ public class ReportingTaskResource extends ApplicationResource {
             reportingTask.authorize(authorizer, RequestAction.READ, NiFiUserUtils.getNiFiUser());
         });
         
-        final long threadId = Thread.currentThread().getId();
-        MessagesProvider.setLocale(threadId, getRequestLocale());
+        PropertyDescriptorDTO descriptor= serviceFacade.getReportingTaskPropertyDescriptor(id, propertyName);
 
-        PropertyDescriptorDTO descriptor;
-        try {
-            // get the property descriptor
-            descriptor = serviceFacade.getReportingTaskPropertyDescriptor(id, propertyName);
-        } finally {
-            MessagesProvider.removeLocale(threadId);
+        // fix i18n
+        final Locale requestLocale = this.getRequestLocale();
+        if (requestLocale != null && !MessagesProvider.getDefaultLocale().equals(requestLocale)) {
+            final ReportingTaskEntity reportTask = serviceFacade.getReportingTask(id);
+            if (reportTask != null) {
+                DtoI18nHelper.fix(this.getRequestLocale(), reportTask.getComponent());
+            }
         }
 
         // generate the response entity
@@ -297,6 +301,19 @@ public class ReportingTaskResource extends ApplicationResource {
 
         // get the component state
         final ComponentStateDTO state = serviceFacade.getReportingTaskState(id);
+
+        // fix i18n
+        final Locale requestLocale = this.getRequestLocale();
+        if (requestLocale != null && !MessagesProvider.getDefaultLocale().equals(requestLocale)) {
+            final ReportingTaskEntity reportTask = serviceFacade.getReportingTask(id);
+            if (reportTask != null) {
+                final String type = reportTask.getComponent().getType();
+                final String statefulDesc = MessagesProvider.getStatefulDesc(requestLocale, type);
+                if (StringUtils.isNotBlank(statefulDesc)) {
+                    state.setStateDescription(statefulDesc);
+                }
+            }
+        }
 
         // generate the response entity
         final ComponentStateEntity entity = new ComponentStateEntity();

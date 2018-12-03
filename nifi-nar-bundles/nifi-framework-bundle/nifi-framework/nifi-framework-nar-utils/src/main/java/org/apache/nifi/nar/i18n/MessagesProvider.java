@@ -64,7 +64,6 @@ public class MessagesProvider {
             "([\\u007f-\\u009f]|\\u00ad|[\\u0483-\\u0489]|[\\u0559-\\u055a]|\\u058a|[\\u0591-\\u05bd]|\\u05bf|[\\u05c1-\\u05c2]|[\\u05c4-\\u05c7]|[\\u0606-\\u060a]|[\\u063b-\\u063f]|\\u0674|[\\u06e5-\\u06e6]|\\u070f|[\\u076e-\\u077f]|\\u0a51|\\u0a75|\\u0b44|[\\u0b62-\\u0b63]|[\\u0c62-\\u0c63]|[\\u0ce2-\\u0ce3]|[\\u0d62-\\u0d63]|\\u135f|[\\u200b-\\u200f]|[\\u2028-\\u202e]|\\u2044|\\u2071|[\\uf701-\\uf70e]|[\\uf710-\\uf71a]|\\ufb1e|[\\ufc5e-\\ufc62]|\\ufeff|\\ufffc)");
 
     private volatile static Locale defaultLocale;
-    private static final Map<Long, Locale> localeThreadsMap = new Hashtable<>();
 
     public static Locale getDefaultLocale() {
         if (defaultLocale == null) {
@@ -73,35 +72,16 @@ public class MessagesProvider {
         return defaultLocale;
     }
 
-    public static Locale getLocale(Long id) {
-        final Locale locale = localeThreadsMap.get(id);
-        if (locale == null) {
-            return getDefaultLocale();
-        }
-        return locale;
-    }
-
-    public static Locale removeLocale(Long id) {
-        return localeThreadsMap.remove(id);
-    }
-
-    public static Locale setLocale(Long id, Locale newLocale) {
-        final Locale oldLocale = localeThreadsMap.get(id);
-        localeThreadsMap.put(id, newLocale);
-        return oldLocale;
-    }
-
     public static void discoverExtensions(final Locale locale, final Set<Bundle> narBundles) {
         defaultLocale = locale;
         Locale.setDefault(locale);
-        setLocale(Thread.currentThread().getId(), locale);
 
         PropertiesExtensionManager.discoverExtensions(narBundles);
     }
 
     public static String fixKey(String key) {
         key = key.replaceAll("[ */:,;]", "_"); // underline
-        key = key.replaceAll("[@#$%^&()<>\\[\\]'\"]", ""); // empty
+        key = key.replaceAll("[@#$%^&()<>\\[\\]{}'\"]", ""); // empty
 
         // \u200b, for GetFile
         key = replaceWrongUnicode(key, "");
@@ -170,9 +150,6 @@ public class MessagesProvider {
     /**
      * Get the value of type with key, if locale is null, will no value directly.
      */
-    public static String getValue(final String type, final String key) {
-        return getValue(getLocale(Thread.currentThread().getId()), type, key);
-    }
 
     public static String getValue(final Locale locale, final String type, final String key) {
         return PropertiesExtensionManager.getValue(locale, type, key);
@@ -182,10 +159,6 @@ public class MessagesProvider {
      * 
      * Get the description of type via key "__CapabilityDescription"
      */
-    public static String getDescription(String type) {
-        return getValue(type, KEY_DESC);
-    }
-
     public static String getDescription(Locale locale, String type) {
         return getValue(locale, type, KEY_DESC);
     }
@@ -193,12 +166,12 @@ public class MessagesProvider {
     /**
      * Get the tags of type via key "__Tags", also separate by comma
      */
-    public static String getTags(String type) {
-        return getValue(type, KEY_TAGS);
+    public static String getTags(Locale locale, String type) {
+        return getValue(locale, type, KEY_TAGS);
     }
 
-    public static Set<String> getTagsSet(String type) {
-        final String tagsStr = getTags(type);
+    public static Set<String> getTagsSet(Locale locale, String type) {
+        final String tagsStr = getTags(locale, type);
         if (!StringUtils.isBlank(tagsStr)) {
             final String[] tagsArr = tagsStr.split(",");
             if (tagsArr != null && tagsArr.length > 0) {
@@ -211,10 +184,6 @@ public class MessagesProvider {
     /**
      * Get the mark vendor of type via key "__Marks.vendor"
      */
-    public static String getMarksVendor(String type) {
-        return getValue(type, KEY_MARK_VENDOR); // make sure get fram the current thread
-    }
-
     public static String getMarksVendor(final Locale locale, String type) {
         return getValue(locale, type, KEY_MARK_VENDOR);
     }
@@ -222,17 +191,8 @@ public class MessagesProvider {
     /**
      * Get the mark categories of type via key "__Marks.categores", also separate by comma
      */
-    public static String getMarksCategories(String type) {
-        return getValue(type, KEY_MARK_CAT); // make sure get fram the current thread
-    }
-
     public static String getMarksCategories(final Locale locale, String type) {
         return getValue(locale, type, KEY_MARK_CAT);
-    }
-
-    public static Set<String> getMarksCategoriesSet(String type) {
-        final String categoriesStr = getMarksCategories(type);
-        return convertCategoriesSet(categoriesStr);
     }
 
     public static Set<String> getMarksCategoriesSet(final Locale locale, String type) {
@@ -253,88 +213,88 @@ public class MessagesProvider {
     /**
      * Get the property display name of type by property name via key "<property name>.displayName"
      */
-    public static String getPropDisplayName(String type, String name) {
-        return getValue(type, getPropDisplayNameKey(name));
+    public static String getPropDisplayName(Locale locale, String type, String name) {
+        return getValue(locale, type, getPropDisplayNameKey(name));
     }
 
     /**
      * Get the property description of type by property name via key "<property name>.description"
      */
-    public static String getPropDesc(String type, String name) {
-        return getValue(type, getPropDescKey(name));
+    public static String getPropDesc(Locale locale, String type, String name) {
+        return getValue(locale, type, getPropDescKey(name));
     }
 
     /**
      * Get the relation description of type by relation name via key "__Relationship.<relation name>.description"
      */
-    public static String getRelationshipDesc(String type, String name) {
-        return getValue(type, getRelationshipDescKey(name));
+    public static String getRelationshipDesc(Locale locale, String type, String name) {
+        return getValue(locale, type, getRelationshipDescKey(name));
     }
 
     /**
      * Get the read attribute description of type by attribute name via key "__ReadsAttribute.<attribute name>.description"
      */
-    public static String getReadsAttributeDesc(String type, String attribute) {
-        return getValue(type, getReadsAttributeDescKey(attribute));
+    public static String getReadsAttributeDesc(Locale locale, String type, String attribute) {
+        return getValue(locale, type, getReadsAttributeDescKey(attribute));
     }
 
     /**
      * Get the write attribute description of type by attribute name via key "__WritesAttribute.<attribute name>.description"
      */
-    public static String getWritesAttributeDesc(String type, String attribute) {
-        return getValue(type, getWritesAttributeDescKey(attribute));
+    public static String getWritesAttributeDesc(Locale locale, String type, String attribute) {
+        return getValue(locale, type, getWritesAttributeDescKey(attribute));
     }
 
     /**
      * Get the allowable display name of type by allowable value via key "__AllowableValue.<prop name>.<allowable value>.displayName"
      */
-    public static String getAllowableValueDisplayName(String type, String propName, String value) {
-        return getValue(type, getAllowableValueDisplayNameKey(propName, value));
+    public static String getAllowableValueDisplayName(Locale locale, String type, String propName, String value) {
+        return getValue(locale, type, getAllowableValueDisplayNameKey(propName, value));
     }
 
     /**
      * Get the allowable description of type by allowable value via key "__AllowableValue.<prop name>.<allowable value>.description"
      */
-    public static String getAllowableValueDesc(String type, String propName, String value) {
-        return getValue(type, getAllowableValueDescKey(propName, value));
+    public static String getAllowableValueDesc(Locale locale, String type, String propName, String value) {
+        return getValue(locale, type, getAllowableValueDescKey(propName, value));
     }
 
     /**
      * Get the system resource description of type by resource name via key "__SystemResource.<resource name>.description"
      */
-    public static String getSystemResourceDesc(String type, String name) {
-        return getValue(type, getSystemResourceDescKey(name));
+    public static String getSystemResourceDesc(Locale locale, String type, String name) {
+        return getValue(locale, type, getSystemResourceDescKey(name));
     }
 
     /**
      * Get the restriction label of type by name via key "__Restriction.<name>.label"
      */
-    public static String getRestrictionLabel(String type, String name) {
-        return getValue(type, getRestrictionLabelKey(name));
+    public static String getRestrictionLabel(Locale locale, String type, String name) {
+        return getValue(locale, type, getRestrictionLabelKey(name));
     }
 
     /**
      * Get the explanation of type by name via key "__Restriction.<name>.explanation"
      */
-    public static String getRestrictionExplanation(String type, String name) {
-        return getValue(type, getRestrictionExplanationKey(name));
+    public static String getRestrictionExplanation(Locale locale, String type, String name) {
+        return getValue(locale, type, getRestrictionExplanationKey(name));
     }
 
     /**
      * Get the stateful description of type by name via key "__Stateful.description"
      */
-    public static String getStatefulDesc(String type) {
-        return getValue(type, KEY_STATEFUL);
+    public static String getStatefulDesc(Locale locale, String type) {
+        return getValue(locale, type, KEY_STATEFUL);
     }
 
     /**
      * Get the deprecation reason of type by name via key "__DeprecationNotice.reason"
      */
-    public static String getDeprecationReason(String type) {
-        return getValue(type, KEY_DEPRECATION);
+    public static String getDeprecationReason(Locale locale, String type) {
+        return getValue(locale, type, KEY_DEPRECATION);
     }
 
-    public static String getFrameworkValue(final String key) {
-        return getValue("framework", key);
+    public static String getFrameworkValue(Locale locale, final String key) {
+        return getValue(locale, "framework", key);
     }
 }

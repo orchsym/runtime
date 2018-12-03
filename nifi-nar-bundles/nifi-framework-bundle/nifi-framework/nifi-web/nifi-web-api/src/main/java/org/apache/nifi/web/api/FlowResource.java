@@ -40,6 +40,7 @@ import org.apache.nifi.controller.ScheduledState;
 import org.apache.nifi.controller.service.ControllerServiceNode;
 import org.apache.nifi.controller.service.ControllerServiceState;
 import org.apache.nifi.groups.ProcessGroup;
+import org.apache.nifi.i18n.DtoI18nHelper;
 import org.apache.nifi.nar.NarClassLoaders;
 import org.apache.nifi.nar.i18n.MessagesProvider;
 import org.apache.nifi.registry.client.NiFiRegistryException;
@@ -54,6 +55,7 @@ import org.apache.nifi.web.api.dto.BulletinBoardDTO;
 import org.apache.nifi.web.api.dto.BulletinQueryDTO;
 import org.apache.nifi.web.api.dto.ClusterDTO;
 import org.apache.nifi.web.api.dto.ClusterSummaryDTO;
+import org.apache.nifi.web.api.dto.DocumentedTypeDTO;
 import org.apache.nifi.web.api.dto.NodeDTO;
 import org.apache.nifi.web.api.dto.ProcessGroupDTO;
 import org.apache.nifi.web.api.dto.RevisionDTO;
@@ -135,6 +137,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -1116,10 +1119,15 @@ public class FlowResource extends ApplicationResource {
         if (isReplicateRequest()) {
             return replicate(HttpMethod.GET);
         }
+        final Set<DocumentedTypeDTO> processorTypes = serviceFacade.getProcessorTypes(bundleGroupFilter, bundleArtifactFilter, typeFilter);
+
+        final Locale requestLocale = this.getRequestLocale();
+        if (requestLocale != null && !requestLocale.equals(MessagesProvider.getDefaultLocale()))
+            processorTypes.forEach(dto -> DtoI18nHelper.fix(requestLocale, dto));
 
         // create response entity
         final ProcessorTypesEntity entity = new ProcessorTypesEntity();
-        entity.setProcessorTypes(serviceFacade.getProcessorTypes(bundleGroupFilter, bundleArtifactFilter, typeFilter));
+        entity.setProcessorTypes(processorTypes);
 
         // generate the response
         return generateOkResponse(entity).build();
@@ -1200,11 +1208,18 @@ public class FlowResource extends ApplicationResource {
         if (isReplicateRequest()) {
             return replicate(HttpMethod.GET);
         }
+        final Set<DocumentedTypeDTO> controllerServiceTypes = serviceFacade.getControllerServiceTypes(serviceType, serviceBundleGroup, serviceBundleArtifact, serviceBundleVersion,
+                bundleGroupFilter, bundleArtifactFilter, typeFilter);
+
+        // fix i18n
+        final Locale requestLocale = this.getRequestLocale();
+        if (requestLocale != null && !requestLocale.equals(MessagesProvider.getDefaultLocale())) {
+            controllerServiceTypes.forEach(dto -> DtoI18nHelper.fix(requestLocale, dto));
+        }
 
         // create response entity
         final ControllerServiceTypesEntity entity = new ControllerServiceTypesEntity();
-        entity.setControllerServiceTypes(serviceFacade.getControllerServiceTypes(serviceType, serviceBundleGroup, serviceBundleArtifact, serviceBundleVersion,
-                bundleGroupFilter, bundleArtifactFilter, typeFilter));
+        entity.setControllerServiceTypes(controllerServiceTypes);
 
         // generate the response
         return generateOkResponse(entity).build();
@@ -1258,10 +1273,17 @@ public class FlowResource extends ApplicationResource {
         if (isReplicateRequest()) {
             return replicate(HttpMethod.GET);
         }
+        final Set<DocumentedTypeDTO> reportingTaskTypes = serviceFacade.getReportingTaskTypes(bundleGroupFilter, bundleArtifactFilter, typeFilter);
 
+        // fix i18n
+        final Locale requestLocale = this.getRequestLocale();
+        if (requestLocale != null && !requestLocale.equals(MessagesProvider.getDefaultLocale())) {
+            reportingTaskTypes.forEach(dto -> DtoI18nHelper.fix(requestLocale, dto));
+        }
+        
         // create response entity
         final ReportingTaskTypesEntity entity = new ReportingTaskTypesEntity();
-        entity.setReportingTaskTypes(serviceFacade.getReportingTaskTypes(bundleGroupFilter, bundleArtifactFilter, typeFilter));
+        entity.setReportingTaskTypes(reportingTaskTypes);
 
         // generate the response
         return generateOkResponse(entity).build();
@@ -1299,10 +1321,17 @@ public class FlowResource extends ApplicationResource {
         if (isReplicateRequest()) {
             return replicate(HttpMethod.GET);
         }
+        final Set<DocumentedTypeDTO> workQueuePrioritizerTypes = serviceFacade.getWorkQueuePrioritizerTypes();
+
+        // fix i18n
+        final Locale requestLocale = this.getRequestLocale();
+        if (requestLocale != null && !requestLocale.equals(MessagesProvider.getDefaultLocale())) {
+            workQueuePrioritizerTypes.forEach(dto -> DtoI18nHelper.fix(requestLocale, dto));
+        }
 
         // create response entity
         final PrioritizerTypesEntity entity = new PrioritizerTypesEntity();
-        entity.setPrioritizerTypes(serviceFacade.getWorkQueuePrioritizerTypes());
+        entity.setPrioritizerTypes(workQueuePrioritizerTypes);
 
         // generate the response
         return generateOkResponse(entity).build();

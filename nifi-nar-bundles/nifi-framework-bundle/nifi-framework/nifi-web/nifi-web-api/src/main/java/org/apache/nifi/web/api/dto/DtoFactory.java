@@ -2629,7 +2629,7 @@ public final class DtoFactory {
      */
     private String getCapabilityDescription(final Class<?> cls) {
         final CapabilityDescription capabilityDesc = cls.getAnnotation(CapabilityDescription.class);
-        final String description = MessagesProvider.getDescription(cls.getName());
+        final String description = MessagesProvider.getDescription(MessagesProvider.getDefaultLocale(), cls.getName());
         if (StringUtils.isNotBlank(description)) {
             return description;
         }
@@ -2643,7 +2643,7 @@ public final class DtoFactory {
         final Set<String> tags = new HashSet<>();
         final Tags tagsAnnotation = cls.getAnnotation(Tags.class);
         if (tagsAnnotation != null) {
-            final Set<String> tagsSet = MessagesProvider.getTagsSet(cls.getName());
+            final Set<String> tagsSet = MessagesProvider.getTagsSet(MessagesProvider.getDefaultLocale(), cls.getName());
             if (tagsSet != null && !tagsSet.isEmpty()) {
                 tags.addAll(tagsSet);
             } else
@@ -2669,14 +2669,14 @@ public final class DtoFactory {
         Marks marks = (Marks)annotation;
         if (marks != null) {
             final String componentName = cls.getName();
-            final Set<String> marksCategories = MessagesProvider.getMarksCategoriesSet(componentName);
+            final Set<String> marksCategories = MessagesProvider.getMarksCategoriesSet(MessagesProvider.getDefaultLocale(), componentName);
             if (marksCategories != null && !marksCategories.isEmpty()) {
                 categories.addAll(marksCategories);
             } else
                 for (final String category : marks.categories()) {
                     categories.add(category);
                 }
-            final String marksVendor = MessagesProvider.getMarksVendor(componentName);
+            final String marksVendor = MessagesProvider.getMarksVendor(MessagesProvider.getDefaultLocale(), componentName);
             if (StringUtils.isNotBlank(marksVendor)) {
                 dto.setVendor(marksVendor);
             } else {
@@ -2838,7 +2838,7 @@ public final class DtoFactory {
             if (node.getComponent() != null) {
                 componentName = node.getComponent().getClass().getName();
             }
-            final String relationshipDesc = MessagesProvider.getRelationshipDesc(componentName, rel.getName());
+            final String relationshipDesc = MessagesProvider.getRelationshipDesc(MessagesProvider.getDefaultLocale(), componentName, rel.getName());
             if (StringUtils.isNotBlank(relationshipDesc)) {
                 relationshipDTO.setDescription(relationshipDesc);
             } else {
@@ -3643,7 +3643,7 @@ public final class DtoFactory {
 
         final String name = propertyDescriptor.getName();
         dto.setName(name);
-        final String propDisplayName = MessagesProvider.getPropDisplayName(componentName, name);
+        final String propDisplayName = MessagesProvider.getPropDisplayName(MessagesProvider.getDefaultLocale(), componentName, name);
         if (StringUtils.isNotBlank(propDisplayName)) {
             dto.setDisplayName(propDisplayName);
         } else {
@@ -3653,7 +3653,7 @@ public final class DtoFactory {
         dto.setSensitive(propertyDescriptor.isSensitive());
         dto.setDynamic(propertyDescriptor.isDynamic());
         
-       final String propDescription = MessagesProvider.getPropDesc(componentName,name);
+       final String propDescription = MessagesProvider.getPropDesc(MessagesProvider.getDefaultLocale(), componentName,name);
         if (StringUtils.isNotBlank(propDescription)) {
             dto.setDescription(propDescription);
         } else { // original
@@ -3663,17 +3663,9 @@ public final class DtoFactory {
         dto.setSupportsEl(propertyDescriptor.isExpressionLanguageSupported());
 
         final ExpressionLanguageScope elScope = propertyDescriptor.getExpressionLanguageScope();
-        String scopeDescription = null;
         if (elScope != null) {
-            scopeDescription = MessagesProvider.getFrameworkValue(MessagesProvider.getELScopeDescKey(elScope.name()));
+            dto.setExpressionLanguageScope(elScope.name());
         }
-        final String noScopeDesc = MessagesProvider.getFrameworkValue(MessagesProvider.getELScopeDescKey("NoScope"));
-
-        // to support legacy/deprecated method .expressionLanguageSupported(true)
-        String description = propertyDescriptor.isExpressionLanguageSupported()
-                && elScope.equals(ExpressionLanguageScope.NONE)
-                ? noScopeDesc : scopeDescription;
-        dto.setExpressionLanguageScope(description);
 
         // set the identifies controller service is applicable
         if (propertyDescriptor.getControllerServiceDefinition() != null) {
@@ -3710,13 +3702,13 @@ public final class DtoFactory {
                 final AllowableValueDTO allowableValueDto = new AllowableValueDTO();
                 final String value = allowableValue.getValue();
                 allowableValueDto.setValue(value);
-                final String allowableValueDisplayName = MessagesProvider.getAllowableValueDisplayName(componentName, name, value);
+                final String allowableValueDisplayName = MessagesProvider.getAllowableValueDisplayName(MessagesProvider.getDefaultLocale(), componentName, name, value);
                 if (StringUtils.isNoneBlank(allowableValueDisplayName)) {
                     allowableValueDto.setDisplayName(allowableValueDisplayName);
                 } else { // original
                     allowableValueDto.setDisplayName(allowableValue.getDisplayName());
                 }
-                final String allowableValueDesc = MessagesProvider.getAllowableValueDesc(componentName, name, value);
+                final String allowableValueDesc = MessagesProvider.getAllowableValueDesc(MessagesProvider.getDefaultLocale(), componentName, name, value);
                 if (StringUtils.isNotBlank(allowableValueDesc)) {
                     allowableValueDto.setDescription(allowableValueDesc);
                 } else { // original
