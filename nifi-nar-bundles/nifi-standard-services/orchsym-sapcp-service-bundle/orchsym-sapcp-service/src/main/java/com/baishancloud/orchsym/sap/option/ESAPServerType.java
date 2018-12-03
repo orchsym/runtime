@@ -4,16 +4,14 @@ import java.util.Arrays;
 
 import org.apache.nifi.components.AllowableValue;
 
-import com.baishancloud.orchsym.sap.i18n.Messages;
-
 /**
  * @author GU Guoqiang
  *
  */
 public enum ESAPServerType {
-    AS(Messages.getString("SAPServerType.AS")), // Application Server //$NON-NLS-1$
-    ASP(Messages.getString("SAPServerType.AS_with_Pool")), // Application Server with Pool //$NON-NLS-1$
-    MS(Messages.getString("SAPServerType.MS")),// Message Server //$NON-NLS-1$
+    AS("Application Server"), //$NON-NLS-1$
+    ASP("Application Server with Pool"), //$NON-NLS-1$
+    MS("Message Server"), //$NON-NLS-1$
     ;
     private String displayName;
 

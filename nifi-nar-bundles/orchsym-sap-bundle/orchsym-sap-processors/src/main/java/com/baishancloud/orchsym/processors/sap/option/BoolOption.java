@@ -4,16 +4,14 @@ import java.util.Arrays;
 
 import org.apache.nifi.components.AllowableValue;
 
-import com.baishancloud.orchsym.processors.sap.i18n.Messages;
-
 /**
  * @author GU Guoqiang
  *
  */
 public enum BoolOption {
 
-    YES(true, Messages.getString("BoolOption.yes")), //$NON-NLS-1$ //$NON-NLS-2$
-    NO(false, Messages.getString("BoolOption.no")), //$NON-NLS-1$ //$NON-NLS-2$
+    YES(true, "Yes"), //$NON-NLS-1$ //$NON-NLS-2$
+    NO(false, "No"), //$NON-NLS-1$ //$NON-NLS-2$
     ;
     private boolean value;
     private String displayName;

@@ -17,7 +17,6 @@ import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.Relationship;
 
-import com.baishancloud.orchsym.processors.sap.i18n.Messages;
 import com.baishancloud.orchsym.processors.sap.option.BoolOption;
 
 /**
@@ -31,8 +30,8 @@ public abstract class AbstractSAPProcessor extends AbstractProcessor {
 
     static final PropertyDescriptor JSON_IGNORE_EMPTY_VALUES = new PropertyDescriptor.Builder()//
             .name("json-ignore-empty-values")//$NON-NLS-1$
-            .displayName(Messages.getString("SAPProcessor.IgnoreEmptyValues"))//$NON-NLS-1$
-            .description(Messages.getString("SAPProcessor.IgnoreEmptyValues_Desc"))//$NON-NLS-1$
+            .displayName("Ignore empty values")//$NON-NLS-1$
+            .description("Determines if the resulting output with empty values")//$NON-NLS-1$
             .required(false)//
             .defaultValue(BoolOption.NO.getValue())//
             .allowableValues(BoolOption.getAll())//

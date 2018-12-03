@@ -40,37 +40,36 @@ import org.apache.nifi.util.StopWatch;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import com.baishancloud.orchsym.processors.sap.event.SAPTCPEvent;
-import com.baishancloud.orchsym.processors.sap.i18n.Messages;
 import com.baishancloud.orchsym.processors.sap.option.ResponseOption;
 
 /**
  * @author GU Guoqiang
  *
  */
-@Marks(categories={"数据处理/数据输出", "网络/网络通信"}, createdDate="2018-07-30")
+@Marks(categories = { "数据处理/数据输出", "网络/网络通信" }, createdDate = "2018-07-30")
 @Tags({ "SAP", "TCP", "RFC", "ABAP", "Response", "JCo" })
 @InputRequirement(Requirement.INPUT_REQUIRED)
 public class HandleSAPTCPResponse extends AbstractSAPProcessor {
 
     static final PropertyDescriptor RESPONDER_CONTEXT_MAP = new PropertyDescriptor.Builder()//
             .name("Responder-context-map")//$NON-NLS-1$
-            .displayName(Messages.getString("ListenSAPTCP.ResponderContext"))//$NON-NLS-1$
-            .description(Messages.getString("ListenSAPTCP.ResponderContext_Desc"))//$NON-NLS-1$
+            .displayName("Responder context map")//$NON-NLS-1$
+            .description("The Controller Service to use in order to hold the response of current SAP TCP, If set, messages will be sent back")//$NON-NLS-1$
             .required(true)//
             .identifiesControllerService(KeyValueLookupService.class)//
             .build();
 
     static final PropertyDescriptor RESPONSE_OPTIONS = new PropertyDescriptor.Builder()//
             .name("response-options")//$NON-NLS-1$
-            .displayName(Messages.getString("HandleSAPTCPResponse.ResponseOption"))//$NON-NLS-1$
-            .description(Messages.getString("HandleSAPTCPResponse.ResponseOption_Desc"))//$NON-NLS-1$
+            .displayName("Response Option")//$NON-NLS-1$
+            .description("The type of response. do response for the contents of flow when flow type, the response json data with the attributes when custom data type")//$NON-NLS-1$
             .required(true)//
             .defaultValue(ResponseOption.FLOW.getValue()).allowableValues(ResponseOption.getAll())//
             .build();
 
     static final PropertyDescriptor RESPONSE_DATA = new PropertyDescriptor.Builder().name("response-data")//
-            .displayName(Messages.getString("HandleSAPTCPResponse.ResponseData"))//$NON-NLS-1$
-            .description(Messages.getString("HandleSAPTCPResponse.ResponseData_Desc", ResponseOption.CUSTOM.getDisplayName()))//$NON-NLS-1$
+            .displayName("Custom Response Data")//$NON-NLS-1$
+            .description("The json value of response, when the response option is " + ResponseOption.CUSTOM.getDisplayName())//$NON-NLS-1$
             .required(false)//
             .addValidator(StandardValidators.NON_BLANK_VALIDATOR)//
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)//
@@ -149,7 +148,7 @@ public class HandleSAPTCPResponse extends AbstractSAPProcessor {
                     // test the value is valid json or not
                     new ObjectMapper().readTree(responseData);
                 } catch (IOException e) {
-                    throw new ProcessException(Messages.getString("HandleSAPTCPResponse.wrongJsonValue"), e);
+                    throw new ProcessException("Parse the value to JSON failure, make sure the value is JSON format");
                 }
             }
         }

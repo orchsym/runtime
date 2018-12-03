@@ -16,6 +16,7 @@
  */
 package com.baishancloud.orchsym.sap.client;
 
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -30,7 +31,6 @@ import org.apache.nifi.avro.AvroTypeUtil;
 import com.baishancloud.orchsym.sap.SAPConnectionPool;
 import com.baishancloud.orchsym.sap.SAPDataManager;
 import com.baishancloud.orchsym.sap.SAPException;
-import com.baishancloud.orchsym.sap.i18n.Messages;
 import com.baishancloud.orchsym.sap.record.JCoRecordUtil;
 import com.sap.conn.jco.JCoAttributes;
 import com.sap.conn.jco.JCoDestination;
@@ -55,7 +55,7 @@ public class SAPClientConnectionPool extends SAPConnectionPool implements SAPCli
 
             destination.ping();
         } catch (JCoException e) {
-            throw new SAPException(Messages.getString("SAPConnectionPool.Disconnect"), e); //$NON-NLS-1$
+            throw new SAPException("Disconnect to SAP"); //$NON-NLS-1$
         }
     }
 
@@ -96,13 +96,13 @@ public class SAPClientConnectionPool extends SAPConnectionPool implements SAPCli
 
     public Object call(String function, GenericRecord readRecord, boolean ignoreEmptyValues, String... exportTables) throws SAPException {
         if (StringUtils.isBlank(function)) {
-            throw new SAPException(Messages.getString("SAPConnectionPool.EmptyFun")); //$NON-NLS-1$
+            throw new SAPException("Function should not be empty."); //$NON-NLS-1$
         }
 
         try {
             final JCoFunction jcoFunction = destination.getRepository().getFunction(function);
             if (jcoFunction == null)
-                throw new SAPException(Messages.getString("SAPConnectionPool.NotFoundFun", function)); //$NON-NLS-1$
+                throw new SAPException(MessageFormat.format("Function {0} not found in SAP", function)); //$NON-NLS-1$
 
             if (readRecord != null) {
                 // because when string, it's utf8 object, so reuse the util to convert to map directly.

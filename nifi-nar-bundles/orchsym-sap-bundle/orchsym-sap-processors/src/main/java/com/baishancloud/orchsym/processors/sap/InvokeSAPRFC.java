@@ -5,6 +5,7 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,7 +39,6 @@ import org.apache.nifi.processor.io.StreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.util.StopWatch;
 
-import com.baishancloud.orchsym.processors.sap.i18n.Messages;
 import com.baishancloud.orchsym.processors.sap.option.BoolOption;
 import com.baishancloud.orchsym.processors.sap.option.ContainerOption;
 import com.baishancloud.orchsym.sap.SAPException;
@@ -50,23 +50,23 @@ import com.baishancloud.orchsym.sap.client.SAPClientConnectionPoolService;
  */
 @SideEffectFree
 @SupportsBatching
-@Marks(categories={"数据处理/数据抓取"}, createdDate="2018-07-30")
-@Tags({ "SAP", "RFC", "ABAP", "JCo", "JSON"})
+@Marks(categories = { "数据处理/数据抓取" }, createdDate = "2018-07-30")
+@Tags({ "SAP", "RFC", "ABAP", "JCo", "JSON" })
 @InputRequirement(Requirement.INPUT_ALLOWED)
-@CapabilityDescription("通过配置SAP连接和RFC功能远程调用函数（Funnction）并将结果输出为JSON格式。"//
-        + "如果函数需要输入参数，则必须提供输入流，然后逐条记录将作为输入参数给函数调用，即通过输入记录中的名字和值来对应函数的输入参数。")
+@CapabilityDescription("Provide the ability to call SAP function (RFC) with the configuration, then output the result as JSON."//
+        + "If the function need input parameter, then must have incoming connection. and the record of incoming connection should match to the input parameters of function.")
 public class InvokeSAPRFC extends AbstractSAPProcessor {
 
     static final PropertyDescriptor SAP_CP = new PropertyDescriptor.Builder().name("sap-conn-pool") //$NON-NLS-1$
-            .displayName(Messages.getString("SAPProcessor.Connector"))//$NON-NLS-1$
-            .description(Messages.getString("SAPProcessor.Connector_Desc"))//$NON-NLS-1$
+            .displayName("SAP Connector")//$NON-NLS-1$
+            .description("Specifies the Controller Service to use for connection of SAP")//$NON-NLS-1$
             .required(true)//
             .identifiesControllerService(SAPClientConnectionPoolService.class)//
             .build();
-    
+
     static final PropertyDescriptor SAP_FUNCTION = new PropertyDescriptor.Builder().name("sap-function") //$NON-NLS-1$
-            .displayName(Messages.getString("SAPProcessor.Function"))//$NON-NLS-1$
-            .description(Messages.getString("SAPProcessor.Function_Desc"))//$NON-NLS-1$
+            .displayName("SAP Function")//$NON-NLS-1$
+            .description("Specifies the function of SAP")//$NON-NLS-1$
             .required(true)//
             .addValidator(StandardValidators.NON_BLANK_VALIDATOR)//
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
@@ -74,8 +74,8 @@ public class InvokeSAPRFC extends AbstractSAPProcessor {
 
     static final PropertyDescriptor SAP_EXPORT_TABLES = new PropertyDescriptor.Builder()//
             .name("sap-export-tables") //$NON-NLS-1$
-            .displayName(Messages.getString("InvokeSAPRFC.ExportTables")) //$NON-NLS-1$
-            .description(Messages.getString("InvokeSAPRFC.ExportTables_Desc"))//$NON-NLS-1$
+            .displayName("SAP Export Tables") //$NON-NLS-1$
+            .description("Specifies the list of export tables, split via comma ','")//$NON-NLS-1$
             .required(false)//
             .addValidator(Validator.VALID)//
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
@@ -83,17 +83,18 @@ public class InvokeSAPRFC extends AbstractSAPProcessor {
 
     static final PropertyDescriptor JSON_CONTAINER_OPTIONS = new PropertyDescriptor.Builder()//
             .name("json-container-options")//$NON-NLS-1$
-            .displayName(Messages.getString("InvokeSAPRFC.ContainerOption")) //$NON-NLS-1$
-            .description(Messages.getString("InvokeSAPRFC.ContainerOption_Desc", ContainerOption.NONE.getDisplayName(), ContainerOption.ARRAY.getDisplayName())) //$NON-NLS-1$
-            .required(true)//
+            .displayName("Container options of JSON results") //$NON-NLS-1$
+            .description(MessageFormat.format(
+                    "Determines how stream of records is exposed: either as a sequence of single Objects ({0}) (i.e. writing every Object to a new line), or as an array of Objects ({1})", //$NON-NLS-1$
+                    ContainerOption.NONE.getDisplayName(), ContainerOption.ARRAY.getDisplayName())).required(true)//
             .defaultValue(ContainerOption.ARRAY.getValue())//
             .allowableValues(ContainerOption.getAll())//
             .build();
 
     static final PropertyDescriptor JSON_WRAP_SINGLE_RECORD = new PropertyDescriptor.Builder()//
             .name("json-wrap-single-record")//$NON-NLS-1$
-            .displayName(Messages.getString("InvokeSAPRFC.Wrap"))//$NON-NLS-1$
-            .description(Messages.getString("InvokeSAPRFC.Wrap_Desc", JSON_CONTAINER_OPTIONS.getName()))//$NON-NLS-1$
+            .displayName("Wrap single record of JSON results")//$NON-NLS-1$
+            .description("Determines if the resulting output for empty records or a single record should be wrapped in a container array as specified by " + JSON_CONTAINER_OPTIONS.getName())//$NON-NLS-1$
             .required(false)//
             .defaultValue(BoolOption.NO.getValue())//
             .allowableValues(BoolOption.getAll())//
@@ -127,10 +128,10 @@ public class InvokeSAPRFC extends AbstractSAPProcessor {
 
         functionName = context.getProperty(SAP_FUNCTION).evaluateAttributeExpressions().getValue();
         if (StringUtils.isBlank(functionName)) {
-            throw new ProcessException(Messages.getString("InvokeSAPRFC.EmptyFunction")); //$NON-NLS-1$
+            throw new ProcessException("Must set the function"); //$NON-NLS-1$
         }
         ignoreEmptyValues = context.getProperty(JSON_IGNORE_EMPTY_VALUES).asBoolean();
-        
+
         sapClientCP = context.getProperty(SAP_CP).evaluateAttributeExpressions().asControllerService(SAPClientConnectionPoolService.class);
         try {
             sapClientCP.connect();
@@ -138,7 +139,7 @@ public class InvokeSAPRFC extends AbstractSAPProcessor {
             throw new ProcessException(e);
         }
         if (!sapClientCP.isConnected()) {
-            throw new ProcessException(Messages.getString("InvokeSAPRFC.ConnectFailureMessage")); //$NON-NLS-1$
+            throw new ProcessException("Connect to SAP server failure"); //$NON-NLS-1$
         }
 
         String tables = context.getProperty(SAP_EXPORT_TABLES).evaluateAttributeExpressions().getValue();

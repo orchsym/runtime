@@ -3,15 +3,9 @@ package com.baishancloud.orchsym.sap;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.Adler32;
 
-import org.apache.commons.codec.digest.DigestUtils;
-
-import com.baishancloud.orchsym.sap.i18n.Messages;
 import com.baishancloud.orchsym.sap.option.ESAPServerType;
 import com.sap.conn.jco.JCoDestination;
 import com.sap.conn.jco.JCoDestinationManager;
@@ -23,7 +17,6 @@ import com.sap.conn.jco.ext.ServerDataEventListener;
 import com.sap.conn.jco.ext.ServerDataProvider;
 import com.sap.conn.jco.server.JCoServer;
 import com.sap.conn.jco.server.JCoServerFactory;
-import com.sap.conn.jco.util.Codecs.MD5;
 
 /**
  * 

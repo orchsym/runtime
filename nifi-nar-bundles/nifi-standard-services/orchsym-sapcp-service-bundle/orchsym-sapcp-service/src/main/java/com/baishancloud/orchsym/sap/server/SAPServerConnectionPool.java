@@ -24,7 +24,6 @@ import org.apache.nifi.reporting.InitializationException;
 import com.baishancloud.orchsym.sap.SAPConnectionPool;
 import com.baishancloud.orchsym.sap.SAPDataManager;
 import com.baishancloud.orchsym.sap.SAPException;
-import com.baishancloud.orchsym.sap.i18n.Messages;
 import com.sap.conn.jco.JCoDestination;
 import com.sap.conn.jco.JCoException;
 import com.sap.conn.jco.ext.DestinationDataProvider;
@@ -43,8 +42,8 @@ public class SAPServerConnectionPool extends SAPConnectionPool implements SAPSer
 
     static final PropertyDescriptor SAP_CONN_COUNT = new PropertyDescriptor.Builder()//
             .name("connection-count") //$NON-NLS-1$
-            .displayName(Messages.getString("SAPServerConnectionPool.ConnectionCount"))//$NON-NLS-1$
-            .description(Messages.getString("SAPServerConnectionPool.ConnectionCount_Desc"))//$NON-NLS-1$
+            .displayName("Connection Count")//$NON-NLS-1$
+            .description("Maximum number of connections that can be connected for a SAP ABAP")//$NON-NLS-1$
             .required(false)//
             .defaultValue("2")//$NON-NLS-1$
             .addValidator(StandardValidators.NON_NEGATIVE_INTEGER_VALIDATOR)//
@@ -53,8 +52,8 @@ public class SAPServerConnectionPool extends SAPConnectionPool implements SAPSer
 
     static final PropertyDescriptor SAP_PROGID = new PropertyDescriptor.Builder()//
             .name("program-id") //$NON-NLS-1$
-            .displayName(Messages.getString("SAPServerConnectionPool.ProgramId"))//$NON-NLS-1$
-            .description(Messages.getString("SAPServerConnectionPool.ProgramId_Desc"))//$NON-NLS-1$
+            .displayName("Program ID")//$NON-NLS-1$
+            .description("The Program Id of RFC destination to registry in SAP TCP/IP connection")//$NON-NLS-1$
             .required(true)//
             .addValidator(StandardValidators.NON_BLANK_VALIDATOR)//
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//

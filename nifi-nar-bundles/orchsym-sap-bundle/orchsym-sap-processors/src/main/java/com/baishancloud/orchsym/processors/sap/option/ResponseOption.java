@@ -4,11 +4,9 @@ import java.util.Arrays;
 
 import org.apache.nifi.components.AllowableValue;
 
-import com.baishancloud.orchsym.processors.sap.i18n.Messages;
-
 public enum ResponseOption {
-    FLOW("flow", Messages.getString("ResponseOption.flow")), //$NON-NLS-1$ //$NON-NLS-2$
-    CUSTOM("custom", Messages.getString("ResponseOption.custom")), //$NON-NLS-1$ //$NON-NLS-2$
+    FLOW("flow", "Flow"), //$NON-NLS-1$ //$NON-NLS-2$
+    CUSTOM("custom", "Custom"), //$NON-NLS-1$ //$NON-NLS-2$
     ;
     private String value;
     private String displayName;

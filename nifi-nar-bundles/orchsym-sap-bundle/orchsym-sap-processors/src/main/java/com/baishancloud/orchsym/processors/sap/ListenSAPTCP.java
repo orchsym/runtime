@@ -41,7 +41,6 @@ import org.apache.nifi.processor.io.OutputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
 
 import com.baishancloud.orchsym.processors.sap.event.SAPTCPEvent;
-import com.baishancloud.orchsym.processors.sap.i18n.Messages;
 import com.baishancloud.orchsym.sap.SAPException;
 import com.baishancloud.orchsym.sap.server.SAPRequestCallback;
 import com.baishancloud.orchsym.sap.server.SAPServerConnectionPoolService;
@@ -52,10 +51,10 @@ import com.baishancloud.orchsym.sap.server.SAPServerException;
  *
  */
 @SideEffectFree
-@Marks(categories={"数据处理/数据抓取", "网络/网络通信"}, createdDate="2018-07-30")
+@Marks(categories = { "数据处理/数据抓取", "网络/网络通信" }, createdDate = "2018-07-30")
 @Tags({ "SAP", "TCP", "RFC", "ABAP", "JCo", "JSON" })
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
-@CapabilityDescription("通过配置SAP连接来启动SAP JCo服务器，提供给ABAP的TCP/IP连接来调用服务器注册的远程动态函数。")
+@CapabilityDescription("Provide a way to start the SAP function JCo Server. Then the ABAP of SAP Server can call the remote registry function by this processor with TCP/IP connection.")
 @WritesAttributes({ @WritesAttribute(attribute = ListenSAPTCP.KEY_CONTEXT_ID, description = "The sending context id of the messages.") })
 public class ListenSAPTCP extends AbstractSessionFactoryProcessor {
 
@@ -63,16 +62,16 @@ public class ListenSAPTCP extends AbstractSessionFactoryProcessor {
 
     static final PropertyDescriptor SAP_CP = new PropertyDescriptor.Builder()//
             .name("sap-conn-pool") //$NON-NLS-1$
-            .displayName(Messages.getString("SAPProcessor.Connector"))//$NON-NLS-1$
-            .description(Messages.getString("SAPProcessor.Connector_Desc"))//$NON-NLS-1$
+            .displayName("SAP Connector")//$NON-NLS-1$
+            .description("Specifies the Controller Service to use for connection of SAP")//$NON-NLS-1$
             .required(true)//
             .identifiesControllerService(SAPServerConnectionPoolService.class)//
             .build();
 
     static final PropertyDescriptor SAP_FUNCTION_NAME = new PropertyDescriptor.Builder()//
             .name("sap-function-name") //$NON-NLS-1$
-            .displayName(Messages.getString("ListenSAPTCP.Function"))//$NON-NLS-1$
-            .description(Messages.getString("ListenSAPTCP.Function_Desc"))//$NON-NLS-1$
+            .displayName("Function")//$NON-NLS-1$
+            .description("Specifies the function of SAP")//$NON-NLS-1$
             .required(true)//
             .addValidator(StandardValidators.NON_BLANK_VALIDATOR)//
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
@@ -80,8 +79,8 @@ public class ListenSAPTCP extends AbstractSessionFactoryProcessor {
 
     static final PropertyDescriptor SAP_IMPORT_TABLES = new PropertyDescriptor.Builder()//
             .name("sap-import-tables") //$NON-NLS-1$
-            .displayName(Messages.getString("ListenSAPTCP.ImportTables")) //$NON-NLS-1$
-            .description(Messages.getString("ListenSAPTCP.ImportTables_Desc"))//$NON-NLS-1$
+            .displayName("Import Tables") //$NON-NLS-1$
+            .description("Specifies the list of import tables, split via comma ','")//$NON-NLS-1$
             .required(false)//
             .addValidator(Validator.VALID)//
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)//
@@ -108,8 +107,8 @@ public class ListenSAPTCP extends AbstractSessionFactoryProcessor {
 
     static final PropertyDescriptor RESPONDER_CONTEXT_MAP = new PropertyDescriptor.Builder()//
             .name("Responder-context-map")//$NON-NLS-1$
-            .displayName(Messages.getString("ListenSAPTCP.ResponderContext"))//$NON-NLS-1$
-            .description(Messages.getString("ListenSAPTCP.ResponderContext_Desc"))//$NON-NLS-1$
+            .displayName("Responder context map")//$NON-NLS-1$
+            .description("The Controller Service to use in order to hold the response of current SAP TCP, If set, messages will be sent back")//$NON-NLS-1$
             .required(false)//
             .identifiesControllerService(KeyValueLookupService.class)//
             .build();
@@ -164,7 +163,7 @@ public class ListenSAPTCP extends AbstractSessionFactoryProcessor {
     @Override
     public void onPropertyModified(PropertyDescriptor descriptor, String oldValue, String newValue) {
         super.onPropertyModified(descriptor, oldValue, newValue);
-        
+
     }
 
     @OnScheduled

@@ -39,7 +39,6 @@ import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.reporting.InitializationException;
 
-import com.baishancloud.orchsym.sap.i18n.Messages;
 import com.baishancloud.orchsym.sap.option.ESAPLanguage;
 import com.baishancloud.orchsym.sap.option.ESAPServerType;
 import com.sap.conn.jco.ext.DestinationDataProvider;
@@ -53,8 +52,8 @@ import com.sap.conn.jco.ext.DestinationDataProvider;
 public abstract class SAPConnectionPool extends AbstractControllerService implements SAPConnectionPoolService {
 
     public static final PropertyDescriptor SERVER_TYPE = new PropertyDescriptor.Builder().name("server-type") //$NON-NLS-1$
-            .displayName(Messages.getString("SAPConnectionPool.ServerType"))// //$NON-NLS-1$
-            .description(Messages.getString("SAPConnectionPool.ServerType_desc"))// //$NON-NLS-1$
+            .displayName("Server Type")// //$NON-NLS-1$
+            .description("The SAP server type of SAP system")// //$NON-NLS-1$
             .required(true)//
             .defaultValue(ESAPServerType.ASP.getValue()).allowableValues(ESAPServerType.getAll())//
             .addValidator(new Validator() {
@@ -62,14 +61,14 @@ public abstract class SAPConnectionPool extends AbstractControllerService implem
                 public ValidationResult validate(final String subject, final String value, final ValidationContext context) {
                     return new ValidationResult.Builder().subject(subject).input(value)
                             .valid(value != null && !value.trim().isEmpty() && Arrays.asList(ESAPServerType.getAll()).stream().anyMatch(l -> l.getValue().equals(value)))
-                            .explanation(Messages.getString("SAPConnectionPool.Invalid", subject)).build(); //$NON-NLS-1$
+                            .explanation(subject + " is invalid").build(); //$NON-NLS-1$
                 }
             })//
             .build();
 
     public static final PropertyDescriptor HOST = new PropertyDescriptor.Builder().name("host")//$NON-NLS-1$
-            .displayName(Messages.getString("SAPConnectionPool.Host"))// //$NON-NLS-1$
-            .description(Messages.getString("SAPConnectionPool.Host_desc"))// //$NON-NLS-1$
+            .displayName("Application/Message Server")// //$NON-NLS-1$
+            .description("The connection host (or IP) of the SAP Application/Message Server(AS/MS)")// //$NON-NLS-1$
             .required(true)//
             .defaultValue(null)//
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)//
@@ -78,8 +77,8 @@ public abstract class SAPConnectionPool extends AbstractControllerService implem
 
     // for AS
     public static final PropertyDescriptor SYSNR = new PropertyDescriptor.Builder().name("sysnr")//$NON-NLS-1$
-            .displayName(Messages.getString("SAPConnectionPool.SystemNumber")) // //$NON-NLS-1$
-            .description(Messages.getString("SAPConnectionPool.SystemNumber_desc"))// //$NON-NLS-1$
+            .displayName("System Number") // //$NON-NLS-1$
+            .description("The SAP system number of the SAP Application Server")// //$NON-NLS-1$
             .required(false)//
             .defaultValue("00")//$NON-NLS-1$
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)//
@@ -88,8 +87,8 @@ public abstract class SAPConnectionPool extends AbstractControllerService implem
 
     // for MS
     public static final PropertyDescriptor SYSID = new PropertyDescriptor.Builder().name("r3name")//$NON-NLS-1$
-            .displayName(Messages.getString("SAPConnectionPool.SystemId")) // //$NON-NLS-1$
-            .description(Messages.getString("SAPConnectionPool.SystemId_desc"))// //$NON-NLS-1$
+            .displayName("System Id") // //$NON-NLS-1$
+            .description("The System ID of the SAP Message Server")// //$NON-NLS-1$
             .required(false)//
             .defaultValue(null)//
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)//
@@ -97,8 +96,8 @@ public abstract class SAPConnectionPool extends AbstractControllerService implem
             .build();
     // for MS
     public static final PropertyDescriptor GROUP = new PropertyDescriptor.Builder().name("group")//$NON-NLS-1$
-            .displayName(Messages.getString("SAPConnectionPool.Group")) // //$NON-NLS-1$
-            .description(Messages.getString("SAPConnectionPool.Group_desc"))// //$NON-NLS-1$
+            .displayName("Group Name") // //$NON-NLS-1$
+            .description("The Group name of the SAP Message Server")// //$NON-NLS-1$
             .required(false)//
             .defaultValue(null)//
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)//
@@ -106,8 +105,8 @@ public abstract class SAPConnectionPool extends AbstractControllerService implem
             .build();
 
     public static final PropertyDescriptor CLIENT = new PropertyDescriptor.Builder().name("client")//$NON-NLS-1$
-            .displayName(Messages.getString("SAPConnectionPool.Client")) // //$NON-NLS-1$
-            .description(Messages.getString("SAPConnectionPool.Client_desc"))// //$NON-NLS-1$
+            .displayName("Client") // //$NON-NLS-1$
+            .description("The SAP client of the SAP Application/Message Server")// //$NON-NLS-1$
             .required(true)//
             .defaultValue("100")//$NON-NLS-1$
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)//
@@ -115,8 +114,8 @@ public abstract class SAPConnectionPool extends AbstractControllerService implem
             .build();
 
     public static final PropertyDescriptor USER = new PropertyDescriptor.Builder().name("user")//$NON-NLS-1$
-            .displayName(Messages.getString("SAPConnectionPool.User")) // //$NON-NLS-1$
-            .description(Messages.getString("SAPConnectionPool.User_desc"))// //$NON-NLS-1$
+            .displayName("User") // //$NON-NLS-1$
+            .description("The SAP logon username of the SAP Application/Message Server")// //$NON-NLS-1$
             .required(false)//
             .defaultValue(null)//
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)//
@@ -124,8 +123,8 @@ public abstract class SAPConnectionPool extends AbstractControllerService implem
             .build();
 
     public static final PropertyDescriptor PASSWORD = new PropertyDescriptor.Builder().name("passwd")//$NON-NLS-1$
-            .displayName(Messages.getString("SAPConnectionPool.Password")) // //$NON-NLS-1$
-            .description(Messages.getString("SAPConnectionPool.Password_desc"))// //$NON-NLS-1$
+            .displayName("Password") // //$NON-NLS-1$
+            .description("The logon password of the SAP Application/Message Server")// //$NON-NLS-1$
             .required(false)//
             .defaultValue(null).sensitive(true)//
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)//
@@ -133,8 +132,8 @@ public abstract class SAPConnectionPool extends AbstractControllerService implem
             .build();
 
     public static final PropertyDescriptor LANGUAGE = new PropertyDescriptor.Builder().name("lang")//$NON-NLS-1$
-            .displayName(Messages.getString("SAPConnectionPool.Language")) // //$NON-NLS-1$
-            .description(Messages.getString("SAPConnectionPool.Language_desc")) // //$NON-NLS-1$
+            .displayName("Language") // //$NON-NLS-1$
+            .description("The logon language of the SAP Application/Message Server") // //$NON-NLS-1$
             .required(false)//
             .defaultValue(ESAPLanguage.ZH.getValue()).allowableValues(ESAPLanguage.getAll())//
             .addValidator(new Validator() {
@@ -142,14 +141,14 @@ public abstract class SAPConnectionPool extends AbstractControllerService implem
                 public ValidationResult validate(final String subject, final String value, final ValidationContext context) {
                     return new ValidationResult.Builder().subject(subject).input(value)
                             .valid(value != null && !value.trim().isEmpty() && Arrays.asList(ESAPLanguage.getAll()).stream().anyMatch(l -> l.getValue().equals(value.toUpperCase())))
-                            .explanation(Messages.getString("SAPConnectionPool.Invalid", subject)).build();
+                            .explanation(subject + " is invalid").build();
                 }
             })//
             .build();
 
     public static final PropertyDescriptor POOL_CAPACITY = new PropertyDescriptor.Builder().name("pool_capacity")//$NON-NLS-1$
-            .displayName(Messages.getString("SAPConnectionPool.PoolCapacity")) // //$NON-NLS-1$
-            .description(Messages.getString("SAPConnectionPool.PoolCapacity_desc"))// //$NON-NLS-1$
+            .displayName("Max idle connections") // //$NON-NLS-1$
+            .description("Maximum number of idle connections kept open by the destination for the SAP Application Server. A value of 0 has the effect that there is no connection pooling")// //$NON-NLS-1$
             .required(false)//
             .defaultValue("3")//$NON-NLS-1$
             .addValidator(StandardValidators.NON_NEGATIVE_INTEGER_VALIDATOR)//
@@ -157,8 +156,8 @@ public abstract class SAPConnectionPool extends AbstractControllerService implem
             .build();
 
     public static final PropertyDescriptor PEAK_LIMIT = new PropertyDescriptor.Builder().name("peak_limit")//$NON-NLS-1$
-            .displayName(Messages.getString("SAPConnectionPool.PeakLimit")) // //$NON-NLS-1$
-            .description(Messages.getString("SAPConnectionPool.PeakLimit_desc"))// //$NON-NLS-1$
+            .displayName("Max active connections") // //$NON-NLS-1$
+            .description("Maximum number of active connections that can be created for a destination simultaneously for the SAP Application Server")// //$NON-NLS-1$
             .required(false)//
             .defaultValue("10")//$NON-NLS-1$
             .addValidator(StandardValidators.NON_NEGATIVE_INTEGER_VALIDATOR)//
@@ -166,8 +165,8 @@ public abstract class SAPConnectionPool extends AbstractControllerService implem
             .build();
 
     public static final PropertyDescriptor ROUTER = new PropertyDescriptor.Builder().name("saprouter")//$NON-NLS-1$
-            .displayName(Messages.getString("SAPConnectionPool.Router")) // //$NON-NLS-1$
-            .description(Messages.getString("SAPConnectionPool.Router_desc"))// //$NON-NLS-1$
+            .displayName("SAP Router") // //$NON-NLS-1$
+            .description("SAP router string to use for a system protected by a firewall")// //$NON-NLS-1$
             .required(false)//
             .defaultValue(null)//
             .addValidator(Validator.VALID)//
@@ -175,8 +174,8 @@ public abstract class SAPConnectionPool extends AbstractControllerService implem
             .build();
 
     public static final PropertyDescriptor CODEPAGE = new PropertyDescriptor.Builder().name("codepage")//$NON-NLS-1$
-            .displayName(Messages.getString("SAPConnectionPool.CodePage")) // //$NON-NLS-1$
-            .description(Messages.getString("SAPConnectionPool.CodePage_desc"))// //$NON-NLS-1$
+            .displayName("Code Page") // //$NON-NLS-1$
+            .description("Initial codepage in SAP notation")// //$NON-NLS-1$
             .required(false)//
             .defaultValue("8400")//
             .addValidator(StandardValidators.NON_NEGATIVE_INTEGER_VALIDATOR)//
@@ -184,8 +183,8 @@ public abstract class SAPConnectionPool extends AbstractControllerService implem
             .build();
 
     public static final PropertyDescriptor EXPIRATION_TIME = new PropertyDescriptor.Builder().name("expiration_time")//$NON-NLS-1$
-            .displayName(Messages.getString("SAPConnectionPool.ExpirationTime")) // //$NON-NLS-1$
-            .description(Messages.getString("SAPConnectionPool.ExpirationTime_desc"))// //$NON-NLS-1$
+            .displayName("Expiration Time") // //$NON-NLS-1$
+            .description("Time after that the connections hold by the internal pool can be closed")// //$NON-NLS-1$
             .required(false)//
             .defaultValue("5 min")// 5 min
             .addValidator(StandardValidators.createTimePeriodValidator(1, TimeUnit.MILLISECONDS, Integer.MAX_VALUE, TimeUnit.MINUTES))//
@@ -297,7 +296,7 @@ public abstract class SAPConnectionPool extends AbstractControllerService implem
 
     protected void checkEmptyProperty(PropertyDescriptor pd, String value) throws InitializationException {
         if (StringUtils.isBlank(value)) { // can't be empty for AS
-            throw new InitializationException(Messages.getString("SAPConnectionPool.RequiredProp", pd.getDisplayName())); //$NON-NLS-1$
+            throw new InitializationException("Must set the property:" + pd.getDisplayName()); //$NON-NLS-1$
         }
     }
 

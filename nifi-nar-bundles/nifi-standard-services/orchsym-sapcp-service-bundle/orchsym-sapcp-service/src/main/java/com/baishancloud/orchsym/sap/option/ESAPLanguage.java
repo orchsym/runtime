@@ -4,8 +4,6 @@ import java.util.Arrays;
 
 import org.apache.nifi.components.AllowableValue;
 
-import com.baishancloud.orchsym.sap.i18n.Messages;
-
 /**
  * 
  * ISO two-character language code (for example, EN, DE, FR), or SAP-specific single-character language code.
@@ -14,9 +12,9 @@ import com.baishancloud.orchsym.sap.i18n.Messages;
  */
 public enum ESAPLanguage {
 
-    ZH(Messages.getString("SAPLanguage.ZH")), // //$NON-NLS-1$
-    EN(Messages.getString("SAPLanguage.EN")), // //$NON-NLS-1$
-    DE(Messages.getString("SAPLanguage.DE")), // //$NON-NLS-1$
+    ZH("Chinese"), // //$NON-NLS-1$
+    EN("English"), // //$NON-NLS-1$
+    DE("German"), // //$NON-NLS-1$
     ;
     private String displayName;
 

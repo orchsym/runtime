@@ -4,16 +4,14 @@ import java.util.Arrays;
 
 import org.apache.nifi.components.AllowableValue;
 
-import com.baishancloud.orchsym.processors.sap.i18n.Messages;
-
 /**
  * @author GU Guoqiang
  *
  */
 public enum ContainerOption {
 
-    ARRAY("array", Messages.getString("ContainerOption.array")), //$NON-NLS-1$ //$NON-NLS-2$
-    NONE("none", Messages.getString("ContainerOption.none")), //$NON-NLS-1$ //$NON-NLS-2$
+    ARRAY("array", "Array"), //$NON-NLS-1$ //$NON-NLS-2$
+    NONE("none", "None"), //$NON-NLS-1$ //$NON-NLS-2$
     ;
     private String value;
     private String displayName;
