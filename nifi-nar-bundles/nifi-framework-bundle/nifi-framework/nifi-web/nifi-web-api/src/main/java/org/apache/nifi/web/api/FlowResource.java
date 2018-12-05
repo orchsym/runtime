@@ -1396,12 +1396,25 @@ public class FlowResource extends ApplicationResource {
             LocalDate localDate = localDateTime.toLocalDate();
             aboutDTO.setBuildDate(localDate);
             
-            String productVersion = "2.0.1"; // currently set one fix one temp
-            final int lineIndex = bundleVersion.indexOf('-');
-            if (lineIndex > 0) {
-                productVersion += bundleVersion.substring(lineIndex);
+            String productVersion = "2.0.1"; // default is fix one
+
+            try {
+                final Class<?> versionClass = Class.forName("com.orchsym.core.ver.VersionUtil");
+                final java.lang.reflect.Method getProductVersionMethod = versionClass.getDeclaredMethod("getProductVersion");
+                getProductVersionMethod.setAccessible(true);
+                final Object ver = getProductVersionMethod.invoke(null);
+                if (ver != null) {
+                    productVersion = ver.toString();
+                }
+            } catch (Exception e) {
+                final int lineIndex = bundleVersion.indexOf('-');
+                if (lineIndex > 0) {
+                    productVersion += bundleVersion.substring(lineIndex);
+                }
             }
-            productVersion += '-' + buildRevision;
+            if (bundleVersion.contains("SNAPSHOT"))
+                productVersion += '-' + buildRevision;
+
             aboutDTO.setProductVersion(productVersion);
         }
 
