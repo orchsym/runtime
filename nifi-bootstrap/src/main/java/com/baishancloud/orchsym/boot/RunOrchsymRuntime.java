@@ -1,6 +1,7 @@
 package com.baishancloud.orchsym.boot;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
@@ -13,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,13 @@ import org.slf4j.Logger;
 public class RunOrchsymRuntime extends RunNiFi {
     public static final String RUNTIME_NAME = "Orchsym Runtime";
     public static final String KEY_LIC = "orchsym.lic.path";
+
+    private final FilenameFilter jarFilter = new FilenameFilter() {
+        @Override
+        public boolean accept(final File dir, final String filename) {
+            return filename.toLowerCase().endsWith(".jar");
+        }
+    };
 
     public RunOrchsymRuntime(File bootstrapConfigFile, boolean verbose) throws IOException {
         super(bootstrapConfigFile, verbose);
@@ -209,7 +218,7 @@ public class RunOrchsymRuntime extends RunNiFi {
     }
 
     /**
-     * replace the "Apache NiFi" to RUNTIME_NAME, and RuntimeListener, also set one property for lic
+     * replace the "Apache NiFi" to RUNTIME_NAME, and RuntimeListener, also set one property for lic, add ext lib
      */
     @Override
     public void start() throws IOException, InterruptedException {
@@ -280,16 +289,23 @@ public class RunOrchsymRuntime extends RunNiFi {
             }
         }
 
-        final File[] libFiles = libDir.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(final File dir, final String filename) {
-                return filename.toLowerCase().endsWith(".jar");
+        File[] libFiles = libDir.listFiles(jarFilter);
+
+        final File extLibDir = new File(libDir, "ext"); // ext lib
+        if (extLibDir.exists()) {
+            final List<File> extLibFiles = retrieveExtLibs(extLibDir);
+            if (extLibFiles.size() > 0) { // exist
+                List<File> allLibFiles = new ArrayList<>(Arrays.asList(libFiles));
+                allLibFiles.addAll(extLibFiles);
+                libFiles = allLibFiles.toArray(new File[allLibFiles.size()]);
             }
-        });
+        }
 
         if (libFiles == null || libFiles.length == 0) {
             throw new RuntimeException("Could not find lib directory at " + libDir.getAbsolutePath());
         }
+        // native libs
+        final String libraryPaths = NativeLibrariesLoader.getLibraryPaths(extLibDir);
 
         final File[] confFiles = confDir.listFiles();
         if (confFiles == null || confFiles.length == 0) {
@@ -340,7 +356,10 @@ public class RunOrchsymRuntime extends RunNiFi {
         cmd.add("-Dnifi.bootstrap.listen.port=" + listenPort);
         cmd.add("-Dapp=NiFi");
         cmd.add("-Dorg.apache.nifi.bootstrap.config.log.dir=" + nifiLogDir);
-        cmd.add("-D" + KEY_LIC + "=" + getLicFile().getAbsolutePath()); // FIXME, set lic path
+        cmd.add("-D" + KEY_LIC + "=" + getLicFile().getAbsolutePath()); // set lic path
+        if (libraryPaths != null && !libraryPaths.isEmpty()) {
+            cmd.add("-D" + NativeLibrariesLoader.KEY_LIB_PATH + "=" + libraryPaths);
+        }
         cmd.add("org.apache.nifi.NiFi");
         if (isSensitiveKeyPresent(props)) {
             Path sensitiveKeyFile = createSensitiveKeyFile(confDir);
@@ -486,6 +505,28 @@ public class RunOrchsymRuntime extends RunNiFi {
         }
     }
     ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private List<File> retrieveExtLibs(File parentFile) {
+        List<File> jarFiles = new ArrayList<>();
+        final File[] listFiles = parentFile.listFiles(jarFilter);
+        if (listFiles != null && listFiles.length > 0) {
+            jarFiles.addAll(Arrays.asList(listFiles));
+        }
+        //
+        final File[] subFolders = parentFile.listFiles(new FileFilter() {
+
+            @Override
+            public boolean accept(File f) {
+                return f.isDirectory();
+            }
+        });
+        if (subFolders != null && subFolders.length > 0) {
+            for (File folder : subFolders) {
+                jarFiles.addAll(retrieveExtLibs(folder));
+            }
+        }
+        return jarFiles;
+    }
 
     private static void printErr(String message) {
         System.err.println();

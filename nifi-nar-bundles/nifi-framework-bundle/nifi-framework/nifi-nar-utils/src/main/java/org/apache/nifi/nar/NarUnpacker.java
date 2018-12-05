@@ -38,6 +38,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -65,8 +66,49 @@ public final class NarUnpacker {
         }
     };
 
+    private static final FileFilter DIR_FILTER = new FileFilter() {
+
+        @Override
+        public boolean accept(File f) {
+            return f.isDirectory();
+        }
+    };
+
+    private static List<Path> getExtNarDirs(final NiFiProperties props) {
+        List<Path> narLibraryPaths = new ArrayList<>();
+
+        final String narDefaultDir = props.getProperty(NiFiProperties.NAR_LIBRARY_DIRECTORY);
+        if (narDefaultDir != null) {
+            File extNarDir = new File(narDefaultDir, "ext"); // ext nar
+            if (extNarDir.exists()) {
+                narLibraryPaths.addAll(retrieveExtNars(extNarDir));
+            }
+        }
+
+        return narLibraryPaths;
+    }
+
+    private static List<Path> retrieveExtNars(File curDir) {
+        if (!curDir.exists() || !curDir.isDirectory()) {
+            return Collections.emptyList();
+        }
+        List<Path> narDirs = new ArrayList<>();
+        final File[] narFiles = curDir.listFiles(NAR_FILTER);
+        if (narFiles != null && narFiles.length > 0) { // have nar
+            narDirs.add(curDir.toPath()); // add current folder
+        }
+        final File[] subFolders = curDir.listFiles(DIR_FILTER);
+        if (subFolders != null && subFolders.length > 0) {
+            for (File folder : subFolders) {
+                narDirs.addAll(retrieveExtNars(folder));
+            }
+        }
+        return narDirs;
+    }
+
     public static ExtensionMapping unpackNars(final NiFiProperties props, final Bundle systemBundle) {
         final List<Path> narLibraryDirs = props.getNarLibraryDirectories();
+        narLibraryDirs.addAll(getExtNarDirs(props)); //add ext nars
         final File frameworkWorkingDir = props.getFrameworkWorkingDirectory();
         final File extensionsWorkingDir = props.getExtensionsWorkingDirectory();
         final File docsWorkingDir = props.getComponentDocumentationWorkingDirectory();
