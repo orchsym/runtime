@@ -475,8 +475,8 @@ public class FlowController implements EventAccess, ControllerServiceProvider, R
             final VariableRegistry variableRegistry,
             final FlowRegistryClient flowRegistryClient) {
 
-        maxTimerDrivenThreads = new AtomicInteger(10);
-        maxEventDrivenThreads = new AtomicInteger(5);
+        maxTimerDrivenThreads = new AtomicInteger(nifiProperties.getIntegerProperty(NiFiProperties.MAX_TIMER_DRIVEN_THREADS, 64));
+        maxEventDrivenThreads = new AtomicInteger(nifiProperties.getIntegerProperty(NiFiProperties.MAX_EVENT_DRIVEN_THREADS, 5));
 
         this.encryptor = encryptor;
         this.nifiProperties = nifiProperties;

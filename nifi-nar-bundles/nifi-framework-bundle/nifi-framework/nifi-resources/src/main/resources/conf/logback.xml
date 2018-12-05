@@ -32,6 +32,7 @@
             <maxFileSize>100MB</maxFileSize>
             <!-- keep 30 log files worth of history -->
             <maxHistory>30</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
         </rollingPolicy>
         <immediateFlush>true</immediateFlush>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">

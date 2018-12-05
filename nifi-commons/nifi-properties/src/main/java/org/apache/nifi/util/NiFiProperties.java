@@ -86,6 +86,8 @@ public abstract class NiFiProperties {
     public static final String HEADLESS = "orchsym.headless";
     public static final String EXCEPTION_TOLERANCE_COUNT = "orchsym.exception.tolerance.count";
     public static final String LOCALE = "orchsym.locale";
+    public static final String MAX_TIMER_DRIVEN_THREADS = "orchsym.timer.driven.max.threads";
+    public static final String MAX_EVENT_DRIVEN_THREADS = "orchsym.event.driven.max.threads";
 
     // content repository properties
     public static final String REPOSITORY_CONTENT_PREFIX = "nifi.content.repository.directory.";
