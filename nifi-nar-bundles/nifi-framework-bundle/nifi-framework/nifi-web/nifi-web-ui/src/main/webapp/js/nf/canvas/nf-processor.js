@@ -1575,6 +1575,9 @@
                 return $.ajax({
                     type: 'GET',
                     url: processorEntity.uri,
+                    headers:{
+                        Locale: locale,
+                    },
                     dataType: 'json'
                 }).done(function (response) {
                     nfProcessor.set(response);

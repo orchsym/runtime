@@ -23,7 +23,7 @@
             <div id="controller-service-standard-settings-tab-content" class="configuration-tab">
                 <div class="settings-left">
                     <div class="setting">
-                        <div class="setting-name"><fmt:message key="partials.canvas.controller-service-configuration.Name"/></div>
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-service-configuration.Name'] }}</div>
                         <div class="controller-service-editable setting-field">
                             <input type="text" id="controller-service-name" name="controller-service-name" class="setting-input"/>
                         </div>
@@ -32,23 +32,23 @@
                         </div>
                     </div>
                     <div class="setting">
-                        <div class="setting-name"><fmt:message key="partials.canvas.controller-service-configuration.Id"/></div>
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-service-configuration.Id'] }}</div>
                         <div class="setting-field">
                             <span id="controller-service-id"></span>
                         </div>
                     </div>
                     <div class="setting">
-                        <div class="setting-name"><fmt:message key="partials.canvas.controller-service-configuration.Type"/></div>
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-service-configuration.Type'] }}</div>
                         <div class="setting-field">
                             <span id="controller-service-type"></span>
                         </div>
                     </div>
                     <div class="setting">
-                        <div class="setting-name"><fmt:message key="partials.canvas.component-version-dialog.bundle"/></div>
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-service-configuration.Bundle'] }}</div>
                         <div id="controller-service-bundle" class="setting-field"></div>
                     </div>
                     <div class="setting">
-                        <div class="setting-name"><fmt:message key="partials.canvas.component-version-dialog.supports-controller-services"/></div>
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-service-configuration.supports-controller-services'] }}</div>
                         <div id="controller-service-compatible-apis" class="setting-field"></div>
                     </div>
                 </div>
@@ -56,9 +56,8 @@
                 <div class="settings-right">
                     <div class="setting">
                         <div class="setting-name">
-                            <fmt:message key="partials.canvas.controller-service-configuration.ReferencingComponents"/>
-                            <fmt:message key="partials.canvas.controller-service-configuration.ReferencingComponents.title" var="ReferencingComponents"/>
-                            <div class="fa fa-question-circle" alt="Info" title="${ReferencingComponents}"></div>
+                            {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-service-configuration.ReferencingComponents'] }}
+                            <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-service-configuration.ReferencingComponents.title'] }}"></div>
                         </div>
                         <div class="setting-field">
                             <div id="controller-service-referencing-components"></div>

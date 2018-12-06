@@ -115,7 +115,6 @@ import org.apache.nifi.groups.RemoteProcessGroupCounts;
 import org.apache.nifi.history.History;
 import org.apache.nifi.nar.ExtensionManager;
 import org.apache.nifi.nar.NarClassLoaders;
-import org.apache.nifi.nar.i18n.MessagesProvider;
 import org.apache.nifi.processor.Processor;
 import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.provenance.lineage.ComputeLineageResult;
@@ -1371,7 +1370,7 @@ public final class DtoFactory {
             final PropertyDescriptor descriptor = entry.getKey();
 
             // store the property descriptor
-            dto.getDescriptors().put(descriptor.getName(), createPropertyDescriptorDto(reportingTaskNode, descriptor, null));
+            dto.getDescriptors().put(descriptor.getName(), createPropertyDescriptorDto(descriptor, null));
 
             // determine the property value - don't include sensitive properties
             String propertyValue = entry.getValue();
@@ -1449,7 +1448,7 @@ public final class DtoFactory {
 
             // store the property descriptor
             final String groupId = controllerServiceNode.getProcessGroup() == null ? null : controllerServiceNode.getProcessGroup().getIdentifier();
-            dto.getDescriptors().put(descriptor.getName(), createPropertyDescriptorDto(controllerServiceNode, descriptor, groupId));
+            dto.getDescriptors().put(descriptor.getName(), createPropertyDescriptorDto(descriptor, groupId));
 
             // determine the property value - don't include sensitive properties
             String propertyValue = entry.getValue();
@@ -1542,7 +1541,7 @@ public final class DtoFactory {
             final PropertyDescriptor descriptor = entry.getKey();
 
             // store the property descriptor
-            dto.getDescriptors().put(descriptor.getName(), createPropertyDescriptorDto(component, descriptor, processGroupId));
+            dto.getDescriptors().put(descriptor.getName(), createPropertyDescriptorDto(descriptor, processGroupId));
 
             // determine the property value - don't include sensitive properties
             String propertyValue = entry.getValue();
@@ -2629,10 +2628,6 @@ public final class DtoFactory {
      */
     private String getCapabilityDescription(final Class<?> cls) {
         final CapabilityDescription capabilityDesc = cls.getAnnotation(CapabilityDescription.class);
-        final String description = MessagesProvider.getDescription(MessagesProvider.getDefaultLocale(), cls.getName());
-        if (StringUtils.isNotBlank(description)) {
-            return description;
-        }
         return capabilityDesc == null ? null : capabilityDesc.value();
     }
 
@@ -2643,13 +2638,9 @@ public final class DtoFactory {
         final Set<String> tags = new HashSet<>();
         final Tags tagsAnnotation = cls.getAnnotation(Tags.class);
         if (tagsAnnotation != null) {
-            final Set<String> tagsSet = MessagesProvider.getTagsSet(MessagesProvider.getDefaultLocale(), cls.getName());
-            if (tagsSet != null && !tagsSet.isEmpty()) {
-                tags.addAll(tagsSet);
-            } else
-                for (final String tag : tagsAnnotation.value()) {
-                    tags.add(tag);
-                }
+            for (final String tag : tagsAnnotation.value()) {
+                tags.add(tag);
+            }
         }
 
         if (cls.isAnnotationPresent(Restricted.class)) {
@@ -2668,20 +2659,10 @@ public final class DtoFactory {
         Annotation annotation = cls.getAnnotation(Marks.class);
         Marks marks = (Marks)annotation;
         if (marks != null) {
-            final String componentName = cls.getName();
-            final Set<String> marksCategories = MessagesProvider.getMarksCategoriesSet(MessagesProvider.getDefaultLocale(), componentName);
-            if (marksCategories != null && !marksCategories.isEmpty()) {
-                categories.addAll(marksCategories);
-            } else
-                for (final String category : marks.categories()) {
-                    categories.add(category);
-                }
-            final String marksVendor = MessagesProvider.getMarksVendor(MessagesProvider.getDefaultLocale(), componentName);
-            if (StringUtils.isNotBlank(marksVendor)) {
-                dto.setVendor(marksVendor);
-            } else {
-                dto.setVendor(marks.vendor());
+            for (final String category : marks.categories()) {
+                categories.add(category);
             }
+            dto.setVendor(marks.vendor());
             dto.setCategories(categories);
             dto.setCreatedDate(marks.createdDate());
             dto.setNote(marks.note());
@@ -2834,16 +2815,7 @@ public final class DtoFactory {
         final List<RelationshipDTO> relationships = new ArrayList<>();
         for (final Relationship rel : node.getRelationships()) {
             final RelationshipDTO relationshipDTO = new RelationshipDTO();
-            String componentName = node.getCanonicalClassName();
-            if (node.getComponent() != null) {
-                componentName = node.getComponent().getClass().getName();
-            }
-            final String relationshipDesc = MessagesProvider.getRelationshipDesc(MessagesProvider.getDefaultLocale(), componentName, rel.getName());
-            if (StringUtils.isNotBlank(relationshipDesc)) {
-                relationshipDTO.setDescription(relationshipDesc);
-            } else {
-                relationshipDTO.setDescription(rel.getDescription());
-            }
+            relationshipDTO.setDescription(rel.getDescription());
             relationshipDTO.setName(rel.getName());
             relationshipDTO.setAutoTerminate(node.isAutoTerminated(rel));
             relationships.add(relationshipDTO);
@@ -3583,7 +3555,7 @@ public final class DtoFactory {
             final PropertyDescriptor descriptor = entry.getKey();
 
             // store the property descriptor
-            dto.getDescriptors().put(descriptor.getName(), createPropertyDescriptorDto(procNode, descriptor, procNode.getProcessGroup().getIdentifier()));
+            dto.getDescriptors().put(descriptor.getName(), createPropertyDescriptorDto(descriptor, procNode.getProcessGroup().getIdentifier()));
 
             // determine the property value - don't include sensitive properties
             String propertyValue = entry.getValue();
@@ -3631,41 +3603,27 @@ public final class DtoFactory {
      * @param groupId the Identifier of the Process Group that the component belongs to
      * @return dto
      */
-    public PropertyDescriptorDTO createPropertyDescriptorDto(final ConfiguredComponent component, final PropertyDescriptor propertyDescriptor, final String groupId) {
+    public PropertyDescriptorDTO createPropertyDescriptorDto(final PropertyDescriptor propertyDescriptor, final String groupId) {
         if (propertyDescriptor == null) {
             return null;
         }
-        String componentName = component.getCanonicalClassName();
-        if (component.getComponent() != null) {
-            componentName = component.getComponent().getClass().getName();
-        }
+
         final PropertyDescriptorDTO dto = new PropertyDescriptorDTO();
 
-        final String name = propertyDescriptor.getName();
-        dto.setName(name);
-        final String propDisplayName = MessagesProvider.getPropDisplayName(MessagesProvider.getDefaultLocale(), componentName, name);
-        if (StringUtils.isNotBlank(propDisplayName)) {
-            dto.setDisplayName(propDisplayName);
-        } else {
-            dto.setDisplayName(propertyDescriptor.getDisplayName());
-        }
+        dto.setName(propertyDescriptor.getName());
+        dto.setDisplayName(propertyDescriptor.getDisplayName());
         dto.setRequired(propertyDescriptor.isRequired());
         dto.setSensitive(propertyDescriptor.isSensitive());
         dto.setDynamic(propertyDescriptor.isDynamic());
-        
-       final String propDescription = MessagesProvider.getPropDesc(MessagesProvider.getDefaultLocale(), componentName,name);
-        if (StringUtils.isNotBlank(propDescription)) {
-            dto.setDescription(propDescription);
-        } else { // original
-            dto.setDescription(propertyDescriptor.getDescription());
-        }
+        dto.setDescription(propertyDescriptor.getDescription());
         dto.setDefaultValue(propertyDescriptor.getDefaultValue());
         dto.setSupportsEl(propertyDescriptor.isExpressionLanguageSupported());
 
-        final ExpressionLanguageScope elScope = propertyDescriptor.getExpressionLanguageScope();
-        if (elScope != null) {
-            dto.setExpressionLanguageScope(elScope.name());
-        }
+        // to support legacy/deprecated method .expressionLanguageSupported(true)
+        String description = propertyDescriptor.isExpressionLanguageSupported()
+                && propertyDescriptor.getExpressionLanguageScope().equals(ExpressionLanguageScope.NONE)
+                ? "true (undefined scope)" : propertyDescriptor.getExpressionLanguageScope().getDescription();
+        dto.setExpressionLanguageScope(description);
 
         // set the identifies controller service is applicable
         if (propertyDescriptor.getControllerServiceDefinition() != null) {
@@ -3700,20 +3658,9 @@ public final class DtoFactory {
             final List<AllowableValueEntity> allowableValues = new ArrayList<>();
             for (final AllowableValue allowableValue : propertyDescriptor.getAllowableValues()) {
                 final AllowableValueDTO allowableValueDto = new AllowableValueDTO();
-                final String value = allowableValue.getValue();
-                allowableValueDto.setValue(value);
-                final String allowableValueDisplayName = MessagesProvider.getAllowableValueDisplayName(MessagesProvider.getDefaultLocale(), componentName, name, value);
-                if (StringUtils.isNoneBlank(allowableValueDisplayName)) {
-                    allowableValueDto.setDisplayName(allowableValueDisplayName);
-                } else { // original
-                    allowableValueDto.setDisplayName(allowableValue.getDisplayName());
-                }
-                final String allowableValueDesc = MessagesProvider.getAllowableValueDesc(MessagesProvider.getDefaultLocale(), componentName, name, value);
-                if (StringUtils.isNotBlank(allowableValueDesc)) {
-                    allowableValueDto.setDescription(allowableValueDesc);
-                } else { // original
-                    allowableValueDto.setDescription(allowableValue.getDescription());
-                }
+                allowableValueDto.setDisplayName(allowableValue.getDisplayName());
+                allowableValueDto.setValue(allowableValue.getValue());
+                allowableValueDto.setDescription(allowableValue.getDescription());
                 allowableValues.add(entityFactory.createAllowableValueEntity(allowableValueDto, true));
             }
 

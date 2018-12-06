@@ -194,7 +194,7 @@ public class ControllerServiceResource extends ApplicationResource {
         
         //fix i18n
         final Locale requestLocale = this.getRequestLocale();
-        if (requestLocale != null && !MessagesProvider.getDefaultLocale().equals(requestLocale)) {
+        if (requestLocale != null) {
             if (entity.getComponent() != null && entity.getComponent().getDescriptors() != null) {
                 final String type = entity.getComponent().getType();
                 for (Entry<String, PropertyDescriptorDTO> de : entity.getComponent().getDescriptors().entrySet()) {
@@ -264,7 +264,7 @@ public class ControllerServiceResource extends ApplicationResource {
 
         // fix for i18n
         final Locale requestLocale = this.getRequestLocale();
-        if (requestLocale != null && !MessagesProvider.getDefaultLocale().equals(requestLocale)) {
+        if (requestLocale != null) {
             final ControllerServiceEntity controllerService = serviceFacade.getControllerService(id);
             if (controllerService != null) {
                 final String type = controllerService.getComponent().getType();
@@ -328,7 +328,7 @@ public class ControllerServiceResource extends ApplicationResource {
 
         // fix i18n
         final Locale requestLocale = this.getRequestLocale();
-        if (requestLocale != null && !MessagesProvider.getDefaultLocale().equals(requestLocale)) {
+        if (requestLocale != null) {
             final ControllerServiceEntity controllerService = serviceFacade.getControllerService(id);
             if (controllerService != null) {
                 final String type = controllerService.getComponent().getType();

@@ -17,12 +17,15 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -34,6 +37,8 @@ import org.apache.nifi.groups.ProcessGroup;
 import org.apache.nifi.nar.i18n.MessagesProvider;
 import org.apache.nifi.util.FileUtils;
 import org.apache.nifi.web.NiFiServiceFacade;
+import org.apache.nifi.web.ResourceNotFoundException;
+import org.apache.nifi.web.Revision;
 import org.apache.nifi.web.api.dto.ControllerServiceDTO;
 import org.apache.nifi.web.api.dto.DocumentedTypeDTO;
 import org.apache.nifi.web.api.dto.ProcessorConfigDTO;
@@ -55,6 +60,7 @@ import org.apache.nifi.web.api.entity.VariableRegistryEntity;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
@@ -535,6 +541,12 @@ public class StatsResource extends ApplicationResource {
     @Consumes(MediaType.WILDCARD)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/md")
+    @ApiResponses(value = { //
+            @ApiResponse(code = 400, message = CODE_MESSAGE_400), //
+            @ApiResponse(code = 401, message = CODE_MESSAGE_401), //
+            @ApiResponse(code = 403, message = CODE_MESSAGE_403), //
+            @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
+    })
     public Response generateMarkdown(@QueryParam("lang") final String lang, @QueryParam("country") final String country, @QueryParam("all") final String all) {
         File mdOutputDir = new File("./work/md");
 
@@ -545,6 +557,12 @@ public class StatsResource extends ApplicationResource {
     @Consumes(MediaType.WILDCARD)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/html")
+    @ApiResponses(value = { //
+            @ApiResponse(code = 400, message = CODE_MESSAGE_400), //
+            @ApiResponse(code = 401, message = CODE_MESSAGE_401), //
+            @ApiResponse(code = 403, message = CODE_MESSAGE_403), //
+            @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
+    })
     public Response generateHtmlDoc(@QueryParam("lang") final String lang, @QueryParam("country") final String country, @QueryParam("all") final String all) {
         File htmlOutputDir = new File("./work/html");
 
@@ -555,6 +573,12 @@ public class StatsResource extends ApplicationResource {
     @Consumes(MediaType.WILDCARD)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/i18n")
+    @ApiResponses(value = { //
+            @ApiResponse(code = 400, message = CODE_MESSAGE_400), //
+            @ApiResponse(code = 401, message = CODE_MESSAGE_401), //
+            @ApiResponse(code = 403, message = CODE_MESSAGE_403), //
+            @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
+    })
     public Response generateI18n(@QueryParam("lang") final String lang, @QueryParam("country") final String country, @QueryParam("all") final String all) {
         File i18nOutputDir = new File("./work/i18n");
 
@@ -565,6 +589,12 @@ public class StatsResource extends ApplicationResource {
     @Consumes(MediaType.WILDCARD)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/gen")
+    @ApiResponses(value = { //
+            @ApiResponse(code = 400, message = CODE_MESSAGE_400), //
+            @ApiResponse(code = 401, message = CODE_MESSAGE_401), //
+            @ApiResponse(code = 403, message = CODE_MESSAGE_403), //
+            @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
+    })
     public Response generateDocs() {
         Response response = generateMarkdown(Locale.ENGLISH.getLanguage(), null, Boolean.TRUE.toString());
         if (response.getStatus() != Status.OK.getStatusCode()) {
@@ -642,6 +672,75 @@ public class StatsResource extends ApplicationResource {
 
         }
         return generateOkResponse("Successfully to generate at " + LocalDateTime.now()).build();
+    }
+
+    @GET
+    @Consumes(MediaType.WILDCARD)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/delete/{id}")
+    @ApiResponses(value = { //
+            @ApiResponse(code = 400, message = CODE_MESSAGE_400), //
+            @ApiResponse(code = 401, message = CODE_MESSAGE_401), //
+            @ApiResponse(code = 403, message = CODE_MESSAGE_403), //
+            @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
+    })
+    public Response verifyDelete(@Context final HttpServletRequest httpServletRequest,
+            @ApiParam(value = "The id of processor, or group(remote), or snippet.", required = true) @PathParam("id") final String id) {
+        if (isReplicateRequest()) {
+            return replicate(HttpMethod.DELETE);
+        }
+        Response response = null;
+
+        // label
+        response = findAndVerifyId(() -> serviceFacade.getLabel(id), null); // if found, just popup warning dialog
+        if (response != null)
+            return response;
+
+        // processor
+        response = findAndVerifyId(() -> serviceFacade.getProcessor(id), () -> serviceFacade.verifyDeleteProcessor(id));
+        if (response != null)
+            return response;
+
+        // group
+        response = findAndVerifyId(() -> serviceFacade.getProcessGroup(id), () -> serviceFacade.verifyDeleteProcessGroup(id));
+        if (response != null)
+            return response;
+
+        // remote group
+        response = findAndVerifyId(() -> serviceFacade.getRemoteProcessGroup(id), () -> serviceFacade.verifyDeleteRemoteProcessGroup(id));
+        if (response != null)
+            return response;
+
+        // snippet
+        response = findAndVerifyId(() -> serviceFacade.getRevisionsFromSnippet(id), () -> {
+            final Set<Revision> requestRevisions = serviceFacade.getRevisionsFromSnippet(id);
+            serviceFacade.verifyDeleteSnippet(id, requestRevisions.stream().map(rev -> rev.getComponentId()).collect(Collectors.toSet()));
+        });
+        if (response != null)
+            return response;
+
+        return noCache(Response.status(Status.FORBIDDEN)).build(); // no thing to do for other
+    }
+
+    private Response findAndVerifyId(final Runnable finder, final Runnable verifier) {
+        try {
+            if (finder != null)
+                finder.run();
+        } catch (ResourceNotFoundException e) {
+            // not found
+            return null;
+        }
+
+        // if found
+        try {
+            if (verifier != null)
+                verifier.run();
+            return generateOkResponse().build(); // will popup the warning dialog to confirm the deleting operation
+        } catch (Throwable t) {
+            // if can't delete, will have exception and don't popup the warning dialog
+            return noCache(Response.status(Status.FORBIDDEN)).build();
+        }
+
     }
 
 }

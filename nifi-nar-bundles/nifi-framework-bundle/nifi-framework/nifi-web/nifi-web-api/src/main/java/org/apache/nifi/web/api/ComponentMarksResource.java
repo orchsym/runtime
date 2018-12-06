@@ -221,7 +221,7 @@ public class ComponentMarksResource extends ApplicationResource {
         Set<DocumentedTypeDTO> processorTypes = serviceFacade.getProcessorTypes(null, null, null);
         Set<DocumentedTypeDTO> serviceTypes = serviceFacade.getControllerServiceTypes(null, null, null, null, null, null, null);
 
-        if (requestLocale != null && !requestLocale.equals(MessagesProvider.getDefaultLocale())) {
+        if (requestLocale != null) {
             processorTypes.forEach(dto -> DtoI18nHelper.fix(requestLocale, dto));
             serviceTypes.forEach(dto -> DtoI18nHelper.fix(requestLocale, dto));
         }
@@ -276,7 +276,7 @@ public class ComponentMarksResource extends ApplicationResource {
                         .filter(dto -> dto.getCategories() != null && dto.getCategories().size() > 0)//
                         .collect(Collectors.toSet());
                 
-                if (requestLocale != null && !requestLocale.equals(MessagesProvider.getDefaultLocale()))
+                if (requestLocale != null)
                     processorTypesWithCategories.forEach(dto -> DtoI18nHelper.fix(requestLocale, dto));
 
                 final Collection<CategoryItem> categoryItems = createCategoryItems(requestLocale, processorTypesWithCategories);

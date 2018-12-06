@@ -357,7 +357,7 @@ public class ProcessorResource extends ApplicationResource {
         
         // fix i18n
         final Locale requestLocale = this.getRequestLocale();
-        if (requestLocale != null && !MessagesProvider.getDefaultLocale().equals(requestLocale)) {
+        if (requestLocale != null) {
             final ProcessorEntity processor = serviceFacade.getProcessor(id);
             if (processor != null) {
                 DtoI18nHelper.fix(this.getRequestLocale(), processor.getComponent());
@@ -421,7 +421,7 @@ public class ProcessorResource extends ApplicationResource {
 
         // fix i18n
         final Locale requestLocale = this.getRequestLocale();
-        if (requestLocale != null && !MessagesProvider.getDefaultLocale().equals(requestLocale)) {
+        if (requestLocale != null) {
             final ProcessorEntity processor = serviceFacade.getProcessor(id);
             if (processor != null) {
                 final String type = processor.getComponent().getType();

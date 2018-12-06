@@ -241,7 +241,7 @@ public class ReportingTaskResource extends ApplicationResource {
 
         // fix i18n
         final Locale requestLocale = this.getRequestLocale();
-        if (requestLocale != null && !MessagesProvider.getDefaultLocale().equals(requestLocale)) {
+        if (requestLocale != null) {
             final ReportingTaskEntity reportTask = serviceFacade.getReportingTask(id);
             if (reportTask != null) {
                 DtoI18nHelper.fix(this.getRequestLocale(), reportTask.getComponent());
@@ -304,7 +304,7 @@ public class ReportingTaskResource extends ApplicationResource {
 
         // fix i18n
         final Locale requestLocale = this.getRequestLocale();
-        if (requestLocale != null && !MessagesProvider.getDefaultLocale().equals(requestLocale)) {
+        if (requestLocale != null) {
             final ReportingTaskEntity reportTask = serviceFacade.getReportingTask(id);
             if (reportTask != null) {
                 final String type = reportTask.getComponent().getType();

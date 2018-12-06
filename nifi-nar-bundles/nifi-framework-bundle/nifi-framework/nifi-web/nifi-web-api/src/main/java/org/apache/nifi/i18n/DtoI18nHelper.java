@@ -22,7 +22,7 @@ import org.apache.nifi.web.api.entity.AllowableValueEntity;
 public class DtoI18nHelper {
 
     public static void fix(final Locale requestLocale, DocumentedTypeDTO dto) {
-        if (requestLocale == null || requestLocale.equals(MessagesProvider.getDefaultLocale())) {
+        if (requestLocale == null) {
             return;
         }
         final String type = dto.getType();
@@ -57,7 +57,7 @@ public class DtoI18nHelper {
     }
 
     public static void fix(final Locale requestLocale, final String type, PropertyDescriptorDTO descriptor) {
-        if (requestLocale == null || requestLocale.equals(MessagesProvider.getDefaultLocale())) {
+        if (requestLocale == null) {
             return;
         }
         final String propName = descriptor.getName();
@@ -100,7 +100,7 @@ public class DtoI18nHelper {
     }
 
     public static void fix(final Locale requestLocale, ProcessorDTO processor) {
-        if (requestLocale == null || requestLocale.equals(MessagesProvider.getDefaultLocale())) {
+        if (requestLocale == null) {
             return;
         }
 
@@ -126,7 +126,7 @@ public class DtoI18nHelper {
     }
 
     public static void fix(final Locale requestLocale, ReportingTaskDTO reportTask) {
-        if (requestLocale == null || requestLocale.equals(MessagesProvider.getDefaultLocale())) {
+        if (requestLocale == null) {
             return;
         }
 

@@ -1011,45 +1011,135 @@
             })
         },
         'delete': function (selection) {
-            $('#deleteModal').removeClass('hidden')
-            $('#deleteMengBan').removeClass('hidden')
-            this.selection = selection
-        },
-        'deleteConfirm': function() {
-            var selection = this.selection
             if (nfCommon.isUndefined(selection) || selection.empty()) {
                 nfDialog.showOkDialog({
                     headerText: nf._.msg('nf-actions.Header5'),
                     dialogContent: nf._.msg('nf-actions.Message5')
                 });
-            } else {
-                if (selection.size() === 1) {
-                    var selectionData = selection.datum();
-                    var revision = nfClient.getRevision(selectionData);
-
+                return false
+            }
+            var needPrompt = false
+            selection.each(function(d) {
+                if(['Label', 'ProcessGroup', 'Processor', 'RemoteProcessGroup'].indexOf(d.type) !== -1) {
+                    needPrompt = true
+                }
+            })
+            this.selection = selection
+            if (needPrompt) {
+                var selectionData = selection.datum();
+                var revision = nfClient.getRevision(selectionData);
+                if(selection.size() === 1) {
                     $.ajax({
-                        type: 'DELETE',
-                        url: selectionData.uri + '?' + $.param({
-                            version: revision.version,
-                            clientId: revision.clientId
-                        }),
-                        dataType: 'json'
+                        type: 'GET',
+                        url: "../nifi-api/stats/delete/"+selectionData.id,
+                        dataType: "text"
                     }).done(function (response) {
-                        // remove the component/connection in question
-                        nfCanvasUtils.getComponentByType(selectionData.type).remove(selectionData.id);
+                        $('#deleteModal').removeClass('hidden')
+                        $('#deleteMengBan').removeClass('hidden')
+                    }).fail(nfActions.deleteConfirm);
+                } else {
+                    var parentGroupId = nfCanvasUtils.getGroupId();
+                    // create a snippet for the specified component and link to the data flow
+                    var snippet = nfSnippet.marshal(selection, parentGroupId);
+                    nfSnippet.create(snippet).done(function (response) {
+                        $.ajax({
+                            type: 'GET',
+                            url: "../nifi-api/stats/delete/"+response.snippet.id,
+                            dataType: 'text'
+                        }).done(function (response) {
+                            $('#deleteModal').removeClass('hidden')
+                            $('#deleteMengBan').removeClass('hidden')
+                        }).fail(nfActions.deleteConfirm);
+                    }).fail(nfErrorHandler.handleAjaxError);
+                }
+            } else {
+                nfActions.deleteConfirm()
+            }
+        },
+        'deleteConfirm': function() {
+            var selection = nfActions.selection
+            if (selection.size() === 1) {
+                var selectionData = selection.datum();
+                var revision = nfClient.getRevision(selectionData);
 
-                        // if the selection is a connection, reload the source and destination accordingly
-                        if (nfCanvasUtils.isConnection(selection) === false) {
-                            var connections = nfConnection.getComponentConnections(selectionData.id);
-                            if (connections.length > 0) {
-                                var ids = [];
-                                $.each(connections, function (_, connection) {
-                                    ids.push(connection.id);
-                                });
+                $.ajax({
+                    type: 'DELETE',
+                    url: selectionData.uri + '?' + $.param({
+                        version: revision.version,
+                        clientId: revision.clientId
+                    }),
+                    dataType: 'json'
+                }).done(function (response) {
+                    // remove the component/connection in question
+                    nfCanvasUtils.getComponentByType(selectionData.type).remove(selectionData.id);
 
-                                // remove the corresponding connections
-                                nfConnection.remove(ids);
+                    // if the selection is a connection, reload the source and destination accordingly
+                    if (nfCanvasUtils.isConnection(selection) === false) {
+                        var connections = nfConnection.getComponentConnections(selectionData.id);
+                        if (connections.length > 0) {
+                            var ids = [];
+                            $.each(connections, function (_, connection) {
+                                ids.push(connection.id);
+                            });
+
+                            // remove the corresponding connections
+                            nfConnection.remove(ids);
+                        }
+                    }
+
+                    // update URL deep linking params
+                    nfCanvasUtils.setURLParameters();
+
+                    // refresh the birdseye
+                    nfBirdseye.refresh();
+                    // inform Angular app values have changed
+                    nfNgBridge.digest();
+                }).fail(nfErrorHandler.handleAjaxError);
+            } else {
+                var parentGroupId = nfCanvasUtils.getGroupId();
+
+                // create a snippet for the specified component and link to the data flow
+                var snippet = nfSnippet.marshal(selection, parentGroupId);
+
+                nfSnippet.create(snippet).done(function (response) {
+                    // remove the snippet, effectively removing the components
+                    nfSnippet.remove(response.snippet.id).done(function () {
+                        var components = d3.map();
+
+                        // add the id to the type's array
+                        var addComponent = function (type, id) {
+                            if (!components.has(type)) {
+                                components.set(type, []);
                             }
+                            components.get(type).push(id);
+                        };
+
+                        // go through each component being removed
+                        selection.each(function (d) {
+                            // remove the corresponding entry
+                            addComponent(d.type, d.id);
+
+                            // if this is not a connection, see if it has any connections that need to be removed
+                            if (d.type !== 'Connection') {
+                                var connections = nfConnection.getComponentConnections(d.id);
+                                if (connections.length > 0) {
+                                    $.each(connections, function (_, connection) {
+                                        addComponent('Connection', connection.id);
+                                    });
+                                }
+                            }
+                        });
+
+                        // remove all the non connections in the snippet first
+                        components.each(function (ids, type) {
+                            if (type !== 'Connection') {
+                                nfCanvasUtils.getComponentByType(type).remove(ids);
+                            }
+                        });
+
+                        // then remove all the connections
+                        if (components.has('Connection')) {
+                            nfConnection.remove(components.get('Connection'));
                         }
 
                         // update URL deep linking params
@@ -1057,66 +1147,11 @@
 
                         // refresh the birdseye
                         nfBirdseye.refresh();
+
                         // inform Angular app values have changed
                         nfNgBridge.digest();
                     }).fail(nfErrorHandler.handleAjaxError);
-                } else {
-                    var parentGroupId = nfCanvasUtils.getGroupId();
-
-                    // create a snippet for the specified component and link to the data flow
-                    var snippet = nfSnippet.marshal(selection, parentGroupId);
-                    nfSnippet.create(snippet).done(function (response) {
-                        // remove the snippet, effectively removing the components
-                        nfSnippet.remove(response.snippet.id).done(function () {
-                            var components = d3.map();
-
-                            // add the id to the type's array
-                            var addComponent = function (type, id) {
-                                if (!components.has(type)) {
-                                    components.set(type, []);
-                                }
-                                components.get(type).push(id);
-                            };
-
-                            // go through each component being removed
-                            selection.each(function (d) {
-                                // remove the corresponding entry
-                                addComponent(d.type, d.id);
-
-                                // if this is not a connection, see if it has any connections that need to be removed
-                                if (d.type !== 'Connection') {
-                                    var connections = nfConnection.getComponentConnections(d.id);
-                                    if (connections.length > 0) {
-                                        $.each(connections, function (_, connection) {
-                                            addComponent('Connection', connection.id);
-                                        });
-                                    }
-                                }
-                            });
-
-                            // remove all the non connections in the snippet first
-                            components.each(function (ids, type) {
-                                if (type !== 'Connection') {
-                                    nfCanvasUtils.getComponentByType(type).remove(ids);
-                                }
-                            });
-
-                            // then remove all the connections
-                            if (components.has('Connection')) {
-                                nfConnection.remove(components.get('Connection'));
-                            }
-
-                            // update URL deep linking params
-                            nfCanvasUtils.setURLParameters();
-
-                            // refresh the birdseye
-                            nfBirdseye.refresh();
-
-                            // inform Angular app values have changed
-                            nfNgBridge.digest();
-                        }).fail(nfErrorHandler.handleAjaxError);
-                    }).fail(nfErrorHandler.handleAjaxError);
-                }
+                }).fail(nfErrorHandler.handleAjaxError);
             }
         },
         /**
@@ -1512,7 +1547,7 @@
             // ensure every component is writable
             if (nfCanvasUtils.canModify(selection) === false) {
                 nfDialog.showOkDialog({
-                	headerText: nf._.msg('nf-draggable.ComponentPosition'),
+                    headerText: nf._.msg('nf-draggable.ComponentPosition'),
                     dialogContent: nf._.msg('nf-editor.NoAuthorMessage')
                 });
                 return;

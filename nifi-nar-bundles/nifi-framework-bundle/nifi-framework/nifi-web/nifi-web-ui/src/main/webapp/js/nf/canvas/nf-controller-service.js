@@ -1834,6 +1834,9 @@
             var reloadService = $.ajax({
                 type: 'GET',
                 url: controllerServiceEntity.uri,
+                headers:{
+                    Locale: locale,
+                },
                 dataType: 'json'
             });
 
@@ -1841,6 +1844,9 @@
             var loadHistory = $.ajax({
                 type: 'GET',
                 url: '../nifi-api/flow/history/components/' + encodeURIComponent(controllerServiceEntity.id),
+                headers:{
+                    Locale: locale,
+                },
                 dataType: 'json'
             });
 

@@ -88,8 +88,8 @@ g.component rect.processor-icon-container.unauthorized {
 }
 
 g.component.selected rect.border {
-    stroke: #004849 !important;
-    stroke-width: 3;
+    stroke: #06d26a !important;
+    stroke-width: 5;
 }
 
 text.stats-label {

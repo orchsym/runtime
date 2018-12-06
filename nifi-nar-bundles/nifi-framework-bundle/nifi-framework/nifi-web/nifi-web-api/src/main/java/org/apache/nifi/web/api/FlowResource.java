@@ -1122,7 +1122,7 @@ public class FlowResource extends ApplicationResource {
         final Set<DocumentedTypeDTO> processorTypes = serviceFacade.getProcessorTypes(bundleGroupFilter, bundleArtifactFilter, typeFilter);
 
         final Locale requestLocale = this.getRequestLocale();
-        if (requestLocale != null && !requestLocale.equals(MessagesProvider.getDefaultLocale()))
+        if (requestLocale != null)
             processorTypes.forEach(dto -> DtoI18nHelper.fix(requestLocale, dto));
 
         // create response entity
@@ -1213,7 +1213,7 @@ public class FlowResource extends ApplicationResource {
 
         // fix i18n
         final Locale requestLocale = this.getRequestLocale();
-        if (requestLocale != null && !requestLocale.equals(MessagesProvider.getDefaultLocale())) {
+        if (requestLocale != null) {
             controllerServiceTypes.forEach(dto -> DtoI18nHelper.fix(requestLocale, dto));
         }
 
@@ -1277,7 +1277,7 @@ public class FlowResource extends ApplicationResource {
 
         // fix i18n
         final Locale requestLocale = this.getRequestLocale();
-        if (requestLocale != null && !requestLocale.equals(MessagesProvider.getDefaultLocale())) {
+        if (requestLocale != null) {
             reportingTaskTypes.forEach(dto -> DtoI18nHelper.fix(requestLocale, dto));
         }
         
@@ -1325,7 +1325,7 @@ public class FlowResource extends ApplicationResource {
 
         // fix i18n
         final Locale requestLocale = this.getRequestLocale();
-        if (requestLocale != null && !requestLocale.equals(MessagesProvider.getDefaultLocale())) {
+        if (requestLocale != null) {
             workQueuePrioritizerTypes.forEach(dto -> DtoI18nHelper.fix(requestLocale, dto));
         }
 
