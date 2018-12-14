@@ -72,6 +72,7 @@ import org.apache.nifi.http.HttpContextMap;
 import org.apache.nifi.processor.AbstractProcessor;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
+import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
@@ -306,6 +307,16 @@ public class HandleHttpRequest extends AbstractProcessor {
     @Override
     public Set<Relationship> getRelationships() {
         return Collections.singleton(REL_SUCCESS);
+    }
+
+    @Override
+    protected void init(ProcessorInitializationContext context) {
+        super.init(context);
+
+        // init all default value
+        for (PropertyDescriptor desc : getSupportedPropertyDescriptors()) {
+            allProperties.put(desc.getName(), desc.getDefaultValue());
+        }
     }
 
     @Override
