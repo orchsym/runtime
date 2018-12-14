@@ -1,4 +1,4 @@
-package org.apache.nifi.apiregistry.spec; 
+package org.apache.nifi.registry.api;
 
 public class PropertySpec {
 

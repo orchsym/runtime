@@ -59,13 +59,14 @@ import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnRemoved;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
-import org.apache.nifi.apiregistry.ApiInfo;
 import org.apache.nifi.apiregistry.ApiRegistryService;
 import org.apache.nifi.components.AllowableValue;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.controller.ControllerServiceLookup;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
+import org.apache.nifi.flowfile.attributes.BooleanAllowableValues;
 import org.apache.nifi.flowfile.attributes.CoreAttributes;
 import org.apache.nifi.http.HttpContextMap;
 import org.apache.nifi.processor.AbstractProcessor;
@@ -75,9 +76,12 @@ import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.processors.standard.util.HTTPUtils;
+import org.apache.nifi.registry.api.APIServicesManager;
+import org.apache.nifi.registry.api.ApiInfo;
 import org.apache.nifi.ssl.RestrictedSSLContextService;
 import org.apache.nifi.ssl.SSLContextService;
 import org.apache.nifi.stream.io.StreamUtils;
+import org.apache.nifi.util.NiFiProperties;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -88,169 +92,176 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.apache.nifi.controller.ControllerServiceLookup;
-import org.apache.nifi.util.NiFiProperties;
-
 import org.springframework.web.util.UriTemplate;
 
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
-@Tags({"http", "https", "request", "listen", "ingress", "web service"})
+@Tags({ "http", "https", "request", "listen", "ingress", "web service" })
 @CapabilityDescription("Starts an HTTP Server and listens for HTTP Requests. For each request, creates a FlowFile and transfers to 'success'. "
         + "This Processor is designed to be used in conjunction with the HandleHttpResponse Processor in order to create a Web Service")
 @WritesAttributes({
-    @WritesAttribute(attribute = HTTPUtils.HTTP_CONTEXT_ID, description = "An identifier that allows the HandleHttpRequest and HandleHttpResponse "
-            + "to coordinate which FlowFile belongs to which HTTP Request/Response."),
-    @WritesAttribute(attribute = "mime.type", description = "The MIME Type of the data, according to the HTTP Header \"Content-Type\""),
-    @WritesAttribute(attribute = "http.servlet.path", description = "The part of the request URL that is considered the Servlet Path"),
-    @WritesAttribute(attribute = "http.context.path", description = "The part of the request URL that is considered to be the Context Path"),
-    @WritesAttribute(attribute = "http.method", description = "The HTTP Method that was used for the request, such as GET or POST"),
-    @WritesAttribute(attribute = HTTPUtils.HTTP_LOCAL_NAME, description = "IP address/hostname of the server"),
-    @WritesAttribute(attribute = HTTPUtils.HTTP_PORT, description = "Listening port of the server"),
-    @WritesAttribute(attribute = "http.query.string", description = "The query string portion of the Request URL"),
-    @WritesAttribute(attribute = HTTPUtils.HTTP_REMOTE_HOST, description = "The hostname of the requestor"),
-    @WritesAttribute(attribute = "http.remote.addr", description = "The hostname:port combination of the requestor"),
-    @WritesAttribute(attribute = "http.remote.user", description = "The username of the requestor"),
-    @WritesAttribute(attribute = "http.protocol", description = "The protocol used to communicate"),
-    @WritesAttribute(attribute = HTTPUtils.HTTP_REQUEST_URI, description = "The full Request URL"),
-    @WritesAttribute(attribute = "http.auth.type", description = "The type of HTTP Authorization used"),
-    @WritesAttribute(attribute = "http.principal.name", description = "The name of the authenticated user making the request"),
-    @WritesAttribute(attribute = HTTPUtils.HTTP_SSL_CERT, description = "The Distinguished Name of the requestor. This value will not be populated "
-            + "unless the Processor is configured to use an SSLContext Service"),
-    @WritesAttribute(attribute = "http.issuer.dn", description = "The Distinguished Name of the entity that issued the Subject's certificate. "
-            + "This value will not be populated unless the Processor is configured to use an SSLContext Service"),
-    @WritesAttribute(attribute = "http.headers.XXX", description = "Each of the HTTP Headers that is received in the request will be added as an "
-            + "attribute, prefixed with \"http.headers.\" For example, if the request contains an HTTP Header named \"x-my-header\", then the value "
-            + "will be added to an attribute named \"http.headers.x-my-header\"")})
-@SeeAlso(value = {HandleHttpResponse.class})
+        @WritesAttribute(attribute = HTTPUtils.HTTP_CONTEXT_ID, description = "An identifier that allows the HandleHttpRequest and HandleHttpResponse "
+                + "to coordinate which FlowFile belongs to which HTTP Request/Response."),
+        @WritesAttribute(attribute = "mime.type", description = "The MIME Type of the data, according to the HTTP Header \"Content-Type\""),
+        @WritesAttribute(attribute = "http.servlet.path", description = "The part of the request URL that is considered the Servlet Path"),
+        @WritesAttribute(attribute = "http.context.path", description = "The part of the request URL that is considered to be the Context Path"),
+        @WritesAttribute(attribute = "http.method", description = "The HTTP Method that was used for the request, such as GET or POST"),
+        @WritesAttribute(attribute = HTTPUtils.HTTP_LOCAL_NAME, description = "IP address/hostname of the server"),
+        @WritesAttribute(attribute = HTTPUtils.HTTP_PORT, description = "Listening port of the server"),
+        @WritesAttribute(attribute = "http.query.string", description = "The query string portion of the Request URL"),
+        @WritesAttribute(attribute = HTTPUtils.HTTP_REMOTE_HOST, description = "The hostname of the requestor"),
+        @WritesAttribute(attribute = "http.remote.addr", description = "The hostname:port combination of the requestor"),
+        @WritesAttribute(attribute = "http.remote.user", description = "The username of the requestor"),
+        @WritesAttribute(attribute = "http.protocol", description = "The protocol used to communicate"), @WritesAttribute(attribute = HTTPUtils.HTTP_REQUEST_URI, description = "The full Request URL"),
+        @WritesAttribute(attribute = "http.auth.type", description = "The type of HTTP Authorization used"),
+        @WritesAttribute(attribute = "http.principal.name", description = "The name of the authenticated user making the request"),
+        @WritesAttribute(attribute = HTTPUtils.HTTP_SSL_CERT, description = "The Distinguished Name of the requestor. This value will not be populated "
+                + "unless the Processor is configured to use an SSLContext Service"),
+        @WritesAttribute(attribute = "http.issuer.dn", description = "The Distinguished Name of the entity that issued the Subject's certificate. "
+                + "This value will not be populated unless the Processor is configured to use an SSLContext Service"),
+        @WritesAttribute(attribute = "http.headers.XXX", description = "Each of the HTTP Headers that is received in the request will be added as an "
+                + "attribute, prefixed with \"http.headers.\" For example, if the request contains an HTTP Header named \"x-my-header\", then the value "
+                + "will be added to an attribute named \"http.headers.x-my-header\"") })
+@SeeAlso(value = { HandleHttpResponse.class })
 public class HandleHttpRequest extends AbstractProcessor {
-
     private static final Pattern URL_QUERY_PARAM_DELIMITER = Pattern.compile("&");
 
     // Allowable values for client auth
-    public static final AllowableValue CLIENT_NONE = new AllowableValue("No Authentication", "No Authentication",
-            "Processor will not authenticate clients. Anyone can communicate with this Processor anonymously");
-    public static final AllowableValue CLIENT_WANT = new AllowableValue("Want Authentication", "Want Authentication",
-            "Processor will try to verify the client but if unable to verify will allow the client to communicate anonymously");
-    public static final AllowableValue CLIENT_NEED = new AllowableValue("Need Authentication", "Need Authentication",
-            "Processor will reject communications from any client unless the client provides a certificate that is trusted by the TrustStore"
-            + "specified in the SSL Context Service");
+    public static final AllowableValue CLIENT_NONE = new AllowableValue("No Authentication", "No Authentication", //
+            "Processor will not authenticate clients. Anyone can communicate with this Processor anonymously"); //
+    public static final AllowableValue CLIENT_WANT = new AllowableValue("Want Authentication", "Want Authentication", //
+            "Processor will try to verify the client but if unable to verify will allow the client to communicate anonymously"); //
+    public static final AllowableValue CLIENT_NEED = new AllowableValue("Need Authentication", "Need Authentication", //
+            "Processor will reject communications from any client unless the client provides a certificate that is trusted by the TrustStore" //
+                    + "specified in the SSL Context Service");
 
-    public static final PropertyDescriptor PORT = new PropertyDescriptor.Builder()
-            .name("Listening Port")
-            .description("The Port to listen on for incoming HTTP requests")
-            .required(true)
-            .addValidator(StandardValidators.createLongValidator(0L, 65535L, true))
-            .expressionLanguageSupported(ExpressionLanguageScope.NONE)
-            .defaultValue("80")
+    public static final PropertyDescriptor PORT = new PropertyDescriptor.Builder() //
+            .name("Listening Port") //
+            .description("The Port to listen on for incoming HTTP requests") //
+            .required(true) //
+            .addValidator(StandardValidators.createLongValidator(0L, 65535L, true)) //
+            .expressionLanguageSupported(ExpressionLanguageScope.NONE) //
+            .defaultValue("80") //
             .build();
-    public static final PropertyDescriptor HOSTNAME = new PropertyDescriptor.Builder()
-            .name("Hostname")
-            .description("The Hostname to bind to. If not specified, will bind to all hosts")
-            .required(false)
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .expressionLanguageSupported(ExpressionLanguageScope.NONE)
+    public static final PropertyDescriptor HOSTNAME = new PropertyDescriptor.Builder() //
+            .name("Hostname") //
+            .description("The Hostname to bind to. If not specified, will bind to all hosts") //
+            .required(false) //
+            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR) //
+            .expressionLanguageSupported(ExpressionLanguageScope.NONE) //
             .build();
-    public static final PropertyDescriptor HTTP_CONTEXT_MAP = new PropertyDescriptor.Builder()
-            .name("HTTP Context Map")
-            .description("The HTTP Context Map Controller Service to use for caching the HTTP Request Information")
-            .required(true)
-            .identifiesControllerService(HttpContextMap.class)
+    public static final PropertyDescriptor HTTP_CONTEXT_MAP = new PropertyDescriptor.Builder() //
+            .name("HTTP Context Map") //
+            .description("The HTTP Context Map Controller Service to use for caching the HTTP Request Information") //
+            .required(true) //
+            .identifiesControllerService(HttpContextMap.class) //
             .build();
-    public static final PropertyDescriptor SSL_CONTEXT = new PropertyDescriptor.Builder()
-            .name("SSL Context Service")
-            .description("The SSL Context Service to use in order to secure the server. If specified, the server will accept only HTTPS requests; "
-                    + "otherwise, the server will accept only HTTP requests")
-            .required(false)
-            .identifiesControllerService(RestrictedSSLContextService.class)
+    public static final PropertyDescriptor SSL_CONTEXT = new PropertyDescriptor.Builder() //
+            .name("SSL Context Service") //
+            .description("The SSL Context Service to use in order to secure the server. If specified, the server will accept only HTTPS requests; " //
+                    + "otherwise, the server will accept only HTTP requests") //
+            .required(false) //
+            .identifiesControllerService(RestrictedSSLContextService.class) //
             .build();
-    public static final PropertyDescriptor URL_CHARACTER_SET = new PropertyDescriptor.Builder()
-            .name("Default URL Character Set")
-            .description("The character set to use for decoding URL parameters if the HTTP Request does not supply one")
-            .required(true)
-            .defaultValue("UTF-8")
-            .addValidator(StandardValidators.CHARACTER_SET_VALIDATOR)
+    public static final PropertyDescriptor URL_CHARACTER_SET = new PropertyDescriptor.Builder() //
+            .name("Default URL Character Set") //
+            .description("The character set to use for decoding URL parameters if the HTTP Request does not supply one") //
+            .required(true) //
+            .defaultValue("UTF-8") //
+            .addValidator(StandardValidators.CHARACTER_SET_VALIDATOR) //
             .build();
-    public static final PropertyDescriptor PATH_REGEX = new PropertyDescriptor.Builder()
-            .name("Allowed Paths")
-            .description("A Regular Expression that specifies the valid HTTP Paths that are allowed in the incoming URL Requests. If this value is "
-                    + "specified and the path of the HTTP Requests does not match this Regular Expression, the Processor will respond with a "
-                    + "404: NotFound")
-            .required(false)
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .expressionLanguageSupported(ExpressionLanguageScope.NONE)
+    public static final PropertyDescriptor PATH_REGEX = new PropertyDescriptor.Builder() //
+            .name("Allowed Paths") //
+            .description("A Regular Expression that specifies the valid HTTP Paths that are allowed in the incoming URL Requests. If this value is " //
+                    + "specified and the path of the HTTP Requests does not match this Regular Expression, the Processor will respond with a " //
+                    + "404: NotFound") //
+            .required(false) //
+            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR) //
+            .expressionLanguageSupported(ExpressionLanguageScope.NONE) //
             .build();
-    public static final PropertyDescriptor ALLOW_GET = new PropertyDescriptor.Builder()
-            .name("Allow GET")
-            .description("Allow HTTP GET Method")
-            .required(true)
-            .allowableValues("true", "false")
-            .defaultValue("true")
+    public static final PropertyDescriptor ALLOW_GET = new PropertyDescriptor.Builder() //
+            .name("Allow GET") //
+            .description("Allow HTTP GET Method") //
+            .required(true) //
+            .allowableValues("true", "false") //
+            .defaultValue("true") //
             .build();
-    public static final PropertyDescriptor ALLOW_POST = new PropertyDescriptor.Builder()
-            .name("Allow POST")
-            .description("Allow HTTP POST Method")
-            .required(true)
-            .allowableValues("true", "false")
-            .defaultValue("true")
+    public static final PropertyDescriptor ALLOW_POST = new PropertyDescriptor.Builder() //
+            .name("Allow POST") //
+            .description("Allow HTTP POST Method") //
+            .required(true) //
+            .allowableValues("true", "false") //
+            .defaultValue("true") //
             .build();
-    public static final PropertyDescriptor ALLOW_PUT = new PropertyDescriptor.Builder()
-            .name("Allow PUT")
-            .description("Allow HTTP PUT Method")
-            .required(true)
-            .allowableValues("true", "false")
-            .defaultValue("true")
+    public static final PropertyDescriptor ALLOW_PUT = new PropertyDescriptor.Builder() //
+            .name("Allow PUT") //
+            .description("Allow HTTP PUT Method") //
+            .required(true) //
+            .allowableValues("true", "false") //
+            .defaultValue("true") //
             .build();
-    public static final PropertyDescriptor ALLOW_DELETE = new PropertyDescriptor.Builder()
-            .name("Allow DELETE")
-            .description("Allow HTTP DELETE Method")
-            .required(true)
-            .allowableValues("true", "false")
-            .defaultValue("true")
+    public static final PropertyDescriptor ALLOW_DELETE = new PropertyDescriptor.Builder() //
+            .name("Allow DELETE") //
+            .description("Allow HTTP DELETE Method") //
+            .required(true) //
+            .allowableValues("true", "false") //
+            .defaultValue("true") //
             .build();
-    public static final PropertyDescriptor ALLOW_HEAD = new PropertyDescriptor.Builder()
-            .name("Allow HEAD")
-            .description("Allow HTTP HEAD Method")
-            .required(true)
-            .allowableValues("true", "false")
-            .defaultValue("false")
+    public static final PropertyDescriptor ALLOW_HEAD = new PropertyDescriptor.Builder() //
+            .name("Allow HEAD") //
+            .description("Allow HTTP HEAD Method") //
+            .required(true) //
+            .allowableValues("true", "false") //
+            .defaultValue("false") //
             .build();
-    public static final PropertyDescriptor ALLOW_OPTIONS = new PropertyDescriptor.Builder()
-            .name("Allow OPTIONS")
-            .description("Allow HTTP OPTIONS Method")
-            .required(true)
-            .allowableValues("true", "false")
-            .defaultValue("false")
+    public static final PropertyDescriptor ALLOW_OPTIONS = new PropertyDescriptor.Builder() //
+            .name("Allow OPTIONS") //
+            .description("Allow HTTP OPTIONS Method") //
+            .required(true) //
+            .allowableValues("true", "false") //
+            .defaultValue("false") //
             .build();
-    public static final PropertyDescriptor ADDITIONAL_METHODS = new PropertyDescriptor.Builder()
-            .name("Additional HTTP Methods")
-            .description("A comma-separated list of non-standard HTTP Methods that should be allowed")
-            .required(false)
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .expressionLanguageSupported(ExpressionLanguageScope.NONE)
+    public static final PropertyDescriptor ADDITIONAL_METHODS = new PropertyDescriptor.Builder() //
+            .name("Additional HTTP Methods") //
+            .description("A comma-separated list of non-standard HTTP Methods that should be allowed") //
+            .required(false) //
+            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR) //
+            .expressionLanguageSupported(ExpressionLanguageScope.NONE) //
             .build();
-    public static final PropertyDescriptor CLIENT_AUTH = new PropertyDescriptor.Builder()
-            .name("Client Authentication")
-            .description("Specifies whether or not the Processor should authenticate clients. This value is ignored if the <SSL Context Service> "
-                    + "Property is not specified or the SSL Context provided uses only a KeyStore and not a TrustStore.")
-            .required(true)
-            .allowableValues(CLIENT_NONE, CLIENT_WANT, CLIENT_NEED)
-            .defaultValue(CLIENT_NONE.getValue())
+    public static final PropertyDescriptor CLIENT_AUTH = new PropertyDescriptor.Builder() //
+            .name("Client Authentication") //
+            .description("Specifies whether or not the Processor should authenticate clients. This value is ignored if the <SSL Context Service> " //
+                    + "Property is not specified or the SSL Context provided uses only a KeyStore and not a TrustStore.") //
+            .required(true) //
+            .allowableValues(CLIENT_NONE, CLIENT_WANT, CLIENT_NEED) //
+            .defaultValue(CLIENT_NONE.getValue()) //
             .build();
-    public static final PropertyDescriptor CONTAINER_QUEUE_SIZE = new PropertyDescriptor.Builder()
-            .name("container-queue-size").displayName("Container Queue Size")
-            .description("The size of the queue for Http Request Containers").required(true)
-            .addValidator(StandardValidators.POSITIVE_INTEGER_VALIDATOR).defaultValue("50").build();
+    public static final PropertyDescriptor CONTAINER_QUEUE_SIZE = new PropertyDescriptor.Builder() //
+            .name("container-queue-size") //
+            .displayName("Container Queue Size") //
+            .description("The size of the queue for Http Request Containers") //
+            .required(true) //
+            .addValidator(StandardValidators.POSITIVE_INTEGER_VALIDATOR) //
+            .defaultValue("50") //
+            .build();
+    public static final PropertyDescriptor HTTP_API_REGISTRY = new PropertyDescriptor.Builder() //
+            .name("HTTP API Registry Service") //
+            .description("this is service is for api registry, will be deprecated, should try to use <Support API Registry> instead") //
+            .required(false) //
+            .identifiesControllerService(ApiRegistryService.class) //
+            .build();
+    public static final PropertyDescriptor SUPPORT_API_REGISTRY = new PropertyDescriptor.Builder() //
+            .name("allow-api-registry") //
+            .displayName("Allow API Registry")//
+            .description("Specifies whether or not this Processor should do registry to API Manager for the HTTP Service.") //
+            .required(true) //
+            .allowableValues(BooleanAllowableValues.list()) //
+            .defaultValue(BooleanAllowableValues.FALSE.value()) //
+            .addValidator(BooleanAllowableValues.validator()) //
+            .build();
 
-    public static final Relationship REL_SUCCESS = new Relationship.Builder()
-            .name("success")
-            .description("All content that is received is routed to the 'success' relationship")
-            .build();
-
-    public static final PropertyDescriptor HTTP_API_REGISTRY = new PropertyDescriptor.Builder()
-            .name("HTTP API Registry Service")
-            .description("this is service is for api registry")
-            .required(false)
-            .identifiesControllerService(ApiRegistryService.class)
+    public static final Relationship REL_SUCCESS = new Relationship.Builder() //
+            .name("success") //
+            .description("All content that is received is routed to the 'success' relationship") //
             .build();
 
     private static final List<PropertyDescriptor> propertyDescriptors;
@@ -262,6 +273,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         descriptors.add(SSL_CONTEXT);
         descriptors.add(HTTP_CONTEXT_MAP);
         descriptors.add(HTTP_API_REGISTRY);
+        descriptors.add(SUPPORT_API_REGISTRY);
         descriptors.add(PATH_REGEX);
         descriptors.add(URL_CHARACTER_SET);
         descriptors.add(ALLOW_GET);
@@ -280,11 +292,11 @@ public class HandleHttpRequest extends AbstractProcessor {
     private AtomicBoolean initialized = new AtomicBoolean(false);
     private volatile BlockingQueue<HttpRequestContainer> containerQueue;
 
-    private ApiRegistryService apiRegistryService;
+    private volatile boolean loaded = false;
+    private volatile boolean hasAPIService = false;
+    private volatile boolean supportApiRegistry = false;
+    private volatile HttpContextMap httpContextService;
     private Map<String, String> allProperties = new HashMap<>();
-
-    //processor state, init running stopped?
-    private String state;
 
     @Override
     protected List<PropertyDescriptor> getSupportedPropertyDescriptors() {
@@ -298,56 +310,44 @@ public class HandleHttpRequest extends AbstractProcessor {
 
     @Override
     public void onPropertyModified(final PropertyDescriptor descriptor, final String oldValue, final String newValue) {
-        if (descriptor.equals(HTTP_API_REGISTRY)) {
-            ControllerServiceLookup serviceLookup = getControllerServiceLookup();
-            if (newValue != null) {
-                ApiRegistryService apiService = (ApiRegistryService) serviceLookup.getControllerService(newValue);
-                if (apiService != null && serviceLookup.isControllerServiceEnabled(apiService)) {
-
-                    this.apiRegistryService = apiService;
-
-                    ApiInfo apiInfo = new ApiInfo();
-                    apiInfo.id = this.getIdentifier();
-
-                    // pre register api info to server
-                    this.apiRegistryService.registerApiInfo(apiInfo);
-                }
-            }
-        }
-
-        if (descriptor.equals(HTTP_CONTEXT_MAP)) {
-            ControllerServiceLookup serviceLookup = getControllerServiceLookup();
-            if (newValue != null) {
-                HttpContextMap httpContextService = (HttpContextMap) serviceLookup.getControllerService(newValue);
-                if (httpContextService != null && serviceLookup.isControllerServiceEnabled(httpContextService)) {
-                    long requestTimeout = httpContextService.getRequestTimeout(TimeUnit.MILLISECONDS);
-                    allProperties.put(ApiRegistryService.REQUEST_TIMEOUT, String.valueOf(requestTimeout));
-                }
-            }
-        }
-
         // put all properties
         if (newValue == null) { // when delete property
             allProperties.remove(descriptor.getName());
             if (descriptor.equals(SSL_CONTEXT)) {
-                //update scheme
+                // update scheme
                 allProperties.put(descriptor.getName(), "null");
             } else if (descriptor.equals(HTTP_API_REGISTRY)) {
-                //unregister api
-                unregisterApiInfoFromService(this.getIdentifier());
-                this.apiRegistryService = null;
+                hasAPIService = false;
+            } else if (descriptor.equals(HTTP_CONTEXT_MAP)) {
+                httpContextService = null;
             }
-        } else {
+        } else {// set new value or modify
+            if (descriptor.equals(HTTP_API_REGISTRY)) {
+                ControllerServiceLookup serviceLookup = getControllerServiceLookup();
+                if (newValue != null) {
+                    ApiRegistryService apiService = (ApiRegistryService) serviceLookup.getControllerService(newValue);
+                    if (apiService != null) {
+                        hasAPIService = true;
+                    }
+                }
+            }
+            if (descriptor.equals(SUPPORT_API_REGISTRY)) {
+                supportApiRegistry = Boolean.parseBoolean(newValue);
+            }
+
+            if (descriptor.equals(HTTP_CONTEXT_MAP)) {
+                ControllerServiceLookup serviceLookup = getControllerServiceLookup();
+                if (newValue != null) {
+                    httpContextService = (HttpContextMap) serviceLookup.getControllerService(newValue);
+                }
+            }
             allProperties.put(descriptor.getName(), newValue);
         }
 
-        if (this.apiRegistryService != null) { // update all always
-            /*
-             * Make sure to get right and full info. don't know when do register for service, so must update all.
-             */
-            for (Entry<String, String> entry : allProperties.entrySet()) {
-                modifyApiInfoFromService(entry.getKey(), entry.getValue());
-            }
+        // if not loaded, but when set group id, will update, or have loaded, but modify the properties.
+        if (loaded || !loaded && descriptor.getName().equals(NiFiProperties.GROUP_ID)) { // avoid updating too often
+            updateApiInfoFromService(ApiInfo.State.init);
+            loaded = true;
         }
     }
 
@@ -355,40 +355,39 @@ public class HandleHttpRequest extends AbstractProcessor {
     public void onScheduled(final ProcessContext context) throws Exception {
         initialized.set(false);
 
-        this.state = "running";
+        final PropertyValue apiServiceProp = context.getProperty(HTTP_API_REGISTRY);
+        hasAPIService = apiServiceProp != null ? apiServiceProp.asControllerService() != null : Boolean.FALSE;
+        supportApiRegistry = context.getProperty(SUPPORT_API_REGISTRY).asBoolean();
 
-        modifyApiInfoFromService("state", this.state);
-        //updateApiInfoToService(context);
+        updateApiInfoFromService(context, ApiInfo.State.running);
     }
 
     @OnStopped
-    public void shutdown() throws Exception{
-
-        this.state = "stopped";
-        modifyApiInfoFromService("state", this.state);
+    public void shutdown() throws Exception {
+        updateApiInfoFromService(ApiInfo.State.stopped);
 
         if (server != null) {
             getLogger().debug("Shutting down server");
             server.stop();
             server.destroy();
             server.join();
-            getLogger().info("Shut down {}", new Object[]{server});
+            getLogger().info("Shut down {}", new Object[] { server });
         }
     }
 
     @OnRemoved
     public void onRemoved(ProcessContext processContext) {
-        unregisterApiInfoFromService(this.getIdentifier());
+        unregisterApiInfoFromService();
     }
 
     private synchronized void initializeServer(final ProcessContext context) throws Exception {
-        if(initialized.get()){
+        if (initialized.get()) {
             return;
         }
         this.containerQueue = new LinkedBlockingQueue<>(context.getProperty(CONTAINER_QUEUE_SIZE).asInteger());
         final String host = context.getProperty(HOSTNAME).getValue();
         final int port = getListeningPort(context);
-        
+
         final SslContextFactory sslFactory = createSslFactory(context);
         final Server server = new Server(port);
 
@@ -405,7 +404,7 @@ public class HandleHttpRequest extends AbstractProcessor {
             http.setPort(port);
 
             // add this connector
-            server.setConnectors(new Connector[]{http});
+            server.setConnectors(new Connector[] { http });
         } else {
             // add some secure config
             final HttpConfiguration httpsConfiguration = new HttpConfiguration(httpConfiguration);
@@ -423,13 +422,12 @@ public class HandleHttpRequest extends AbstractProcessor {
             https.setPort(port);
 
             // add this connector
-            server.setConnectors(new Connector[]{https});
+            server.setConnectors(new Connector[] { https });
         }
 
         server.setHandler(new AbstractHandler() {
             @Override
-            public void handle(final String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response)
-                    throws IOException, ServletException {
+            public void handle(final String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException {
                 handleHttp(context, target, baseRequest, request, response);
             }
         });
@@ -570,7 +568,7 @@ public class HandleHttpRequest extends AbstractProcessor {
             }
             if (!pathTemplate.matches(uri.getPath())) {
 
-                //check if match with pattern
+                // check if match with pattern
                 final Pattern pathPattern = getPathPattern(context);
                 if (pathPattern != null && !pathPattern.matcher(uri.getPath()).matches()) {
                     response.sendError(Status.NOT_FOUND.getStatusCode());
@@ -614,7 +612,7 @@ public class HandleHttpRequest extends AbstractProcessor {
     @Override
     public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
         try {
-            if(!initialized.get()) {
+            if (!initialized.get()) {
                 initializeServer(context);
             }
         } catch (Exception e) {
@@ -641,7 +639,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         if (container == null) {
             return;
         }
-        
+
         final long start = System.nanoTime();
         final HttpServletRequest request = container.getRequest();
 
@@ -656,8 +654,7 @@ public class HandleHttpRequest extends AbstractProcessor {
             // bad requests, the connection to the client is not closed. In order to address also these cases, we try
             // and answer with a BAD_REQUEST, which lets the client know that the request has not been correctly
             // processed and makes it aware that the connection can be closed.
-            getLogger().error("Failed to receive content from HTTP Request from {} due to {}",
-                    new Object[]{request.getRemoteAddr(), e});
+            getLogger().error("Failed to receive content from HTTP Request from {} due to {}", new Object[] { request.getRemoteAddr(), e });
             session.remove(flowFile);
 
             try {
@@ -666,8 +663,7 @@ public class HandleHttpRequest extends AbstractProcessor {
                 response.flushBuffer();
                 container.getContext().complete();
             } catch (final IOException ioe) {
-                getLogger().warn("Failed to send HTTP response to {} due to {}",
-                        new Object[]{request.getRemoteAddr(), ioe});
+                getLogger().warn("Failed to send HTTP response to {} due to {}", new Object[] { request.getRemoteAddr(), ioe });
             }
             return;
         }
@@ -675,7 +671,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         final String charset = request.getCharacterEncoding() == null ? context.getProperty(URL_CHARACTER_SET).getValue() : request.getCharacterEncoding();
 
         final String contextIdentifier = UUID.randomUUID().toString();
-       
+
         try {
             putAttribute(attributes, HTTPUtils.HTTP_CONTEXT_ID, contextIdentifier);
             putAttribute(attributes, "http.servlet.path", request.getServletPath());
@@ -712,19 +708,19 @@ public class HandleHttpRequest extends AbstractProcessor {
                 attributes.put("http.param." + paramName, value);
             }
 
-            //set path param
+            // set path param
             final UriTemplate pathTemplate = getUriTemplate(context);
             if (pathTemplate != null) {
                 URI uri = null;
                 try {
                     uri = new URI(request.getRequestURI());
                 } catch (final URISyntaxException e) {
-                    getLogger().warn("Failed to parse URI {} due to {}", new Object[]{request.getRequestURI(), e});
+                    getLogger().warn("Failed to parse URI {} due to {}", new Object[] { request.getRequestURI(), e });
                 }
                 Map<String, String> pathParamMap = pathTemplate.match(uri.getPath());
                 for (String key : pathParamMap.keySet()) {
                     attributes.put("http.path.param." + key, pathParamMap.get(key));
-                }   
+                }
             }
 
             final Cookie[] cookies = request.getCookies();
@@ -763,7 +759,7 @@ public class HandleHttpRequest extends AbstractProcessor {
                 }
             }
         } catch (final UnsupportedEncodingException uee) {
-            throw new ProcessException("Invalid character encoding", uee);  // won't happen because charset has been validated
+            throw new ProcessException("Invalid character encoding", uee); // won't happen because charset has been validated
         }
 
         final Enumeration<String> headerNames = request.getHeaderNames();
@@ -799,15 +795,14 @@ public class HandleHttpRequest extends AbstractProcessor {
 
         if (!registered) {
             getLogger().warn("Received request from {} but could not process it because too many requests are already outstanding; responding with SERVICE_UNAVAILABLE",
-                    new Object[]{request.getRemoteAddr()});
+                    new Object[] { request.getRemoteAddr() });
 
             try {
                 container.getResponse().setStatus(Status.SERVICE_UNAVAILABLE.getStatusCode());
                 container.getResponse().flushBuffer();
                 container.getContext().complete();
             } catch (final Exception e) {
-                getLogger().warn("Failed to respond with SERVICE_UNAVAILABLE message to {} due to {}",
-                        new Object[]{request.getRemoteAddr(), e});
+                getLogger().warn("Failed to respond with SERVICE_UNAVAILABLE message to {} due to {}", new Object[] { request.getRemoteAddr(), e });
             }
 
             session.remove(flowFile);
@@ -817,7 +812,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         final long receiveMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
         session.getProvenanceReporter().receive(flowFile, HTTPUtils.getURI(attributes), "Received from " + request.getRemoteAddr() + (subjectDn == null ? "" : " with DN=" + subjectDn), receiveMillis);
         session.transfer(flowFile, REL_SUCCESS);
-        getLogger().info("Transferring {} to 'success'; received from {}", new Object[]{flowFile, request.getRemoteAddr()});
+        getLogger().info("Transferring {} to 'success'; received from {}", new Object[] { flowFile, request.getRemoteAddr() });
     }
 
     private void putAttribute(final Map<String, String> map, final String key, final Object value) {
@@ -873,73 +868,102 @@ public class HandleHttpRequest extends AbstractProcessor {
         }
     }
 
-    private void updateApiInfoToService(final ProcessContext context) {
-        ApiInfo apiInfo;
-        try {
-            apiInfo = getApiInfo(context);
-        } catch (Exception exc) {
-            getLogger().error("Failed to get the Api Info", exc);
-            throw new ProcessException("Failed to getApiInfo", exc);
-        }
-
-        ApiRegistryService apiRegistryService = context.getProperty(HTTP_API_REGISTRY).asControllerService(ApiRegistryService.class);
-        if (apiRegistryService != null) {
-            this.apiRegistryService = apiRegistryService;
-            apiRegistryService.registerApiInfo(apiInfo);
+    private void updateApiInfoFromService(final ProcessContext context, ApiInfo.State state) {
+        if (hasAPIService || supportApiRegistry) {
+            final String groupId = allProperties.get(NiFiProperties.GROUP_ID);
+            final HttpContextMap httpContextMap = context.getProperty(HTTP_CONTEXT_MAP).asControllerService(HttpContextMap.class);
+            final ApiInfo apiInfo = getApiInfo(context.getName(), context.getAllProperties(), state, groupId, httpContextMap);
+            APIServicesManager.getInstance().register(apiInfo);
+        } else {
+            unregisterApiInfoFromService();
         }
     }
 
-    private ApiInfo getApiInfo(final ProcessContext context) throws Exception{
+    private void updateApiInfoFromService(ApiInfo.State state) {
+        if (hasAPIService || supportApiRegistry) {
+            final ApiInfo apiInfo = getApiInfo(null, allProperties, state, null, httpContextService);
+            APIServicesManager.getInstance().register(apiInfo);
+        } else {
+            unregisterApiInfoFromService();
+        }
+    }
 
+    private void unregisterApiInfoFromService() {
+        APIServicesManager.getInstance().unregister(this.getIdentifier());
+    }
+
+    private ApiInfo getApiInfo(String name, Map<String, String> properties, ApiInfo.State state, String groupId, HttpContextMap httpContextMap) {
         ApiInfo apiInfo = new ApiInfo();
-        
-        String name = context.getName();
-        apiInfo.name = name;
-
         apiInfo.id = this.getIdentifier();
-        apiInfo.groupID = allProperties.get(NiFiProperties.GROUP_ID);
 
-        String host = context.getProperty(HOSTNAME).getValue();
-        apiInfo.host = host;
+        // parameters
+        for (Entry<String, String> entry : properties.entrySet()) {
+            final String key = entry.getKey();
+            final String value = entry.getValue();
+            if (key.equals(HOSTNAME.getName())) {
+                apiInfo.host = value;
+            } else if (key.equals(PORT.getName())) {
+                if (StringUtils.isBlank(value)) {
+                    apiInfo.port = Integer.parseInt(PORT.getDefaultValue());
+                } else {
+                    apiInfo.port = Integer.parseInt(value);
+                }
+            } else if (key.equals(PATH_REGEX.getName())) {
+                apiInfo.path = value;
+            } else if (key.equals(URL_CHARACTER_SET.getName())) {
+                if (StringUtils.isBlank(value)) {// if don't change the value, will be default and value is null
+                    apiInfo.charset = URL_CHARACTER_SET.getDefaultValue();
+                } else {
+                    apiInfo.charset = value;
+                }
+            } else if (key.equals(ALLOW_GET.getName())) {
+                apiInfo.allowGet = Boolean.valueOf(value);
+            } else if (key.equals(ALLOW_POST.getName())) {
+                apiInfo.allowPost = Boolean.valueOf(value);
+            } else if (key.equals(ALLOW_PUT.getName())) {
+                apiInfo.allowPut = Boolean.valueOf(value);
+            } else if (key.equals(ALLOW_DELETE.getName())) {
+                apiInfo.allowDelete = Boolean.valueOf(value);
+            } else if (key.equals(ALLOW_HEAD.getName())) {
+                apiInfo.allowHead = Boolean.valueOf(value);
+            } else if (key.equals(ALLOW_OPTIONS.getName())) {
+                apiInfo.allowOptions = Boolean.valueOf(value);
+            } else if (key.equals(SSL_CONTEXT.getName())) {
+                if (StringUtils.isBlank(value) || value.equals("null")) {
+                    apiInfo.scheme = "http";
+                } else {
+                    apiInfo.scheme = "https";
+                }
+            } else if (key.equals(NiFiProperties.GROUP_ID)) {
+                apiInfo.groupID = value;
+            } else if (key.equals(HttpContextMap.REQUEST_TIMEOUT)) {
+                if (value != null && !value.isEmpty())
+                    apiInfo.requestTimeout = Long.parseLong(value);
+            }
 
-        int port = context.getProperty(PORT).asInteger();
-        apiInfo.port = port;
+        }
 
-        final HttpContextMap httpContextMap = context.getProperty(HTTP_CONTEXT_MAP).asControllerService(HttpContextMap.class);
-        long requestTimeout = httpContextMap.getRequestTimeout(TimeUnit.MILLISECONDS);
-        apiInfo.requestTimeout = requestTimeout;
+        // if set, use the provided one always.
+        if (name != null)
+            apiInfo.name = name;
+        if (state != null)
+            apiInfo.state = state.name();
 
-        apiInfo.allowGet = context.getProperty(ALLOW_GET).asBoolean();
-        apiInfo.allowPost = context.getProperty(ALLOW_POST).asBoolean();
-        apiInfo.allowPut = context.getProperty(ALLOW_PUT).asBoolean();
-        apiInfo.allowDelete = context.getProperty(ALLOW_DELETE).asBoolean();
-        apiInfo.allowHead = context.getProperty(ALLOW_HEAD).asBoolean();
-        apiInfo.allowOptions = context.getProperty(ALLOW_OPTIONS).asBoolean();
+        if (groupId != null)
+            apiInfo.groupID = groupId;
 
-        String charset = context.getProperty(URL_CHARACTER_SET).getValue();
-        apiInfo.charset = charset;
+        if (httpContextMap != null) {
+            apiInfo.controllerServiceId = httpContextMap.getIdentifier();
 
-        String path = context.getProperty(PATH_REGEX).getValue();
-       
-        apiInfo.path = path;
-
-        apiInfo.state = this.state;
+            ControllerServiceLookup serviceLookup = getControllerServiceLookup();
+            if (serviceLookup != null && serviceLookup.isControllerServiceEnabled(httpContextMap)) { // if set, always get from context map
+                apiInfo.requestTimeout = httpContextMap.getRequestTimeout(TimeUnit.MILLISECONDS);
+            }
+        } else {
+            apiInfo.controllerServiceId = null;
+        }
 
         return apiInfo;
-    }
-
-    private void modifyApiInfoFromService(String key, String value) {
-
-        if (this.apiRegistryService != null) {
-            this.apiRegistryService.modifyApiInfo(this.getIdentifier(), key, value);
-        }
-    }
-
-    private void unregisterApiInfoFromService(String id) {
-
-        if (this.apiRegistryService != null) {
-            this.apiRegistryService.unregisterApiInfo(id);   
-        }
     }
 
 }

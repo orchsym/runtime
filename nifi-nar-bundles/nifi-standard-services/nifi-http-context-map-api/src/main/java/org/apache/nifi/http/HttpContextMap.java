@@ -38,6 +38,8 @@ import org.apache.nifi.controller.ControllerService;
  */
 public interface HttpContextMap extends ControllerService {
 
+    String REQUEST_TIMEOUT = "requestTimeout";
+
     /**
      * Registers an HttpServletRequest, HttpServletResponse, and the AsyncContext for a given identifier
      *

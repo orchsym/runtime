@@ -20,13 +20,12 @@ package org.apache.nifi.apiregistry;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.controller.ControllerService;
+import org.apache.nifi.registry.api.ApiInfo;
 import org.apache.nifi.util.NiFiProperties;
-import org.apache.nifi.processor.exception.ProcessException;
-
-import java.util.HashMap;
 
 @Tags({"Regitstry Service"})
 @CapabilityDescription("Api Regitstry Service.")
+@Deprecated
 public interface ApiRegistryService extends ControllerService {
     String GROUP_ID = NiFiProperties.GROUP_ID;
     String REQUEST_TIMEOUT = "requestTimeout";

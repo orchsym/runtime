@@ -14,42 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.nifi.apiregistry;
+package org.apache.nifi.web.api;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import javax.net.ssl.SSLContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLContexts;
-import org.apache.http.conn.ssl.TrustStrategy;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.nifi.annotation.documentation.CapabilityDescription;
-import org.apache.nifi.annotation.documentation.Marks;
-import org.apache.nifi.annotation.documentation.Tags;
-import org.apache.nifi.annotation.lifecycle.OnDisabled;
-import org.apache.nifi.annotation.lifecycle.OnEnabled;
-import org.apache.nifi.components.PropertyDescriptor;
-import org.apache.nifi.controller.AbstractControllerService;
-import org.apache.nifi.controller.ConfigurationContext;
-import org.apache.nifi.processor.util.StandardValidators;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import org.apache.nifi.web.api.StatsResource;
 import org.apache.nifi.registry.api.APIServicesManager;
 import org.apache.nifi.registry.api.ApiInfo;
 import org.apache.nifi.registry.api.APISpec;
@@ -59,13 +30,37 @@ import org.apache.nifi.registry.api.PathSpec;
 import org.apache.nifi.registry.api.PropertySpec;
 import org.apache.nifi.registry.api.RespSpec;
 import org.apache.nifi.util.NiFiProperties;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+
+import javax.net.ssl.SSLContext;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLContexts;
+import org.apache.http.conn.ssl.TrustStrategy;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import java.security.cert.X509Certificate;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -73,190 +68,98 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
-@Marks(createdDate = "2018-04-23")
-@Tags({ "api registry" })
-@CapabilityDescription("This service is for api registry")
-public class StandardApiRegistryService extends AbstractControllerService implements ApiRegistryService {
+/**
+ * RESTful endpoint for retrieving api informaitions
+ */
+@Path(APIServiceResource.PATH)
+@Api(value = APIServiceResource.PATH, //
+        description = "Endpoint  for retrieving api informaitions")
+public class APIServiceResource extends ApplicationResource {
 
     private static final String PROPERTIES_NIFI_WEB_HTTP_HOST = "nifi.web.http.host";
     private static final String PROPERTIES_NIFI_WEB_HTTP_PORT = "nifi.web.http.port";
     private static final String PROPERTIES_NIFI_WEB_HTTPS_HOST = "nifi.web.https.host";
     private static final String PROPERTIES_NIFI_WEB_HTTPS_PORT = "nifi.web.https.port";
+    public static final String PATH = "/apis";
 
-    public static final PropertyDescriptor REQ_PATH = new PropertyDescriptor.Builder()//
-            .name("Req_Path")//
-            .displayName("Path")//
-            .description("request path")//
-            .required(true)//
-            .defaultValue("/apis") //
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
+    private static final Logger logger = LoggerFactory.getLogger(APIServiceResource.class);
 
-    public static final PropertyDescriptor REQ_PORT = new PropertyDescriptor.Builder()//
-            .name("Req_Port")//
-            .displayName("Port")//
-            .description("request port")//
-            .required(true)//
-            .defaultValue("7878")//
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
+    @GET
+    @Consumes(MediaType.WILDCARD)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/")
+    @ApiOperation(value = "Gets all api informaitions or filter by a group id", //
+            response = ArrayList.class)
+    @ApiResponses(value = { //
+            @ApiResponse(code = 400, message = StatsResource.CODE_MESSAGE_400), //
+            @ApiResponse(code = 404, message = StatsResource.CODE_MESSAGE_404), //
+            @ApiResponse(code = 409, message = StatsResource.CODE_MESSAGE_409) //
+    })
+    public Response getApiInformations(//
+            @QueryParam("groupid") String groupid
+    ) throws InterruptedException {
 
-    private static final List<PropertyDescriptor> properties;
-    private String requestPath;
-    private int port;
-    private Server server;
-
-    static {
-        final List<PropertyDescriptor> props = new ArrayList<>();
-        props.add(REQ_PATH);
-        props.add(REQ_PORT);
-        properties = Collections.unmodifiableList(props);
-    }
-
-    @Override
-    protected List<PropertyDescriptor> getSupportedPropertyDescriptors() {
-        return properties;
-    }
-
-    @OnEnabled
-    public void onConfigured(final ConfigurationContext context) throws Exception {
-
-        requestPath = context.getProperty(REQ_PATH).getValue();
-        port = context.getProperty(REQ_PORT).asInteger();
-        try {
-            final Server server = new Server(port);
-            final HttpConfiguration httpConfiguration = new HttpConfiguration();
-
-            // create the connector
-            final ServerConnector http = new ServerConnector(server, new HttpConnectionFactory(httpConfiguration));
-            http.setPort(port);
-
-            // add this connector
-            server.setConnectors(new Connector[] { http });
-
-            server.setHandler(new ReqHandler(this));
-
-            this.server = server;
-            server.start();
-        } catch (Exception e) {
-            getLogger().error("start api resistry serverice failed ", e);
-            throw new Exception("start api resistry serverice failed ", e);
+        if (isReplicateRequest()) {
+            return replicate(HttpMethod.GET);
         }
-    }
-
-    @OnDisabled
-    public void onDisabled() throws Exception {
-        server.stop();
-        server.destroy();
-        server.join();
-    }
-
-    public class ReqHandler extends AbstractHandler {
-
-        private StandardApiRegistryService service;
-
-        public ReqHandler(StandardApiRegistryService standardApiRegistryService) {
-            this.service = standardApiRegistryService;
-        }
-
-        @Override
-        public void handle(final String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException {
-            final List<ApiInfo> apiInfoList = APIServicesManager.getInstance().getInfos();
-
-            String pathInfo = request.getPathInfo();
-            if (pathInfo.equals(this.service.getRequestPath())) {
-                HashMap<String, ArrayList<ApiInfo>> apis = new HashMap<>();
-                ArrayList<ApiInfo> collectApis = new ArrayList<>();
-                // get groupid, uri:/apis?groupid=123
-                String query = request.getQueryString();
-                String queryGroupID = null;
-
-                if (query == null) {
-                    Iterator<ApiInfo> infoItr = apiInfoList.iterator();
-                    while (infoItr.hasNext()) {
-                        ApiInfo apiInfo = (ApiInfo) infoItr.next();
-                        collectApis.add(apiInfo.copy());
-                    }
-                } else {
-                    try {
-                        Map<String, String> query_pairs = splitQuery(query);
-                        for (Map.Entry<String, String> entry : query_pairs.entrySet()) {
-                            if (entry.getKey().equals("groupid")) {
-                                if (!entry.getValue().equals("")) {
-                                    queryGroupID = entry.getValue();
-                                }
-                            }
-                        }
-                    } catch (Exception e) {
-                        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                        response.getWriter().flush();
-                        return;
-                    }
-                    if (queryGroupID != null && this.service != null) {
-                        Iterator<ApiInfo> infoItr = apiInfoList.iterator();
-                        while (infoItr.hasNext()) {
-                            ApiInfo apiInfo = (ApiInfo) infoItr.next();
-                            String groupID = apiInfo.groupID;
-                            if (groupID.equals(queryGroupID)) {
-                                collectApis.add(apiInfo.copy());
-                            }
-                        }
-                    }
-                }
-                apis.put("apis", collectApis);
-                Gson gson = new Gson();
-                String json = gson.toJson(apis);
-
-                response.setStatus(HttpServletResponse.SC_OK);
-                response.setContentType("application/json; charset=utf-8");
-                response.getWriter().write(json);
-                response.getWriter().flush();
-                return;
-
-            } else if (pathInfo.equals("/apis/swagger")) {
-                /// apis/swagger?id=123
-                String query = request.getQueryString();
-                String processorId = null;
-                try {
-                    Map<String, String> query_pairs = splitQuery(query);
-                    for (Map.Entry<String, String> entry : query_pairs.entrySet()) {
-                        if (entry.getKey().equals("id")) {
-                            processorId = entry.getValue();
-                        }
-                    }
-                    if (processorId != null) {
-                        String swaggerInfo = getSwaggerinfo(apiInfoList, processorId);
-                        if (swaggerInfo != null) {
-                            response.setStatus(HttpServletResponse.SC_OK);
-                            response.setContentType("application/json");
-                            response.getWriter().write(swaggerInfo);
-                            response.getWriter().flush();
-                            return;
-                        }
-                    }
-
-                } catch (Exception e) {
-                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                    response.getWriter().flush();
+        final List<ApiInfo> apiInfoList = APIServicesManager.getInstance().getInfos();
+        ArrayList<ApiInfo> collectApis = new ArrayList<>();
+        if (groupid == null) {
+            Iterator<ApiInfo> infoItr = apiInfoList.iterator();
+            while (infoItr.hasNext()) {
+                ApiInfo apiInfo = (ApiInfo) infoItr.next();
+                collectApis.add(apiInfo.copy());
+            }
+        } else {
+            Iterator<ApiInfo> infoItr = apiInfoList.iterator();
+            while (infoItr.hasNext()) {
+                ApiInfo apiInfo = (ApiInfo) infoItr.next();
+                String groupID = apiInfo.groupID;
+                if (groupID.equals(groupid)) {
+                    collectApis.add(apiInfo.copy());
                 }
             }
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            response.getWriter().flush();
         }
+        //generate the response
+        HashMap<String, ArrayList<ApiInfo>> apis = new HashMap<>();
+        apis.put("apis", collectApis);
+        Gson gson = new Gson();
+        String json = gson.toJson(apis);
+        return Response.ok(json).build();
     }
 
-    @Override
-    public void registerApiInfo(ApiInfo apiInfo) {
+    @GET
+    @Consumes(MediaType.WILDCARD)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/swagger")
+    @ApiOperation(value = "Gets all api informaitions or filter by a group id", //
+            response = ArrayList.class)
+    @ApiResponses(value = { //
+            @ApiResponse(code = 400, message = StatsResource.CODE_MESSAGE_400), //
+            @ApiResponse(code = 404, message = StatsResource.CODE_MESSAGE_404), //
+            @ApiResponse(code = 409, message = StatsResource.CODE_MESSAGE_409) //
+    })
+    public Response getApiSwaggerInformations(//
+            @QueryParam("id") String id
+    ) throws InterruptedException {
+
+        if (isReplicateRequest()) {
+            return replicate(HttpMethod.GET);
+        }
+        String swaggerInfo = "";
+        try {
+            if (id != null) {
+                final List<ApiInfo> apiInfoList = APIServicesManager.getInstance().getInfos();
+                swaggerInfo = getSwaggerinfo(apiInfoList, id);
+            }
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.toString()).build();
+
+        }
+        return Response.ok(swaggerInfo).build();
     }
 
-    @Override
-    public void modifyApiInfo(String id, String key, String value) {
-        // nothing to do
-    }
-
-    @Override
-    public void unregisterApiInfo(String id) {
-    }
-
-    private String getSwaggerinfo(final List<ApiInfo> apiInfoList, String processorId) throws Exception {
+     private String getSwaggerinfo(final List<ApiInfo> apiInfoList, String processorId) throws Exception {
 
         String url = getPropertyUrl(processorId);
         String swaggerInfo = null;
@@ -286,7 +189,7 @@ public class StandardApiRegistryService extends AbstractControllerService implem
             reader.close();
             swaggerInfo = getSwaggerSpec(apiInfoList, response.toString(), processorId);
         } catch (Exception except) {
-            getLogger().error("get processor's property failed ", except);
+            logger.error("get processor's property failed ", except);
             throw new Exception("get processor's property failed ", except);
         } finally {
             httpClient.close();
@@ -477,13 +380,12 @@ public class StandardApiRegistryService extends AbstractControllerService implem
         return spec;
     }
 
-    private String getPropertyUrl(String processorID) {
+     private String getPropertyUrl(String processorID) {
 
         String host;
         String port;
         String scheme;
-        String version = this.getClass().getPackage().getImplementationVersion(); // get package version
-
+        String version = APIServicesManager.getInstance().getClass().getPackage().getImplementationVersion(); // get package version
         final NiFiProperties properties = NiFiProperties.createBasicNiFiProperties(null, null);
         String httpHost = properties.getProperty(PROPERTIES_NIFI_WEB_HTTP_HOST);
         String httpPort = properties.getProperty(PROPERTIES_NIFI_WEB_HTTP_PORT);
@@ -524,19 +426,5 @@ public class StandardApiRegistryService extends AbstractControllerService implem
             }
         }
         return scheme;
-    }
-
-    private Map<String, String> splitQuery(String query) throws UnsupportedEncodingException {
-        Map<String, String> query_pairs = new HashMap<>();
-        String[] pairs = query.split("&");
-        for (String pair : pairs) {
-            int idx = pair.indexOf("=");
-            query_pairs.put(URLDecoder.decode(pair.substring(0, idx), "UTF-8"), URLDecoder.decode(pair.substring(idx + 1), "UTF-8"));
-        }
-        return query_pairs;
-    }
-
-    public String getRequestPath() {
-        return this.requestPath;
     }
 }

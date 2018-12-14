@@ -39,33 +39,34 @@ import org.apache.nifi.annotation.lifecycle.OnDisabled;
 import org.apache.nifi.annotation.lifecycle.OnEnabled;
 import org.apache.nifi.annotation.lifecycle.OnShutdown;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.controller.AbstractControllerService;
 import org.apache.nifi.controller.ConfigurationContext;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.apache.nifi.registry.api.APIServicesManager;
+import org.apache.nifi.util.FormatUtils;
 
-@Tags({"http", "request", "response"})
-@SeeAlso(classNames = {
-    "org.apache.nifi.processors.standard.HandleHttpRequest",
-    "org.apache.nifi.processors.standard.HandleHttpResponse"})
-@CapabilityDescription("Provides the ability to store and retrieve HTTP requests and responses external to a Processor, so that "
+@Tags({ "http", "request", "response" })
+@SeeAlso(classNames = { "org.apache.nifi.processors.standard.HandleHttpRequest", "org.apache.nifi.processors.standard.HandleHttpResponse" })
+@CapabilityDescription("Provides the ability to store and retrieve HTTP requests and responses external to a Processor, so that " //
         + "multiple Processors can interact with the same HTTP request.")
 public class StandardHttpContextMap extends AbstractControllerService implements HttpContextMap {
 
-    public static final PropertyDescriptor MAX_OUTSTANDING_REQUESTS = new PropertyDescriptor.Builder()
-            .name("Maximum Outstanding Requests")
-            .description("The maximum number of HTTP requests that can be outstanding at any one time. Any attempt to register an additional HTTP Request will cause an error")
-            .required(true)
-            .addValidator(StandardValidators.POSITIVE_INTEGER_VALIDATOR)
-            .defaultValue("5000")
+    public static final PropertyDescriptor MAX_OUTSTANDING_REQUESTS = new PropertyDescriptor.Builder()//
+            .name("Maximum Outstanding Requests")//
+            .description("The maximum number of HTTP requests that can be outstanding at any one time. Any attempt to register an additional HTTP Request will cause an error")//
+            .required(true)//
+            .addValidator(StandardValidators.POSITIVE_INTEGER_VALIDATOR)//
+            .defaultValue("5000")//
             .build();
-    public static final PropertyDescriptor REQUEST_EXPIRATION = new PropertyDescriptor.Builder()
-            .name("Request Expiration")
-            .description("Specifies how long an HTTP Request should be left unanswered before being evicted from the cache and being responded to with a Service Unavailable status code")
-            .required(true)
-            .expressionLanguageSupported(ExpressionLanguageScope.NONE)
-            .defaultValue("1 min")
-            .addValidator(StandardValidators.TIME_PERIOD_VALIDATOR)
+    public static final PropertyDescriptor REQUEST_EXPIRATION = new PropertyDescriptor.Builder()//
+            .name("Request Expiration")//
+            .description("Specifies how long an HTTP Request should be left unanswered before being evicted from the cache and being responded to with a Service Unavailable status code")//
+            .required(true)//
+            .expressionLanguageSupported(ExpressionLanguageScope.NONE)//
+            .defaultValue("1 min")//
+            .addValidator(StandardValidators.TIME_PERIOD_VALIDATOR)//
             .build();
 
     private final ConcurrentMap<String, Wrapper> wrapperMap = new ConcurrentHashMap<>();
@@ -82,6 +83,15 @@ public class StandardHttpContextMap extends AbstractControllerService implements
         return properties;
     }
 
+    @Override
+    public void onPropertyModified(PropertyDescriptor descriptor, String oldValue, String newValue) {
+        super.onPropertyModified(descriptor, oldValue, newValue);
+
+        if (descriptor.equals(REQUEST_EXPIRATION)) {
+            updateApiManager(newValue);
+        }
+    }
+
     @OnEnabled
     public void onConfigured(final ConfigurationContext context) {
         maxSize = context.getProperty(MAX_OUTSTANDING_REQUESTS).asInteger();
@@ -94,9 +104,23 @@ public class StandardHttpContextMap extends AbstractControllerService implements
             }
         });
 
-        maxRequestNanos = context.getProperty(REQUEST_EXPIRATION).asTimePeriod(TimeUnit.NANOSECONDS);
+        final PropertyValue requestExpirationProp = context.getProperty(REQUEST_EXPIRATION);
+        maxRequestNanos = requestExpirationProp.asTimePeriod(TimeUnit.NANOSECONDS);
         final long scheduleNanos = maxRequestNanos / 2;
         executor.scheduleWithFixedDelay(new CleanupExpiredRequests(), scheduleNanos, scheduleNanos, TimeUnit.NANOSECONDS);
+
+        updateApiManager(requestExpirationProp.getValue());
+    }
+
+    private void updateApiManager(String requestExpirationValue) {
+        if (requestExpirationValue == null || requestExpirationValue.trim().isEmpty()) {
+            return;
+        }
+        final String identifier = this.getIdentifier();
+
+        final Long requestTimeout = FormatUtils.getTimeDuration(requestExpirationValue.trim(), TimeUnit.MILLISECONDS);// the time unit must be same as HandleHttpRequest
+        final APIServicesManager apiManager = APIServicesManager.getInstance();
+        apiManager.getInfos().stream().filter(info -> identifier.equals(info.controllerServiceId)).forEach(info -> info.requestTimeout = requestTimeout);
     }
 
     @OnShutdown
@@ -114,12 +138,12 @@ public class StandardHttpContextMap extends AbstractControllerService implements
 
     @Override
     public boolean register(String identifier, HttpServletRequest request, HttpServletResponse response, AsyncContext context, Map<String, Object> additions) {
-     // fail if there are too many already. Maybe add a configuration property for how many
+        // fail if there are too many already. Maybe add a configuration property for how many
         // outstanding, with a default of say 5000
         if (wrapperMap.size() >= maxSize) {
             return false;
         }
-        final Wrapper wrapper = new Wrapper(request, response, context,additions);
+        final Wrapper wrapper = new Wrapper(request, response, context, additions);
         final Wrapper existing = wrapperMap.putIfAbsent(identifier, wrapper);
         if (existing != null) {
             throw new IllegalStateException("HTTP Request already registered with identifier " + identifier);

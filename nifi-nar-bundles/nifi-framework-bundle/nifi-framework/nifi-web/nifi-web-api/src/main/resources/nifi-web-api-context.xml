@@ -469,6 +469,11 @@
         <property name="clusterCoordinator" ref="clusterCoordinator"/>
         <property name="requestReplicator" ref="requestReplicator" />
     </bean>
+    <bean id="apiServiceResource" class="org.apache.nifi.web.api.APIServiceResource" scope="singleton">
+        <property name="properties" ref="nifiProperties"/>
+        <property name="clusterCoordinator" ref="clusterCoordinator"/>
+        <property name="requestReplicator" ref="requestReplicator" />
+    </bean>
     <!-- enable aop -->
     <!-- 
         By setting '-target-class' to 'true' Spring will use CGLIB for
