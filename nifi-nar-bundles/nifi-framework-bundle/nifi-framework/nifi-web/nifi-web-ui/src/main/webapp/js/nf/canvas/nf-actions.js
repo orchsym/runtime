@@ -162,6 +162,10 @@
         });
     };
 
+    /**
+     * 初始化删除确认框
+     *
+     */
     var initDeleteModel = function() {
            var $mengban = '<div id="deleteMengBan" class="modal-glass hidden" style="background-color: rgb(80, 103, 115); z-index: 1300;"></div>';
            var $html = '<div id="deleteModal" class="hidden"  style="z-index: 1301;height:150px;width:320px;position:absolute;left:505.5px;top:319px;background-color:#FFFFFF;">' +
@@ -194,6 +198,43 @@
                 $('#deleteMengBan').addClass('hidden')
             })
     };
+
+    /**
+     * 初始化运行确认框
+     *
+     */
+     var initRunModel = function() {
+           var $html = '<div id="runModal" class="hidden" style="z-index: 1301;min-height:150px;width:320px;position:absolute;left:505.5px;top:319px;background-color:#FFFFFF;">' +
+                            '<div class="dialog-header"><span class="dialog-header-text">'+nf._.msg('nf-actions.RunTitle')+'</span></div>'+
+                            '<div class="dialog-content" id="runMessage" style="position:initial;padding:15px;;line-height:1.5em;margin-bottom:30px;max-height:200px;">'+nf._.msg('nf-actions.Delete')+'</div>'+
+                            '<div class="dialog-buttons"><div id="runOk" class="button ok" style="background: rgb(114, 142, 155); color: rgb(255, 255, 255);">'+nf._.msg('nf-actions.Ok')+'</div><div id="runCancel" class="button cancel" style="background: rgb(227, 232, 235); color: rgb(0, 72, 73);" >'+nf._.msg('nf-actions.Cancel')+'</div></div>'+
+                        '</div>';
+            $("body").append($html)
+            $('#runOk').hover(function(){
+                $('#runOk').css('backgroundColor', 'rgb(0, 72, 73)')
+            }, function(){
+                $('#runOk').css('backgroundColor', 'rgb(114, 142, 155)')
+            })
+
+            $('#runCancel').hover(function(){
+                $('#runCancel').css('backgroundColor', 'rgb(199, 210, 215)')
+            }, function(){
+                $('#runCancel').css('backgroundColor', 'rgb(227, 232, 235)')
+            })
+
+            $('#runOk').on('click', function(){
+                $('#runModal').addClass('hidden')
+                $('#deleteMengBan').addClass('hidden')
+                nfActions.startConfirm()
+
+            });
+            $('#runCancel').on('click', function(){
+                $('#runModal').addClass('hidden')
+                $('#deleteMengBan').addClass('hidden')
+            })
+    };
+
+
     /**
      * Updates the resource with the specified entity.
      *
@@ -240,6 +281,7 @@
         init: function () {
             initializeDropRequestStatusDialog();
             initDeleteModel();
+            initRunModel();
         },
 
         /**
@@ -672,14 +714,46 @@
          *
          * @argument {selection} selection      The selection
          */
-        start: function (selection) {
+        start: function(selection){
+            this.selection = selection;
+            var selectionData = selection.datum();
+            var parentGroupId = nfCanvasUtils.getGroupId();
+            // create a snippet for the specified component and link to the data flow
+            var snippet = nfSnippet.marshal(selection, parentGroupId);
+            nfSnippet.create(snippet).done(function (response) {
+                $.ajax({
+                    type: 'GET',
+                    url: "../nifi-api/validation/snippet/"+response.snippet.id,
+                    dataType: 'json'
+                }).done(function (response) {
+                    // try{
+                        if (response.length == 0) {
+                            nfActions.startConfirm()
+                        } else {
+                            var promptList = response.map(function(processor){
+                                if (processor.path == '') {
+                                    return '-&nbsp;&nbsp;'+processor.name
+                                } else {
+                                    return '-&nbsp;&nbsp;'+processor.path + '/' + processor.name
+                                }
+                            })
+                            var $html = nf._.msg('nf-actions.Run')+"</br>"+promptList.join('<br>')
+                            $('#runMessage').html($html)
+                            $('#runModal').removeClass('hidden')
+                            $('#deleteMengBan').removeClass('hidden')
+                        }
+
+                }).fail(nfErrorHandler.handleAjaxError);
+            }).fail(nfErrorHandler.handleAjaxError);
+        },
+        startConfirm: function () {
+            var selection = nfActions.selection
             if (selection.empty()) {
                 // build the entity
                 var entity = {
                     'id': nfCanvasUtils.getGroupId(),
                     'state': 'RUNNING'
                 };
-
                 updateResource(config.urls.api + '/flow/process-groups/' + encodeURIComponent(nfCanvasUtils.getGroupId()), entity).done(updateProcessGroup);
             } else {
                 var componentsToStart = selection.filter(function (d) {

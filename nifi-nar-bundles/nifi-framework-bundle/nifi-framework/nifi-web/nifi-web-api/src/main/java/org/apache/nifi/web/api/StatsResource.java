@@ -74,10 +74,11 @@ import io.swagger.annotations.ApiResponses;
 public class StatsResource extends ApplicationResource {
     public static final String PATH = "/stats";
 
-    public static final String CODE_MESSAGE_400 = "NiFi was unable to complete the request because it was invalid. The request should not be retried without modification.";
+    public static final String CODE_MESSAGE_400 = "Studio was unable to complete the request because it was invalid. The request should not be retried without modification.";
     public static final String CODE_MESSAGE_401 = "Client could not be authenticated.";
     public static final String CODE_MESSAGE_403 = "Client is not authorized to make this request.";
-    public static final String CODE_MESSAGE_409 = "The request was valid but NiFi was not in the appropriate state to process it. Retrying the same request later may be successful.";
+    public static final String CODE_MESSAGE_404 = "The specified resource could not be found.";
+    public static final String CODE_MESSAGE_409 = "The request was valid but Studio was not in the appropriate state to process it. Retrying the same request later may be successful.";
 
     private NiFiServiceFacade serviceFacade;
     private FlowController flowController;

@@ -120,8 +120,8 @@
 
             // create the input field
             input = $('<textarea hidefocus rows="5"/>').css({
-                'height': '80px',
-                'width': args.position.width + 'px',
+                'height': '120px',
+                'width': (args.position.width + 120) + 'px',
                 'min-width': '212px',
                 'margin-bottom': '5px',
                 'margin-top': '10px',
@@ -350,7 +350,7 @@
             // create the editor
             editor = $('<div></div>').addClass(editorClass).appendTo(wrapper).nfeditor({
                 languageId: languageId,
-                width: (args.position.width < 212) ? 212 : args.position.width,
+                width: (args.position.width +120 < 212) ? 212 : args.position.width+120,
                 minWidth: 212,
                 minHeight: 100,
                 resizable: true,
