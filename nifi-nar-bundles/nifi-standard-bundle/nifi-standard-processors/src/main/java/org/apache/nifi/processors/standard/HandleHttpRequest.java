@@ -243,12 +243,6 @@ public class HandleHttpRequest extends AbstractProcessor {
             .addValidator(StandardValidators.POSITIVE_INTEGER_VALIDATOR) //
             .defaultValue("50") //
             .build();
-    public static final PropertyDescriptor HTTP_API_REGISTRY = new PropertyDescriptor.Builder() //
-            .name("HTTP API Registry Service") //
-            .description("this is service is for api registry, will be deprecated, should try to use <Support API Registry> instead") //
-            .required(false) //
-            .identifiesControllerService(ApiRegistryService.class) //
-            .build();
     public static final PropertyDescriptor SUPPORT_API_REGISTRY = new PropertyDescriptor.Builder() //
             .name("allow-api-registry") //
             .displayName("Allow API Registry")//
@@ -257,6 +251,12 @@ public class HandleHttpRequest extends AbstractProcessor {
             .allowableValues(BooleanAllowableValues.list()) //
             .defaultValue(BooleanAllowableValues.FALSE.value()) //
             .addValidator(BooleanAllowableValues.validator()) //
+            .build();
+    public static final PropertyDescriptor HTTP_API_REGISTRY = new PropertyDescriptor.Builder() //
+            .name("HTTP API Registry Service") //
+            .description("this is service is for api registry, will be deprecated, should try to use <" + SUPPORT_API_REGISTRY.getDisplayName() + "> instead") //
+            .required(false) //
+            .identifiesControllerService(ApiRegistryService.class) //
             .build();
 
     public static final Relationship REL_SUCCESS = new Relationship.Builder() //
