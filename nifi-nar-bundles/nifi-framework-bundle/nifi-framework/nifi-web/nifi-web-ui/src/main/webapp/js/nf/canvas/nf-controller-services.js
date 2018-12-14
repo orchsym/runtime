@@ -1013,12 +1013,13 @@
                 resizeable: true
             }
         ];
+        var path = location.pathname + location.search
 
         // action column should always be last
         controllerServicesColumns.push(
             {
                 id: 'actions',
-                name: '&nbsp;',
+                name: '<span class="pointer fa fa-flash batch-enable" style="padding-left:8px;font-size:14px" title="'+nf._.msg('nf-service-configuration.BatchEnabled.title')+'"></span>',
                 resizable: false,
                 formatter: controllerServiceActionFormatter,
                 sortable: false,
@@ -1049,6 +1050,24 @@
                 sortAsc: args.sortAsc
             }, controllerServicesData);
         });
+
+        $('.batch-enable').on('click', function(){
+            var path = location.pathname + location.search
+            var tmpServicesData = controllerServicesData.getItems().filter(function(item) {
+                var definedByCurrentGroup = false;
+                if (nfCommon.isDefinedAndNotNull(item.component.parentGroupId)) {
+                    // when opened in the process group context, the current group is store in #process-group-id
+                    if (item.component.parentGroupId === $('#process-group-id').text()) {
+                        definedByCurrentGroup = true;
+                    }
+                } else {
+                    // when there is no parent group, the service is defined at the controller level and should be editable
+                    definedByCurrentGroup = true;
+                }
+                return definedByCurrentGroup
+            })
+            nfControllerService.batchEnable(serviceTable, tmpServicesData)
+        })
 
         // configure a click listener
         controllerServicesGrid.onClick.subscribe(function (e, args) {

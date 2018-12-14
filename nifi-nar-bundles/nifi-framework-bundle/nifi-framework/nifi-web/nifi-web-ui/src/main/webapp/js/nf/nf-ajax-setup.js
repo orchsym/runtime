@@ -45,6 +45,7 @@
                 var token = nfStorage.getItem('jwt');
                 if (token !== null) {
                     xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+                    xhr.setRequestHeader('Locale', locale);
                 } else {
                     // if the current user was logged in with a token and the token just expired, cancel the request
                     if (hadToken === true) {

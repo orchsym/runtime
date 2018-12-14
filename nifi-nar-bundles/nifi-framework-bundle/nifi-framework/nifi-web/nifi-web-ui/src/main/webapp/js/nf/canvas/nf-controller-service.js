@@ -642,7 +642,7 @@
             url: controllerServiceEntity.uri,
             data: JSON.stringify(updateControllerServiceEntity),
             dataType: 'json',
-            contentType: 'application/json'
+            contentType: 'application/json',
         }).done(function (response) {
             renderControllerService(serviceTable, response);
         }).fail(nfErrorHandler.handleAjaxError);
@@ -1050,7 +1050,6 @@
             'state': enabled ? 'ENABLED' : 'DISABLED',
             'referencingComponentRevisions': referencingRevisions
         };
-
         // issue the request to update the referencing components
         var updated = $.ajax({
             type: 'PUT',
@@ -1434,7 +1433,7 @@
         var enableControllerService = $('#enable-controller-service').addClass('ajax-loading');
 
         $.Deferred(function (deferred) {
-            // enable this controller service
+            // enable this controller service yibangyu
             var enable = setEnabled(serviceTable, controllerServiceEntity, true, continuePolling);
 
             if (scope === config.serviceAndReferencingComponents) {
@@ -2122,6 +2121,31 @@
                 $('#controller-service-properties').propertytable('resetTableSize');
             });
         },
+
+        /**
+         * Batch start service.
+         *
+         * @params {jQuery} serviceTable
+         * @params {object} controllerServiceEntity
+         */
+         batchEnable: function (serviceTable, controllerServiceEntities) {
+            var continuePolling = function () {
+                return true;
+            };
+            controllerServiceEntities.forEach(function(item){
+                var isEnable = nfCommon.isEmpty(item.component.validationErrors) && item.component.state.toUpperCase() === 'DISABLED'
+                if(isEnable) {
+                    $.Deferred(function (deferred) {
+                        var enable = setEnabled(serviceTable, item, true, continuePolling)
+                        enable.done(function(){
+                            deferred.resolve();
+                        })
+                    }).always(function () {
+                        reloadControllerServiceAndReferencingComponents(serviceTable, item.component);
+                    })
+                }
+            })
+         },
 
         /**
          * Enables the specified controller service.
