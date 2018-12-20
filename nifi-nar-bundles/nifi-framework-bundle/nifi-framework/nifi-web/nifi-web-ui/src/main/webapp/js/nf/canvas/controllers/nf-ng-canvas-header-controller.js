@@ -118,7 +118,7 @@
             this.logoutCtrl = {
                 logout: function () {
                     nfStorage.removeItem("jwt");
-                    window.location = '../runtime/login';
+                    window.location = '../runtime/logout';
                 }
             };
         }

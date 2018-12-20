@@ -266,7 +266,7 @@ public class AccessResource extends ApplicationResource {
             }
 
             // redirect to the name page
-            httpServletResponse.sendRedirect("../../../nifi");
+            httpServletResponse.sendRedirect("../../../runtime");
         } else {
             // remove the oidc request cookie
             removeOidcRequestCookie(httpServletResponse);
@@ -313,6 +313,37 @@ public class AccessResource extends ApplicationResource {
 
         // generate the response
         return generateOkResponse(jwt).build();
+    }
+
+    @GET
+    @Consumes(MediaType.WILDCARD)
+    @Produces(MediaType.WILDCARD)
+    @Path("oidc/logout")
+    @ApiOperation(
+            value = "Performs a logout in the OpenId Provider.",
+            notes = NON_GUARANTEED_ENDPOINT
+    )
+    public void oidcLogout(@Context HttpServletRequest httpServletRequest, @Context HttpServletResponse httpServletResponse) throws Exception {
+        if (!httpServletRequest.isSecure()) {
+            throw new IllegalStateException("User authentication/authorization is only supported when running over HTTPS.");
+        }
+
+        if (!oidcService.isOidcEnabled()) {
+            throw new IllegalStateException("OpenId Connect is not configured.");
+        }
+
+        URI endSessionEndpoint = oidcService.getEndSessionEndpoint();
+        String postLogoutRedirectUri = generateResourceUri("..", "runtime");
+
+        if (endSessionEndpoint == null) {
+            // handle the case, where the OpenID Provider does not have an end session endpoint
+            httpServletResponse.sendRedirect(postLogoutRedirectUri);
+        } else {
+            URI logoutUri = UriBuilder.fromUri(endSessionEndpoint)
+                .queryParam("post_logout_redirect_uri", postLogoutRedirectUri)
+                .build();
+            httpServletResponse.sendRedirect(logoutUri.toString());
+        }
     }
 
     @GET
@@ -369,7 +400,20 @@ public class AccessResource extends ApplicationResource {
             return;
         }
 
-        httpServletResponse.sendRedirect("../../../nifi");
+        httpServletResponse.sendRedirect("../../../runtime");
+    }
+
+    @GET
+    @Consumes(MediaType.WILDCARD)
+    @Produces(MediaType.WILDCARD)
+    @Path("knox/logout")
+    @ApiOperation(
+            value = "Performs a logout in the Apache Knox.",
+            notes = NON_GUARANTEED_ENDPOINT
+    )
+    public void knoxLogout(@Context HttpServletRequest httpServletRequest, @Context HttpServletResponse httpServletResponse) throws Exception {
+        String redirectPath = generateResourceUri("..", "runtime", "login");
+        httpServletResponse.sendRedirect(redirectPath.toString());
     }
 
     /**
@@ -753,7 +797,7 @@ public class AccessResource extends ApplicationResource {
         httpServletRequest.setAttribute("title", OIDC_ERROR_TITLE);
         httpServletRequest.setAttribute("messages", message);
 
-        final ServletContext uiContext = httpServletRequest.getServletContext().getContext("/nifi");
+        final ServletContext uiContext = httpServletRequest.getServletContext().getContext("/runtime");
         uiContext.getRequestDispatcher("/WEB-INF/pages/message-page.jsp").forward(httpServletRequest, httpServletResponse);
     }
 
