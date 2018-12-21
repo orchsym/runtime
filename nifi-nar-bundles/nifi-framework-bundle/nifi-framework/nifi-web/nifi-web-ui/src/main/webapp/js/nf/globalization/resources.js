@@ -35,6 +35,9 @@ $.ajax({
             console.error('Data format does not meet expectations.')
         }
         
+    },
+    error: function(err){
+        defaultLocale = 'zh'
     }
 })
 
