@@ -96,4 +96,14 @@ public interface ConfigurableAccessPolicyProvider extends AccessPolicyProvider {
      * @throws AuthorizationAccessException if there was an unexpected error performing the operation
      */
     AccessPolicy deleteAccessPolicy(AccessPolicy accessPolicy) throws AuthorizationAccessException;
+
+    /**
+     * Add the default user policies
+     * 
+     * @param accessPolicyProvider
+     * @param user
+     */
+    default void setUserDefaultAccesPilicy(User user) {
+        // nothing to do
+    }
 }

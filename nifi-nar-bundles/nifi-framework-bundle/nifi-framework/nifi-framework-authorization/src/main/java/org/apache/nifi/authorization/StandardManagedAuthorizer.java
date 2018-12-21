@@ -106,7 +106,7 @@ public class StandardManagedAuthorizer implements ManagedAuthorizer {
             // create new user and add to userGroup
             ((ConfigurableUserGroupProvider)userGroupProvider).addUser(newUser);
             //set access pilicy for the new user
-            setUserDefaultAccesPilicy(accessPolicyProvider, newUser);
+            ((ConfigurableAccessPolicyProvider) accessPolicyProvider).setUserDefaultAccesPilicy(newUser);
             
             return AuthorizationResult.approved();
         }
@@ -121,28 +121,6 @@ public class StandardManagedAuthorizer implements ManagedAuthorizer {
     private String generateUuid() {
         UUID uuid = UUID.randomUUID(); 
         return uuid.toString();
-    }
-
-    private void setUserDefaultAccesPilicy(AccessPolicyProvider accessPolicyProvider, User user) {
-        for (AccessPolicy policy : accessPolicyProvider.getAccessPolicies()) {
-            if (policy.getResource().equals("/flow")
-                || policy.getResource().equals("/tenants")
-                || policy.getResource().equals("/policies")
-                || policy.getResource().equals("/controller")) {
-                AccessPolicy.Builder builder = new AccessPolicy.Builder()
-                    .identifier(policy.getIdentifier())
-                    .resource(policy.getResource())
-                    .action(policy.getAction());
-                for (String userStr : policy.getUsers()) {
-                    builder.addUser(userStr);
-                }
-                builder.addUser(user.getIdentifier());
-                for (String groupStr : policy.getGroups()) {
-                    builder.addGroup(groupStr);
-                }
-                ((ConfigurableAccessPolicyProvider)accessPolicyProvider).updateAccessPolicy(builder.build());
-            }
-        }
     }
 
     /**

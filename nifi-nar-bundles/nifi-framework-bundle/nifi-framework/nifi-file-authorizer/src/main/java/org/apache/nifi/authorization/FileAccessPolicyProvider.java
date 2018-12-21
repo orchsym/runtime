@@ -974,4 +974,32 @@ public class FileAccessPolicyProvider implements ConfigurableAccessPolicyProvide
     @Override
     public void preDestruction() throws AuthorizerDestructionException {
     }
+    
+    @Override
+    public void setUserDefaultAccesPilicy(User user) {
+        for (AccessPolicy policy : this.getAccessPolicies()) {
+            if (policy.getResource().equals(ResourceType.Flow.getValue()) //
+                    || policy.getResource().equals(ResourceType.Controller.getValue())//
+                    || (rootGroupId != null && (//
+                    policy.getResource().equals(ResourceType.Data.getValue() + ResourceType.ProcessGroup.getValue() + '/' + rootGroupId)//
+                            || policy.getResource().equals(ResourceType.ProcessGroup.getValue() + '/' + rootGroupId))//
+                    )//
+            ) {
+                final RequestAction action = policy.getAction();
+                if (action != RequestAction.READ) { // only add read
+                    continue;
+                }
+                AccessPolicy.Builder builder = new AccessPolicy.Builder().identifier(policy.getIdentifier()).resource(policy.getResource()).action(action);
+                for (String userStr : policy.getUsers()) {
+                    builder.addUser(userStr);
+                }
+                builder.addUser(user.getIdentifier());
+                for (String groupStr : policy.getGroups()) {
+                    builder.addGroup(groupStr);
+                }
+                
+                updateAccessPolicy(builder.build());
+            }
+        }
+    }
 }
