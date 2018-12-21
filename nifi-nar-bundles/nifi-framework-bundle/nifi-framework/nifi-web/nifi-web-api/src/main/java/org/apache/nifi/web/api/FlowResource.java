@@ -42,7 +42,6 @@ import org.apache.nifi.controller.service.ControllerServiceState;
 import org.apache.nifi.groups.ProcessGroup;
 import org.apache.nifi.i18n.DtoI18nHelper;
 import org.apache.nifi.nar.NarClassLoaders;
-import org.apache.nifi.nar.i18n.MessagesProvider;
 import org.apache.nifi.registry.client.NiFiRegistryException;
 import org.apache.nifi.util.NiFiProperties;
 import org.apache.nifi.web.IllegalClusterResourceRequestException;
@@ -1407,10 +1406,11 @@ public class FlowResource extends ApplicationResource {
                     productVersion = ver.toString();
                 }
             } catch (Exception e) {
-                final int lineIndex = bundleVersion.indexOf('-');
-                if (lineIndex > 0) {
-                    productVersion += bundleVersion.substring(lineIndex);
-                }
+                // don't add tag yet
+                // final int lineIndex = bundleVersion.indexOf('-');
+                // if (lineIndex > 0) {
+                // productVersion += bundleVersion.substring(lineIndex);
+                // }
             }
             if (bundleVersion.contains("SNAPSHOT"))
                 productVersion += '-' + buildRevision;
