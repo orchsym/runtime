@@ -46,7 +46,6 @@ import javax.ws.rs.core.Response;
 
 import org.apache.nifi.i18n.DtoI18nHelper;
 import org.apache.nifi.i18n.Messages;
-import org.apache.nifi.nar.i18n.MessagesProvider;
 import org.apache.nifi.web.NiFiServiceFacade;
 import org.apache.nifi.web.api.dto.DocumentedTypeDTO;
 import org.slf4j.Logger;
@@ -275,7 +274,7 @@ public class ComponentMarksResource extends ApplicationResource {
                 Set<DocumentedTypeDTO> processorTypesWithCategories = processorTypes.stream()//
                         .filter(dto -> dto.getCategories() != null && dto.getCategories().size() > 0)//
                         .collect(Collectors.toSet());
-                
+
                 if (requestLocale != null)
                     processorTypesWithCategories.forEach(dto -> DtoI18nHelper.fix(requestLocale, dto));
 
@@ -488,8 +487,14 @@ public class ComponentMarksResource extends ApplicationResource {
         }
 
         int compare(char c1, char c2) {
-            return Arrays.stream(PinyinHelper.toHanyuPinyinStringArray(c1)).collect(Collectors.joining(""))
-                    .compareToIgnoreCase(Arrays.stream(PinyinHelper.toHanyuPinyinStringArray(c2)).collect(Collectors.joining("")));
+            final String[] c1Py = PinyinHelper.toHanyuPinyinStringArray(c1);
+            final String[] c2Py = PinyinHelper.toHanyuPinyinStringArray(c2);
+            if (c1Py != null && c2Py != null) {
+                final String c1PyStr = Arrays.stream(c1Py).collect(Collectors.joining(""));
+                final String c2PyStr = Arrays.stream(c2Py).collect(Collectors.joining(""));
+                return c1PyStr.compareToIgnoreCase(c2PyStr);
+            }
+            return String.valueOf(c1).compareToIgnoreCase(String.valueOf(c2));
         }
     };
 
