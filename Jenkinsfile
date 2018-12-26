@@ -26,28 +26,28 @@ pipeline {
         sh """
           printenv|sort
           rm -rf ${env.BUILD_OUTPUT_FILE} || true
-          echo "Build based on last commit: ${env.GIT_COMMIT}\n" >> ${env.BUILD_OUTPUT_FILE}
+          echo "\nBuild based on last commit: ${env.GIT_COMMIT}\n" >> ${env.BUILD_OUTPUT_FILE}
         """
 
-        slackSend (
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Build Started ${env.EMOJI_BUILD_START} commit: ${env.GIT_COMMIT}*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Build Started** ${env.EMOJI_BUILD_START} \n\n commit: ${env.GIT_COMMIT}",
         )
       }
     }
 
-    stage('Build') {
+    stage('Compile') {
       steps {
         sh """
           mvn clean
           mvn build-helper:parse-version versions:set -DgenerateBackupPoms=false -DnewVersion=${env.VERSION_NAME}
           mvn -T 4 install -Dmaven.test.failure.ignore=true
-          echo ${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz >> ${env.BUILD_OUTPUT_FILE}
+          echo "\n${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz" >> ${env.BUILD_OUTPUT_FILE}
         """
 
-        slackSend (
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Compile Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nGenerated `${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz`"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Compile finished** ${env.EMOJI_BUILD_START} \n\n commit: ${env.GIT_COMMIT}",
         )
       }
     }
@@ -56,18 +56,13 @@ pipeline {
       when { not { expression { BRANCH_NAME ==~ '^PR.*' } } }
 
       steps {
-        slackSend (
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Copy to Ansible host*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
-        )
-
         sh """
           scp nifi-assembly/target/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz root@${env.ANSIBLE_DEPLOY_HOST}:${env.ANSIBLE_DEVOPS_PATH}/ansible/packages/services/
         """
 
-        slackSend(
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Copy finished*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Copy finished**",
         )
       }
     }
@@ -76,18 +71,18 @@ pipeline {
       when { branch "${env.RUNTIME_DEV_VERSION}" }
 
       steps {
-        slackSend (
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Updating `Dev` (`${env.RUNTIME_DEV_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_START}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Updating `Dev` (`${env.RUNTIME_DEV_ENVIRONMENT}`)**",
         )
 
         sh """
           ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name ${env.RUNTIME_DEV_NAME} --service ${env.PROJECT_NAME}/${env.VERSION_NAME}"
         """
 
-        slackSend(
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Updated `Dev` (`${env.RUNTIME_DEV_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_SUCCESS}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Updated `Dev` (`${env.RUNTIME_DEV_ENVIRONMENT}`)**",
         )
       }
     }
@@ -96,18 +91,18 @@ pipeline {
       when { branch "${env.RUNTIME_TEST_VERSION}" }
 
       steps {
-        slackSend (
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Updating `Test` (`${env.RUNTIME_TEST_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_START}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Updating `Test` (`${env.RUNTIME_TEST_ENVIRONMENT}`)**",
         )
 
         sh """
           ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name ${env.RUNTIME_TEST_NAME} --service ${env.PROJECT_NAME}/${env.VERSION_NAME}"
         """
 
-        slackSend(
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Updated `Test` (`${env.RUNTIME_TEST_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_SUCCESS}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Updated `Test` (`${env.RUNTIME_TEST_ENVIRONMENT}`)**",
         )
       }
     }
@@ -116,18 +111,18 @@ pipeline {
       when { branch "${env.RUNTIME_STAGE_VERSION}" }
 
       steps {
-        slackSend (
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Updating `Stage` (`${env.RUNTIME_STAGE_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_START}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Updating `Stage` (`${env.RUNTIME_STAGE_ENVIRONMENT}`)**",
         )
 
         sh """
           ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name ${env.RUNTIME_STAGE_NAME} --service ${env.PROJECT_NAME}/${env.VERSION_NAME}"
         """
 
-        slackSend(
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Updated `Stage` (`${env.RUNTIME_STAGE_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_SUCCESS}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Updated `Stage` (`${env.RUNTIME_STAGE_ENVIRONMENT}`)**",
         )
       }
     }
@@ -136,18 +131,18 @@ pipeline {
       when { branch "${env.RUNTIME_PROD_VERSION}" }
 
       steps {
-        slackSend (
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Updating `Prod` (`${env.RUNTIME_PROD_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_START}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Updating `Prod` (`${env.RUNTIME_PROD_ENVIRONMENT}`)**",
         )
 
         sh """
           ssh root@${env.ANSIBLE_DEPLOY_HOST} "cd ${env.ANSIBLE_DEVOPS_PATH} && python update.py --name ${env.RUNTIME_PROD_NAME} --service ${env.PROJECT_NAME}/${env.VERSION_NAME}"
         """
 
-        slackSend(
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Updated `Prod` (`${env.RUNTIME_PROD_ENVIRONMENT}`)* ${env.EMOJI_DEPLOY_SUCCESS}\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Updated `Prod` (`${env.RUNTIME_PROD_ENVIRONMENT}`)**",
         )
       }
     }
@@ -156,28 +151,28 @@ pipeline {
       when { not { expression { BRANCH_NAME ==~ '^PR.*' } } }
 
       steps {
-        slackSend(
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Build/Push docker image*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Build/Push docker image**",
         )
 
-        sh "echo Generated Docker Images: >> ${env.BUILD_OUTPUT_FILE}"
+        sh "echo '\nGenerated Docker Images:' >> ${env.BUILD_OUTPUT_FILE}"
 
         script {
           docker.withRegistry("http://${env.DOCKER_REGISTRY_ADDR2}", "${env.DOCKER_REGISTRY_SECRET_ID2}") {
             image = docker.build("${env.DOCKER_REGISTRY_ADDR2}/${env.DOCKER_REGISTRY_PROJECT_NAME}/${env.PROJECT_NAME}:${env.VERSION_NAME}",  "--build-arg VERSION_NAME=${env.VERSION_NAME} --pull -f Dockerfile .")
             image.push()
-            sh "echo ${env.DOCKER_REGISTRY_ADDR2}/${env.DOCKER_REGISTRY_PROJECT_NAME}/${env.PROJECT_NAME}:${env.VERSION_NAME} >> ${env.BUILD_OUTPUT_FILE}"
+            sh "echo '\n${env.DOCKER_REGISTRY_ADDR2}/${env.DOCKER_REGISTRY_PROJECT_NAME}/${env.PROJECT_NAME}:${env.VERSION_NAME}' >> ${env.BUILD_OUTPUT_FILE}"
             if (env.BRANCH_NAME == 'master') {
               image.push('latest')
-              sh "echo ${env.DOCKER_REGISTRY_ADDR2}/${env.DOCKER_REGISTRY_PROJECT_NAME}/${env.PROJECT_NAME}:latest >> ${env.BUILD_OUTPUT_FILE}"
+              sh "echo '\n${env.DOCKER_REGISTRY_ADDR2}/${env.DOCKER_REGISTRY_PROJECT_NAME}/${env.PROJECT_NAME}:latest' >> ${env.BUILD_OUTPUT_FILE}"
             }
           }
         }
 
-        slackSend(
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Build/Push docker image finished*\nJenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Build/Push docker image finished**",
         )
       }
     }
@@ -186,18 +181,18 @@ pipeline {
       when { not { expression { BRANCH_NAME ==~ '^PR.*' } } }
 
       steps {
-        slackSend (
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Upload to Samba*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Upload to Samba**",
         )
 
         sh """
           sudo rsync --progress ${env.WORKSPACE}/nifi-assembly/target/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz ${env.SAMBA_LOCAL_MOUNT_PATH}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/
         """
 
-        slackSend (
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Upload to Samba Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can get it from Samba Server `//${env.SAMBA_SERVER}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz`"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Upload to Samba finished** \n\n You can get it from Samba Server `//${env.SAMBA_SERVER}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz`",
         )
       }
     }
@@ -206,18 +201,19 @@ pipeline {
       when { not { expression { BRANCH_NAME ==~ '^PR.*' } } }
 
       steps {
-        slackSend (
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI}*Upload to S2*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Upload to S3**",
         )
+
 
         sh """
           s3cmd put --acl-public ${env.WORKSPACE}/nifi-assembly/target/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz ${env.S3_PACKAGES_URL}/services/
         """
 
-        slackSend (
-          color: 'good',
-          message: "${env.RUNTIME_EMOJI} *Upload to S2 Finished*\nJenkins Job `${env.JOB_NAME}`, Build Number `${env.BUILD_NUMBER}`\nYou can download it from ${env.DOWNLOAD_PACKAGES_URL_BASE}/services/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz"
+        dingTalk (
+          accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+          message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Upload to S3 finished** \n\n You can download it from ${env.DOWNLOAD_PACKAGES_URL_BASE}/services/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz",
         )
       }
     }
@@ -236,34 +232,33 @@ pipeline {
       noci action: 'postProcess'
     }
 
+
     aborted {
-      slackSend (
-        color: 'good',
-        message: "${env.RUNTIME_EMOJI} *Build Aborted* Jenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}\n${env.build_output}"
+      dingTalk (
+        accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+        message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Build Aborted**",
       )
     }
 
     unstable {
-      slackSend (
-        color: 'good',
-        message: "${env.RUNTIME_EMOJI} *Build Unstable* Jenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}\n${env.build_output}"
+      dingTalk (
+        accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+        message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Build Unstable**",
       )
     }
 
     success {
-      slackSend (
-        color: 'good',
-        message: "${env.RUNTIME_EMOJI} *Build Succeed* ${env.EMOJI_BUILD_SUCCESS} Jenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}\n${env.build_output}"
+      dingTalk (
+        accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+        message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Build Succeed**${env.EMOJI_BUILD_SUCCESS} \n\n ${env.build_output}",
       )
     }
-
 
     failure {
-      slackSend (
-        color: 'danger',
-        message: "${env.RUNTIME_EMOJI} *Build Failed* ${env.EMOJI_BUILD_FAILURE} Jenkins Job *`${env.JOB_NAME}`*, Build Number `${env.BUILD_NUMBER}`\nSee: ${env.BUILD_URL}"
+      dingTalk (
+        accessToken: "${env.DINGDING_ACCESS_TOKEN}",
+        message: "### ${env.RUNTIME_EMOJI} [${JOB_NAME}${BUILD_DISPLAY_NAME}](${BUILD_URL}) \n\n **Build Failed** ${env.EMOJI_BUILD_FAILURE}",
       )
     }
-
   }
 }
