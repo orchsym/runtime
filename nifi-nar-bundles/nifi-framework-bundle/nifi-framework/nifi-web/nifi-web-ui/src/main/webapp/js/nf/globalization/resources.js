@@ -19,6 +19,7 @@ window.locale = "";
 window.defaultLocale = "";
 window.productVersion = "";
 window.buildDate = "";
+window.supportEmail = "";
 var configurationUrl = "../nifi-api/flow/about";
 
 $.ajax({
@@ -31,6 +32,7 @@ $.ajax({
             defaultLocale = res.about.locale.substring(0, 2).toLocaleLowerCase()
             productVersion = res.about.productVersion
             buildDate = res.about.buildDate
+            supportEmail = res.about.supportEmail
         }catch (e) {
             console.error('Data format does not meet expectations.')
         }
@@ -118,8 +120,8 @@ nf._ = (function () {
         "nf-canvas-graph-controls-controller.MultipleSelected": "Multiple Selected",
         "nf-canvas-global-menu-controller.About": "About Flow Files",
         "nf-canvas-global-menu-controller.OK": "OK",
-        "nf-canvas-global-menu-controller.dialogContent": "The digital hive orchestration platform adopts the operation mode of the application components to visualize and drag and drop, realizes the reorganization and reorganization of the enterprise business, logic and process, thereby shortening the internal innovation cycle, improving the collaboration efficiency and quickly meeting the business requirements.",
-        "nf-canvas-global-menu-controller.supportEmail": "Email technical support: orchsym-support@baishancloud.com",
+        "nf-canvas-global-menu-controller.dialogContent": "The platform adopts the operation mode of the application components to visualize and drag and drop, realizes the reorganization and reorganization of the enterprise business, logic and process, thereby shortening the internal innovation cycle, improving the collaboration efficiency and quickly meeting the business requirements.",
+        "nf-canvas-global-menu-controller.supportEmail": "Email technical support",
         "nf-canvas-global-menu-controller.version": 'Version',
         "nf-canvas-global-menu-controller.updateTime": "Update time",
         "nf-canvas-operate-controller.SUCCESS": "SUCCESS",
@@ -1225,10 +1227,10 @@ nf._ = (function () {
         "nf-canvas-graph-controls-controller.MultipleSelected": "已选择多个",
         "nf-canvas-global-menu-controller.About": "关于",
         "nf-canvas-global-menu-controller.OK": "确认",
-        "nf-canvas-global-menu-controller.dialogContent": "数聚蜂巢编排平台采用应用组件可视化拖拽的操作方式，实现对企业业务、逻辑、流程的编排重组，从而缩短企业内部创新周期，提高协作效率，快速满足业务需求。",
+        "nf-canvas-global-menu-controller.dialogContent": "该编排平台采用应用组件可视化拖拽的操作方式，实现对企业业务、逻辑、流程的编排重组，从而缩短企业内部创新周期，提高协作效率，快速满足业务需求。",
         "nf-canvas-global-menu-controller.version": '版本',
         "nf-canvas-global-menu-controller.updateTime": "更新时间",
-        "nf-canvas-global-menu-controller.supportEmail": "电子邮件技术支持: orchsym-support@baishancloud.com",
+        "nf-canvas-global-menu-controller.supportEmail": "电子邮件技术支持",
         "nf-canvas-operate-controller.SUCCESS": "成功",
         "nf-canvas-operate-controller.SuccessContent": "模板成功导入.",
         "nf-canvas-operate-controller.Upload": "上传模板",

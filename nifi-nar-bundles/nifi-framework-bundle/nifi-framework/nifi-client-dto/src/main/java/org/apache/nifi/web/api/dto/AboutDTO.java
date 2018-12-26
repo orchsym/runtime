@@ -48,7 +48,10 @@ public class AboutDTO {
     
     private Locale locale;
     private String productVersion;
+    private String productName;
     private LocalDate buildDate;
+    
+    private String supportEmail;
 
     /* getters / setters */
     /**
@@ -198,6 +201,17 @@ public class AboutDTO {
         this.productVersion = productVersion;
     }
 
+    @ApiModelProperty(
+            value = "Product Name"
+    )
+    public String getProductName() {
+        return productName;
+    }
+
+    public void setProductName(String productName) {
+        this.productName = productName;
+    }
+
     @XmlJavaTypeAdapter(LocalDateAdapter.class)
     @ApiModelProperty(
             value = "Build Date",
@@ -209,6 +223,17 @@ public class AboutDTO {
 
     public void setBuildDate(LocalDate buildDate) {
         this.buildDate = buildDate;
+    }
+
+    @ApiModelProperty(
+            value = "Support E-Mail"
+    )
+    public String getSupportEmail() {
+        return supportEmail;
+    }
+
+    public void setSupportEmail(String supportEmail) {
+        this.supportEmail = supportEmail;
     }
     
 }

@@ -452,11 +452,11 @@
             getAboutContent: function () {
                 return nf._.msg('nf-canvas-global-menu-controller.aboutContent')
             },
-            getdialogContent: function () {
+            getDialogContent: function () {
                 return nf._.msg('nf-canvas-global-menu-controller.dialogContent')
             },
             getSupportEmail: function () {
-                return nf._.msg('nf-canvas-global-menu-controller.supportEmail')
+                return nf._.msg('nf-canvas-global-menu-controller.supportEmail') + ': ' +  window.supportEmail;
             }
         }
 

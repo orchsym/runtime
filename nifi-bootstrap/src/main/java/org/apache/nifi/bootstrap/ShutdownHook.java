@@ -41,7 +41,7 @@ public class ShutdownHook extends Thread {
         this.executor = executor;
     }
 
-    void setSecretKey(final String secretKey) {
+    public void setSecretKey(final String secretKey) {
         this.secretKey = secretKey;
     }
 

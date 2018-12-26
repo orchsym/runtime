@@ -16,6 +16,7 @@
  */
 package org.apache.nifi.web.api;
 
+import com.orchsym.util.BrandingProperties;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -1361,11 +1362,16 @@ public class FlowResource extends ApplicationResource {
             }
     )
     public Response getAboutInfo() {
-        authorizeFlow();
+        // authorizeFlow(); //not auth for about
 
         // create the about dto
         final AboutDTO aboutDTO = new AboutDTO();
-        aboutDTO.setTitle("Orchsym");
+        
+        final BrandingProperties brandingProp = new BrandingProperties();
+        final String productName = brandingProp.getProductName();
+        aboutDTO.setTitle(productName);
+        aboutDTO.setProductName(productName);
+        aboutDTO.setSupportEmail(brandingProp.getSupportEmail());
         aboutDTO.setUri(generateResourceUri());
         aboutDTO.setTimezone(new Date());
 
@@ -1395,7 +1401,7 @@ public class FlowResource extends ApplicationResource {
             LocalDate localDate = localDateTime.toLocalDate();
             aboutDTO.setBuildDate(localDate);
             
-            String productVersion = "2.0.1"; // default is fix one
+            String productVersion = "2.2.0"; // default is fix one
 
             try {
                 final Class<?> versionClass = Class.forName("com.orchsym.core.ver.VersionUtil");
@@ -1406,11 +1412,10 @@ public class FlowResource extends ApplicationResource {
                     productVersion = ver.toString();
                 }
             } catch (Exception e) {
-                // don't add tag yet
-                // final int lineIndex = bundleVersion.indexOf('-');
-                // if (lineIndex > 0) {
-                // productVersion += bundleVersion.substring(lineIndex);
-                // }
+                final int lineIndex = bundleVersion.indexOf('-');
+                if (lineIndex > 0 && !bundleVersion.endsWith("SNAPSHOT")) { // like 1.7.1-2.2.0
+                    productVersion = bundleVersion.substring(lineIndex);
+                }
             }
             if (bundleVersion.contains("SNAPSHOT"))
                 productVersion += '-' + buildRevision;

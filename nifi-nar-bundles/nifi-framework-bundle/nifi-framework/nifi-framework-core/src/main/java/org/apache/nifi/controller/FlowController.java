@@ -16,6 +16,7 @@
  */
 package org.apache.nifi.controller;
 
+import com.orchsym.util.BrandingProperties;
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.action.Action;
@@ -280,7 +281,6 @@ public class FlowController implements EventAccess, ControllerServiceProvider, R
     public static final int METRICS_RESERVOIR_SIZE = 288; // 1 day worth of 5-minute captures
 
     public static final String ROOT_GROUP_ID_ALIAS = "root";
-    public static final String DEFAULT_ROOT_GROUP_NAME = "Orchsym Studio";
 
     // default properties for scaling the positions of components from pre-1.0 flow encoding versions.
     public static final double DEFAULT_POSITION_SCALE_FACTOR_X = 1.5;
@@ -564,7 +564,8 @@ public class FlowController implements EventAccess, ControllerServiceProvider, R
 
         final ProcessGroup rootGroup = new StandardProcessGroup(ComponentIdGenerator.generateId().toString(), this, processScheduler,
             nifiProperties, encryptor, this, new MutableVariableRegistry(this.variableRegistry));
-        rootGroup.setName(DEFAULT_ROOT_GROUP_NAME);
+        final BrandingProperties brandingProp = new BrandingProperties();
+        rootGroup.setName(brandingProp.getRootGroupName());
         setRootGroup(rootGroup);
         instanceId = ComponentIdGenerator.generateId().toString();
 

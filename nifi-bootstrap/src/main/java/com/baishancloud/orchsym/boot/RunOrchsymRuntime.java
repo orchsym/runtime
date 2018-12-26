@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.nifi.bootstrap.RunNiFi;
@@ -26,6 +28,10 @@ import org.apache.nifi.bootstrap.ShutdownHook;
 import org.apache.nifi.bootstrap.notification.NotificationType;
 import org.apache.nifi.bootstrap.util.OSUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.orchsym.util.BrandingProperties;
+import com.orchsym.util.OrchsymProperties;
 
 /**
  * 
@@ -34,8 +40,7 @@ import org.slf4j.Logger;
  */
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class RunOrchsymRuntime extends RunNiFi {
-    public static final String RUNTIME_NAME = "Orchsym Runtime";
-    public static final String KEY_LIC = "orchsym.lic.path";
+    public static String RUNTIME_NAME = BrandingProperties.DEFAULT_RUNTIME_NAME;
 
     private final FilenameFilter jarFilter = new FilenameFilter() {
         @Override
@@ -45,7 +50,60 @@ public class RunOrchsymRuntime extends RunNiFi {
     };
 
     public RunOrchsymRuntime(File bootstrapConfigFile, boolean verbose) throws IOException {
-        super(bootstrapConfigFile, verbose);
+        super(bootstrapConfigFile);
+        setRuntimeName(bootstrapConfigFile);
+
+        this.cmdLogger = LoggerFactory.getLogger("com.orchsym.bootstrap.Command");
+        this.defaultLogger = LoggerFactory.getLogger(RunOrchsymRuntime.class);
+        this.loggingExecutor = Executors.newFixedThreadPool(2, new ThreadFactory() {
+            @Override
+            public Thread newThread(final Runnable runnable) {
+                final Thread t = Executors.defaultThreadFactory().newThread(runnable);
+                t.setDaemon(true);
+                t.setName(RUNTIME_NAME + " logging handler");
+                return t;
+            }
+        });
+        this.serviceManager = loadServices();
+    }
+
+    /**
+     * 
+     * must be same as BrandingProperties for keys and default values.
+     */
+    private static void setRuntimeName(File bootstrapConfigFile) {
+        final File configFolder = bootstrapConfigFile.getAbsoluteFile().getParentFile();
+        BrandingProperties brandingProp = new BrandingProperties(configFolder);
+        RUNTIME_NAME = brandingProp.getRuntimeName();
+    }
+
+    /**
+     * Only replace the "Apache NiFi" to RUNTIME_NAME
+     */
+    protected void setNiFiCommandControlPort(final int port, final String secretKey) throws IOException {
+        this.ccPort = port;
+        this.secretKey = secretKey;
+
+        if (shutdownHook != null) {
+            shutdownHook.setSecretKey(secretKey);
+        }
+
+        final File statusFile = getStatusFile(defaultLogger);
+
+        final Properties nifiProps = new Properties();
+        if (nifiPid != -1) {
+            nifiProps.setProperty(PID_KEY, String.valueOf(nifiPid));
+        }
+        nifiProps.setProperty("port", String.valueOf(ccPort));
+        nifiProps.setProperty("secret.key", secretKey);
+
+        try {
+            savePidProperties(nifiProps, defaultLogger);
+        } catch (final IOException ioe) {
+            defaultLogger.warn(RUNTIME_NAME + " has started but failed to persist platform Port information to {} due to {}", new Object[] { statusFile.getAbsolutePath(), ioe });
+        }
+
+        defaultLogger.info(RUNTIME_NAME + " now running and listening for Bootstrap requests on port {}", port);
     }
 
     /**
@@ -217,6 +275,14 @@ public class RunOrchsymRuntime extends RunNiFi {
         }
     }
 
+    private void addProperty(List<String> cmd, String propKey, Object value) {
+        if (value != null) {
+            String str = value.toString();
+            if (!str.trim().isEmpty())
+                cmd.add("-D" + propKey + "=" + value);
+        }
+    }
+
     /**
      * replace the "Apache NiFi" to RUNTIME_NAME, and RuntimeListener, also set one property for lic, add ext lib
      */
@@ -253,25 +319,24 @@ public class RunOrchsymRuntime extends RunNiFi {
         }
 
         final File bootstrapConfigAbsoluteFile = bootstrapConfigFile.getAbsoluteFile();
-        final File binDir = bootstrapConfigAbsoluteFile.getParentFile();
-        final File workingDir = binDir.getParentFile();
+        final File workingDir = bootstrapConfigAbsoluteFile.getParentFile().getParentFile();
 
         if (specifiedWorkingDir == null) {
             builder.directory(workingDir);
         }
 
-        final String nifiLogDir = replaceNull(System.getProperty("org.apache.nifi.bootstrap.config.log.dir"), DEFAULT_LOG_DIR).trim();
+        final String nifiLogDir = replaceNull(System.getProperty(OrchsymProperties.NIFI_BOOTSTRAP_LOG_DIR), DEFAULT_LOG_DIR).trim();
 
         final String libFilename = replaceNull(props.get("lib.dir"), "./lib").trim();
         File libDir = getFile(libFilename, workingDir);
 
-        final String confFilename = replaceNull(props.get("conf.dir"), "./conf").trim();
+        final String confFilename = replaceNull(props.get("conf.dir"), OrchsymProperties.CONF_DIR).trim();
         File confDir = getFile(confFilename, workingDir);
 
         String nifiPropsFilename = props.get("props.file");
         if (nifiPropsFilename == null) {
             if (confDir.exists()) {
-                nifiPropsFilename = new File(confDir, "orchsym.properties").getAbsolutePath();
+                nifiPropsFilename = new File(confDir, OrchsymProperties.FILE_NAME).getAbsolutePath();
             } else {
                 nifiPropsFilename = DEFAULT_CONFIG_FILE;
             }
@@ -352,15 +417,14 @@ public class RunOrchsymRuntime extends RunNiFi {
         cmd.add("-classpath");
         cmd.add(classPath);
         cmd.addAll(javaAdditionalArgs);
-        cmd.add("-Dnifi.properties.file.path=" + nifiPropsFilename);
-        cmd.add("-Dnifi.bootstrap.listen.port=" + listenPort);
-        cmd.add("-Dapp=NiFi");
-        cmd.add("-Dorg.apache.nifi.bootstrap.config.log.dir=" + nifiLogDir);
-        cmd.add("-D" + KEY_LIC + "=" + getLicFile().getAbsolutePath()); // set lic path
-        if (libraryPaths != null && !libraryPaths.isEmpty()) {
-            cmd.add("-D" + NativeLibrariesLoader.KEY_LIB_PATH + "=" + libraryPaths);
-        }
-        cmd.add("org.apache.nifi.NiFi");
+        addProperty(cmd, OrchsymProperties.PROPERTIES_FILE_PATH, nifiPropsFilename);
+        addProperty(cmd, OrchsymProperties.BOOTSTRAP_LISTEN_PORT, listenPort);
+        addProperty(cmd, OrchsymProperties.APP, BrandingProperties.DEFAULT_SHORT_RUNTIME_NAME);
+        addProperty(cmd, OrchsymProperties.NIFI_BOOTSTRAP_LOG_DIR, nifiLogDir); //because logback still use it
+        addProperty(cmd, OrchsymProperties.BOOTSTRAP_LOG_DIR, nifiLogDir);
+        addProperty(cmd, OrchsymProperties.LIC_PATH, getLicFile().getAbsolutePath());
+        addProperty(cmd, NativeLibrariesLoader.KEY_LIB_PATH, libraryPaths);
+        cmd.add("com.orchsym.OrchsymRuntime");
         if (isSensitiveKeyPresent(props)) {
             Path sensitiveKeyFile = createSensitiveKeyFile(confDir);
             writeSensitiveKeyFile(props, sensitiveKeyFile);
@@ -535,7 +599,7 @@ public class RunOrchsymRuntime extends RunNiFi {
     }
 
     private static File getLicFile() {
-        return new File(System.getProperty(KEY_LIC, "./conf/lic"));
+        return new File(System.getProperty(OrchsymProperties.LIC_PATH, "./conf/lic"));
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {

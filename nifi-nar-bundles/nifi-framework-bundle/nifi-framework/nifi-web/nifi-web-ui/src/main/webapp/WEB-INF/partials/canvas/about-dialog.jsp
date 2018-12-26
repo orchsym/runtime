@@ -30,10 +30,10 @@
     <div class="dialog-content" style="position: initial;padding: 15px;">
         <div id="nf-about-content">
             <p>
-                {{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-canvas-global-menu-controller.dialogContent'] }}
+                {{ appCtrl.serviceProvider.globalMenuCtrl.getDialogContent() }}
                 <br><br>
             </p>
-            <p>{{ appCtrl.serviceProvider.globalMenuCtrl.constant['nf-canvas-global-menu-controller.supportEmail'] }}</p>
+            <p>{{ appCtrl.serviceProvider.globalMenuCtrl.getSupportEmail() }}</p>
         </div>
     </div>
 </div>

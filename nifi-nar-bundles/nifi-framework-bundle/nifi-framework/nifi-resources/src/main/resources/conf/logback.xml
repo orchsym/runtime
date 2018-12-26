@@ -83,7 +83,7 @@
     </appender>
     
     <!-- valid logging levels: TRACE, DEBUG, INFO, WARN, ERROR -->
-    
+
     <logger name="org.apache.nifi" level="INFO"/>
     <logger name="org.apache.nifi.processors" level="WARN"/>
     <logger name="org.apache.nifi.processors.standard.LogAttribute" level="INFO"/>
@@ -139,6 +139,17 @@
         <appender-ref ref="USER_FILE"/>
     </logger>
 
+    <!--
+        Logger for capturing orchsym pacakge. 
+    -->
+	<logger name="com.orchsym" level="INFO"/>
+    <logger name="com.orchsym.bootstrap" level="INFO" additivity="false">
+        <appender-ref ref="BOOTSTRAP_FILE" />
+    </logger>
+    <logger name="com.orchsym.bootstrap.Command" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="BOOTSTRAP_FILE" />
+    </logger>
 
     <!--
         Logger for capturing Bootstrap logs and NiFi's standard error and standard out. 

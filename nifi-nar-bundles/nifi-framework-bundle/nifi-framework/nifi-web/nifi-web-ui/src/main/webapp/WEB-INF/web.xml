@@ -24,6 +24,11 @@
        <param-name>javax.servlet.jsp.jstl.fmt.locale</param-name>
        <param-value>cn</param-value>
     </context-param>
+
+    <listener>
+        <listener-class>com.orchsym.web.listener.WebResourcesSyncContextListener</listener-class>
+    </listener>
+
     <!-- servlet to map to canvas page -->
     <servlet>
         <servlet-name>NiFiCanvas</servlet-name>

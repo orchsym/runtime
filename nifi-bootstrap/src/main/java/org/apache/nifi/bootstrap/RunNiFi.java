@@ -114,7 +114,7 @@ public class RunNiFi {
     public static final String DUMP_CMD = "DUMP";
 
     protected volatile boolean autoRestartNiFi = true;
-    private volatile int ccPort = -1;
+    protected volatile int ccPort = -1;
     protected volatile long nifiPid = -1L;
     protected volatile String secretKey;
     protected volatile ShutdownHook shutdownHook;
@@ -127,14 +127,18 @@ public class RunNiFi {
     protected final File bootstrapConfigFile;
 
     // used for logging initial info; these will be logged to console by default when the app is started
-    protected final Logger cmdLogger = LoggerFactory.getLogger("org.apache.nifi.bootstrap.Command");
+    protected Logger cmdLogger = LoggerFactory.getLogger("org.apache.nifi.bootstrap.Command");
     // used for logging all info. These by default will be written to the log file
-    protected final Logger defaultLogger = LoggerFactory.getLogger(RunNiFi.class);
+    protected Logger defaultLogger = LoggerFactory.getLogger(RunNiFi.class);
 
 
-    protected final ExecutorService loggingExecutor;
+    protected ExecutorService loggingExecutor;
     private volatile Set<Future<?>> loggingFutures = new HashSet<>(2);
-    protected final NotificationServiceManager serviceManager;
+    protected  NotificationServiceManager serviceManager;
+
+    protected RunNiFi(final File bootstrapConfigFile) throws IOException {
+        this.bootstrapConfigFile = bootstrapConfigFile;
+    }
 
     public RunNiFi(final File bootstrapConfigFile, final boolean verbose) throws IOException {
         this.bootstrapConfigFile = bootstrapConfigFile;
@@ -261,7 +265,7 @@ public class RunNiFi {
         return configFile;
     }
 
-    private NotificationServiceManager loadServices() throws IOException {
+    protected NotificationServiceManager loadServices() throws IOException {
         final File bootstrapConfFile = this.bootstrapConfigFile;
         final Properties properties = new Properties();
         try (final FileInputStream fis = new FileInputStream(bootstrapConfFile)) {
