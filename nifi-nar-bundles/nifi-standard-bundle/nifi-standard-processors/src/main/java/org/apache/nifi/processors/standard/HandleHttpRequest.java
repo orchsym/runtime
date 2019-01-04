@@ -175,7 +175,8 @@ public class HandleHttpRequest extends AbstractProcessor {
             .description("A Regular Expression that specifies the valid HTTP Paths that are allowed in the incoming URL Requests. If this value is " //
                     + "specified and the path of the HTTP Requests does not match this Regular Expression, the Processor will respond with a " //
                     + "404: NotFound") //
-            .required(false) //
+            .required(true) //
+            .defaultValue("/")
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR) //
             .expressionLanguageSupported(ExpressionLanguageScope.NONE) //
             .build();
