@@ -715,11 +715,15 @@
          * @argument {selection} selection      The selection
          */
         start: function(selection){
+            console.log(selection)
             this.selection = selection;
-            var selectionData = selection.datum();
             var parentGroupId = nfCanvasUtils.getGroupId();
-            // create a snippet for the specified component and link to the data flow
-            var snippet = nfSnippet.marshal(selection, parentGroupId);
+            if (!selection.empty()){
+                var snippet = nfSnippet.marshal(selection, parentGroupId);
+            } else {
+                // create a snippet for the specified component and link to the data flow
+                var snippet = nfSnippet.marshal(d3.selectAll("g.processor, g.process-group"), parentGroupId);
+            }
             nfSnippet.create(snippet).done(function (response) {
                 $.ajax({
                     type: 'GET',
