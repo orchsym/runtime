@@ -88,12 +88,6 @@
             <artifactId>nifi-kerberos-credentials-service-api</artifactId>
             <scope>compile</scope>
         </dependency>
-         <dependency>
-            <groupId>com.baishancloud.orchsym</groupId>
-            <artifactId>orchsym-sapcp-service-api</artifactId>
-            <version>${project.version}</version>
-            <scope>compile</scope>
-        </dependency>
         <dependency>
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-proxy-configuration-api</artifactId>

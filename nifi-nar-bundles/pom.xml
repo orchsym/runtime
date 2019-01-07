@@ -94,14 +94,10 @@
         <module>nifi-spark-bundle</module>
         <module>nifi-atlas-bundle</module>
         <module>nifi-druid-bundle</module>
-        <module>nifi-saphana-bundle</module>
         <module>nifi-soap-bundle</module>
         <module>nifi-mapper-bundle</module>
-        <module>nifi-dubbo-bundle</module>
         <module>nifi-store-procedure-bundle</module>
-        <module>orchsym-sap-bundle</module>
-        <module>nifi-opcua-bundle</module>
-        <module>nifi-edireader-bundle</module>
+        <module>orchsym-attributes-bundle</module>
     </modules>
     <build>
         <plugins>

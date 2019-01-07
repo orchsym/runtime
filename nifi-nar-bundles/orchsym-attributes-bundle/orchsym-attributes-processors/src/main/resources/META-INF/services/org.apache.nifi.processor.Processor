@@ -1,0 +1,3 @@
+com.orchsym.processor.attributes.ExtractAvroToAttributes
+com.orchsym.processor.attributes.ExtractJSONToAttributes
+com.orchsym.processor.attributes.ExtractXMLToAttributes

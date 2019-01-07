@@ -1,3 +1,0 @@
-com.baishancloud.orchsym.processors.sap.InvokeSAPRFC
-com.baishancloud.orchsym.processors.sap.ListenSAPTCP
-com.baishancloud.orchsym.processors.sap.HandleSAPTCPResponse

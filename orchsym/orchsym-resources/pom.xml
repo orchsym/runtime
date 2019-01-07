@@ -20,7 +20,7 @@
 	<parent>
 		<groupId>com.orchsym</groupId>
 		<artifactId>orchsym</artifactId>
-		<version>1.7.0-SNAPSHOT</version>
+		<version>1.7.1-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>orchsym-resources</artifactId>

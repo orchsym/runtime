@@ -21,6 +21,7 @@ language governing permissions and limitations under the License. -->
     <description>This is the assembly Apache NiFi</description>
     <build>
         <plugins>
+        <!-- won't package the original nifi package yet
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
@@ -53,6 +54,7 @@ language governing permissions and limitations under the License. -->
                     </execution>
                 </executions>
             </plugin>
+             -->
         </plugins>
     </build>
     <dependencies>
