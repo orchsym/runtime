@@ -92,6 +92,7 @@ public class StatsResource extends ApplicationResource {
     }
 
     public void setFlowController(FlowController flowController) {
+        super.setFlowController(flowController);
         this.flowController = flowController;
     }
 
