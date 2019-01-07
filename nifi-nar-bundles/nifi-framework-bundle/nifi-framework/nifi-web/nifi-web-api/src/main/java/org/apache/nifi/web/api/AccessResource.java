@@ -784,6 +784,12 @@ public class AccessResource extends ApplicationResource {
         return generateResourceUri("access", "oidc", "callback");
     }
 
+    private String getNiFiUri() {
+        final String nifiApiUrl = generateResourceUri();
+        final String baseUrl = StringUtils.substringBeforeLast(nifiApiUrl,"/nifi-api");
+        return baseUrl + "/nifi";
+    }
+
     private void removeOidcRequestCookie(final HttpServletResponse httpServletResponse) {
         final Cookie cookie = new Cookie(OIDC_REQUEST_IDENTIFIER, null);
         cookie.setPath("/");

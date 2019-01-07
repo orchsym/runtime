@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
+import org.apache.nifi.components.validation.ValidationTrigger;
 import org.apache.nifi.connectable.Connectable;
 import org.apache.nifi.controller.scheduling.LifecycleState;
 import org.apache.nifi.controller.scheduling.SchedulingAgent;
@@ -37,20 +38,16 @@ import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.registry.ComponentVariableRegistry;
 import org.apache.nifi.scheduling.ExecutionNode;
 import org.apache.nifi.scheduling.SchedulingStrategy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public abstract class ProcessorNode extends AbstractConfiguredComponent implements Connectable {
-
-    private static final Logger logger = LoggerFactory.getLogger(ProcessorNode.class);
+public abstract class ProcessorNode extends AbstractComponentNode implements Connectable {
 
     protected final AtomicReference<ScheduledState> scheduledState;
 
     public ProcessorNode(final String id,
                          final ValidationContextFactory validationContextFactory, final ControllerServiceProvider serviceProvider,
                          final String componentType, final String componentCanonicalClass, final ComponentVariableRegistry variableRegistry,
-                         final ReloadComponent reloadComponent, final boolean isExtensionMissing) {
-        super(id, validationContextFactory, serviceProvider, componentType, componentCanonicalClass, variableRegistry, reloadComponent, isExtensionMissing);
+                         final ReloadComponent reloadComponent, final ValidationTrigger validationTrigger, final boolean isExtensionMissing) {
+        super(id, validationContextFactory, serviceProvider, componentType, componentCanonicalClass, variableRegistry, reloadComponent, validationTrigger, isExtensionMissing);
         this.scheduledState = new AtomicReference<>(ScheduledState.STOPPED);
     }
 
@@ -67,6 +64,8 @@ public abstract class ProcessorNode extends AbstractConfiguredComponent implemen
 
     public abstract boolean isEventDrivenSupported();
 
+    public abstract boolean isExecutionNodeRestricted();
+
     public abstract Requirement getInputRequirement();
 
     public abstract List<ActiveThreadInfo> getActiveThreads();
@@ -81,9 +80,6 @@ public abstract class ProcessorNode extends AbstractConfiguredComponent implemen
      * @return the number of threads that are still 'active' in this Processor but have been terminated.
      */
     public abstract int getTerminatedThreadCount();
-
-    @Override
-    public abstract boolean isValid();
 
     public abstract void setBulletinLevel(LogLevel bulletinLevel);
 
@@ -231,20 +227,12 @@ public abstract class ProcessorNode extends AbstractConfiguredComponent implemen
      * that this processor can be started. This is idempotent operation and will
      * result in the WARN message if processor can not be enabled.
      */
-    public void enable() {
-        if (!this.scheduledState.compareAndSet(ScheduledState.DISABLED, ScheduledState.STOPPED)) {
-            logger.warn("Processor cannot be enabled because it is not disabled");
-        }
-    }
+    public abstract void enable();
 
     /**
      * Will set the state of the processor to DISABLED which essentially implies
      * that this processor can NOT be started. This is idempotent operation and
      * will result in the WARN message if processor can not be enabled.
      */
-    public void disable() {
-        if (!this.scheduledState.compareAndSet(ScheduledState.STOPPED, ScheduledState.DISABLED)) {
-            logger.warn("Processor cannot be disabled because its state is set to " + this.scheduledState);
-        }
-    }
+    public abstract void disable();
 }

@@ -5,9 +5,9 @@
 	<parent>
 		<groupId>org.apache.nifi</groupId>
 		<artifactId>nifi-standard-services</artifactId>
-		<version>1.7.0-SNAPSHOT</version>
+		<version>1.7.1-SNAPSHOT</version>
 	</parent>
-	
+
 	<groupId>com.baishancloud.orchsym</groupId>
 	<artifactId>orchsym-sapcp-service-bundle</artifactId>
 	<packaging>pom</packaging>

@@ -49,6 +49,25 @@ import ca.uhn.hl7v2.validation.impl.ValidationContextFactory;
 
 public class ConvertHL7Message extends AbstractProcessor {
 
+    static  class MutexValidator implements Validator{
+
+        private PropertyDescriptor source_value;
+        private PropertyDescriptor target_value;
+        private String message;
+
+        public MutexValidator(String source_name,String target_name){
+            this.source_value = new PropertyDescriptor.Builder().name(source_name).build();
+            this.target_value = new PropertyDescriptor.Builder().name(target_name).build();
+            this.message = source_name + " and " + target_name +" could not be same!";
+        }
+        @Override
+        public ValidationResult validate(final String subject, final String value, final org.apache.nifi.components.ValidationContext context) {
+            final String sourceType = context.getProperty(source_value).getValue();
+            final String targetType = context.getProperty(target_value).getValue();
+            return new ValidationResult.Builder().subject(subject).input(value).explanation(message).valid(!sourceType.equals(targetType)).build();
+        }
+    }
+
     public static final PropertyDescriptor CHARACTER_SET = new PropertyDescriptor.Builder()
             .name("Character Encoding")
             .displayName("Character Encoding")
@@ -75,7 +94,7 @@ public class ConvertHL7Message extends AbstractProcessor {
             .required(true)
             .allowableValues("PIPE", "XML")
             .defaultValue("PIPE")
-            .addValidator(new StandardValidators.MutexValidator("Source message Type","Target message Type"))
+            .addValidator(new MutexValidator("Source message Type","Target message Type"))
             .build();
 
     public static final PropertyDescriptor SKIP_VALIDATION = new PropertyDescriptor.Builder()

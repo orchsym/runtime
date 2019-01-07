@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -79,10 +80,10 @@ public class TestReplaceText {
     }
 
     @Test
-    public void testWithEscaped$InReplacement() throws IOException {
+    public void testEscapedEnough$InReplacementCanReturnEscaped$() throws IOException {
         final TestRunner runner = getRunner();
-        runner.setProperty(ReplaceText.SEARCH_VALUE, "(?s:^.*$)");
-        runner.setProperty(ReplaceText.REPLACEMENT_VALUE, "a\\$b");
+        runner.setProperty(ReplaceText.SEARCH_VALUE, "(?s)(^.*$)");
+        runner.setProperty(ReplaceText.REPLACEMENT_VALUE, "a\\\\\\$b");
 
         runner.enqueue("a$a,b,c,d");
         runner.run();
@@ -90,6 +91,20 @@ public class TestReplaceText {
         runner.assertAllFlowFilesTransferred(ReplaceText.REL_SUCCESS, 1);
         final MockFlowFile out = runner.getFlowFilesForRelationship(ReplaceText.REL_SUCCESS).get(0);
         out.assertContentEquals("a\\$b".getBytes("UTF-8"));
+    }
+
+    @Test
+    public void testWithEscaped$InReplacement() throws IOException {
+        final TestRunner runner = getRunner();
+        runner.setProperty(ReplaceText.SEARCH_VALUE, "(?s)(^.*$)");
+        runner.setProperty(ReplaceText.REPLACEMENT_VALUE, "a\\$b");
+
+        runner.enqueue("a$a,b,c,d");
+        runner.run();
+
+        runner.assertAllFlowFilesTransferred(ReplaceText.REL_SUCCESS, 1);
+        final MockFlowFile out = runner.getFlowFilesForRelationship(ReplaceText.REL_SUCCESS).get(0);
+        out.assertContentEquals("a$b".getBytes("UTF-8"));
     }
 
     @Test
@@ -104,6 +119,34 @@ public class TestReplaceText {
         runner.assertAllFlowFilesTransferred(ReplaceText.REL_SUCCESS, 1);
         final MockFlowFile out = runner.getFlowFilesForRelationship(ReplaceText.REL_SUCCESS).get(0);
         out.assertContentEquals("a$b".getBytes("UTF-8"));
+    }
+
+    @Test
+    public void testWithSingleQuotedELInReplacement() throws IOException {
+        final TestRunner runner = getRunner();
+        runner.setProperty(ReplaceText.SEARCH_VALUE, "\"([a-z]+)\":\"(\\w+)\"");
+        runner.setProperty(ReplaceText.REPLACEMENT_VALUE, "\"${'$1':toUpper()}\":\"$2\"");
+        runner.enqueue("{\"name\":\"Smith\",\"middle\":\"nifi\",\"firstname\":\"John\"}");
+        runner.run();
+
+        runner.assertAllFlowFilesTransferred(ReplaceText.REL_SUCCESS, 1);
+        final MockFlowFile out = runner.getFlowFilesForRelationship(ReplaceText.REL_SUCCESS).get(0);
+        out.assertContentEquals("{\"NAME\":\"Smith\",\"MIDDLE\":\"nifi\",\"FIRSTNAME\":\"John\"}");
+
+    }
+
+    @Test
+    public void testWithDoubleQuotedELInReplacement() throws IOException {
+        final TestRunner runner = getRunner();
+        runner.setProperty(ReplaceText.SEARCH_VALUE, "\"([a-z]+)\":\"(\\w+)\"");
+        runner.setProperty(ReplaceText.REPLACEMENT_VALUE, "\"${\"$1\":toUpper()}\":\"$2\"");
+        runner.enqueue("{\"name\":\"Smith\",\"middle\":\"nifi\",\"firstname\":\"John\"}");
+        runner.run();
+
+        runner.assertAllFlowFilesTransferred(ReplaceText.REL_SUCCESS, 1);
+        final MockFlowFile out = runner.getFlowFilesForRelationship(ReplaceText.REL_SUCCESS).get(0);
+        out.assertContentEquals("{\"NAME\":\"Smith\",\"MIDDLE\":\"nifi\",\"FIRSTNAME\":\"John\"}");
+
     }
 
     @Test
@@ -1100,6 +1143,22 @@ public class TestReplaceText {
     }
 
     @Test
+    public void testRegexWithELAndELSpecialChars() throws Exception {
+        final TestRunner runner = getRunner();
+        runner.setProperty(ReplaceText.SEARCH_VALUE, "(?s)(^.*$)");
+        runner.setProperty(ReplaceText.REPLACEMENT_VALUE, "${'$1':toUpper()}"); // will uppercase group with good Java regex
+        runner.setProperty(ReplaceText.REPLACEMENT_STRATEGY, ReplaceText.REGEX_REPLACE);
+        runner.setProperty(ReplaceText.EVALUATION_MODE, ReplaceText.ENTIRE_TEXT);
+
+        runner.enqueue("testing\n\t\r123".getBytes());
+        runner.run();
+
+        runner.assertAllFlowFilesTransferred(ReplaceText.REL_SUCCESS, 1);
+        final MockFlowFile out = runner.getFlowFilesForRelationship(ReplaceText.REL_SUCCESS).get(0);
+        out.assertContentEquals("TESTING\n\t\r123");
+    }
+
+    @Test
     public void testRegexNoCaptureDefaultReplacement() throws IOException {
         // Test the old Default Regex and new Default Regex with the default replacement.  This should fail
         // because the regex does not create a capture group.
@@ -1170,6 +1229,30 @@ public class TestReplaceText {
         runner.assertAllFlowFilesTransferred(ReplaceText.REL_SUCCESS, 3);
         out = runner.getFlowFilesForRelationship(ReplaceText.REL_SUCCESS).get(2);
         out.assertContentEquals("WO$1R$2D");
+    }
+
+    /*
+     * A repeated alternation regex such as (A|B)* can lead to StackOverflowError
+     * on large input strings.
+     */
+    @Test
+    public void testForStackOverflow() throws Exception {
+        final TestRunner runner = getRunner();
+        runner.setProperty(ReplaceText.REPLACEMENT_VALUE, "New text");
+        runner.setProperty(ReplaceText.REPLACEMENT_STRATEGY, ReplaceText.REGEX_REPLACE);
+        runner.setProperty(ReplaceText.EVALUATION_MODE, ReplaceText.ENTIRE_TEXT);
+        runner.setProperty(ReplaceText.MAX_BUFFER_SIZE, "10 MB");
+        runner.setProperty(ReplaceText.SEARCH_VALUE, "(?s)(^(A|B)*$)");
+        runner.assertValid();
+
+        char[] data = new char[1_000_000];
+        Arrays.fill(data, 'A');
+        runner.enqueue(new String(data));
+
+        runner.run();
+
+        // we want the large file to fail, rather than rollback and yield
+        runner.assertAllFlowFilesTransferred(ReplaceText.REL_FAILURE, 1);
     }
 
     private String translateNewLines(final File file) throws IOException {

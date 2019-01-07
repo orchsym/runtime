@@ -18,6 +18,66 @@ package org.apache.nifi.web.server;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.nifi.NiFiServer;
+import org.apache.nifi.bundle.Bundle;
+import org.apache.nifi.bundle.BundleDetails;
+import org.apache.nifi.controller.UninheritableFlowException;
+import org.apache.nifi.controller.serialization.FlowSerializationException;
+import org.apache.nifi.controller.serialization.FlowSynchronizationException;
+import org.apache.nifi.documentation.DocGenerator;
+import org.apache.nifi.lifecycle.LifeCycleStartException;
+import org.apache.nifi.nar.ExtensionManager;
+import org.apache.nifi.nar.ExtensionMapping;
+import org.apache.nifi.nar.i18n.MessagesProvider;
+import org.apache.nifi.processor.DataUnit;
+import org.apache.nifi.security.util.KeyStoreUtils;
+import org.apache.nifi.services.FlowService;
+import org.apache.nifi.ui.extension.UiExtension;
+import org.apache.nifi.ui.extension.UiExtensionMapping;
+import org.apache.nifi.util.FormatUtils;
+import org.apache.nifi.util.NiFiProperties;
+import org.apache.nifi.web.ContentAccess;
+import org.apache.nifi.web.NiFiWebConfigurationContext;
+import org.apache.nifi.web.UiExtensionType;
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
+import org.eclipse.jetty.webapp.WebAppClassLoader;
+import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.context.support.WebApplicationContextUtils;
+
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
@@ -39,70 +99,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.nifi.NiFiServer;
-import org.apache.nifi.bundle.Bundle;
-import org.apache.nifi.bundle.BundleDetails;
-import org.apache.nifi.controller.UninheritableFlowException;
-import org.apache.nifi.controller.serialization.FlowSerializationException;
-import org.apache.nifi.controller.serialization.FlowSynchronizationException;
-import org.apache.nifi.documentation.DocGenerator;
-import org.apache.nifi.lifecycle.LifeCycleStartException;
-import org.apache.nifi.nar.ExtensionManager;
-import org.apache.nifi.nar.ExtensionMapping;
-import org.apache.nifi.nar.i18n.MessagesProvider;
-import org.apache.nifi.processor.DataUnit;
-import org.apache.nifi.security.util.KeyStoreUtils;
-import org.apache.nifi.services.FlowService;
-import org.apache.nifi.ui.extension.UiExtension;
-import org.apache.nifi.ui.extension.UiExtensionMapping;
-import org.apache.nifi.util.NiFiProperties;
-import org.apache.nifi.web.ContentAccess;
-import org.apache.nifi.web.NiFiWebConfigurationContext;
-import org.apache.nifi.web.UiExtensionType;
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
-import org.eclipse.jetty.webapp.WebAppClassLoader;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.web.context.WebApplicationContext;
-import org.springframework.web.context.support.WebApplicationContextUtils;
 
 /**
  * Encapsulates the Jetty instance.
@@ -353,14 +353,14 @@ public class JettyServer implements NiFiServer {
             
             // create a web app for the docs
             final String docsContextPath = "/nifi-docs";
+
             // load the documentation war
             webDocsContext = loadWar(webDocsWar, docsContextPath, frameworkClassLoader);
             
-            // overlay the actual documentation
-            final ContextHandlerCollection documentationHandlers = new ContextHandlerCollection();
-            documentationHandlers.addHandler(createDocsWebApp(docsContextPath));
-            documentationHandlers.addHandler(webDocsContext);
-            handlers.addHandler(documentationHandlers);
+            // add the servlets which serve the HTML documentation within the documentation web app
+            addDocsServlets(webDocsContext);
+
+            handlers.addHandler(webDocsContext);
             
             // load the web error app
             final WebAppContext webErrorContext = loadWar(webErrorWar, "/", frameworkClassLoader);
@@ -537,38 +537,45 @@ public class JettyServer implements NiFiServer {
         return webappContext;
     }
 
-    private ContextHandler createDocsWebApp(final String contextPath) {
+    private void addDocsServlets(WebAppContext docsContext) {
         try {
-            final ResourceHandler resourceHandler = new ResourceHandler();
-            resourceHandler.setDirectoriesListed(false);
-
+            // Load the nifi/docs directory
             final File docsDir = getDocsDir("docs");
-            final Resource docsResource = Resource.newResource(docsDir);
 
             // load the component documentation working directory
             final File componentDocsDirPath = props.getComponentDocumentationWorkingDirectory();
             final File workingDocsDirectory = getWorkingDocsDirectory(componentDocsDirPath);
-            final Resource workingDocsResource = Resource.newResource(workingDocsDirectory);
 
+            // Load the API docs
             final File webApiDocsDir = getWebApiDocsDir();
-            final Resource webApiDocsResource = Resource.newResource(webApiDocsDir);
 
-            // create resources for both docs locations
-            final ResourceCollection resources = new ResourceCollection(docsResource, workingDocsResource, webApiDocsResource);
-            resourceHandler.setBaseResource(resources);
+            // Create the servlet which will serve the static resources
+            ServletHolder defaultHolder = new ServletHolder("default", DefaultServlet.class);
+            defaultHolder.setInitParameter("dirAllowed", "false");
 
-            // create the context handler
-            final ContextHandler handler = new ContextHandler(contextPath);
-            handler.setHandler(resourceHandler);
+            ServletHolder docs = new ServletHolder("docs", DefaultServlet.class);
+            docs.setInitParameter("resourceBase", docsDir.getPath());
 
-            logger.info("Loading documents web app with context path set to " + contextPath);
-            return handler;
+            ServletHolder components = new ServletHolder("components", DefaultServlet.class);
+            components.setInitParameter("resourceBase", workingDocsDirectory.getPath());
+
+            ServletHolder restApi = new ServletHolder("rest-api", DefaultServlet.class);
+            restApi.setInitParameter("resourceBase", webApiDocsDir.getPath());
+
+            docsContext.addServlet(docs, "/html/*");
+            docsContext.addServlet(components, "/components/*");
+            docsContext.addServlet(restApi, "/rest-api/*");
+
+            docsContext.addServlet(defaultHolder, "/");
+
+            logger.info("Loading documents web app with context path set to " + docsContext.getContextPath());
+
         } catch (Exception ex) {
             logger.error("Unhandled Exception in createDocsWebApp: " + ex.getMessage());
             startUpFailure(ex);
-            return null;    // required by compiler, though never be executed.
         }
     }
+
 
     /**
      * Returns a File object for the directory containing NIFI documentation.
@@ -703,6 +710,13 @@ public class JettyServer implements NiFiServer {
 
         final List<Connector> serverConnectors = Lists.newArrayList();
 
+        // Calculate Idle Timeout as twice the auto-refresh interval. This ensures that even with some variance in timing,
+        // we are able to avoid closing connections from users' browsers most of the time. This can make a significant difference
+        // in HTTPS connections, as each HTTPS connection that is established must perform the SSL handshake.
+        final String autoRefreshInterval = props.getAutoRefreshInterval();
+        final long autoRefreshMillis = autoRefreshInterval == null ? 30000L : FormatUtils.getTimeDuration(autoRefreshInterval, TimeUnit.MILLISECONDS);
+        final long idleTimeout = autoRefreshMillis * 2;
+
         // If the interfaces collection is empty or each element is empty
         if (networkInterfaces.isEmpty() || networkInterfaces.values().stream().filter(value -> !Strings.isNullOrEmpty(value)).collect(Collectors.toList()).isEmpty()) {
             final ServerConnector serverConnector = serverConnectorCreator.create(server, configuration);
@@ -712,6 +726,7 @@ public class JettyServer implements NiFiServer {
                 serverConnector.setHost(hostname);
             }
             serverConnector.setPort(port);
+            serverConnector.setIdleTimeout(idleTimeout);
             serverConnectors.add(serverConnector);
         } else {
             // Add connectors for all IPs from network interfaces
@@ -733,6 +748,8 @@ public class JettyServer implements NiFiServer {
                         // Set host and port
                         serverConnector.setHost(inetAddress.getHostAddress());
                         serverConnector.setPort(port);
+                        serverConnector.setIdleTimeout(idleTimeout);
+
                         return serverConnector;
                     }).collect(Collectors.toList())));
         }
@@ -1046,7 +1063,7 @@ public class JettyServer implements NiFiServer {
 
             // set frame options accordingly
             final HttpServletResponse response = (HttpServletResponse) resp;
-            response.addHeader(FRAME_OPTIONS, SAME_ORIGIN);
+            response.setHeader(FRAME_OPTIONS, SAME_ORIGIN);
 
             filterChain.doFilter(req, resp);
         }

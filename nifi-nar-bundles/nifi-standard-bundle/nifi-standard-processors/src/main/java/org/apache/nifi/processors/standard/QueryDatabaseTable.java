@@ -34,6 +34,7 @@ import org.apache.nifi.components.state.Scope;
 import org.apache.nifi.components.state.StateManager;
 import org.apache.nifi.components.state.StateMap;
 import org.apache.nifi.dbcp.DBCPService;
+import org.apache.nifi.expression.AttributeExpression;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.flowfile.attributes.CoreAttributes;
@@ -107,8 +108,9 @@ import static org.apache.nifi.processors.standard.util.JdbcCommon.USE_AVRO_LOGIC
                 + "FlowFiles were produced"),
         @WritesAttribute(attribute = "maxvalue.*", description = "Each attribute contains the observed maximum value of a specified 'Maximum-value Column'. The "
                 + "suffix of the attribute is the name of the column. If Output Batch Size is set, then this attribute will not be populated.")})
-@DynamicProperty(name = "Initial Max Value", value = "Attribute Expression Language", expressionLanguageScope = ExpressionLanguageScope.NONE,
-                description = "Specifies an initial max value for max value columns. Properties should be added in the format `initial.maxvalue.{max_value_column}`.")
+@DynamicProperty(name = "initial.maxvalue.<max_value_column>", value = "Initial maximum value for the specified column",
+        expressionLanguageScope = ExpressionLanguageScope.VARIABLE_REGISTRY, description = "Specifies an initial max value for max value column(s). Properties should "
+        + "be added in the format `initial.maxvalue.<max_value_column>`. This value is only used the first time the table is accessed (when a Maximum Value Column is specified).")
 public class QueryDatabaseTable extends AbstractDatabaseFetchProcessor {
 
     public static final String RESULT_TABLENAME = "tablename";
@@ -200,9 +202,21 @@ public class QueryDatabaseTable extends AbstractDatabaseFetchProcessor {
         return propDescriptors;
     }
 
+    @Override
+    protected PropertyDescriptor getSupportedDynamicPropertyDescriptor(final String propertyDescriptorName) {
+        return new PropertyDescriptor.Builder()
+                .name(propertyDescriptorName)
+                .required(false)
+                .addValidator(StandardValidators.createAttributeExpressionLanguageValidator(AttributeExpression.ResultType.STRING, true))
+                .addValidator(StandardValidators.ATTRIBUTE_KEY_PROPERTY_NAME_VALIDATOR)
+                .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
+                .dynamic(true)
+                .build();
+    }
+
     @OnScheduled
     public void setup(final ProcessContext context) {
-        maxValueProperties = getDefaultMaxValueProperties(context.getProperties());
+        maxValueProperties = getDefaultMaxValueProperties(context, null);
     }
 
     @OnStopped
@@ -286,7 +300,7 @@ public class QueryDatabaseTable extends AbstractDatabaseFetchProcessor {
         final StopWatch stopWatch = new StopWatch(true);
         final String fragmentIdentifier = UUID.randomUUID().toString();
 
-        try (final Connection con = dbcpService.getConnection();
+        try (final Connection con = dbcpService.getConnection(Collections.emptyMap());
              final Statement st = con.createStatement()) {
 
             if (fetchSize != null && fetchSize > 0) {
@@ -310,9 +324,10 @@ public class QueryDatabaseTable extends AbstractDatabaseFetchProcessor {
 
             final Integer queryTimeout = context.getProperty(QUERY_TIMEOUT).evaluateAttributeExpressions().asTimePeriod(TimeUnit.SECONDS).intValue();
             st.setQueryTimeout(queryTimeout); // timeout in seconds
-            try {
-                logger.debug("Executing query {}", new Object[]{selectQuery});
-                final ResultSet resultSet = st.executeQuery(selectQuery);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Executing query {}", new Object[] { selectQuery });
+            }
+            try (final ResultSet resultSet = st.executeQuery(selectQuery)) {
                 int fragmentIndex=0;
                 while(true) {
                     final AtomicLong nrOfRows = new AtomicLong(0L);
@@ -364,6 +379,16 @@ public class QueryDatabaseTable extends AbstractDatabaseFetchProcessor {
 
                     fragmentIndex++;
                     if (maxFragments > 0 && fragmentIndex >= maxFragments) {
+                        break;
+                    }
+
+                    // If we aren't splitting up the data into flow files or fragments, then the result set has been entirely fetched so don't loop back around
+                    if (maxFragments == 0 && maxRowsPerFlowFile == 0) {
+                        break;
+                    }
+
+                    // If we are splitting up the data into flow files, don't loop back around if we've gotten all results
+                    if(maxRowsPerFlowFile > 0 && nrOfRows.get() < maxRowsPerFlowFile) {
                         break;
                     }
                 }

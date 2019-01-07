@@ -1036,6 +1036,10 @@ public class RunNiFi {
         cmd.add("-Dnifi.bootstrap.listen.port=" + listenPort);
         cmd.add("-Dapp=NiFi");
         cmd.add("-Dorg.apache.nifi.bootstrap.config.log.dir=" + nifiLogDir);
+        if (!System.getProperty("java.version").startsWith("1.")) {
+            // running on Java 9+, java.xml.bind module must be made available
+            cmd.add("--add-modules=java.xml.bind");
+        }
         cmd.add("org.apache.nifi.NiFi");
         if (isSensitiveKeyPresent(props)) {
             Path sensitiveKeyFile = createSensitiveKeyFile(confDir);

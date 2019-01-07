@@ -1,177 +1,291 @@
-// 
-// Licensed to the Apache Software Foundation (ASF) under one or more 
-// contributor license agreements.  See the NOTICE file distributed with 
-// this work for additional information regarding copyright ownership. 
-// The ASF licenses this file to You under the Apache License, Version 2.0 
-// (the "License"); you may not use this file except in compliance with 
-// the License.  You may obtain a copy of the License at 
-// 
-//     http://www.apache.org/licenses/LICENSE-2.0 
-// 
-// Unless required by applicable law or agreed to in writing, software 
-// distributed under the License is distributed on an "AS IS" BASIS, 
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-// See the License for the specific language governing permissions and 
-// limitations under the License. 
-// 
-= Orchsym Studio概述 
-Orchsym Studio团队<orchsym@baishancloud.com> 
-:homepage: https://www.baishancloud.com/ 
-:linkattrs: 
+//
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+= Apache NiFi Overview
+Apache NiFi Team <dev@nifi.apache.org>
+:homepage: http://nifi.apache.org
+:linkattrs:
 
-== 什么是Orchsym Studio？ 
-简单地说，Orchsym Studio就是为了实现系统间数据流的自动化而构建的。而术语“数据流” 在各种环境中含义不同，我们在这里使用它来表示系统之间自动化和托管的信息流。因为企业有多个系统，其中一些系统产生数据，一些系统消费数据，行业内已经讨论并广泛阐述了这之间会出现的问题和解决方案及模式。企业集成模式  _Enterprise Integration Patterns_ <<eip>> 里面提供了全面的阐述. 
+== What is Apache NiFi?
+Put simply NiFi was built to automate the flow of data between systems.  While
+the term 'dataflow' is used in a variety of contexts, we use it here
+to mean the automated and managed flow of information between systems.  This
+problem space has been around ever since enterprises had more than one system,
+where some of the systems created data and some of the systems consumed data.
+The problems and solution patterns that emerged have been discussed and
+articulated extensively.  A comprehensive and readily consumed form is found in
+the _Enterprise Integration Patterns_ <<eip>>.
 
-数据流的一些高级别挑战包括: 
+Some of the high-level challenges of dataflow include:
 
-系统故障:: 
-网络故障，磁盘故障，软件崩溃，人们犯错误。
+Systems fail::
+Networks fail, disks fail, software crashes, people make mistakes.
 
-数据访问超出了消耗的能力:: 
-有时，给定的数据源可能超过处理或交付链的某些部分- 它只需要破坏一个薄弱环节就能产生问题。
+Data access exceeds capacity to consume::
+Sometimes a given data source can outpace some part of the processing or delivery chain - it only takes one weak-link to have an issue.
 
-数据的边界条件仅仅是摆设:: 
-你总是会得到太大，太小，太快，太慢，损坏，错误或格式错误的数据。
+Boundary conditions are mere suggestions::
+You will invariably get data that is too big, too small, too fast, too slow, corrupt, wrong, or in the wrong format.
 
-组织要求快速响应变化:: 
-组织的优先事项突然发生变化。必须快速地启用新流程和更改现有流程。
+What is noise one day becomes signal the next::
+Priorities of an organization change - rapidly.  Enabling new flows and changing existing ones must be fast.
 
-系统以不同的速率发展:: 
-不同系统使用的协议和格式是多变的，而不管其他的系统如何对接。数据流需要连接的本质上是分布式的系统，这些系统间是松散的，或着根本没有设计为能在一起工作。
+Systems evolve at different rates::
+The protocols and formats used by a given system can change anytime and often irrespective of the systems around them.  Dataflow exists to connect what is essentially a massively distributed system of components that are loosely or not-at-all designed to work together.
 
-合规与安全:: 
-法律，法规和政策的变化。业务协议的变化。系统到系统和系统到用户的交互必须是安全的，可信的，可追责的。 
+Compliance and security::
+Laws, regulations, and policies change.  Business to business agreements change.  System to system and system to user interactions must be secure, trusted, accountable.
 
-生产中持续改进:: 
-通常不可能在实验室中复制生产环境。
+Continuous improvement occurs in production::
+It is often not possible to come even close to replicating production environments in the lab.
 
-多年来，数据流一直是架构中难以避免的痛点之一。虽然现在有许多活跃且快速发展的技术，包括面向服务的体系结构<<soa>>，API的兴起<<api>> <<api2>>，物联网<<iot>>，以及大数据<<bigdata>>等使数据流更有趣和助力企业的成功，而且合规性，隐私性和安全性规范也在不断提高。即便如此，在所有这些新概念中，数据流的模式和需求也仍然和以前大致相同。而复杂度变高，变化频度变快，处理大规模特殊情况却变得越来越常见。Orchsym Studio旨在帮助解决这些现代数据流的挑战。
+Over the years dataflow has been one of those necessary evils in an
+architecture.  Now though there are a number of active and rapidly evolving
+movements making dataflow a lot more interesting and a lot more vital to the
+success of a given enterprise.  These include things like; Service Oriented
+Architecture <<soa>>, the rise of the API <<api>><<api2>>, Internet of Things <<iot>>,
+and Big Data <<bigdata>>.  In addition, the level of rigor necessary for
+compliance, privacy, and security is constantly on the rise.  Even still with
+all of these new concepts coming about, the patterns and needs of dataflow are
+still largely the same.  The primary differences then are the scope of
+complexity, the rate of change necessary to adapt, and that at scale
+the edge case becomes common occurrence.  NiFi is built to help tackle these
+modern dataflow challenges.
 
-== Orchsym Studio的核心概念
+== The core concepts of NiFi
 
-Orchsym Studio的基本设计理念的核心概念与基于流程的编程<<fbp>> 的主要思想密切相关。以下是一些主要的Orchsym Studio概念以及它们如何映射到FBP: 
-[grid="rows"] 
-[options="header",cols="4,3,10"] 
-|=========================== 
-|Orchsym Studio术语 |FBP术语| 描述 
-| 流文件 |信息包| 
-流文件表示在系统中移动的每个对象，对于每个对象，Orchsym Studio跟踪键/值对属性字符串的映射及其相关的零个或多个字节的内容。
-| 组件 |黑盒| 
-组件是执行实际工作的。在“eip”术语中，组件对系统之间的数据路由，转换或中介进行某种组合。组件可以访问给定流文件及其内容流的属性。组件可以在给定的工作单元中对零个或多个流文件进行操作，并提交该工作或回滚。
-| 连接 |有界缓冲区| 
-连接提供组件之间的实际链接.  它们充当队列并允许各种进程以不同的速率进行交互。这些队列可以动态优先化，并且可以在加载时设置上限，从而实现回压功能。 
-| 流控制器|调度程序| 
-流控制器负责维护流程如何连接和管理所有流程使用的线程及其分配。流量控制器充当代理的角色，方便流文件和组件之间的交互。
-| 模块 |子网| 
-模块是一组特定的组件及其连接，可以通过输入端口接收数据并通过输出端口发送数据。 
-|=========================== 
+NiFi's fundamental design concepts closely relate to the main ideas of Flow Based
+Programming <<fbp>>.  Here are some of
+the main NiFi concepts and how they map to FBP:
+[grid="rows"]
+[options="header",cols="3,3,10"]
+|===========================
+| NiFi Term | FBP Term| Description
 
-这种设计模式也类似于 <<seda>>（分级式事件驱动架构），这种设计模式其提供了许多优点，帮助Orchsym Studio成为构建强大且可扩展的数据流的非常有效的平台。其中一些好处包括: 
+| FlowFile | Information Packet |
+A FlowFile represents each object moving through the system and for each one, NiFi
+keeps track of a map of key/value pair attribute strings and its associated
+content of zero or more bytes.
 
-* 适用于组件有向图的可视化创建和管理 
-* 本质上是异步的，即使在处理流量波动时也允许非常高的吞吐量和自然缓冲 
-* 提供高度并发的模型，而开发人员不必担心并发的典型复杂性 
-* 促进内聚和松散耦合组件的开发，然后可以在其他环境中重复使用并促进可测试单元 
-* 资源受限的连接使得背压和压力释放等关键功能非常自然和直观 
-* 错误处理变得像快乐路径一样自然而不是粗粒度的全部捕获 
-* 数据进入和退出系统的点以及它如何流过的点很容易理解和容易跟踪 
+| FlowFile Processor | Black Box |
+Processors actually perform the work.  In <<eip>> terms a processor is
+doing some combination of data routing, transformation, or mediation between
+systems.  Processors have access to attributes of a given FlowFile and its
+content stream.  Processors can operate on zero or more FlowFiles in a given unit of work
+and either commit that work or rollback.
 
-== Orchsym Studio架构 
-image::zero-master-node.png["Orchsym Studio Architecture Diagram"] 
+| Connection | Bounded Buffer |
+Connections provide the actual linkage between processors.  These act as queues
+and allow various processes to interact at differing rates.  These queues
+can be prioritized dynamically and can have upper bounds on load, which enable
+back pressure.
 
-Orchsym Studio在主机操作系统上的JVM内执行。JVM上Orchsym Studio的主要组件如下: 
+| Flow Controller | Scheduler |
+The Flow Controller maintains the knowledge of how processes connect
+and manages the threads and allocations thereof which all processes use.  The
+Flow Controller acts as the broker facilitating the exchange of FlowFiles
+between processors.
 
-Web 服务器 :: Web服务器的目的是托管Orchsym Studio基于HTTP的命令和控制API。
+| Process Group | subnet |
+A Process Group is a specific set of processes and their connections, which can
+receive data via input ports and send data out via output ports.  In
+this manner, process groups allow creation of entirely new components simply by
+composition of other components.
 
-流控制器 :: 
-流量控制器是操作的大脑。它为扩展程序提供运行的线程，并管理扩展程序何时接收要执行的资源的计划。
+|===========================
 
-扩展:: 
-有各种类型的Orchsym Studio扩展，在其他文档中会有描述。这里的关键点是扩展是在JVM中运行和执行的。
+This design model, also similar to <<seda>>, provides many beneficial consequences that help NiFi
+to be a very effective platform for building powerful and scalable dataflows.
+A few of these benefits include:
 
-流文件仓库 :: 
-流文件仓库是Orchsym Studio跟踪它对流程中当前活动的流文件的状态的地方。存储库的实现方法是可插拔的。默认实现是位于指定磁盘分区上的持久性预写日志。 
+* Lends well to visual creation and management of directed graphs of processors
+* Is inherently asynchronous which allows for very high throughput and natural buffering even as processing and flow rates fluctuate
+* Provides a highly concurrent model without a developer having to worry about the typical complexities of concurrency
+* Promotes the development of cohesive and loosely coupled components which can then be reused in other contexts and promotes testable units
+* The resource constrained connections make critical functions such as back-pressure and pressure release very natural and intuitive
+* Error handling becomes as natural as the happy-path rather than a coarse grained catch-all
+* The points at which data enters and exits the system as well as how it flows through are well understood and easily tracked
 
-内容存储库:: 
-内容存储库是给定流文件的实际内容字节所在的位置。存储库的实现方法是可插拔的。默认是一种相当简单的机制，它将数据块存储在文件系统中。可以指定多个文件系统存储位置，以便获得不同的物理分区以减少任何单个卷上的竞争。
+== NiFi Architecture
+image::zero-master-node.png["NiFi Architecture Diagram"]
 
-溯源仓库:: 
-溯源仓库是存储所有出处事件数据的地方。存储库的构造是可插拔的，默认是使用一个或多个物理磁盘卷。在每个位置内，事件数据被索引并可以被搜索。
+NiFi executes within a JVM on a host operating system.  The primary
+components of NiFi on the JVM are as follows:
 
-Orchsym Studio也能够在集群内运行。
+Web Server::
+The purpose of the web server is to host NiFi's HTTP-based command and control API.
 
-image::zero-master-cluster.png["Orchsym Studio Cluster Architecture Diagram"] 
+Flow Controller::
+The flow controller is the brains of the operation. It provides threads for extensions to run on, and manages the schedule of when extensions receive resources to execute.
 
-在Orchsym Studio 1.0版本中，采用了Zero-Master Clustering范例。Orchsym Studio群集中的每个节点对数据执行相同的任务，但每个节点都在不同的数据集上运行。Apache ZooKeeper选择单个节点作为集群协调器，ZooKeeper自动处理故障转移。所有群集节点都会向群集协调器报告心跳和状态信息。群集协调器负责断开和连接节点。此外，每个群集都有一个主节点，也由ZooKeeper选举。作为DataFlow管理器，您可以通过任何节点的用户界面(UI)与Orchsym Studio群集进行交互. 您所做的任何更改都将复制到群集中的所有节点，同时允许多个入口点。 
+Extensions::
+There are various types of NiFi extensions which are described in other documents.  The key point here is that extensions operate and execute within the JVM.
 
-== Orchsym Studio性能特点 
-Orchsym Studio旨在充分利用底层主机系统的性能上。在CPU和磁盘方面，做到资源的最大化利用。有关其他详细信息，请参阅"管理指南”中的最佳做法和配置提示。 
+FlowFile Repository::
+The FlowFile Repository is where NiFi keeps track of the state of what it knows about a given FlowFile that is presently active in the flow.  The implementation of the repository is pluggable.  The default approach is a persistent Write-Ahead Log located on a specified disk partition.
 
-对于IO :: 根据系统的配置方式，可以预期的吞吐量或延迟会有很大差异。鉴于大多数主要Orchsym Studio子系统都有可插拔的方法，性能取决于实施。但是，对于具体且广泛适用的场景，请考虑开箱即用（out-of-the-box）的默认实现。即持久的保证传递，并使用本地磁盘这样做。保守估计，假设典型服务器中的适度磁盘或RAID卷上的读取/写入速率大约为每秒50 MB 。然后，对于大类数据流的Orchsym Studio需要能够有效地达到每秒100 MB或更高的吞吐量。这是因为预期每个物理分区和添加到Orchsym Studio的内容存储库都会线性增长，这很可能会在流文件存储库和溯源存储库的某个点上出现瓶颈。 
+Content Repository::
+The Content Repository is where the actual content bytes of a given FlowFile live.  The implementation of the repository is pluggable.  The default approach is a fairly simple mechanism, which stores blocks of data in the file system.   More than one file system storage location can be specified so as to get different physical partitions engaged to reduce contention on any single volume.
 
-对于CPU :: 流控制器充当引擎，指示特定组件何时被赋予执行线程。编写组件以在执行任务后立即返回线程。可以为流控制器提供一个配置值，指示它维护的各个线程池的可用线程数。理想的线程数取决于主机系统资源的核心数量，系统是否正在运行其他服务，以及流程中处理的性质。对于典型的IO大流量，可以使用大量的线程。 
+Provenance Repository::
+The Provenance Repository is where all provenance event data is stored.  The repository construct is pluggable with the default implementation being to use  one or more physical disk volumes.  Within each location event data is indexed  and searchable.
 
-因为RAM :: Orchsym Studio存在于JVM中，因此仅限于JVM提供的内存空间。JVM垃圾收集成为限制总实际堆大小以及优化应用程序运行情况的一个非常重要的因素。定期阅读相同内容时，Orchsym Studio作业可能是I / O密集型的。请配置足够大的空间以优化性能。
+NiFi is also able to operate within a cluster.
 
-== Orchsym Studio高级功能概述 
-本节提供了高度抽象的Orchsym Studio基础原理，让您可以了解Orchsym Studio的全局，以及它的一些最有趣的功能。主要功能类别包括流量管理，易用性，安全性，可扩展架构和灵活的扩展模型。
+image::zero-master-cluster.png["NiFi Cluster Architecture Diagram"]
 
-流量管理:: 
-    保证交付;; 
-        Orchsym Studio的核心理念是即使在非常高的规模下，保证交付也是必须的。这是通过有效使用专用的持久性预写日志和内容存储库来实现的。它们的设计可以实现非常高的事务速率，有效的负载分散，写入时复制以及发挥传统磁盘读/写的优势。 
-    具有背压和压力释放的数据缓冲;;
-        Orchsym Studio支持缓冲所有排队数据，以及在这些队列达到指定限制时提供回压或在数据达到指定阶段时使数据终结(其值已经消失). 
-    优先排队;; 
-        Orchsym Studio允许设置一个或多个优先级方案，用于如何从队列中检索数据。默认值是最早的优先，也支持数据最新的优先，最大的优先或其他一些自定义优先级方案。 
-    流特定QoS(延迟v吞吐量，损失容忍等).);; 
-        在数据流上的一些点，数据是关键的，而且是不容忍有丢失的。有时候又必须在几秒钟内处理和交付任何数据的值。Orchsym Studio可以实现这些问题的细粒度的流配置。 
+Starting with the NiFi 1.0 release, a Zero-Master Clustering paradigm is employed. Each node in a NiFi cluster performs the same tasks on the data, but each operates on a different set of data. Apache ZooKeeper elects a single node as the Cluster Coordinator, and failover is handled automatically by ZooKeeper. All cluster nodes report heartbeat and status information to the Cluster Coordinator. The Cluster Coordinator is responsible for disconnecting and connecting nodes. Additionally, every cluster has one Primary Node, also elected by ZooKeeper. As a DataFlow manager, you can interact with the NiFi cluster through the user interface (UI) of any node. Any change you make is replicated to all nodes in the cluster, allowing for multiple entry points.
 
-易用性:: 
-    视觉指挥与控制;; 
-        数据流可能变得非常复杂。能够可视化这些流并在视觉上表达它们，可以极大地帮助降低复杂性并确定需要简化的区域。Orchsym Studio不仅可以实现数据流的可视化建立，而且做到实时实现。跟'设计和部署'不同，它更像是塑造粘土。如果对数据流进行更改，则更改会立即生效。变更是细粒度的并与受影响的组件隔离。您不需要为了进行某些特定修改而停止整个流程或流程集。
-    流程模板;; 
-        数据流往往是高度模式化的，虽然通常有许多不同的方法来解决问题，但是能够分享这些最佳实践有很大帮助。模板允许领域专家构建和发布他们的流程设计，并让其他人受益并协作。 
-    数据溯源;; 
-        Orchsym Studio自动记录，索引并在对象流经系统时提供溯源数据，即使是输入，输出，转换等等。此信息对于支持合规性，故障排除，优化和其他方案至关重要。 
-    恢复/记录细粒度历史的滚动缓冲区;; 
-        Orchsym Studio的内容存储库旨在充当历史的滚动缓冲区。数据仅在内容存储库老化或需要空间时才会被删除。这与数据溯源功能相结合，为能够在对象的生命周期中的特定节点支持点击内容，下载内容和回放提供了非常有用的基础。 
+== Performance Expectations and Characteristics of NiFi
+NiFi is designed to fully leverage the capabilities of the underlying host system
+on which it is operating.  This maximization of resources is particularly strong with
+regard to CPU and disk.  For additional details, see the best practices and configuration tips in the Administration Guide.
 
-安全:: 
-    系统到系统;; 
-        只有安全性好的数据流才是好数据流。数据流中每个点的Orchsym Studio都支持通过使用加密协议(如双向SSL)提供安全交换。此外，Orchsym Studio能使流程加密和解密内容，并在发送者/接收者方的任一侧使用共享密钥或其他机制。 
-    用户到系统;; 
-        Orchsym Studio支持双向SSL身份验证，并提供可插拔授权，以便能够正确控制用户的访问权限和特定级别(只读，数据流管理器，管理员)。如果用户在流程中输入密码等敏感属性，则会立即加密服务器端，即使以加密形式也不再在客户端公开。
-    多租户授权;; 
-        给定数据流的权限级别适用于每个组件，允许管理员用户具有细粒度的访问控制级别。这意味着每个Orchsym Studio集群都能够满足一个或多个组织的要求。与隔离拓扑结构相比，多租户授权为数据流管理提供了自助服务模型，允许每个团队或组织在管理流的同时留意他们无法访问流的其他部分。
+For IO::
+The throughput or latency
+one can expect to see varies greatly, depending on how the system is configured.  Given
+that there are pluggable approaches to most of the major NiFi subsystems,
+performance depends on the implementation.  But, for something concrete and broadly
+applicable, consider the out-of-the-box default implementations.
+These are all persistent with guaranteed delivery and do so using local disk.  So
+being conservative, assume roughly 50 MB per second read/write rate on modest disks or RAID volumes
+within a typical server.  NiFi for a large class of dataflows then should be able to
+efficiently reach 100 MB per second or more of throughput.  That is because linear growth
+is expected for each physical partition and content repository added to NiFi.  This will
+bottleneck at some point on the FlowFile repository and provenance repository.
+We plan to provide a benchmarking and performance test template to
+include in the build, which allows users to easily test their system and
+to identify where bottlenecks are, and at which point they might become a factor.  This template
+should also make it easy for system administrators to make changes and to verify the impact.
+
+For CPU::
+The Flow Controller acts as the engine dictating when a particular processor is
+given a thread to execute.  Processors are written to return the thread
+as soon as they are done executing a task.  The Flow Controller can be given a
+configuration value indicating available threads for the various
+thread pools it maintains.  The ideal number of threads to use depends on the
+host system resources in terms of numbers of cores, whether that system is
+running other services as well, and the nature of the processing in the flow.  For
+typical IO-heavy flows, it is reasonable to make many dozens of threads
+to be available.
+
+For RAM::
+NiFi lives within the JVM and is thus limited to the memory space it
+is afforded by the JVM.  JVM garbage collection becomes a very important
+factor to both restricting the total practical heap size, as well as optimizing
+how well the application runs over time. NiFi jobs can be I/O intensive when reading the same content regularly. Configure a large enough disk to optimize performance.
+
+== High Level Overview of Key NiFi Features
+This sections provides a 20,000 foot view of NiFi's cornerstone fundamentals, so that you can understand the Apache NiFi big picture, and some of its the most interesting features. The key features categories include flow management, ease of use, security, extensible architecture, and flexible scaling model.
+
+Flow Management::
+    Guaranteed Delivery;;
+        A core philosophy of NiFi has been that even at very high scale, guaranteed delivery
+        is a must.  This is achieved through effective use of a purpose-built persistent
+        write-ahead log and content repository.  Together they are designed in such a way
+        as to allow for very high transaction rates, effective load-spreading, copy-on-write,
+        and play to the strengths of traditional disk read/writes.
+    Data Buffering w/ Back Pressure and Pressure Release;;
+        NiFi supports buffering of all queued data as well as the ability to
+        provide back pressure as those queues reach specified limits or to age off data
+        as it reaches a specified age (its value has perished).
+    Prioritized Queuing;;
+        NiFi allows the setting of one or more prioritization schemes for how data is
+        retrieved from a queue.  The default is oldest first, but there are times when
+        data should be pulled newest first, largest first, or some other custom scheme.
+    Flow Specific QoS (latency v throughput, loss tolerance, etc.);;
+        There are points of a dataflow where the data is absolutely critical and it is
+        loss intolerant.  There are also times when it must be processed and delivered within
+        seconds to be of any value.  NiFi enables the fine-grained flow specific configuration
+        of these concerns.
+
+Ease of Use::
+    Visual Command and Control;;
+        Dataflows can become quite complex.  Being able to visualize those flows and express
+        them visually can help greatly to reduce that complexity and to identify areas that
+        need to be simplified.  NiFi enables not only the visual establishment of dataflows but
+        it does so in real-time.  Rather than being 'design and deploy' it is much more like
+        molding clay.  If you make a change to the dataflow that change immediately takes effect.  Changes
+        are fine-grained and isolated to the affected components.  You don't need to stop an entire
+        flow or set of flows just to make some specific modification.
+    Flow Templates;;
+        Dataflows tend to be highly pattern oriented and while there are often many different
+        ways to solve a problem, it helps greatly to be able to share those best practices.  Templates
+        allow subject matter experts to build and publish their flow designs and for others to benefit
+        and collaborate on them.
+    Data Provenance;;
+        NiFi automatically records, indexes, and makes available provenance data as
+        objects flow through the system even across fan-in, fan-out, transformations, and
+        more.  This information becomes extremely critical in supporting compliance,
+        troubleshooting, optimization, and other scenarios.
+    Recovery / Recording a rolling buffer of fine-grained history;;
+        NiFi's content repository is designed to act as a rolling buffer of history.  Data
+        is removed only as it ages off the content repository or as space is needed.  This
+        combined with the data provenance capability makes for an incredibly useful basis
+        to enable click-to-content, download of content, and replay, all at a specific
+        point in an object's lifecycle which can even span generations.
+
+Security::
+    System to System;;
+        A dataflow is only as good as it is secure.  NiFi at every point in a dataflow offers secure
+        exchange through the use of protocols with encryption such as 2-way SSL.  In addition
+        NiFi enables the flow to encrypt and decrypt content and use shared-keys or other mechanisms on
+        either side of the sender/recipient equation.
+    User to System;;
+        NiFi enables 2-Way SSL authentication and provides pluggable authorization so that it can properly control
+        a user's access and at particular levels (read-only, dataflow manager, admin).  If a user enters a
+        sensitive property like a password into the flow, it is immediately encrypted server side and never again exposed
+        on the client side even in its encrypted form.
+    Multi-tenant Authorization;;
+        The authority level of a given dataflow applies to each component, allowing the admin user to have fine grained level of access control. This means each NiFi cluster is capable of handling the requirements of one or more organizations. Compared to isolated topologies, multi-tenant authorization enables a self-service model for dataflow management, allowing each team or organization to manage flows with a full awareness of the rest of the flow, to which they do not have access.
 
 
 
-可扩展的架构:: 
-    扩展;; 
-        Orchsym Studio的核心是为扩展而构建的，因此它是一个数据流程可以以可预测和可重复的方式执行和交互的平台。扩展点包括: 组件，控制器服务，报告任务，优先级排序器和客户用户界面。
-    Classloader隔离;; 
-        对于任何基于组件的系统，可能会很快发生依赖性问题。Orchsym Studio通过提供自定义类加载器模型来解决这个问题，确保每个扩展bundle都暴露于非常有限的依赖关系。因此，可以构建扩展而几乎不关心
-        它们是否可能与另一个扩展冲突。这些扩展包的概念称为"Archives” 并在开发人员指南中进行了更详细的描述。 
-    站点到站点(S2S)通信协议;; 
-        Orchsym Studio实例之间的首选通信协议是Orchsym Studio站点到站点(S2S)协议。S2S可以轻松，高效，安全地将数据从一个Orchsym Studio实例传输到另一个实例。Orchsym Studio客户端库可以轻松构建并捆绑到其他应用程序或设备中，通过S2S与Orchsym Studio进行通信。S2S支持基于套接字的协议和HTTP(S)协议作为底层传输协议，从而可以将代理服务器嵌入到S2S通信中。 
+Extensible Architecture::
+    Extension;;
+        NiFi is at its core built for extension and as such it is a platform on which dataflow processes can execute and interact in a predictable and repeatable manner. Points of extension include: processors, Controller Services, Reporting Tasks, Prioritizers, and Customer User Interfaces.
+    Classloader Isolation;;
+        For any component-based system, dependency problems can quickly occur.  NiFi addresses this by providing a custom class loader model,
+        ensuring that each extension bundle is exposed to a very limited set of dependencies.  As a result, extensions can be built with little concern for whether
+        they might conflict with another extension.  The concept of these extension bundles is called 'NiFi Archives' and is discussed in greater detail
+        in the Developer's Guide.
+    Site-to-Site Communication Protocol;;
+        The preferred communication protocol between NiFi instances is the NiFi Site-to-Site (S2S) Protocol. S2S makes it easy to transfer data from one NiFi instance to another easily, efficiently, and securely. NiFi client libraries can be easily built and bundled into other applications or devices to communicate back to NiFi via S2S. Both the socket based protocol and HTTP(S) protocol are supported in S2S as the underlying transport protocol, making it possible to embed a proxy server into the S2S communication.
 
-灵活的缩放模型:: 
-    横向扩展 (集群);; 
-        如上所述，Orchsym Studio旨在通过使用将许多节点聚类在一起来向外扩展。如果配置单个节点并将其配置为每秒处理数百MB，则可以将适度的群集配置为每秒处理GB。这就带来了Orchsym Studio与其获取数据的系统之间的负载平衡和故障转移的有趣挑战。使用基于异步排队的协议，如消息服务，Kafka等，可以提供帮忙。使用Orchsym Studio的"站点到站点”功能也非常有效，因为它是允许Orchsym Studio和客户端(包括另一个Orchsym Studio群集)相互通信，共享加载信息以及在特定授权端口上交换数据的协议。 
-    放大和缩小;; 
-        Orchsym Studio还可以非常灵活地扩展和缩小。从Orchsym Studio框架的角度来看，在增加吞吐量方面，在配置时可以在Scheduling选项卡下增加组件上的并发任务数量。这允许更多进程同时执行，从而提供更高的吞吐量。另一方面，您可以完美地扩展Orchsym Studio以适应在由于硬件资源有限而需要占用空间小的边缘设备上运行。
+Flexible Scaling Model::
+    Scale-out (Clustering);;
+        NiFi is designed to scale-out through the use of clustering many nodes together as described above.  If a single node is provisioned and configured
+        to handle hundreds of MB per second, then a modest cluster could be configured to handle GB per second.  This then brings about interesting challenges of load balancing
+        and fail-over between NiFi and the systems from which it gets data.  Use of asynchronous queuing based protocols like messaging services, Kafka, etc., can
+        help.  Use of NiFi's 'site-to-site' feature is also very effective as it is a protocol that allows NiFi and a client (including another NiFi cluster) to talk to each other, share information
+        about loading, and to exchange data on specific authorized ports.
+    Scale-up & down;;
+        NiFi is also designed to scale-up and down in a very flexible manner. In terms of increasing throughput from the standpoint of the NiFi framework, it is possible to increase the number of concurrent tasks on the processor under the Scheduling tab when configuring. This allows more processes to execute simultaneously, providing greater throughput. On the other side of the spectrum, you can perfectly scale NiFi down to be suitable to run on edge devices where a small footprint is desired due to limited hardware resources. To specifically solve the first mile data collection challenge and edge use cases, you can find more details here: link:https://cwiki.apache.org/confluence/display/NIFI/MiNiFi[https://cwiki.apache.org/confluence/display/NIFI/MiNiFi^] regarding a child project effort of Apache NiFi, MiNiFi (pronounced "minify", [min-uh-fahy]).
 
 
 
 
-== 参考 
-[bibliography] 
-- [[[eip]]] Gregor Hohpe. 企业集成模式 [online].  检索:2014年12月27日，来自: link:http://www.enterpriseintegrationpatterns.com[http://www.enterpriseintegrationpatterns.com^] 
-- [[[soa]]] 维基百科. 面向服务的体系结构 [online]. 检索:2014年12月27日，来自: link:http://en.wikipedia.org/wiki/Service-oriented_architecture[http://en.wikipedia.org/wiki/Service-oriented_architecture^] 
-- [[[api]]] Eric Savitz.  欢迎来到API经济 [online].  福布斯.COM. 检索:2014年12月27日，来自: link:http://www.forbes.com/sites/ciocentral/2012/08/29/welcome-to-the-api-economy[http://www.forbes.com/sites/ciocentral/2012/08/29/welcome-to-the-api-economy^] 
-- [[[api2]]] 亚当杜万德.  API经济和消费者主导的生态系统的兴起 [online]. thenextweb.COM.  检索:2014年12月27日，来自: link:http://thenextweb.com/dd/2014/03/28/api-economy[http://thenextweb.com/dd/2014/03/28/api-economy^] 
-- [[[iot]]] 维基百科. 物联网 [online]. 检索:2014年12月27日，来自: link:http://en.wikipedia.org/wiki/Internet_of_Things[http://en.wikipedia.org/wiki/Internet_of_Things^] 
-- [[[bigdata]]] 维基百科.  大数据 [online].  检索:2014年12月27日，来自: link:http://en.wikipedia.org/wiki/Big_data[http://en.wikipedia.org/wiki/Big_data^] 
-- [[[fbp]]] 维基百科.  基于流程的编程 [online].  检索:2014年12月28日，来自: link:http://en.wikipedia.org/wiki/Flow-based_programming#Concepts[http://en.wikipedia.org/wiki/Flow-based_programming#Concepts^] 
-- [[[seda]]] 马特威尔士.  伯克利.  SEDA:良好的
-可扩展互联网服务架构 [online].  检索时间:2018年1月18日，来自: link:http://www.mdw.la/papers/seda-sosp01.pdf[http://www.mdw.la/papers/seda-sosp01.pdf^] 
+== References
+[bibliography]
+- [[[eip]]] Gregor Hohpe. Enterprise Integration Patterns [online].  Retrieved: 27 Dec 2014, from: link:http://www.enterpriseintegrationpatterns.com[http://www.enterpriseintegrationpatterns.com^]
+- [[[soa]]] Wikipedia. Service Oriented Architecture [online]. Retrieved: 27 Dec 2014, from: link:http://en.wikipedia.org/wiki/Service-oriented_architecture[http://en.wikipedia.org/wiki/Service-oriented_architecture^]
+- [[[api]]] Eric Savitz.  Welcome to the API Economy [online].  Forbes.com. Retrieved: 27 Dec 2014, from: link:http://www.forbes.com/sites/ciocentral/2012/08/29/welcome-to-the-api-economy[http://www.forbes.com/sites/ciocentral/2012/08/29/welcome-to-the-api-economy^]
+- [[[api2]]] Adam Duvander.  The rise of the API economy and consumer-led ecosystems [online]. thenextweb.com.  Retrieved: 27 Dec 2014, from: link:http://thenextweb.com/dd/2014/03/28/api-economy[http://thenextweb.com/dd/2014/03/28/api-economy^]
+- [[[iot]]] Wikipedia. Internet of Things [online]. Retrieved: 27 Dec 2014, from: link:http://en.wikipedia.org/wiki/Internet_of_Things[http://en.wikipedia.org/wiki/Internet_of_Things^]
+- [[[bigdata]]] Wikipedia.  Big Data [online].  Retrieved: 27 Dec 2014, from: link:http://en.wikipedia.org/wiki/Big_data[http://en.wikipedia.org/wiki/Big_data^]
+- [[[fbp]]] Wikipedia.  Flow Based Programming [online].  Retrieved: 28 Dec 2014, from: link:http://en.wikipedia.org/wiki/Flow-based_programming#Concepts[http://en.wikipedia.org/wiki/Flow-based_programming#Concepts^]
+- [[[seda]]] Matt Welsh.  Berkeley.  SEDA: An Architecture for Well-Conditioned,
+Scalable Internet Services [online].  Retrieved: 18 Jan 2018, from: link:http://www.mdw.la/papers/seda-sosp01.pdf[http://www.mdw.la/papers/seda-sosp01.pdf^]

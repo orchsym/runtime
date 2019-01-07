@@ -424,6 +424,10 @@ public class RunOrchsymRuntime extends RunNiFi {
         addProperty(cmd, OrchsymProperties.BOOTSTRAP_LOG_DIR, nifiLogDir);
         addProperty(cmd, OrchsymProperties.LIC_PATH, getLicFile().getAbsolutePath());
         addProperty(cmd, NativeLibrariesLoader.KEY_LIB_PATH, libraryPaths);
+        if (!System.getProperty("java.version").startsWith("1.")) {
+            // running on Java 9+, java.xml.bind module must be made available
+            cmd.add("--add-modules=java.xml.bind");
+        }
         cmd.add("com.orchsym.OrchsymRuntime");
         if (isSensitiveKeyPresent(props)) {
             Path sensitiveKeyFile = createSensitiveKeyFile(confDir);

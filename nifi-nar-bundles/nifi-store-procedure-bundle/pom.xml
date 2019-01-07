@@ -5,7 +5,7 @@
     <parent>
         <artifactId>nifi-nar-bundles</artifactId>
         <groupId>org.apache.nifi</groupId>
-        <version>1.7.0-SNAPSHOT</version>
+        <version>1.7.1-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -34,12 +34,12 @@
             <dependency>
                 <groupId>org.apache.nifi</groupId>
                 <artifactId>nifi-store-procedure-processor</artifactId>
-                <version>${nifi.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.nifi</groupId>
                 <artifactId>nifi-store-procedure-ui</artifactId>
-                <version>${nifi.version}</version>
+                <version>${project.version}</version>
                 <type>war</type>
             </dependency>
         </dependencies>

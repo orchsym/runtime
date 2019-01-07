@@ -20,6 +20,12 @@ This includes derived works from the Apache Storm (ASLv2 licensed) project (http
     org/apache/storm/hive/common/HiveOptions.java
   and can be found in the org.apache.nifi.util.hive package
 
+This includes derived works from the Apache Hadoop (ASLv2 licensed) project (https://github.com/apache/hadoop):
+  Copyright 2014 The Apache Software Foundation
+  The derived work is adapted from
+    org/apache/hadoop/security/authentication/client/KerberosAuthenticator.java
+  and can be found in the org.apache.nifi.hadoop package
+
 This includes derived works from the Apache Hive (ASLv2 licensed) project (https://github.com/apache/hive):
   Copyright 2008-2016 The Apache Software Foundation
   The derived work is adapted from
@@ -284,6 +290,11 @@ The following binary components are provided under the Apache Software License v
 
       This product includes software from the Spring Framework,
       under the Apache License 2.0 (see: StringUtils.containsWhitespace())
+
+  (ASLv2) Apache Commons Text
+    The following NOTICE information applies:
+      Apache Commons Text
+      Copyright 2001-2018 The Apache Software Foundation
 
   (ASLv2) Apache Commons Configuration
     The following NOTICE information applies:

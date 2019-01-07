@@ -29,7 +29,7 @@
             <directory>src/main/resources/bin</directory>
             <outputDirectory>/bin/</outputDirectory>
             <includes>
-                <include>orchsym.sh</include>
+                <include>nifi.sh</include>
             </includes>
             <fileMode>0750</fileMode>
         </fileSet>

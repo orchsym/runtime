@@ -1,30 +1,43 @@
-// 
-// Licensed to the Apache Software Foundation (ASF) under one or more 
-// contributor license agreements.  See the NOTICE file distributed with 
-// this work for additional information regarding copyright ownership. 
-// The ASF licenses this file to You under the Apache License, Version 2.0 
-// (the "License"); you may not use this file except in compliance with 
-// the License.  You may obtain a copy of the License at 
-// 
-//     http://www.apache.org/licenses/LICENSE-2.0 
-// 
-// Unless required by applicable law or agreed to in writing, software 
-// distributed under the License is distributed on an "AS IS" BASIS, 
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-// See the License for the specific language governing permissions and 
-// limitations under the License. 
-// 
-= Orchsym Studio RecordPath 指南
-Orchsym Studio团队<orchsym@baishancloud.com> 
-:homepage: https://www.baishancloud.com/ 
+//
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+= Apache NiFi RecordPath Guide
+Apache NiFi Team <dev@nifi.apache.org>
+:homepage: http://nifi.apache.org
 
-[[overview]] 
-== 概述 
-Orchsym Studio提供了一套非常强大的组件，能够提取，处理，路由，转换和提供任何格式的数据。这是因为Orchsym Studio框架本身与数据无关。它不关心您的数据是100字节JSON消息还是100千兆字节视频。Orchsym Studio有许多模式以处理不同类型的数据。 
+[[overview]]
+== Overview
+Apache NiFi offers a very robust set of Processors that are capable of ingesting, processing,
+routing, transforming, and delivering data of any format. This is possible because the NiFi
+framework itself is data-agnostic. It doesn't care whether your data is a 100-byte JSON message
+or a 100-gigabyte video. This is an incredibly powerful feature. However, there are many patterns
+that have quickly developed to handle data of differing types.
 
-通常由Orchsym Studio处理的一类数据是面向记录（record-oriented）的数据。当我们说面向记录的数据时，我们经常(但并不总是)谈论结构化数据，如JSON，CSV和Avro。还有许多其他类型的数据也可以表示为“记录”或“消息”。为此，我们开发了一组Controller Services来解析这些不同的数据格式，并通过使用RecordReader API以一致的方式表示数据。这使得以任何数据格式编写的数据都能被同样处理，只需要借助RecordReader生成一个表示数据的Record对象。
+One class of data that is often processed by NiFi is record-oriented data. When we say record-oriented
+data, we are often (but not always) talking about structured data such as JSON, CSV, and Avro. There
+are many other types of data that can also be represented as "records" or "messages," though. As a result,
+a set of Controller Services have been developed for parsing these different data formats and representing
+the data in a consistent way by using the RecordReader API. This allows data that has been written in any
+data format to be treated the same, so long as there is a RecordReader that is capable of producing a Record
+object that represents the data.
 
-这里谈论的一条“记录”是一个抽象概念，它允许我们以相同的方式处理数据，无论哪种格式。记录由一个或多个字段组成。每个字段都有一个名称和与之关联的类型。使用记录Schema描述记录的字段。Schema指示哪些字段构成特定类型的记录。字段的类型将是以下之一：
+When we talk about a Record, this is an abstraction that allows us to treat data in the same
+way, regardless of the format that it is in. A Record is made up of one or more Fields. Each Field has a name
+and a Type associated with it. The Fields of a Record are described using a Record Schema. The Schema indicates
+which fields make up a specific type of Record. The Type of a Field will be one of the following:
 
 - String
 - Boolean
@@ -36,32 +49,47 @@ Orchsym Studio提供了一套非常强大的组件，能够提取，处理，路
 - BigInt
 - Float
 - Double
-- Date - 表示没有Time组件的Date 
-- Time - 表示没有Date组件的时间 
-- Timestamp - 表示日期和时间 
-- Embedded Record - 可以通过允许字段为类型记录本身来表示分层数据，例如JSON。
-- Choice - 字段可以是几种类型中的任何一种。
-- Array  - 数组的所有元素都具有相同的类型。
-- Map  - 所有Map键都是String类型。值的类型相同。
+- Date - Represents a Date without a Time component
+- Time - Represents a Time of Day without a Date component
+- Timestamp - Represents a Date and Time
+- Embedded Record - Hierarchical data, such as JSON, can be represented by allowing a field to be of Type Record itself.
+- Choice - A field may be any one of several types.
+- Array - All elements of an array have the same type.
+- Map - All Map Keys are of type String. The Values are of the same type.
 
 
-一旦数据流转换为记录，RecordWriter API就允许我们将这些记录序列化为字节流，以便它们可以传递到其他系统。
+Once a stream of data has been converted into Records, the RecordWriter API
+allows us to then serialize those Records back into streams of bytes so that they can be passed onto other
+systems.
 
-当然，如果我们不打算对中间的数据做任何处理，那么读取和写入这些数据就没什么意义了。Orchsym Studio提供了数个组件，它们为路由，查询和转换面向记录的数据提供了一些非常强大的功能。通常，为了执行期望的功能，组件将需要来自用户的输入以便确定记录中的哪些字段或者记录中的哪些值应该被操作。
+Of course, there's not much point in reading and writing this data if we aren't going to do something with
+the data in between. There are several processors that have already been developed for NiFi that provide some
+very powerful capabilities for routing, querying, and transforming Record-oriented data. Often times, in order
+to perform the desired function, a processor will need input from the user in order to determine which fields
+in a Record or which values in a Record should be operated on.
 
-现在来讲Orchsym Studio的RecordPath语言。RecordPath旨在成为一种简单易用的特定于域的语言(DSL)，用于指定在配置组件时我们关心或想要访问的记录中的哪些字段。 
+Enter the NiFi RecordPath language. RecordPath is intended to be a simple, easy-to-use Domain-Specific Language
+(DSL) to specify which fields in a Record we care about or want to access when configuring a processor.
 
 
-[[structure]] 
-== RecordPath结构
 
-Orchsym Studio中的记录由(可能)许多字段组成，并且这些字段中的每一个实际上可能本身就是记录。这意味着Record可以被认为具有分层或嵌套的结构。比如我们谈到“内部记录inner Record”是“外部记录outer Record” 的孩子。那么，内部记录的孩子肯定是最外层记录的后代。类似地，我们可以将外部记录称为内部记录的一个祖先。
+[[structure]]
+== Structure of a RecordPath
+
+A Record in NiFi is made up of (potentially) many fields, and each of these fields could actually be itself a Record. This means that
+a Record can be thought of as having a hierarchical, or nested, structure. We talk about an "inner Record" as being the child of the
+"outer Record." The child of an inner Record, then, is a descendant of the outer-most Record. Similarly, we can refer to an outer Record
+as being an ancestor of an inner Record.
 
 
-[[child]] 
-== 子操作符 
-RecordPath语言的结构使我们能够轻松地访问最外层记录的字段，或子记录或后代记录的字段。为了实现这一点，我们用斜线字符分隔孩子的名字(`/`)，我们称之为子（`child` ）操作符。例如，假设我们有一个由两个字段组成的记录: `name` 和 `details`。另外，假设 `details` 是一个字段，它本身就是一个记录，有两个字段: `identifier` 和 `address`。 此外，让我们考虑一下 `address` 本身就是一个包含5个字段的记录 : `number`， `street`， `city`， `state`，和 `zip`。出于说明目的，在JSON中编写的示例可能如下所示: 
-
+[[child]]
+== Child Operator
+The RecordPath language is structured in such a way that we are able to easily reference fields of the outer-most Record, or fields of a
+child Record, or descendant Record. To accomplish this, we separate the names of the children with a slash character (`/`), which we
+refer to as the `child` operator. For example,
+let's assume that we have a Record that is made up of two fields: `name` and `details`. Also, assume that `details` is a field that is
+itself a Record and has two Fields: `identifier` and `address`. Further, let's consider that `address` is itself a Record that contains
+5 fields: `number`, `street`, `city`, `state`, and `zip`. An example, written here in JSON for illustrative purposes may look like this:
 
 ----
 {
@@ -79,17 +107,18 @@ RecordPath语言的结构使我们能够轻松地访问最外层记录的字段�
 }
 ----
 
+We can reference the `zip` field by using the RecordPath: `/details/address/zip`. This tells us that we want to use the `details` field of
+the "root" Record. We then want to reference the `address` field of the child Record and the `zip` field of that Record.
 
-我们可以参考一下 `zip` 使用RecordPath的字段: `/details/address/zip`。这表示，我们想要使用 `details`
-“根”记录的字段。然后我们想访问到 `address` 子域记录和 `zip` 记录。
 
+[[descendant]]
+== Descendant Operator
+In addition to providing an explicit path to reach the `zip` field, it may sometimes be useful to reference the `zip` field without knowing
+the full path. In such a case, we can use the `descendant` operator (`//`) instead of the `child` operator (`/`). To reach the same `zip`
+field as above, we can accomplish this by simply using the path `//zip`. 
 
-[[descendant]] 
-== 后裔操作符 
-除了提供到达的明确路径之外 `zip` 字段，有时可能有用的参考 `zip` 字段不知道完整路径。在这种情况下，我们可以使用后裔（`descendant`） 操作符（`//`） 而不是子（`child`） 操作符 （`/`）达到同样的目标 `zip` ，如上所述，我们可以通过简单地使用路径来实现这一点 `//zip` 。 
-
-但是， `child` 操作员和 `descendant` 操作符有很大的区别： `descendant` 运算符可以匹配多个字段，而 `child` 运算符最多匹配一个字段。为了帮助理解这一点，请看以下记录：
-
+There is a very important distinction, though, between the `child` operator and the `descendant` operator: the `descendant` operator may match
+many fields, whereas the `child` operator will match at most one field. To help understand this, consider the following Record:
 
 ----
 {
@@ -111,27 +140,36 @@ RecordPath语言的结构使我们能够轻松地访问最外层记录的字段�
 }
 ---- 
 
-现在，如果我们使用RecordPath `/workAddress/zip`，我们将访问 `zip` 值为“10020” 的字段。RecordPath `/homeAddress/zip` 将访问  `zip` 值为“11697” 的字段。但是，RecordPath `//zip` 将访问这两个字段。
+Now, if we use the RecordPath `/workAddress/zip`, we will be referencing the `zip` field that has a value of "10020." The RecordPath `/homeAddress/zip` will
+reference the `zip` field that has a value of "11697." However, the RecordPath `//zip` will reference both of these fields.
 
 
-[[过滤器]] 
-== 过滤器 
 
-通过上面的示例和解释，我们可以轻松地访问记录中的特定字段。但是，在实际场景中，数据很少像上面的示例那样简单。通常，我们需要过滤掉或改进我们访问的字段。我们可能想要这样做的例子是当我们访问一个Array字段并且只想访问数组中的一些元素时; 当我们访问Map字段并想要访问Map中的一个或几个特定条目时; 或者当我们想要仅在符合某些标准的情况下访问记录时。我们可以通过在方括号内为RecordPath提供我们的标准（使用 `[` and `]` 字符）来实现这一点。我们将在下面讨论这些情形。
+[[filters]]
+== Filters
 
+With the above examples and explanation, we are able to easily reference a specific field within a Record. However, in real scenarios, the data is rarely as
+simple as in the examples above. Often times, we need to filter out or refine which fields we are referencing. Examples of when we might want to do this are
+when we reference an Array field and want to only reference some of the elements in the array; when we reference a Map field and want to reference one or a few
+specific entries in the Map; or when we want to reference a Record only if it adheres to some criteria. We can accomplish this by providing our criteria to the
+RecordPath within square brackets (using the `[` and `]` characters). We will go over each of these cases below.
 
-[[function_usage]] 
-== 函数用法 
+[[function_usage]]
+== Function Usage
 
-
-除了从“记录”中检索字段之外，如上面<<过滤器>>部分所述，我们有时需要优化我们要选择的字段。或者我们可能想要返回字段的修改版本。为此，我们需要使用函数功能。函数的语法是 <function name> <左括号> <args> <右括号>，其中<args>表示用逗号分隔的一个或多个参数。参数可以是字符串文字（例如 `'hello'` ）或数字文字（例如 `48` ），或者可以是相对或绝对的RecordPath（例如 `./name` or `/id`）。此外，我们可以在过滤器中使用函数。例如，我们可以使用RecordPath `/person[ isEmpty('name') ]/id` 来检索id名字为空的任何人的领域。可在以下<<函数>> 部分中找到可用功能及其相应文档的列表。
-
+In addition to retrieving a field from a Record, as outlined above in the <<filters>> section, we sometimes need to refine which fields we want to select. Or we
+may want to return a modified version of a field. To do this, we rely on functions. The syntax for a function is <function name> <open parenthesis> <args> <close parenthesis>,
+where <args> represents one or more arguments separated by commas. An argument may be a string literal (such as `'hello'`) or a number literal (such as `48`), or could be
+a relative or absolute RecordPath (such as `./name` or `/id`). Additionally, we can use functions within a filter. For example, we could use a RecordPath such as
+`/person[ isEmpty('name') ]/id` to retrieve the `id` field of any person whose name is empty. A listing of functions that are available and their corresponding documentation
+can be found below in the <<functions>> section.
 
 [[arrays]]
-=== Arrays 
+=== Arrays
 
-
-当我们访问一个Array字段时，该字段的值可能是一个包含多个元素的数组，但我们可能只需要其中的一些元素。例如，我们可能只想访问第一个元素; 只有最后一个元素; 或者也许是第一，第二，第三和最后一个元素。我们可以简单地通过使用方括号内的元素的索引来访问特定元素（索引是从0开始的）。那么让我们考虑上面记录的另一种取法：
+When we reference an Array field, the value of the field may be an array that contains several elements, but we may want only a few of those elements. For example,
+we may want to reference only the first element; only the last element; or perhaps the first, second, third, and last elements. We can reference a specific element simply by
+using the index of the element within square brackets (the index is 0-based). So let us consider a modified version of the Record above:
 
 ----
 {
@@ -154,14 +192,20 @@ RecordPath语言的结构使我们能够轻松地访问最外层记录的字段�
 	]
 }
 ----
+ 
+We can now reference the first element in the `addresses` array by using the RecordPath `/addresses[0]`. We can access the second element using the RecordPath `/addresses[1]`.
+There may be times, though, that we don't know how many elements will exist in the array. So we can use negative indices to count backward from the end of the array. For example,
+we can access the last element as `/addresses[-1]` or the next-to-last element as `/addresses[-2]`. If we want to reference several elements, we can use a comma-separated list of
+elements, such as `/addresses[0, 1, 2, 3]`. Or, to access elements 0 through 8, we can use the `range` operator (`..`), as in `/addresses[0..8]`. We can also mix these, and reference
+all elements by using the syntax `/addresses[0..-1]` or even `/addresses[0, 1, 4, 6..-1]`. Of course, not all of the indices referenced here will match on the Record above, because
+the `addresses` array has only 2 elements. The indices that do not match will simply be skipped.
 
 
-我们现在可以使用RecordPath `/addresses[0]` 访问 `addresses` 数组中的第一个元素。我们可以使用RecordPath  `/addresses[1]` 访问第二个元素。但有时候，我们可能不知道数组中将存在多少个元素。因此我们可以使用负数索引从数组末尾开始向后计数。例如，我们可以将最后一个元素作为 `/addresses[-1]` 或者倒数第二个元素作为 `/addresses[-2]` 。如果我们想访问几个元素，我们可以使用以逗号分隔的元素列表，例如 `/addresses[0, 1, 2, 3]`。或者，要访问元素0到8，我们可以使用 `范围` 操作符 (`..`) ，如 `/addresses[0..8]`。我们也可以混合这些，使用语法 `/addresses[0..-1]` 甚至 `/addresses[0, 1, 4, 6..-1]` 访问所有元素。当然，并非此处访问的所有索引都匹配上面的记录，因为该 `addresses` 数组只有2个元素。这种情况下，不匹配的索引将会被跳过。
+[[maps]]
+=== Maps
 
-[[maps]] 
-=== Maps 
-
-与Array字段类似，Map字段实际上可能包含几个不同的值。RecordPath使我们能够根据键选择一组值。我们通过在方括号内使用带引号的字符串来完成此操作。举个例子，让我们重新访问上面的原始记录：
+Similar to an Array field, a Map field may actually consist of several different values. RecordPath gives us the ability to select a set of values based on their keys.
+We do this by using a quoted String within square brackets. As an example, let's re-visit our original Record from above:
 
 ----
 {
@@ -179,29 +223,32 @@ RecordPath语言的结构使我们能够轻松地访问最外层记录的字段�
 }
 ----
 
+Now, though, let's consider that the Schema that is associated with the Record indicates that the `address` field is not a Record but rather a `Map` field.
+In this case, if we attempt to reference the `zip` using the RecordPath `/details/address/zip` the RecordPath will not match because the `address` field is not a Record
+and therefore does not have any Child Record named `zip`. Instead, it is a Map field with keys and values of type String.
+Unfortunately, when looking at JSON this may seem a bit confusing because JSON does not truly have a Type system. When we convert the JSON into a Record object in order
+to operate on the data, though, this distinction can be important.
 
-但是，现在让我们考虑与Record关联的Schema表明该 `address` 字段不是Record而是 `Map` 字段。在这种情况下，如果我们尝试使用RecordPath  `/details/address/zip` 访问`zip`， 则RecordPath将不匹配，因为该 `address` 字段不是一个Record，因此没有任何名为 `zip` 的子 Record。相反，它是一个Map字段，其键和值都是String类型。不幸的是，在查看JSON时，这可能看起来有点令人困惑，因为JSON并不真正拥有类型定义。但是，当我们将JSON转换为Record对象以便对数据进行操作时，这种区别就很重要。
+In the case laid out above, we can still access the `zip` field using RecordPath. We must now use the a slightly different syntax, though: `/details/address['zip']`. This
+is telling the RecordPath that we want to access the `details` field at the highest level. We then want to access its `address` field. Since the `address` field is a `Map`
+field we can use square brackets to indicate that we want to specify a Map Key, and we can then specify the key in quotes.
+
+Further, we can select more than one Map Key, using a comma-separated list: `/details/address['city', 'state', 'zip']`. We can also select all of the fields, if we want,
+using the Wildcard operator (`*`): `/details/address[*]`. Map fields do not contain any sort of ordering, so it is not possible to reference the keys by numeric indices.
 
 
-在上面列出的情况下，我们仍然可以使用RecordPath 访问 `zip` 字段。但我们现在必须使用稍微不同的语法： `/details/address['zip']`。这告诉RecordPath我们想要访问 `details` 根字段。然后我们想访问它的 `address` 字段。由于 `address` 字段是Map字段，我们可以使用方括号来指示我们要指定Map的键，然后我们可以在引号中指定键名。
+[[predicates]]
+=== Predicates
 
+Thus far, we have discussed two different types of filters. Each of them allows us to select one or more elements out from a field that allows for many values.
+Often times, though, we need to apply a filter that allows us to restrict which Record fields are selected. For example, what if we want to select the `zip` field but
+only for an `address` field where the state is not New York? The above examples do not give us any way to do this.
 
-
-此外，我们可以使用以逗号分隔的列表来选择多个Map的键: `/details/address['city', 'state', 'zip']`。如果需要，我们还可以使用Wildcard 运算符 （ `\*` ）: `/details/address[*]` 来选择所有字段 。Map字段不包含任何排序，因此无法通过数字索引来访问键值。
-
-[[谓词]] 
-=== 谓词 
-
-
-到目前为止，我们已经讨论了两种不同类型的过滤器。它们中的每一个都允许我们从允许多个值的字段中选择一个或多个元素。但是，通常情况下，我们需要限制选择哪些记录字段。例如，如果我们想要选择 `zip` 字段，但仅限于 `address` 不是纽约州的字段，该怎么办？上面的例子没有给我们任何方法来做到这一点。
-
-RecordPath provides the user the ability to specify a Predicate. A Predicate is simply a filter that can be applied to a field in order to determine whether or not the 
-field should be included in the results. Like other filters, a Predicate is specified within square brackets. The syntax of the Predicate is 
-`<Relative RecordPath> <Operator> <Expression>`. The `Relative RecordPath` works just like any other RecordPath but must start with a `.` (to reference the current field) 
-or a `..` (to reference the current field's parent) instead of a slash and references 
-fields relative to the field that the Predicate applies to. The `Operator` must be one of: 
-
-RecordPath为用户提供了指定谓词的功能。谓词本质上是一个过滤器，用于确定该字段是否应该包含在查询结果中。与其他过滤器一样，谓词在方括号内指定。谓词的语法是 `<Relative RecordPath> <Operator> <Expression>` 。 `Relative RecordPath` 工作方式与任何其他RecordPath一样，但必须以 `.` （访问当前字段）或 `..` （访问当前字段的父节点）开头，不能以斜杠和引用字段开头。`Operator` 必须是下面其中一种：
+RecordPath provides the user the ability to specify a Predicate. A Predicate is simply a filter that can be applied to a field in order to determine whether or not the
+field should be included in the results. Like other filters, a Predicate is specified within square brackets. The syntax of the Predicate is
+`<Relative RecordPath> <Operator> <Expression>`. The `Relative RecordPath` works just like any other RecordPath but must start with a `.` (to reference the current field)
+or a `..` (to reference the current field's parent) instead of a slash and references
+fields relative to the field that the Predicate applies to. The `Operator` must be one of:
 
 - Equals (`=`)
 - Not Equal (`!=`)
@@ -210,9 +257,9 @@ RecordPath为用户提供了指定谓词的功能。谓词本质上是一个过�
 - Less Than (`<`)
 - Less Than or Equal To (`<=`)
 
- `Expression` 可以是一个文字值，例如50或Hello或可以是另一种RecordPath。
+The `Expression` can be a literal value such as `50` or `Hello` or can be another RecordPath.
 
-为了说明这一点，我们以下面的记录为例： 
+To illustrate this, let's take the following Record as an example:
 
 ----
 {
@@ -238,22 +285,29 @@ RecordPath为用户提供了指定谓词的功能。谓词本质上是一个过�
 }
 ---- 
 
+Now we can use a Predicate to choose only the fields where the state is not New York. For example, we can use `/*[./state != 'NY']`. This will select any Record field
+that has a `state` field if the state does not have a value of "NY". Note that the `details` Record will not be returned because it does not have a field named `state`.
+So in this example, the RecordPath will select only the `homeAddress` field. Once we have selected that field, we can continue on with our RecordPath. As we stated
+above, we can select the `zip` field: `/*[./state != 'NY']/zip`. This RecordPath will result in selecting the `zip` field only from the `homeAddress` field.  
 
-现在我们可以使用谓词来仅选择州不是纽约的字段。例如，我们可以使用 `/*[./state != 'NY']` 选择所有 `state` 州不是“纽约”的记录。请注意 `details` 记录将不会返回，因为它没有名为 `state` 的字段。所以在这个例子中，RecordPath将只选择 `homeAddress` 域。一旦我们选择了该域，我们就可以继续使用我们的RecordPath。正如我们上面指出的，我们可以选择 `zip` 字段: `/*[./state != 'NY']/zip`。 这个RecordPath将会只选择 `zip` 来自 `homeAddress` 的记录。
+We can also compare the value in one field with the value in another field. For example, we can select the address that is in the person's preferred state by using
+the RecordPath `/*[./state = /details/preferredState]`. In this example, this RecordPath will retrieve the `workAddress` field because its `state` field matches the
+value of the `preferredState` field.
 
-我们还可以将一个字段中的值与另一个字段中的值进行比较。例如，我们可以使用RecordPath 选择人员首选州的地址 `/*[./state = /details/preferredState]`。在此示例中，此RecordPath将检索 `workAddress` 中 `state` 字段匹配 `preferredState` 值的记录。 
-
-另外，我们可以使用父运算符编写一个RecordPath，来访问州为“NJ”的任何记录的“city”字段(`..`): `/*/city[../state = 'NJ']`。 
+Additionally, we can write a RecordPath that references the "city" field of any record whose state is "NJ" by using the parent operator (`..`): `/*/city[../state = 'NJ']`.
 
 
 
-[[functions]] 
-== 函数 
+[[functions]]
+== Functions
 
-在上面的<<function_usage>>部分中，我们描述了如何以及为什么在RecordPath中使用函数。在这里，我们将描述不同功能，它们的功能以及它们的工作方式。函数可以分为两组：<<standalone_functions>>，可以是一个RecordPath的‘根’，例如 `substringAfter( /name, ' ' )` 和<<filter_functions>>，它们将被用作过滤器，例如 `/name[ contains('John') ]`。 独立函数也可以在过滤器中使用，但因为不返回 `boolean` 类型（`true` 或 `false` ）因此他本身不是一个完整的过滤器。例如，我们可以使用诸如 `/name[ substringAfter(., ' ') = 'Doe']` ，但我们不能简单地使用 `/name[ substringAfter(., ' ') ]` ，因为过滤器必须是布尔值。
+In the <<function_usage>> section above, we describe how and why to use a function in RecordPath. Here, we will describe the different functions that are available,
+what they do, and how they work. Functions can be divided into two groups: <<standalone_functions>>, which can be the 'root' of a RecordPath, such as `substringAfter( /name, ' ' )`
+and <<filter_functions>>, which are to be used as a filter, such as `/name[ contains('John') ]`. A Standalone Function can also be used within a filter but does not return a `boolean`
+(`true` or `false` value) and therefore cannot itself be an entire filter. For example, we can use a path such as `/name[ substringAfter(., ' ') = 'Doe']` but we cannot simply use
+`/name[ substringAfter(., ' ') ]` because doing so doesn't really make sense, as filters must be boolean values.
 
-除非另有说明，以下所有示例均按是操作以下记录: 
-
+Unless otherwise noted, all of the examples below are written to operate on the following Record:
 
 ----
 {
@@ -283,16 +337,19 @@ RecordPath为用户提供了指定谓词的功能。谓词本质上是一个过�
 ----
 
 
+[[standalone_functions]]
+== Standalone Functions
 
-[[standalone_functions]] 
-== 独立函数 
+=== substring
 
-=== substring 
-
-substring函数返回String值的一部分内容。该函数需要3个参数: 需要被截取的值，基于0的起始索引(包括)和基于0的结束索引(不包括)。 起始索引和结束索引可以是： `0` 来指示字符串的第一个字符，正整数或负整数来指示字符串中第n个索引。如果值是负整数，比如说 `-n` ， 那么这代表了最后第 `n` 个字附。 价值 `-1` 表示字符串中的最后一个字符。 所以，例如， `substring( 'hello world', 0, -1 )` 意思是取字符串 `hello`，并返回字符0到最后一个字符，因此返回值将是 `hello world`。
+The substring function returns a portion of a String value. The function requires 3 arguments: The value to take a portion of, the 0-based start index (inclusive),
+and the 0-based end index (exclusive). The start index and end index can be `0` to indicate the first character of a String, a positive integer to indicate the nth index
+into the string, or a negative integer. If the value is a negative integer, say `-n`, then this represents the `n`th character for the end. A value of `-1` indicates the last
+character in the String. So, for example, `substring( 'hello world', 0, -1 )` means to take the string `hello`, and return characters 0 through the last character, so the return
+value will be `hello world`.
 
 |==========================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `substring( /name, 0, -1 )` | John Doe
 | `substring( /name, 0, -5 )` | John
 | `substring( /name, 1000, 1005 )` | <empty string>
@@ -301,12 +358,13 @@ substring函数返回String值的一部分内容。该函数需要3个参数: �
 |==========================================================
 
 
-=== substringAfter 
 
-返回在第一次匹配之后的所有剩余内容。
+=== substringAfter
+
+Returns the portion of a String value that occurs after the first occurrence of some other value.
 
 |==========================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `substringAfter( /name, ' ' )` | Doe
 | `substringAfter( /name, 'o' )` | hn Doe
 | `substringAfter( /name, '' )` | John Doe
@@ -314,13 +372,12 @@ substring函数返回String值的一部分内容。该函数需要3个参数: �
 |==========================================================
 
 
-=== substringAfterLast 
+=== substringAfterLast
 
-返回在最后一次匹配之后的所有剩余内容。
-
+Returns the portion of a String value that occurs after the last occurrence of some other value.
 
 |==========================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `substringAfterLast( /name, ' ' )` | Doe
 | `substringAfterLast( /name, 'o' )` | e
 | `substringAfterLast( /name, '' )` | John Doe
@@ -329,12 +386,12 @@ substring函数返回String值的一部分内容。该函数需要3个参数: �
 
 
 
-=== substringBefore 
+=== substringBefore
 
-返回在第一次匹配的前面的所有内容。
+Returns the portion of a String value that occurs before the first occurrence of some other value.
 
 |==========================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `substringBefore( /name, ' ' )` | John
 | `substringBefore( /name, 'o' )` | J
 | `substringBefore( /name, '' )` | John Doe
@@ -343,12 +400,12 @@ substring函数返回String值的一部分内容。该函数需要3个参数: �
 
 
 
-=== substringBeforeLast 
+=== substringBeforeLast
 
-返回在最后一次匹配的前面的所有内容。
+Returns the portion of a String value that occurs before the last occurrence of some other value.
 
 |==========================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `substringBeforeLast( /name, ' ' )` | John
 | `substringBeforeLast( /name, 'o' )` | John D
 | `substringBeforeLast( /name, '' )` | John Doe
@@ -357,12 +414,12 @@ substring函数返回String值的一部分内容。该函数需要3个参数: �
 
 
 
-=== replace 
+=== replace
 
-用另一个String替换所有出现的String。
+Replaces all occurrences of a String with another String.
 
 |==========================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `replace( /name, 'o', 'x' )` | Jxhn Dxe
 | `replace( /name, 'o', 'xyz' )` | Jxyzhn Dxyze
 | `replace( /name, 'xyz', 'zyx' )` | John Doe
@@ -371,13 +428,14 @@ substring函数返回String值的一部分内容。该函数需要3个参数: �
 
 
 
-=== replaceRegex 
+=== replaceRegex
 
-根据String值的内容计算正则表达式，并将任何匹配替换为另一个值。此函数需要3个参数:运行正则表达式的String，要运行的正则表达式 
-和替换值。替换值可以可选地使用反向访问，例如 `$1` 和 `${named_group}` 
+Evaluates a Regular Expression against the contents of a String value and replaces any match with another value.
+This function requires 3 arguments: the String to run the regular expression against, the regular expression to run,
+and the replacement value. The replacement value may optionally use back-references, such as `$1` and `${named_group}`
 
 |==================================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `replaceRegex( /name, 'o', 'x' )` | Jxhn Dxe
 | `replaceRegex( /name, 'o', 'xyz' )` | Jxyzhn Dxyze
 | `replaceRegex( /name, 'xyz', 'zyx' )` | John Doe
@@ -390,208 +448,194 @@ substring函数返回String值的一部分内容。该函数需要3个参数: �
 
 === concat
 
-将所有参数连接在一起。
+Concatenates all the arguments together.
 
 |==========================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `concat( /name, ' lives in ',  /homeAddress/city )` | John Doe lives in Jersey City
 |==========================================================
 
 
-=== fieldName 
+=== fieldName
 
-有时候我们需要获得字段的名称，而不是值。要做到这一点，我们可以使用 `fieldName` 函数。
-
+Normally, when a path is given to a particular field in a Record, what is returned is the value of that field. It
+can sometimes be useful, however, to obtain the name of the field instead of the value. To do this, we can use the
+`fieldName` function.
 
 |=====================================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `fieldName(//city/..)` | `workAddress` and `homeAddress`
 | `//city[not(startsWith(fieldName(..), 'work'))]` | Jersey City
 |=====================================================================
 
-在上面的示例中，第一个RecordPath返回两个单独的字段名称:“workAddress”和“homeAddress”。相反，第二个 RecordPath返回"city”字段的值并使用 `fieldName` 函数作为谓词。第二个RecordPath找到一个“city”字段，其父节点的名称不以“work”开头。这意味着它将返回其父级为“homeAddress”的“city”字段的值，但不返回其父级为“workAddress”的“city”字段的值。
+In the above example, the first RecordPath returns two separate field names: "workAddress" and "homeAddress". The second
+RecordPath, in contrast, returns the value of a "city" field and uses the `fieldName` function as a predicate. The second
+RecordPath finds a "city" field whose parent does not have a name that begins with "work". This means that it will return
+the value of the "city" field whose parent is "homeAddress" but not the value of the "city" field whose parent is "workAddress".  
 
 
-=== toDate 
+=== toDate
 
-将字符串转换为日期.  例如，给定一个schema: 
+Converts a String to a date.  For example, given a schema such as:
 
+----
+{
+  "type": "record",
+  "name": "events",
+  "fields": [
+    { "name": "name", "type": "string" },
+    { "name": "eventDate", "type" : "string"}
+  ]
+}
+----
 
----- 
-{ 
-  "type": "record", 
-  "name": "events", 
-  "fields": [ 
-    { "name": "name", "type": "string" }, 
-    { "name": "eventDate", "type" : "string"} 
-  ] 
-} 
----- 
+and a record such as:
 
+----
+{
+  "name" : "My Event",
+  "eventDate" : "2017-10-20'T'11:00:00'Z'"
+}
+----
 
-以及如下记录: 
+The following record path would parse the eventDate field into a Date:
 
+`toDate( /eventDate, "yyyy-MM-dd'T'HH:mm:ss'Z'")`
 
----- 
-{ 
-  "name" : "My Event", 
-  "eventDate" : "2017-10-20'T'11:00:00'Z'" 
-} 
----- 
+=== toString
 
+Converts a value to a String, using the given character set if the input type is "bytes".  For example,
+given a schema such as:
 
-以下记录路径将eventDate字段解析为Date: 
+----
+{
+  "type": "record",
+  "name": "events",
+  "fields": [
+    { "name": "name", "type": "string" },
+    { "name": "bytes", "type" : "bytes"}
+  ]
+}
+----
 
-`toDate( /eventDate, "yyyy-MM-dd'T'HH:mm:ss'Z'")` 
+and a record such as:
 
-=== toString 
+----
+{
+  "name" : "My Event",
+  "bytes" : "Hello World!"
+}
+----
 
-如果输入类型为“bytes”，则使用给定的字符集将值转换为String。例如，给定一个schema: 
+The following record path would parse the bytes field into a String:
 
+`toString( /bytes, "UTF-8")`
 
----- 
-{ 
-  "type": "record", 
-  "name": "events", 
-  "fields": [ 
-    { "name": "name", "type": "string" }, 
-    { "name": "bytes", "type" : "bytes"} 
-  ] 
-} 
----- 
+=== toBytes
 
+Converts a String to byte[], using the given character set.  For example, given a schema such as:
 
-以及如下记录: 
+----
+{
+  "type": "record",
+  "name": "events",
+  "fields": [
+    { "name": "name", "type": "string" },
+    { "name": "s", "type" : "string"}
+  ]
+}
+----
 
+and a record such as:
 
----- 
-{ 
-  "name" : "My Event", 
-  "bytes" : "Hello World!" 
-} 
----- 
+----
+{
+  "name" : "My Event",
+  "s" : "Hello World!"
+}
+----
 
+The following record path would convert the String field into a byte array using UTF-16 encoding:
 
-以下记录路径将字节字段解析为字符串: 
+`toBytes( /s, "UTF-16")`
 
-`toString( /bytes, "UTF-8")` 
+=== format
 
-=== toBytes 
+Converts a Date to a String in the given format.
 
-将String转换为byte[]，使用给定的字符集。例如，给定一个schema: 
+The first argument to this function must be a Date or a Number, and the second argument must be a format String that
+follows the Java SimpleDateFormat.
 
+For example, given a schema such as:
 
----- 
-{ 
-  "type": "record", 
-  "name": "events", 
-  "fields": [ 
-    { "name": "name", "type": "string" }, 
-    { "name": "s", "type" : "string"} 
-  ] 
-} 
----- 
+----
+{
+  "type": "record",
+  "name": "events",
+  "fields": [
+    { "name": "name", "type": "string" },
+    { "name": "eventDate", "type" : { "type" : "long", "logicalType" : "timestamp-millis" } }
+  ]
+}
+----
 
+and a record such as:
 
-以及如下记录: 
+----
+{
+  "name" : "My Event",
+  "eventDate" : 1508457600000
+}
+----
 
-
----- 
-{ 
-  "name" : "My Event", 
-  "s" : "Hello World!" 
-} 
----- 
-
-
-以下记录路径将使用UTF-16编码将String字段转换为字节数组: 
-
-`toBytes( /s, "UTF-16")` 
-
-=== format 
-
-以给定格式将Date转换为String. 
-
-此函数的第一个参数必须是Date或Number，第二个参数必须是遵循Java SimpleDateFormat 的格式String。
-
-例如，给定一个schema: 
-
-
----- 
-{ 
-  "type": "record", 
-  "name": "events", 
-  "fields": [ 
-    { "name": "name", "type": "string" }, 
-    { "name": "eventDate", "type" : { "type" : "long", "logicalType" : "timestamp-millis" } } 
-  ] 
-} 
----- 
-
-
-以及如下记录: 
-
-
----- 
-{ 
-  "name" : "My Event", 
-  "eventDate" : 1508457600000 
-} 
----- 
-
-
-以下记录路径表达式将日期格式化为String: 
+The following record path expressions would format the date as a String:
 
 |==========================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `format( /eventDate, "yyyy-MM-dd'T'HH:mm:ss'Z'")` | 2017-10-20'T'11:00:00'Z'
 | `format( /eventDate, "yyyy-MM-dd")` | 2017-10-20
 |==========================================================
 
-在将字段声明为String的情况下，必须在格式化之前调用toDate函数。
+In the case where the field is declared as a String, the toDate function must be called before formatting.
 
-例如，给定一个schema: 
+For example, given a schema such as:
 
+----
+{
+  "type": "record",
+  "name": "events",
+  "fields": [
+    { "name": "name", "type": "string" },
+    { "name": "eventDate", "type" : "string"}
+  ]
+}
+----
 
----- 
-{ 
-  "type": "record", 
-  "name": "events", 
-  "fields": [ 
-    { "name": "name", "type": "string" }, 
-    { "name": "eventDate", "type" : "string"} 
-  ] 
-} 
----- 
+and a record such as:
 
+----
+{
+  "name" : "My Event",
+  "eventDate" : "2017-10-20'T'11:00:00'Z'"
+}
+----
 
-以及如下记录: 
-
-
----- 
-{ 
-  "name" : "My Event", 
-  "eventDate" : "2017-10-20'T'11:00:00'Z'" 
-} 
----- 
-
-
-以下记录路径表达式将重新格式化日期字符串: 
+The following record path expression would re-format the date String:
 
 |==========================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `format( toDate(/eventDate, "yyyy-MM-dd'T'HH:mm:ss'Z'"), 'yyyy-MM-dd')` | 2017-10-20
 |==========================================================
 
-[[filter_functions]] 
-== 过滤函数 
+[[filter_functions]]
+== Filter Functions
 
 === contains
 
-如果String中包含指定的内容，返回 `true` ，否则返回 `false`。
+Returns `true` if a String value contains the provided substring, `false` otherwise
 
 |==============================================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `/name[contains(., 'o')]` | John Doe
 | `/name[contains(., 'x')]` | <returns no results>
 | `/name[contains( ../workAddress/state, /details/preferredState )]` | John Doe
@@ -599,13 +643,14 @@ substring函数返回String值的一部分内容。该函数需要3个参数: �
 
 
 
-=== matchesRegex 
+=== matchesRegex
 
-使用正则表达式验证String值的内容，匹配则返回 `true`，否则返回 `false` 。
-此函数需要2个参数:运行正则表达式的String和要运行的正则表达式。
+Evaluates a Regular Expression against the contents of a String value and returns `true` if the Regular Expression
+exactly matches the String value, `false` otherwise.
+This function requires 2 arguments: the String to run the regular expression against, and the regular expression to run.
 
 |==============================================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `/name[matchesRegex(., 'John Doe')]` | John Doe
 | `/name[matchesRegex(., 'John')]` | <returns no results>
 | `/name[matchesRegex(., '.* Doe' )]` | John Doe
@@ -613,12 +658,12 @@ substring函数返回String值的一部分内容。该函数需要3个参数: �
 
 
 
-=== startsWith 
+=== startsWith
 
-如果String值以给定的子字符串开头则返回 `true` ，否则返回 `false` 。
+Returns `true` if a String value starts with the provided substring, `false` otherwise
 
 |==============================================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `/name[startsWith(., 'J')]` | John Doe
 | `/name[startsWith(., 'x')]` | <returns no results>
 | `/name[startsWith(., 'xyz')]` | <returns no results>
@@ -626,9 +671,9 @@ substring函数返回String值的一部分内容。该函数需要3个参数: �
 |==============================================================================
 
 
-=== endsWith 
+=== endsWith
 
-如果String值以给定的子字符串结尾则返回 `true` ，否则返回 `false` 。
+Returns `true` if a String value ends with the provided substring, `false` otherwise
 
 |==============================================================================
 | RecordPath | Return value
@@ -639,25 +684,24 @@ substring函数返回String值的一部分内容。该函数需要3个参数: �
 |==============================================================================
 
 
-=== not 
+=== not
 
-反转传递给 `not` 函数的表达式或值。 
-
+Inverts the value of the function or expression that is passed into the `not` function.
 
 |==============================================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `/name[not(endsWith(., 'x'))]` | John Doe
 | `/name[not(contains(., 'x'))]` | John Doe
 | `/name[not(endsWith(., 'e'))]` | <returns no results>
 |==============================================================================
 
 
-=== isEmpty 
+=== isEmpty
 
-如果给定的值为null或为空字符串，返回 `true` 
+Returns `true` if the provided value is either null or is an empty string.
 
 |==============================================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `/name[isEmpty(/details/employer)]` | John Doe
 | `/name[isEmpty(/details/vehicle)]` | John Doe
 | `/name[isEmpty(/details/phase)]` | <returns no results>
@@ -665,13 +709,13 @@ substring函数返回String值的一部分内容。该函数需要3个参数: �
 |==============================================================================
 
 
-=== isBlank 
+=== isBlank
 
-如果给定的值为null或者是空字符串或仅包含空格的字符串 (空格，制表符，回车符和换行符)则返回 `true`。
-
+Returns `true` if the provided value is either null or is an empty string or a string that consists
+only of white space (spaces, tabs, carriage returns, and new-line characters).
 
 |==============================================================================
-| RecordPath | 返回值
+| RecordPath | Return value
 | `/name[isBlank(/details/employer)]` | John Doe
 | `/name[isBlank(/details/vehicle)]` | John Doe
 | `/name[isBlank(/details/phase)]` | John Doe

@@ -21,7 +21,6 @@ import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.ValidationContext;
 import org.apache.nifi.components.ValidationResult;
 import org.apache.nifi.dbcp.DBCPService;
-import org.apache.nifi.expression.AttributeExpression;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.AbstractSessionFactoryProcessor;
@@ -30,6 +29,7 @@ import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.processors.standard.db.DatabaseAdapter;
+import org.apache.nifi.processors.standard.db.impl.PhoenixDatabaseAdapter;
 import org.apache.nifi.util.StringUtils;
 
 import java.io.IOException;
@@ -46,6 +46,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -218,18 +219,6 @@ public abstract class AbstractDatabaseFetchProcessor extends AbstractSessionFact
                 .build();
     }
 
-    @Override
-    protected PropertyDescriptor getSupportedDynamicPropertyDescriptor(final String propertyDescriptorName) {
-        return new PropertyDescriptor.Builder()
-                .name(propertyDescriptorName)
-                .required(false)
-                .addValidator(StandardValidators.createAttributeExpressionLanguageValidator(AttributeExpression.ResultType.STRING, true))
-                .addValidator(StandardValidators.ATTRIBUTE_KEY_PROPERTY_NAME_VALIDATOR)
-                .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-                .dynamic(true)
-                .build();
-    }
-
     // A common validation procedure for DB fetch processors, it stores whether the Table Name and/or Max Value Column properties have expression language
     protected Collection<ValidationResult> customValidate(ValidationContext validationContext) {
         // For backwards-compatibility, keep track of whether the table name and max-value column properties are dynamic (i.e. has expression language)
@@ -260,7 +249,7 @@ public abstract class AbstractDatabaseFetchProcessor extends AbstractSessionFact
             final String sqlQuery = context.getProperty(SQL_QUERY).evaluateAttributeExpressions().getValue();
 
             final DatabaseAdapter dbAdapter = dbAdapters.get(context.getProperty(DB_TYPE).getValue());
-            try (final Connection con = dbcpService.getConnection();
+            try (final Connection con = dbcpService.getConnection(flowFile == null ? Collections.emptyMap() : flowFile.getAttributes());
                  final Statement st = con.createStatement()) {
 
                 // Try a query that returns no rows, for the purposes of getting metadata about the columns. It is possible
@@ -484,13 +473,26 @@ public abstract class AbstractDatabaseFetchProcessor extends AbstractSessionFact
             case NVARCHAR:
             case VARCHAR:
             case ROWID:
-            case DATE:
-            case TIME:
                 return "'" + value + "'";
+            case TIME:
+                if (PhoenixDatabaseAdapter.NAME.equals(databaseType)) {
+                    return "time '" + value + "'";
+                }
+            case DATE:
             case TIMESTAMP:
-                if (!StringUtils.isEmpty(databaseType) && databaseType.contains("Oracle")) {
-                    // For backwards compatibility, the type might be TIMESTAMP but the state value is in DATE format. This should be a one-time occurrence as the next maximum value
-                    // should be stored as a full timestamp. Even so, check to see if the value is missing time-of-day information, and use the "date" coercion rather than the
+                // TODO delegate to database adapter the conversion instead of using if in this
+                // class.
+                // TODO (cont) if a new else is added, please refactor the code.
+                // Ideally we should probably have a method on the adapter to get a clause that
+                // coerces a
+                // column to a Timestamp if need be (the generic one can be a no-op)
+                if (!StringUtils.isEmpty(databaseType)
+                        && (databaseType.contains("Oracle") || PhoenixDatabaseAdapter.NAME.equals(databaseType))) {
+                    // For backwards compatibility, the type might be TIMESTAMP but the state value
+                    // is in DATE format. This should be a one-time occurrence as the next maximum
+                    // value
+                    // should be stored as a full timestamp. Even so, check to see if the value is
+                    // missing time-of-day information, and use the "date" coercion rather than the
                     // "timestamp" coercion in that case
                     if (value.matches("\\d{4}-\\d{2}-\\d{2}")) {
                         return "date '" + value + "'";
@@ -525,19 +527,16 @@ public abstract class AbstractDatabaseFetchProcessor extends AbstractSessionFact
         return sb.toString();
     }
 
-    protected Map<String,String> getDefaultMaxValueProperties(final Map<PropertyDescriptor, String> properties){
-        final Map<String,String> defaultMaxValues = new HashMap<>();
+    protected Map<String, String> getDefaultMaxValueProperties(final ProcessContext context, final FlowFile flowFile) {
+        final Map<String, String> defaultMaxValues = new HashMap<>();
 
-        for (final Map.Entry<PropertyDescriptor, String> entry : properties.entrySet()) {
-            final String key = entry.getKey().getName();
+        context.getProperties().forEach((k, v) -> {
+            final String key = k.getName();
 
-            if(!key.startsWith(INITIAL_MAX_VALUE_PROP_START)) {
-                continue;
+            if (key.startsWith(INITIAL_MAX_VALUE_PROP_START)) {
+                defaultMaxValues.put(key.substring(INITIAL_MAX_VALUE_PROP_START.length()), context.getProperty(k).evaluateAttributeExpressions(flowFile).getValue());
             }
-
-            defaultMaxValues.put(key.substring(INITIAL_MAX_VALUE_PROP_START.length()), entry.getValue());
-        }
-
+        });
         return defaultMaxValues;
     }
 }

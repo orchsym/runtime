@@ -18,7 +18,7 @@
     <parent>
         <groupId>org.apache.nifi</groupId>
         <artifactId>nifi-nar-bundles</artifactId>
-        <version>1.7.0-SNAPSHOT</version>
+        <version>1.7.1-SNAPSHOT</version>
     </parent>
     <artifactId>nifi-standard-services</artifactId>
     <packaging>pom</packaging>
@@ -45,8 +45,9 @@
         <module>nifi-hwx-schema-registry-bundle</module>
         <module>nifi-kerberos-credentials-service-api</module>
         <module>nifi-kerberos-credentials-service-bundle</module>
-
         <module>orchsym-sapcp-service-api</module>
         <module>orchsym-sapcp-service-bundle</module>
+        <module>nifi-proxy-configuration-api</module>
+        <module>nifi-proxy-configuration-bundle</module>
     </modules>
 </project>

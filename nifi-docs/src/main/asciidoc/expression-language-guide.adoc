@@ -1,298 +1,436 @@
-// 
-// Licensed to the Apache Software Foundation (ASF) under one or more 
-// contributor license agreements.  See the NOTICE file distributed with 
-// this work for additional information regarding copyright ownership. 
-// The ASF licenses this file to You under the Apache License, Version 2.0 
-// (the "License"); you may not use this file except in compliance with 
-// the License.  You may obtain a copy of the License at 
-// 
-//     http://www.apache.org/licenses/LICENSE-2.0 
-// 
-// Unless required by applicable law or agreed to in writing, software 
-// distributed under the License is distributed on an "AS IS" BASIS, 
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-// See the License for the specific language governing permissions and 
-// limitations under the License. 
-// 
-= Orchsym Studio表达式语言指南 
-Orchsym Studio团队<orchsym@baishancloud.com> 
-:homepage: https://www.baishancloud.com/ 
-:linkattrs: 
+//
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+= Apache NiFi Expression Language Guide
+Apache NiFi Team <dev@nifi.apache.org>
+:homepage: http://nifi.apache.org
+:linkattrs:
 
-[[overview]] 
-== 概述 
-Orchsym Studio中的所有数据都由称为流文件“FlowFile”的抽象表示。FlowFile由两个主要部分组成：内容和属性。FlowFile的内容部分表示要操作的数据。例如，如果使用GetFile Processor从本地文件系统中获取文件，则该文件的内容将成为FlowFile 的内容。
+[[overview]]
+== Overview
+All data in Apache NiFi is represented by an abstraction called a FlowFile.
+A FlowFile is comprised of two major pieces: content and attributes.
+The content portion of the FlowFile represents the data on which to operate.
+For instance, if a file is picked up from a local file system using the
+GetFile Processor, the contents of the file will become the contents of the
+FlowFile.
 
-FlowFile的属性部分表示有关数据本身或元数据的信息。属性是键值对，表示对数据的已知信息以及对于适当的路由和处理数据有用的信息。继续以上面的获取文件的组件为例，FlowFile将具有一个名为 `filename` 的属性反映文件系统上文件的名称。另外，FlowFile还有一个 `path` 属性反映此文件所在的文件系统上的目录。FlowFile还将具有一个名为 `uuid` 的属性，这是此FlowFile 的唯一标识符。
+The attributes portion of the FlowFile represents information about the data
+itself, or metadata. Attributes are key-value pairs that represent what is
+known about the data as well as information that is useful for routing and
+processing the data appropriately.
+Keeping with the example of a file that is picked up from
+a local file system, the FlowFile would have an attribute called `filename` that
+reflected the name of the file on the file system. Additionally, the FlowFile will
+have a `path` attribute that reflects the directory on the file system that this
+file lived in. The FlowFile will also have an attribute named `uuid`, which is a
+unique identifier for this FlowFile. For complete listing of the core attributes
+check out the FlowFile section of the link:developer-guide.html#flowfile[Developer's Guide].
 
-如果用户无法使用这些属性，那么将这些属性放在FlowFile上就没什么用处了。Orchsym Studio表达式语言提供了访问这些属性并将它们与其他值进行比较以及操作它们的值的功能。
-
-
-[[structure]] 
-== Orchsym Studio表达式的结构 
-
-Orchsym Studio表达式语言始终以起始分隔符 `${` 开头并以结束分隔符 `}` 结束。在开始和结束分隔符之间是表达式本身的文本。在最基本的形式中，表达式只包含一个属性名称。 例如， `${filename}` 将返回 `filename` 属性的值。 
-
-在稍微复杂的示例中，我们可以返回对此值的操作。例如，我们可以通过调用 `toUpper` 函数: `${filename:toUpper()}` 返回文件名的大写版本。在这种情况下，我们访问 `filename` 属性，然后使用 `toUpper` 函数来操作它的值。函数调用由5个元素组成。首先，有一个函数调用分隔符 `:`。第二个是函数的名称 - 在本例中就是 `toUpper` 。接下来是一个左括号（`(`），后跟函数参数，参数必填与否取决于调用哪个函数。在这个例子中，我们使用 `toUpper` 函数，不需要任何参数，因此可忽略不填。 最后，右括号（`)`）表示函数调用的结束。表达式语言支持许多不同的功能，以实现许多不同的目标。有些函数提供String(文本)操作，例如 `toUpper` 功能。其他的, 比如 `equals` 和 `matches` 函数，提供比较功能。还有用于操纵日期和时间以及执行数学运算的函数。下面在<<functions>>部分描述了这些函数，并解释了函数的作用，它需要的参数以及它返回的信息类型。
-
-当我们对属性执行函数调用时，如上所述，我们将属性称为函数的主题（ _subject_ ），因为属性是函数运行的实体。然后我们可以将多个函数调用链接在一起，其中第一个函数的返回值成为第二个函数的主题，其返回值成为第三个函数的主题， 依此类推。继续我们的示例，我们可以使用表达式将多个函数链接在一起 `${filename:toUpper():equals('HELLO.TXT')}`。可以链接在一起的函数数量没有限制。
-
-可以使用表达式语言引用任何FlowFile属性。但是，如果属性名称包含特殊字符，必须通过转义引用属性名称。以下字符都是特殊字符： 
-
-- $ (美元符号)
-- | (管道符)
-- { (大括号开始符)
-- } (大括号结束符)
-- ( (小括号开发符)
-- ) (小括号结束符)
-- [ (中括号开始符)
-- ] (中括号结束符)
-- , (逗号)
-- : (冒号)
-- ; (分号)
-- / (斜杠)
-- * (星号)
-- ' (单引号)
--  (空格)
-- \t (制表符)
-- \r (回车符)
-- \n (换行符)
-
-此外，如果一个数字是属性名称的第一个字符，它将被视作特殊字符。如果属性中存在任何特殊字符，则使用单引号或双引号转义。表达式语言允许单引号和双引号可互换使用。例如，以下内容可用于转义名为 `my attribute` 的属性: `${"my attribute"}` 或者 `${'my attribute'}`。
-
-在此示例中，要返回的值是“my attribute”属性的值(如果存在)。如果该属性不存在，则表达式语言将查找名为“my attribute”的系统环境变量。如果无法找到它，它将查找名为“my attribute”的JVM系统属性。最后，如果这些都不存在，表达语言将返回一个 `null` 值。
-
-还存在一些函数没有主题。这些函数只需通过表达式的开头来调用，例如 `${hostname()}`。然后，这些函数也可以一起更改，例如， `${hostname():toUpper()}`。尝试使用主题来验证函数将出错。在下面的 <<functions>>部分中，一些函数将在其描述中清楚地表明它们不需要主题。
-
-通常，我们需要将两个不同属性的值相互比较。我们可以通过使用嵌入式表达式来实现这一目标。例如，我们可以检查一下 `filename` 属性与 `UUID` 属性是否相同: `${filename:equals( ${uuid} )}`。另请注意，我们在括号里面有一个空格，在 `equals` 方法和嵌入式表达式之间。这不是必需的，也不会影响以任何验证表达式的方法。它旨在使表达更容易阅读。分隔符之间的表达式语言忽略空格。因此，我们可以使用表达式 `$ {filename:equals($ {uuid})}` 或者 `$ {filename:equals($ {uuid})}` 两个表达式表达相同意思。但是，我们不能使用 `${file name:equals(${uuid})}`，因为这将导致在 `file` 和 `name` 被视作不同的表意, 而不是单个表意 `filename`。
+However, placing these attributes on a FlowFile do not provide much benefit
+if the user is unable to make use of them. The NiFi Expression Language provides
+the ability to reference these attributes, compare them to other values,
+and manipulate their values.
 
 
-[[usage]] 
-== 应用程序中的表达式语言
-应用程序中的表达式语言表达式语言在整个Orchsym Studio应用程序中被大量使用，用于配置组件属性。但是，并非所有组件属性都支持表达式语言。属性是否支持表达式语言由组件的开发者在组件写入时确定。但是，该应用程序应该清楚地说明每个属性是否支持表达式语言。
+[[structure]]
+== Structure of a NiFi Expression
 
-在应用程序中，配置组件属性时，用户界面上的属性名称旁边会提供一个信息图标（ image:iconInfo.png["Info"] ）。将鼠标悬停在此图标上将显示提示，提供有关该属性的有用信息。此信息包括属性的描述，默认值(如果有)，历史配置值(如果有)以及此属性的表达式语言的取值范围。有三个值，分别是:NONE ->VARIABLE_REGISTRY -> FLOWFILE_ATTRIBUTES。
+The NiFi Expression Language always begins with the start delimiter `${` and ends
+with the end delimiter `}`. Between the start and end delimiters is the text of the
+Expression itself. In its most basic form, the Expression can consist of just an
+attribute name. For example, `${filename}` will return the value of the ``filename''
+attribute.
 
-* NONE - 此属性不支持表达式语言。
-* VARIABLE_REGISTRY 按层次结构构造如下: 
-** 在模块级别定义的变量，然后递归地定义到更高的模块，直到根模块。
-** 自定义properties文件中的变量，通过Orchsym Studio在orchsym.properties文件中的orchsym.variable.registry.properties中设置。
-** 在JVM级别和系统属性中定义的环境变量。 
-* FLOWFILE_ATTRIBUTES - 每个单独的流文件的属性。
+In a slightly more complex example, we can instead return a manipulation of this value.
+We can, for example, return an all upper-case version of the filename by calling the
+`toUpper` function: `${filename:toUpper()}`. In this case, we reference the ``filename''
+attribute and then manipulate this value by using the `toUpper` function. A function call
+consists of 5 elements. First, there is a function call delimiter `:`. Second is the name
+of the function - in this case, ``toUpper''. Next is an open parenthesis (`(`), followed
+by the function arguments. The arguments necessary are dependent upon which function
+is being called. In this example, we are using the `toUpper` function, which does not
+have any arguments, so this element is omitted. Finally, the closing parenthesis (`)`)
+indicates the end of the function call. There are many different functions that are supported
+by the Expression Language to achieve many different goals. Some functions provide String (text)
+manipulation, such as the `toUpper` function. Others, such as the `equals` and `matches` functions,
+provide comparison functionality. Functions also exist for manipulating dates and times and
+for performing mathematical operations. Each of these functions is described below, in the
+<<functions>> section, with an explanation of what the function does, the arguments that it
+requires, and the type of information that it returns.
+
+When we perform a function call on an attribute, as above, we refer to the attribute as the
+_subject_ of the function, as the attribute is the entity on which the function is operating.
+We can then chain together multiple function calls, where the return value of the first function
+becomes the subject of the second function and its return value becomes the subject of the third
+function and so on. Continuing with our example, we can chain together multiple functions by using
+the expression `${filename:toUpper():equals('HELLO.TXT')}`. There is no limit to the number of
+functions that can be chained together.
+
+Any FlowFile attribute can be referenced using the Expression Language. However, if the attribute
+name contains a ``special character,'' the attribute name must be escaped by quoting it. The following
+characters are each considered ``special characters'':
+
+- $ (dollar sign)
+- | (pipe)
+- { (open brace)
+- } (close brace)
+- ( (open parenthesis)
+- ) (close parenthesis)
+- [ (open bracket)
+- ] (close bracket)
+- , (comma)
+- : (colon)
+- ; (semicolon)
+- / (forward slash)
+- * (asterisk)
+- ' (single quote)
+-  (space)
+- \t (tab)
+- \r (carriage return)
+- \n (new-line)
+
+Additionally, a number is considered a ``special character'' if it is the first character of the attribute name.
+If any of these special characters is present in an attribute is quoted by using either single or double quotes.
+The Expression Language allows single quotes and double quotes to be used interchangeably. For example, the following
+can be used to escape an attribute named ``my attribute'': `${"my attribute"}` or `${'my attribute'}`.
+
+In this example, the value to be returned is the value of the "my attribute" value, if it exists. If that attribute
+does not exist, the Expression Language will then look for a System Environment Variable named "my attribute." If
+unable to find this, it will look for a JVM System Property named "my attribute." Finally, if none of these exists,
+the Expression Language will return a `null` value.
+
+There also exist some functions that expect to have no subject. These functions are invoked simply
+by calling the function at the beginning of the Expression, such as `${hostname()}`. These functions
+can then be changed together, as well. For example, `${hostname():toUpper()}`. Attempting to
+evaluate the function with subject will result in an error. In the <<functions>>
+section below, these functions will clearly indicate in their descriptions that they do not
+require a subject.
+
+Often times, we will need to compare the values of two different attributes to each other.
+We are able to accomplish this by using embedded Expressions. We can, for example, check if
+the ``filename'' attribute is the same as the ``uuid'' attribute: `${filename:equals( ${uuid} )}`.
+Notice here, also, that we have a space between the opening parenthesis for the `equals` method and
+the embedded Expression. This is not necessary and does not affect how the Expression is evaluated
+in any way. Rather, it is intended to make the Expression easier to read. White space is ignored by
+the Expression Language between delimiters. Therefore, we can use the Expression
+`${     filename   : equals(${    uuid})  }` or `${filename:equals(${uuid})}` and both Expressions
+mean the same thing. We cannot, however, use `${file name:equals(${uuid})}`, because this results
+in `file` and `name` being interpreted as different tokens, rather than a single token, `filename`.
 
 
-[[editor]] 
-=== 表达式语言编辑器 
 
-配置组件属性的值时，Orchsym Studio用户界面使用表达式语言编辑器提供表达式语言的帮助。通过键入开始表达式 `${`，编辑器开始突出括号和括号，以便用户可以轻松地分辨哪个左括号或左大括号匹配哪个右括号或右大括号。
+[[usage]]
+== Expression Language in the Application
 
-编辑器还提供了可在当前光标位置使用的所有函数的列表，从而提供了上下文相关的帮助。要激活此功能，请按键盘上的Ctrl + Space。用户还可以键入函数名称的一部分，然后按Ctrl + Space查看可以使用以相同前缀开头的所有函数。例如，如果我们输入编辑器 `${filename:to` 然后按Ctrl + Space，我们会弹出一个列出六种不同功能的弹出窗口: `toDate`，`toLower`，`toNumber`，`toRadix`，`toString` 和 `toUpper`。然后我们可以继续输入以缩小显示哪些函数的范围，或者我们可以通过用鼠标双击它或使用箭头键突出显示所需功能并按Enter键从列表中选择一个功能。
+The Expression Language is used heavily throughout the NiFi application for configuring Processor
+properties. Not all Processor properties support the Expression Language, however. Whether or not
+a Property supports the Expression Language is determined by the developer of the Processor when
+the Processor is written. However, the application strives to clearly illustrate for each Property
+whether or not the Expression Language is supported.
+
+In the application, when configuring a Processor property, the User Interface provides an Information
+icon (
+image:iconInfo.png["Info"]
+) next to the name of the Property. Hovering over this icon with the mouse will provide a tooltip that
+provides helpful information about the Property. This information includes a description of the Property,
+the default value (if any), historically configured values (if any), and the evaluation scope of this
+property for expression language. There are three values and the evaluation scope of the expression 
+language is hierarchical: NONE -> VARIABLE_REGISTRY -> FLOWFILE_ATTRIBUTES.
+
+* NONE - expression language is not supported for this property
+* VARIABLE_REGISTRY is hierarchically constructed as below:
+** Variables defined at process group level and then, recursively, up to the higher process group until 
+the root process group.
+** Variables defined in custom properties files through the nifi.variable.registry.properties property 
+in nifi.properties file.
+** Environment variables defined at JVM level and system properties.
+* FLOWFILE_ATTRIBUTES - will use attributes of each individual flow file.
+
+
+[[editor]]
+=== Expression Language Editor
+
+When configuring the value of a Processor property, the NiFi User Interface provides help with the
+Expression Language using the Expression Language editor. Once an Expression is begin by typing `${`,
+the editor begins to highlight parentheses and braces so that the user is easily able to tell which
+opening parenthesis or brace matches which closing parenthesis or brace.
+
+The editor also supplies context-sensitive help by providing a list of all functions that can be used
+at the current cursor position. To activate this feature, press Ctrl+Space on the keyboard. The user
+is also able to type part of a function name and then press Ctrl+Space to see all functions that can
+be used that start with the same prefix. For example, if we type into the editor `${filename:to`
+and then press Ctrl+Space, we are provided a pop-up that lists six different functions: `toDate`,
+`toLower`, `toNumber`, `toRadix`, `toString`, and `toUpper`. We can then continue typing to narrow
+which functions are shown, or we can select one of the functions from the list by double-clicking
+it with the mouse or using the arrow keys to highlight the desired function and pressing Enter.
 
 
 
-[[functions]] 
-== 函数
+[[functions]]
+== Functions
 
-函数提供了一种操作和比较属性值的便捷​​方法。表达式语言提供了许多不同的函数来满足自动数据流的需求。每个函数接受零个或多个参数并返回单个值。然后可以将这些函数链接在一起以创建强大的表达式来验证条件和操纵值。有关如何一起调用和链接函数的更多信息，请参见<<structure>> 。
+Functions provide a convenient way to manipulate and compare values of attributes. The Expression Language
+provides many different functions to meet the needs of a automated dataflow. Each function takes
+zero or more arguments and returns a single value. These functions can then be chained together to create
+powerful Expressions to evaluate conditions and manipulate values. See <<structure>> for more information
+on how to call and chain functions together.
 
-[[types]] 
-=== 数据类型 
+[[types]]
+=== Data Types
 
-函数的每个参数和函数返回的每个值都具有特定的数据类型。表达式语言支持四种不同的数据类型: 
+Each argument to a function and each value returned from a function has a specific data type. The Expression
+Language supports four different data types:
 
-- *String*：String是一系列字符，可以包含数字，字母，空格和特殊字符。
-- *Number*：Number是由一个或多个数字组成的整数(`0` 到 `9`)。从Date数据类型转换为数字时，它们表示为自格林威治标准时间1970年1月1日午夜以来的毫秒数。
-- *Decimal*：Decimal是一个数值，可以支持小数和更大的值，而精度损失最小。更确切地说，它是一个双精度64位IEEE 754浮点数。由于这种最小的精度损失，这种数据类型不应该用于非常精确的值，例如货币。有关此数据类型中存储的值范围的更多文档，请参阅此内容link:https://docs.oracle.com/javase/specs/jls/se7/html/jls-4.html#jls-4.2.3[link^] 。 以下是表达式语言支持的小数形式的一些示例 (“E”也可以是小写): 
+- *String*: A String is a sequence of characters that can consist of numbers, letters, white space, and
+	special characters.
+- *Number*: A Number is an whole number comprised of one or more digits (`0` through `9`). When converting to numbers from Date data types, they are represented as
+	the number of milliseconds since midnight GMT on January 1, 1970.
+- *Decimal*: A Decimal is a numeric value that can support decimals and larger values with minimal loss of precision. More precisely it
+    is a double-precision 64-bit IEEE 754 floating point. Due to this minimal loss of precision this data type should not be used for
+    very precise values, such as currency. For more documentation on the range of values stored in this data type
+    refer to this link:https://docs.oracle.com/javase/specs/jls/se7/html/jls-4.html#jls-4.2.3[link^]. The following are some examples of the forms of
+    literal decimals that are supported in expression language (the "E" can also be lower-case):
 
-        * 1.1 
-        * .1E1 
-        * 1.11E-12 
+        * 1.1
+        * .1E1
+        * 1.11E-12
 
-- *Date*：Date是一个包含日期和时间的对象。利用<<dates>>和<<type_cast>>函数可以将这种数据类型转换为字符串和数字。如果整个表达式语言表达式被定义为日期，那么它将被转换为具有以下格式的字符串:"<星期几> <月> <日期> <时>:<分>:<秒> <时区> <年>"。 
-在Java SimpleDateFormat格式中也表示为“E MMM dd HH:mm:ss z yyyy”。例如：“Wed Dec 31 12:00:04 UTC 2016”。
-- *Boolean*：Boolean布尔值是 `true` 或者 `false`。
+- *Date*: A Date is an object that holds a Date and Time. Utilizing the <<dates>> and <<type_cast>> functions this data
+	type can be converted to/from Strings and numbers. If the whole Expression Language expression is evaluated to be a
+	date then it will be converted to a String with the format: "<Day of Week> <Month> <Day of Month> <Hour>:<Minute>:<Second> <Time Zone> <Year>".
+	Also expressed as "E MMM dd HH:mm:ss z yyyy" in Java SimpleDateFormat format. For example: "Wed Dec 31 12:00:04 UTC 2016".
+- *Boolean*: A Boolean is one of either `true` or `false`.
 
-在表达式语言函数取值之后，所有属性都存储为String类型。
+After evaluating expression language functions, all attributes are stored as type String.
 
-表达式语言通常能够自动将一种数据类型的值强制转换为适合函数的适当数据类型。但是，也提供将值手动强制转换为特定数据类型的函数。有关更多信息，请参阅<<type_cast>>部分。
+The Expression Language is generally able to automatically coerce a value of one data type to the appropriate
+data type for a function. However, functions do exist to manually coerce a value into a specific data type.
+See the <<type_cast>> section for more information.
 
-Number和Decimal类型支持十六进制值，但在被解释为文字时，必须引用它们并以“0x”为前缀。例如，这两个表达式是有效的（没有引号或“0x”表达式将无法正常运行）： 
+Hex values are supported for Number and Decimal types but they must be quoted and prepended with "0x" when being
+interpreted as literals. For example these two expressions are valid (without the quotes or "0x" the expression would fail to run properly):
 
  - ${literal("0xF"):toNumber()}
  - ${literal("0xF.Fp10"):toDecimal()}
 
 
 
-[[boolean]] 
-== 布尔逻辑 
 
-表达式语言最强大的功能之一是能够将属性值与其他值进行比较。用于例如配置组件应如何路由数据。以下函数用于执行布尔逻辑，例如比较两个值。这些函数中的每一个都设计用于处理Boolean类型的值。
+[[boolean]]
+== Boolean Logic
 
-
-[.function] 
-=== isNull 
-*描述*: [.description]# 如果主题为空，`isNull` 函数返回 `true` ，否则返回 `false`。这通常用于确定属性是否存在。# 
-
-*主题类型*: [.subject]#任意#
-
-*参数*:没有参数
-
-*返回值类型*: [.returnType]#Boolean# 
-
-*例子*:	`${filename:isNull()}` 如果“filename”属性不存在，返回`true`, 如果属性存在，返回 `false` 。
+One of the most powerful features of the Expression Language is the ability to compare an attribute value against
+some other value. This is used often, for example, to configure how a Processor should route data. The following
+functions are used for performing boolean logic, such as comparing two values.
+Each of these functions are designed to work on values of type Boolean.
 
 
-[.function] 
-=== notNull 
-*描述*: [.description]#`notNull` 函数返回 `isNull` 函数相反的值。也就是说，如果主题存在它会返回 `true` ，否则返回 `false` 。# 
+[.function]
+=== isNull
+*Description*: [.description]#The `isNull` function returns `true` if the subject is null, `false` otherwise. This is typically used to determine
+if an attribute exists.#
 
-*主题类型*: [.subject]#任意# 
+*Subject Type*: [.subject]#Any#
 
-*参数*:没有参数
+*Arguments*: No arguments
 
-*返回值类型*: [.returnType]#Boolean#  
+*Return Type*: [.returnType]#Boolean#
 
-*例子*: `${filename:notNull()}` 如果“filename”属性存在，返回 `true`。如果属性不存在，返回 `false`。 
+*Examples*:	`${filename:isNull()}` returns `true` if the "filename" attribute does not exist.
+	It returns `false` if the attribute exists.
 
 
 
-[.function] 
-=== isEmpty 
-*描述*: [.description]#如果主题为null，不包含任何字符，或仅包含空格(新行，回车符，空格，制表符等)，`isEmpty` 函数返回 `true` ，否则返回 `false`。# 
+[.function]
+=== notNull
+*Description*: [.description]#The `notNull` function returns the opposite value of the `isNull` function. That is, it will return `true` if the
+subject exists and `false` otherwise.#
 
-*主题类型*: [.subject]#String# 
+*Subject Type*: [.subject]#Any#
 
-*参数*:没有参数 
+*Arguments*: No arguments
 
-*返回值类型*: [.returnType]#Boolean# 
+*Return Type*: [.returnType]#Boolean#
 
-*例子*: 如果“filename”属性不存在或仅包含空格，`${filename:isEmpty()}` 返回 `true` ， `${literal(" "):isEmpty()}` 以及 `${literal(""):isEmpty()}` 都返回 `true`。 
+*Examples*: `${filename:notNull()}` returns `true` if the "filename" attribute exists. It returns `false` if the attribute
+	does not exist.
+
+
+
+[.function]
+=== isEmpty
+*Description*: [.description]#The `isEmpty` function returns `true` if the Subject is null, does not contain any characters
+	or contains only white-space (new line, carriage return, space, tab), `false` otherwise.#
+
+*Subject Type*: [.subject]#String#
+
+*Arguments*: No arguments
+
+*Return Type*: [.returnType]#Boolean#
+
+*Examples*: `${filename:isEmpty()}` returns `true` if the "filename" attribute does not exist or contains only
+	white space. `${literal(" "):isEmpty()}` returns true as well as `${literal(""):isEmpty()}`.
 
 
 
 
-[.function] 
+[.function]
 === equals
 
-[.description] 
-*描述*: [.description]#`equals` 函数被广泛使用并确定其主题是否等于另一个String值。请注意 `equals` 函数执行两个String值的直接比较。注意不要将此函数与<<matches>>函数混淆 ，后者根据正则表达式计算其主题。# 
+[.description]
+*Description*: [.description]#The `equals` function is very widely used and determines if its subject is equal to another String value.
+	Note that the `equals` function performs a direct comparison of two String values. Take care not to confuse this
+	function with the <<matches>> function, which evaluates its subject against a Regular Expression.#
 
-[.subject] 
-*主题类型*: [.subject]#任意# 
+[.subject]
+*Subject Type*: [.subject]#Any#
 
-[.arguments] 
-*参数*: 
+[.arguments]
+*Arguments*:
 
-- [.argName]#_value_# : [.argDesc]#要比较的主题的值。必须与主题相同。# 
+	- [.argName]#_value_# : [.argDesc]#The value to compare the Subject to. Must be same type as the Subject.#
 
-[.returnType] 
-*返回值类型*: [.returnType]#Boolean# 
+[.returnType]
+*Return Type*: [.returnType]#Boolean#
 
-[.examples] 
-*例子*: 
-通过使用表达式 `${filename:equals('hello.txt')}`，我们可以检查FlowFile的文件名是否为“hello.txt”。或者我们可以检查 `hello` 是否等于 `filename` 属性的值: `${hello:equals( ${filename} )}`。
-
-
-
-[.function] 
-=== equalsIgnoreCase 
-*描述*: [.description]#与`equals` 函数相似， `equalsIgnoreCase` 函数将其主题与String值进行比较，如果两个值忽略大小写的情况下是相同的，则返回`true`。# 
-
-*主题类型*: [.subject]#String# ，
-
-*参数*: 
-
-- [.argName]#_value_#: [.argDesc]#要比较主题的值。# 
-
-*返回值类型*: [.returnType]#Boolean# 
-
-*例子*: 如果filename等于"hello.txt"或者 "HELLO.TXT"或者 "HeLLo.TxT"，`${filename:equalsIgnoreCase('hello.txt')}` 都将返回 `true`。
+[.examples]
+*Examples*:
+We can check if the filename of a FlowFile is "hello.txt" by using the expression `${filename:equals('hello.txt')}`,
+or we could check if the value of the attribute `hello` is equal to the value of the `filename` attribute:
+`${hello:equals( ${filename} )}`.
 
 
 
-[.function] 
-=== gt 
-*描述*: [.description]#`gt` 函数用于数字比较。如果主题大于其参数，返回 `true` 。如果主题或参数无法强制转换为数字，则此函数返回 `false`。# 
+[.function]
+=== equalsIgnoreCase
+*Description*: [.description]#Similar to the `equals` function, the `equalsIgnoreCase` function compares its subject against a String value but returns
+`true` if the two values differ only by case (upper case vs. lower case).#
 
-*主题类型*: [.subject]#Number# 
+*Subject Type*: [.subject]#String#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_value_#: [.argDesc]#要比较主题的数字。# 
+	- [.argName]#_value_# : [.argDesc]#The value to compare the Subject to.#
 
-*返回值类型*: [.returnType]#Boolean# 
+*Return Type*: [.returnType]#Boolean#
 
-*例子*: 如果FlowFile的内容大小超过1千字节(1024字节)，`${fileSize:gt( 1024 )}` 将返回 `true` 。否则，它将返回 `false`。 
+*Examples*: `${filename:equalsIgnoreCase('hello.txt')}` will evaluate to `true` if filename is equal to "hello.txt"
+	or "HELLO.TXT" or "HeLLo.TxT".
 
 
 
 
-[.function] 
-=== ge 
-*描述*: [.description]#`ge` 函数用于数字比较。如果主题大于或等于其参数，返回 `true` 。如果主题或参数无法强制转换为数字，则此函数返回 `false`。# 
+[.function]
+=== gt
+*Description*: [.description]#The `gt` function is used for numeric comparison and returns `true` if the subject is Greater Than
+	its argument. If either the subject or the argument cannot be coerced into a Number,
+	this function returns `false`.#
 
-*主题类型*: [.subject]#Number# 
+*Subject Type*: [.subject]#Number#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_value_#: [.argDesc]#要比较主题的数字。# 
+	- [.argName]#_value_# : [.argDesc]#The number to compare the Subject to.#
 
-*返回值类型*: [.returnType]#Boolean# 
+*Return Type*: [.returnType]#Boolean#
 
-*例子*: 如果FlowFile内容的大小至少(大于或等于)1千字节(1024字节)。`${fileSize:ge( 1024 )}` 将返回 `true`。否则，它将返回 `false`。
-
-
-
-[.function] 
-=== lt 
-*描述*: [.description]#`lt` 函数用于数字比较，如果主题小于其参数，返回 `true`。如果主题或参数无法强制转换为数字，则此函数返回 `false`。# 
-
-*主题类型*: [.subject]#Number# 
-
-*参数*: 
-
-- [.argName]#_value_#: [.argDesc]#要比较主题的数字。# 
-
-*返回值类型*: [.returnType]#Boolean# 
-
-*例子*: 如果FlowFile内容的大小小于1兆字节(1048576字节)，`${fileSize:lt( 1048576 )}` 将返回 `true`。否则，它将返回 `false`。
-
-
-
-[.function] 
-=== le 
-*描述*: [.description]#`le` 函数用于数字比较，如果主题小于或等于其参数，返回 `true`。如果主题或参数无法强制转换为数字，则 
-此函数返回 `false`。# 
-
-*主题类型*: [.subject]#Number# 
-
-*参数*: 
-
-- [.argName]#_value_#: [.argDesc]#要比较主题的数字。# 
-
-*返回值类型*: [.returnType]#Boolean# 
-
-*例子*: 如果FlowFile内容的大小最多(小于或等于)1兆字节(1048576字节)，`${fileSize:le( 1048576 )}` 将返回 `true`。否则，它将返回 `false`。
+*Examples*: `${fileSize:gt( 1024 )}` will return `true` if the size of the FlowFile's content is more than 1 kilobyte
+	(1024 bytes). Otherwise, it will return `false`.
 
 
 
 
+[.function]
+=== ge
+*Description*: [.description]#The `ge` function is used for numeric comparison and returns `true` if the subject is Greater Than
+	Or Equal To its argument. If either the subject or the argument cannot be coerced into a Number,
+	this function returns `false`.#
+
+*Subject Type*: [.subject]#Number#
+
+*Arguments*:
+
+	- [.argName]#_value_# : [.argDesc]#The number to compare the Subject to.#
+
+*Return Type*: [.returnType]#Boolean#
+
+*Examples*: `${fileSize:ge( 1024 )}` will return `true` if the size of the FlowFile's content is at least (
+	is greater than or equal to) 1 kilobyte (1024 bytes). Otherwise, it will return `false`.
 
 
-[.function] 
-=== and 
-*描述*: [.description]#`and` 函数将布尔值作为单个参数。如果主题和参数都是`true`，则返回 `true` 。如果主题或参数其中任一个是 `false`或者不能强制转换为布尔值，函数返回 `false`。通常会与嵌入式表达式一起用作参数。# 
 
-*主题类型*: [.subject]#Boolean# 
+[.function]
+=== lt
+*Description*: [.description]#The `lt` function is used for numeric comparison and returns `true` if the subject is Less Than
+	its argument. If either the subject or the argument cannot be coerced into a Number,
+	this function returns `false`.#
 
-*参数*: 
+*Subject Type*: [.subject]#Number#
 
-- [.argName]#_condition_#: [.argDesc]#'and'表达式右手边内容#
+*Arguments*:
+
+	- [.argName]#_value_# : [.argDesc]#The number to compare the Subject to.#
+
+*Return Type*: [.returnType]#Boolean#
+
+*Examples*: `${fileSize:lt( 1048576 )}` will return `true` if the size of the FlowFile's content is less than
+	1 megabyte (1048576 bytes). Otherwise, it will return `false`.
 
 
-*返回值类型*: [.returnType]#Boolean# 
 
-*例子*:我们可以通过使用表达式检查文件名是否都是小写的并且至少有5个字符 
+
+[.function]
+=== le
+*Description*: [.description]#The `le` function is used for numeric comparison and returns `true` if the subject is Less Than
+	Or Equal To its argument. If either the subject or the argument cannot be coerced into a Number,
+	this function returns `false`.#
+
+*Subject Type*: [.subject]#Number#
+
+*Arguments*:
+
+	- [.argName]#_value_# : [.argDesc]#The number to compare the Subject to.#
+
+*Return Type*: [.returnType]#Boolean#
+
+*Examples*: `${fileSize:le( 1048576 )}` will return `true` if the size of the FlowFile's content is at most
+	(less than or equal to) 1 megabyte (1048576 bytes). Otherwise, it will return `false`.
+
+
+
+
+
+
+[.function]
+=== and
+*Description*: [.description]#The `and` function takes as a single argument a Boolean value and returns `true` if both the Subject
+	and the argument are `true`. If either the subject or the argument is `false` or cannot be coerced into a Boolean,
+	the function returns `false`. Typically, this is used with an embedded Expression as the argument.#
+
+*Subject Type*: [.subject]#Boolean#
+
+*Arguments*:
+
+	- [.argName]#_condition_# : [.argDesc]#The right-hand-side of the 'and' Expression#
+
+
+*Return Type*: [.returnType]#Boolean#
+
+*Examples*: We can check if the filename is both all lower-case and has at least 5 characters by using the Expression
 -----------------------------------------------
 ${filename:toLower():equals( ${filename} ):and(
 	${filename:length():ge(5)}
@@ -303,22 +441,23 @@ ${filename:toLower():equals( ${filename} ):and(
 
 
 
+[.function]
+=== or
 
-[.function] 
-=== or 
+*Description*: [.description]#The `or` function takes as a single argument a Boolean value and returns `true` if either the Subject
+	or the argument is `true`. If both the subject and the argument are `false`, the function returns `false`. If
+	either the Subject or the argument cannot be coerced into a Boolean value, this function will return `false`.#
 
-*描述*: [.description]#`or` 函数将布尔值作为单个参数。 如果主题或参数任一是 `true`，则返回 `true`。如果主题和参数都是 `false`，函数返回 `false`。如果无法将Subject或参数强制转换为布尔值，则此函数将返回 `false`。# 
+*Subject Type*: [.subject]#Boolean#
 
-*主题类型*: [.subject]#Boolean# 
+*Arguments*:
 
-*参数*: 
+	- [.argName]#_condition_# : [.argDesc]#The right-hand-side of the 'and' Expression#
 
-- [.argName]#_condition_#: [.argDesc]#'and'# 
+*Return Type*: [.returnType]#Boolean#
 
-*返回值类型*: [.returnType]#Boolean# 
-
-*例子*:如果文件名正好有5个字符，或者文件名都是小写的，以下示例将返回 `true` 。
-
+*Examples*: The following example will return `true` if either the filename has exactly 5 characters or if
+	the filename is all lower-case.
 ----------------------------------------------
 ${filename:toLower():equals( ${filename} ):or(
 	${filename:length():equals(5)}
@@ -327,48 +466,52 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
+[.function]
+=== not
 
-[.function] 
-=== not 
+[.description]
+*Description*: [.description]#The `not` function returns the negation of the Boolean value of the subject.#
 
-[.description] 
-*描述*: [.description]#`not` 函数返回主题布尔值的否定（反转）。# 
+[.subject]
+*Subject Type*: [.subject]#Boolean#
 
-[.subject] 
-*Subject Type*: [.subject]#Boolean# 
+[.arguments]
+*Arguments*: No arguments
 
-[.arguments] 
-*参数*:没有参数
+[.returnType]
+*Return Type*: [.returnType]#Boolean#
 
-[.returnType] 
-*返回值类型*: [.returnType]#Boolean# 
-
-[.examples] 
-*例子*:我们可以通过使用 `not` 函数来反转另一个函数的值，如 `${filename:equals('hello.txt'):not()}`，如果文件名不等于"hello.txt"，将返回 `true`，如果文件名是"hello.txt"，将返回 `false` 。 
-
-
-
-[.function] 
-=== ifElse 
-
-*描述*: [.description]#如果主题为true，则返回第一个参数值;如果主题为false，则返回第二个参数值。# 
-
-*主题类型*: [.subject]#Boolean# 
-
-*参数*: 
-
-- [.argName]#_EvaluateIfTrue_#: [.argDesc]#主题为true时返回的值# 
-- [.argName]#_EvaluateIfFalse_#: [.argDesc]#主题为false时返回的值# 
-
-*返回值类型*: [.returnType]#String# 
-
-*例子*:如果“filename”属性的值为 "a brand new filename.txt"，"nullFilename" 属性的值为null，"bool"属性的值为"true"，则以下表达式将返回以下结果: 
+[.examples]
+*Examples*: We can invert the value of another function by using the `not` function, as
+	`${filename:equals('hello.txt'):not()}`. This will return `true` if the filename is NOT equal to
+	"hello.txt" and will return `false` if the filename is "hello.txt."
 
 
 
-.ifElse示例
+[.function]
+=== ifElse
+
+*Description*: [.description]#Evaluates the first argument if the Subject evaluates to true, or the second argument
+if the Subject evaluates to false.#
+
+*Subject Type*: [.subject]#Boolean#
+
+*Arguments*:
+
+	- [.argName]#_EvaluateIfTrue_# : [.argDesc]#The value to return if the Subject is true#
+	- [.argName]#_EvaluateIfFalse_# : [.argDesc]#The value to return if the Subject is false#
+
+*Return Type*: [.returnType]#String#
+
+*Examples*: If the "filename" attribute has the value "a brand new filename.txt", the "nullFilename" attribute has
+the value null, and the "bool" attribute has the value "true", then the following expressions will provide
+the following results:
+
+
+
+.ifElse Examples
 |===================================================================
-| 表达式 | 值
+| Expression | Value
 | `${bool:ifElse('a','b')}` | `a`
 | `${literal(true):ifElse('a','b')}` | `a`
 | `${nullFilename:isNull():ifElse('file does not exist', 'located file')}` | `file does not exist`
@@ -380,95 +523,106 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
-[[strings]] 
-== 字符串操作 
+[[strings]]
+== String Manipulation
 
-以下每个函数都以某种方式操作String。
-
-
-
-
-[.function] 
-=== toUpper 
-
-*描述*: [.description]#这个函数将主题转换为全大写字符串。换句话说，它用大写字母替换对应小写字母。# 
-
-*主题类型*: [.subject]#String# 
-
-*参数*:没有参数
-
-*返回值类型*: [.returnType]#String# 
-
-*例子*:如果“filename”属性为"abc123.txt"，则表达式 `${filename:toUpper()}` 将返回"ABC123.TXT"。
+Each of the following functions manipulates a String in some way.
 
 
 
 
+[.function]
+=== toUpper
 
-[.function] 
-=== toLower 
+*Description*: [.description]#This function converts the Subject into an all upper-case String. Said another way, it
+	replaces any lowercase letter with the uppercase equivalent.#
 
-*描述*: [.description]#这个函数将主题转换为全小写的String。换句话说，它用小写字母替换对应大写字母。# 
+*Subject Type*: [.subject]#String#
 
-*主题类型*: [.subject]#String# 
+*Arguments*: No arguments
 
-*参数*:没有参数
+*Return Type*: [.returnType]#String#
 
-*返回值类型*: [.returnType]#String# 
-
-*例子*:如果“filename”属性为"ABC123”.TXT"，则表达式 `${filename:toLower()}` 将返回"abc123.txt"。
+*Examples*: If the "filename" attribute is "abc123.txt", then the Expression `${filename:toUpper()}`
+	will return "ABC123.TXT"
 
 
 
 
 
-[.function] 
-=== trim 
+[.function]
+=== toLower
 
-*描述*: [.description]#`trim` 函数将从其主题中删除任何前导或尾随空格。# 
+*Description*: [.description]#This function converts the Subject into an all lower-case String. Said another way,
+	it replaces any uppercase letter with the lowercase equivalent.#
 
-*主题类型*: [.subject]#String# 
+*Subject Type*: [.subject]#String#
 
-*参数*:没有参数
+*Arguments*: No arguments
 
-*返回值类型*: [.returnType]#String# 
+*Return Type*: [.returnType]#String#
 
-*例子*:如果属性 `attr` 具有值 "     1 2 3     "，则表达式 `${attr:trim()}` 将返回值 "1 2 3"。
-
-
-
-
-[.function] 
-=== substring 
-
-*描述*: 
-[.description]#返回主题的一部分内容，基于给定的一个 _起始索引_ （_starting index_）和一个可选的 _结束索引_ （_ending index_）。如果 _结束索引_ 没有提供，它将截取主题的从给定的起始索引直到末尾的部分。# 
-
-[.description]#_starting index_ 和 _ending index_ 是从零开始的。也就是说，第一个字符的位置是 `0` 而不是 `1`。# 
-
-[.description]#如果 _starting index_ 或 _ending index_不是数字，此函数调用将导致错误。# 
-
-[.description]#如果 _starting index_ 大于 _ending index_，此函数调用将导致错误。# 
-
-[.description]#如果 _starting index_ 或者 _ending index_ 大于主题的长度或者小于0，则此函数调用将导致错误。# 
+*Examples*: If the "filename" attribute is "ABC123.TXT", then the Expression `${filename:toLower()}`
+	will return "abc123.txt"
 
 
-*主题类型*: [.subject]#String# 
 
-*参数*: 
 
-- [.argName]#_starting index_#: [.argDesc]#要捕获的第一个字符的从0开始的索引(包括)# 
-- [.argName]#_ending index_#: [.argDesc]#要捕获的最后一个字符的从0开始的索引(不包括)# 
 
-*返回值类型*: [.returnType]#String# 
+[.function]
+=== trim
 
-*例子*: 
+*Description*: [.description]#The `trim` function will remove any leading or trailing white space from its subject.#
 
-如果我们有一个名为“filename”的属性，其值为"a brand new filename.txt",然后以下表达式将返回以下值: 
+*Subject Type*: [.subject]#String#
 
-.Substring 示例
+*Arguments*: No arguments
+
+*Return Type*: [.returnType]#String#
+
+*Examples*: If the attribute `attr` has the value "     1 2 3     ", then the Expression `${attr:trim()}` will
+	return the value "1 2 3".
+
+
+
+
+[.function]
+=== substring
+
+*Description*:
+[.description]#Returns a portion of the Subject, given a _starting index_ and an optional _ending index_.
+	If the _ending index_ is not supplied, it will return the portion of the Subject starting at the given
+	'start index' and ending at the end of the Subject value.#
+
+[.description]#The _starting index_ and _ending index_ are zero-based. That is, the first character is referenced by using
+	the value `0`, not `1`.#
+
+[.description]#If either the _starting index_ is or the _ending index_ is not a number, this function call will result
+	in an error.#
+
+[.description]#If the _starting index_ is larger than the _ending index_, this function call will result in an error.#
+
+[.description]#If the _starting index_ or the _ending index_ is greater than the length of the Subject or has a value
+	less than 0, this function call will result in an error.#
+
+
+*Subject Type*: [.subject]#String#
+
+*Arguments*:
+
+	- [.argName]#_starting index_# : [.argDesc]#The 0-based index of the first character to capture (inclusive)#
+	- [.argName]#_ending index_# : [.argDesc]#The 0-based index of the last character to capture (exclusive)#
+
+*Return Type*: [.returnType]#String#
+
+*Examples*:
+
+If we have an attribute named "filename" with the value "a brand new filename.txt",
+then the following Expressions will result in the following values:
+
+.Substring Examples
 |================================================================
-| 表达式 | 值
+| Expression | Value
 | `${filename:substring(0,1)}` | `a`
 | `${filename:substring(2)}` | `brand new filename.txt`
 | `${filename:substring(12)}` | `filename.txt`
@@ -478,24 +632,27 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
-[.function] 
-=== substringBefore 
+[.function]
+=== substringBefore
 
-*描述*: [.description]#返回主题的一部分内容，从主题的第一个字符开始，以第一次出现参数之前的字符结束。如果主题中不包含参数，则将返回整个主题。# 
+*Description*: [.description]#Returns a portion of the Subject, starting with the first character of the Subject
+	and ending with the character immediately before the first occurrence of the argument. If
+	the argument is not present in the Subject, the entire Subject will be returned.#
 
-*主题类型*: [.subject]#String# 
+*Subject Type*: [.subject]#String#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_value_#: [.argDesc]#主题中要搜索的字符串# 
+	- [.argName]#_value_# : [.argDesc]#The String to search for in the Subject#
 
-*返回值类型*: [.returnType]#String# 
+*Return Type*: [.returnType]#String#
 
-*例子*:如果“filename”属性的值为 "a brand new filename.txt"，以下表达式将产生以下值: 
+*Examples*: If the "filename" attribute has the value "a brand new filename.txt",
+	then the following Expressions will result in the following values:
 
-.SubstringBefore实例 
+.SubstringBefore Examples
 |======================================================================
-| 表达式 | 值
+| Expression | Value
 | `${filename:substringBefore('.')}` | `a brand new filename`
 | `${filename:substringBefore(' ')}` | `a`
 | `${filename:substringBefore(' n')}` | `a brand`
@@ -504,24 +661,29 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
-[.function] 
-=== substringBeforeLast 
 
-*描述*: [.description]#返回主题的一部分内容，从主题的第一个字符开始，以紧接在最后一个参数出现之前的字符结束。如果主题中不包含参数，则将返回整个主题。# 
 
-*主题类型*: [.subject]#String# 
+[.function]
+=== substringBeforeLast
 
-*参数*: 
+*Description*: [.description]#Returns a portion of the Subject, starting with the first character of the Subject
+	and ending with the character immediately before the last occurrence of the argument. If
+	the argument is not present in the Subject, the entire Subject will be returned.#
 
-- [.argName]#_value_#: [.argDesc]#主题中要搜索的字符串# 
+*Subject Type*: [.subject]#String#
 
-*返回值类型*: [.returnType]#String# 
+*Arguments*:
 
-*例子*:如果“filename”属性的值为 "a brand new filename.txt",以下表达式将产生以下值: 
+	- [.argName]#_value_# : [.argDesc]#The String to search for in the Subject#
 
-.SubstringBeforeLast示例 
+*Return Type*: [.returnType]#String#
+
+*Examples*: If the "filename" attribute has the value "a brand new filename.txt",
+	then the following Expressions will result in the following values:
+
+.SubstringBeforeLast Examples
 |==========================================================================
-| 表达式 | 值
+| Expression | Value
 | `${filename:substringBeforeLast('.')}` | `a brand new filename`
 | `${filename:substringBeforeLast(' ')}` | `a brand new`
 | `${filename:substringBeforeLast(' n')}` | `a brand`
@@ -532,24 +694,28 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
-[.function] 
-=== substringAfter 
 
-*描述*: [.description]#返回主题的一部分内容，从第一次出现参数后的字符开始，一直到主题的末尾。如果主题中不包含参数，则将返回整个主题。# 
+[.function]
+=== substringAfter
 
-*主题类型*: [.subject]#String# 
+*Description*: [.description]#Returns a portion of the Subject, starting with the character immediately after
+	the first occurrence of the argument and extending to the end of the Subject. If
+	the argument is not present in the Subject, the entire Subject will be returned.#
 
-*参数*: 
+*Subject Type*: [.subject]#String#
 
-- [.argName]#_value_#: [.argDesc]#主题中要搜索的字符串# 
+*Arguments*:
 
-*返回值类型*: [.returnType]#String# 
+	- [.argName]#_value_# : [.argDesc]#The String to search for in the Subject#
 
-*例子*:如果“filename”属性的值为"a brand new filename.txt"，以下表达式将产生以下值: 
+*Return Type*: [.returnType]#String#
 
-.SubstringAfter示例 
+*Examples*: If the "filename" attribute has the value "a brand new filename.txt",
+	then the following Expressions will result in the following values:
+
+.SubstringAfter Examples
 |======================================================================
-| 表达式 | 值
+| Expression | Value
 | `${filename:substringAfter('.')}` | `txt`
 | `${filename:substringAfter(' ')}` | `brand new filename.txt`
 | `${filename:substringAfter(' n')}` | `ew filename.txt`
@@ -560,26 +726,27 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
+[.function]
+=== substringAfterLast
 
-[.function] 
-=== substringAfterLast 
+*Description*: [.description]#Returns a portion of the Subject, starting with the character immediately after
+	the last occurrence of the argument and extending to the end of the Subject. If
+	the argument is not present in the Subject, the entire Subject will be returned.#
 
-*描述*: [.description]#返回主题的一部分内容，从最后一次出现参数后的字符开始，一直延伸到主题的末尾。如果主题中不包括参数，则将返回整个主题。# 
+*Subject Type*: [.subject]#String#
 
-*主题类型*: [.subject]#String# 
+*Arguments*:
 
-*参数*: 
+	- [.argName]#_value_# : [.argDesc]#The String to search for in the Subject#
 
-- [.argName]#_value_#: [.argDesc]#主题中要搜索的字符串# 
+*Return Type*: [.returnType]#String#
 
-*返回值类型*: [.returnType]#String# 
+*Examples*: If the "filename" attribute has the value "a brand new filename.txt",
+	then the following Expressions will result in the following values:
 
-*例子*:如果“filename”属性的值为"a brand new filename.txt"。以下表达式将产生以下值: 
-
-.SubstringAfterLast示例 
 .SubstringAfterLast Examples
 |=========================================================================
-| 表达式 | 值
+| Expression | Value
 | `${filename:substringAfterLast('.')}` | `txt`
 | `${filename:substringAfterLast(' ')}` | `filename.txt`
 | `${filename:substringAfterLast(' n')}` | `ew filename.txt`
@@ -589,32 +756,44 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
-[.function] 
-=== getDelimitedField 
+[.function]
+=== getDelimitedField
 
-*描述*: [.description]#将主题解析为分隔的文本行，并仅从该分隔文本返回单个字段。# 
+*Description*: [.description]#Parses the Subject as a delimited line of text and returns just a single field
+	from that delimited text.#
 
-*主题类型*: [.subject]#String# 
+*Subject Type*: [.subject]#String#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_index_# : [.argDesc]#要返回的字段的索引。值为1将返回第一个字段，值为2将返回第二个字段，依此类推。# 
-- [.argName]#_delimiter_# : [.argDesc]#可选参数，提供用作字段分隔符的字符。如果未指定，将使用逗号。该值必须正好为1个字符。# 
-- [.argName]#_quoteChar_# : [.argDesc]#可选参数，提供可用于引用值的字符，以便可以在单个字段中使用分隔符。如果未指定，将使用双引号（"）。该值必须正好为1个字符。# 
-- [.argName]#_escapeChar_# :  [.argDesc]#可选参数，提供可用于转义字段中的引号字符或分隔符的字符。如果未指定，则使用反斜杠（\）。该值必须正好为1个字符。# 
-- [.argName]#_stripChars_# : [.argDesc]#可选参数，指定是否应去掉引号字符和转义字符。例如，如果我们有一个字段值"1, 2, 3"并且该值为true，我们将得到该值 `1, 2, 3`，但如果该值为false，我们将获得 `"1, 2, 3"` 带引号的值。默认值为false。该值必须为 `true` 或 `false`。# 
+	- [.argName]#_index_# : [.argDesc]#The index of the field to return. A value of 1 will return the first field,
+		a value of 2 will return the second field, and so on.#
+	- [.argName]#_delimiter_# : [.argDesc]#Optional argument that provides the character to use as a field separator.
+		If not specified, a comma will be used. This value must be exactly 1 character.#
+	- [.argName]#_quoteChar_# : [.argDesc]#Optional argument that provides the character that can be used to quote values
+		so that the delimiter can be used within a single field. If not specified, a double-quote (") will be used. This value
+		must be exactly 1 character.#
+	- [.argName]#_escapeChar_# :  [.argDesc]#Optional argument that provides the character that can be used to escape the Quote Character
+	    or the Delimiter within a field. If not specified, a backslash (\) is used. This value must be exactly 1 character.#
+	- [.argName]#_stripChars_# : [.argDesc]#Optional argument that specifies whether or not quote characters and escape characters should
+	    be stripped. For example, if we have a field value "1, 2, 3" and this value is true, we will get the value `1, 2, 3`, but if this
+	    value is false, we will get the value `"1, 2, 3"` with the quotes. The default value is false. This value must be either `true`
+	    or `false`.#
 
-*返回值类型*: [.returnType]#String# 
+*Return Type*: [.returnType]#String#
 
-*例子*: 如果“line”属性包含值 _"Jacobson, John", 32, Mr._ 并且“altLine”属性包含值 _Jacobson, John|32|Mr._ ，那么以下表达式将产生以下值：
+*Examples*: If the "line" attribute contains the value _"Jacobson, John", 32, Mr._
+	and the "altLine" attribute contains the value _Jacobson, John|32|Mr._
+    then the following Expressions will result in the following values:
 
 .GetDelimitedField Examples
 |======================================================================
-| 表达式 | 值
+| Expression | Value
 | `${line:getDelimitedField(2)}` | _(space)_32
 | `${line:getDelimitedField(2):trim()}` | 32
 | `${line:getDelimitedField(1)}` | "Jacobson, John"
 | `${line:getDelimitedField(1, ',', '"', '\\', true)}` | Jacobson, John
+| `${altLine:getDelimitedField(1, '\|')}` | Jacobson, John
 |======================================================================
 
 
@@ -622,63 +801,68 @@ ${filename:toLower():equals( ${filename} ):or(
 [.function]
 === append
 
-*描述*: [.description]#`append` 函数返回将参数追加到主题的值的结果。如果主题为null，则返回参数本身。# 
+*Description*: [.description]#The `append` function returns the result of appending the argument to the value of
+	the Subject. If the Subject is null, returns the argument itself.#
 
-*主题类型*: [.subject]#String# 
+*Subject Type*: [.subject]#String#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_value_#: [.argDesc]#要追加到主题末尾的字符串# 
+	- [.argName]#_value_# : [.argDesc]#The String to append to the end of the Subject#
 
-*返回值类型*: [.returnType]#String# 
+*Return Type*: [.returnType]#String#
 
-*例子*:如果“filename”属性的值为"a brand new filename.txt"，表达式 `${filename:append('.gz')}` 将返回 "a brand new filename.txt.gz"。
-
-
-
-
-
-[.function] 
-=== prepend 
-
-*描述*: [.description]#`prepend` 函数返回将参数前置到主题的值的结果。如果主题为null，则返回参数本身。# 
-
-*主题类型*: [.subject]#String# 
-
-*参数*: 
-
-- [.argName]#_value_#: [.argDesc]#要添加到主题开头的字符串# 
-
-
-*返回值类型*: [.returnType]#String# 
-
-*例子*:如果“filename”属性的值为“filename”.txt"，表达式 `${filename:prepend('a brand new ')}` 将返回"a brand new filename.txt"。 
+*Examples*: If the "filename" attribute has the value "a brand new filename.txt", then the Expression
+	`${filename:append('.gz')}` will return "a brand new filename.txt.gz".
 
 
 
 
 
-[.function] 
-=== replace 
+[.function]
+=== prepend
 
-*描述*: [.description]#替换 *所有* 在主题中出现一个带有另一个String的文字字符串。# 
+*Description*: [.description]#The `prepend` function returns the result of prepending the argument to the value of
+	the Subject. If the subject is null, returns the argument itself.#
 
-*主题类型*: [.subject]#String# 
+*Subject Type*: [.subject]#String#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_Search String_#: [.argDesc]#主题中要查找的字符串# 
-- [.argName]#_Replacement_#: [.argDesc]#要被 _Search String_ 替换的值# 
-
-*返回值类型*: [.returnType]#String# 
-
-*例子*:如果“filename”属性的值为"a brand new filename.txt"，以下表达式将提供以下结果: 
+	- [.argName]#_value_# : [.argDesc]#The String to prepend to the beginning of the Subject#
 
 
+*Return Type*: [.returnType]#String#
 
-.Replace示例 
+*Examples*: If the "filename" attribute has the value "filename.txt", then the Expression
+	`${filename:prepend('a brand new ')}` will return "a brand new filename.txt".
+
+
+
+
+
+[.function]
+=== replace
+
+*Description*: [.description]#Replaces *all* occurrences of one literal String within the Subject with another String.#
+
+*Subject Type*: [.subject]#String#
+
+*Arguments*:
+
+	- [.argName]#_Search String_# : [.argDesc]#The String to find within the Subject#
+	- [.argName]#_Replacement_# : [.argDesc]#The value to replace _Search String_ with#
+
+*Return Type*: [.returnType]#String#
+
+*Examples*: If the "filename" attribute has the value "a brand new filename.txt", then the following
+Expressions will provide the following results:
+
+
+
+.Replace Examples
 |===================================================================
-| 表达式 | 值
+| Expression | Value
 | `${filename:replace('.', '_')}` | `a brand new filename_txt`
 | `${filename:replace(' ', '.')}` | `a.brand.new.filename.txt`
 | `${filename:replace('XYZ', 'ZZZ')}` | `a brand new filename.txt`
@@ -688,28 +872,29 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
-[.function] 
-=== replaceFirst 
 
-*描述*: [.description]#替换 *首次* 在主题中出现的一个文字字符串或正则表达式的匹配。# 
+[.function]
+=== replaceFirst
 
-*主题类型*: [.subject]#String# 
+*Description*: [.description]#Replaces *the first* occurrence of one literal String or regular expression within the Subject with another String.#
 
-*参数*: 
+*Subject Type*: [.subject]#String#
 
-- [.argName]#_Search String_#: [.argDesc]#主题中要查找的字符串(文字或正则表达式模式)# 
-- [.argName]#_Replacement_#: [.argDesc]#要被 _Search String_ 替换的值# 
+*Arguments*:
 
-*返回值类型*: [.returnType]#String# 
+	- [.argName]#_Search String_# : [.argDesc]#The String (literal or regular expression pattern) to find within the Subject#
+	- [.argName]#_Replacement_# : [.argDesc]#The value to replace _Search String_ with#
 
-*例子*:如果“filename”属性的值为"a brand new filename.txt"，然后以下 
-表达式将提供以下结果: 
+*Return Type*: [.returnType]#String#
+
+*Examples*: If the "filename" attribute has the value "a brand new filename.txt", then the following
+Expressions will provide the following results:
 
 
 
-.ReplaceFirst示例 
+.ReplaceFirst Examples
 |===================================================================
-| 表达式 | 值
+| Expression | Value
 | `${filename:replaceFirst('a', 'the')}` | `the brand new filename.txt`
 | `${filename:replaceFirst('[br]', 'g')}` | `a grand new filename.txt`
 | `${filename:replaceFirst('XYZ', 'ZZZ')}` | `a brand new filename.txt`
@@ -720,28 +905,33 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
-[.function] 
-=== replaceAll 
+[.function]
+=== replaceAll
 
-*描述*: [.description]#`replaceAll` 函数接受两个String参数:文字字符串或正则表达式(Orchsym Studio使用Java模式语法)和替换字符串。返回值是将替换字符串替换为主题中与Regular Expression匹配的所有模式的结果。# 
+*Description*: [.description]#The `replaceAll` function takes two String arguments: a literal String or Regular Expression (NiFi uses the Java Pattern
+	syntax), and a replacement string. The return value is the result of substituting the replacement string for
+	all patterns within the Subject that match the Regular Expression.#
 
-*主题类型*: [.subject]#String# 
+*Subject Type*: [.subject]#String#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_Regex_#: [.argDesc]#正则表达式(在Java语法中)在主题中匹配# 
-- [.argName]#_Replacement_#: [.argDesc]#用于替换主题中匹配项的值。如果 _regular expression_ 参数使用捕获组，允许逆向引用 _replacement_。# 
+*Arguments*:
 
-*返回值类型*: [.returnType]#String# 
+	- [.argName]#_Regex_# : [.argDesc]#he Regular Expression (in Java syntax) to match in the Subject#
+	- [.argName]#_Replacement_# : [.argDesc]#The value to use for replacing matches in the Subject. If the _regular expression_
+		argument uses Capturing Groups, back references are allowed in the _replacement_.#
 
-*例子*:如果“filename”属性的值为"a brand new filename.txt"，以下表达式将提供以下结果: 
+*Return Type*: [.returnType]#String#
+
+*Examples*: If the "filename" attribute has the value "a brand new filename.txt", then the following
+Expressions will provide the following results:
 
 
 
-
-.ReplaceAll 示例
+.ReplaceAll Examples
 |=======================================================================================
-| 表达式 | 值
+| Expression | Value
 | `${filename:replaceAll('\..*', '')}` | `a brand new filename`
 | `${filename:replaceAll('a brand (new)', '$1')}` | `new filename.txt`
 | `${filename:replaceAll('XYZ', 'ZZZ')}` | `a brand new filename.txt`
@@ -752,391 +942,444 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
-[.function] 
-=== replaceNull 
 
-*描述*: [.description]#如果主题为null，则函数返回参数，否则，返回主题。# 
+[.function]
+=== replaceNull
 
-*主题类型*: [.subject]#任意# 
+*Description*: [.description]#The `replaceNull` function returns the argument if the Subject is null. Otherwise,
+	returns the Subject.#
 
-*参数*: 
+*Subject Type*: [.subject]#Any#
 
-- [.argName]#_Replacement_#: [.argDesc]#主题为null时返回的值。# 
+*Arguments*:
 
-*返回值类型*: [.returnType]如果主题不为null，则为主题的类型; 否则，则为参数的类型# 
+	- [.argName]#_Replacement_# : [.argDesc]#The value to return if the Subject is null.#
 
-*例子*:如果属性“filename”的值为 "a brand new filename.txt" 和属性"hello"不存在，表达式 `${filename:replaceNull('abc')}` 将返回"a brand new filename.txt"，而 `${hello:replaceNull('abc')}` 将返回"abc”。 
+*Return Type*: [.returnType]#Type of Subject if Subject is not null; else, type of Argument#
 
+*Examples*: If the attribute "filename" has the value "a brand new filename.txt" and the attribute
+	"hello" does not exist, then the Expression `${filename:replaceNull('abc')}` will return
+	"a brand new filename.txt", while `${hello:replaceNull('abc')}` will return "abc".
 
 
 
-[.function] 
-=== replaceEmpty 
 
-*描述*: [.description]#如果主题为null或者仅包含空格(新行，回车符，制表符，空格)，则函数返回参数。否则，返回主题。# 
+[.function]
+=== replaceEmpty
 
-*主题类型*: [.subject]#String# 
+*Description*: [.description]#The `replaceEmpty` function returns the argument if the Subject is null or
+	if the Subject consists only of white space (new line, carriage return, tab, space). Otherwise,
+	returns the Subject.#
 
-*参数*: 
+*Subject Type*: [.subject]#String#
 
-- [.argName]#_Replacement_#: [.argDesc]#如果主题为null或为空，则返回的值。# 
+*Arguments*:
 
-*返回值类型*: [.returnType]#String# 
+	- [.argName]#_Replacement_# : [.argDesc]#The value to return if the Subject is null or empty.#
 
-*例子*:如果属性“filename”的值为"a brand new filename.txt"，”hello"的值为 "  "，表达式 `${filename:replaceEmpty('abc')}` 将返回"a brand new filename.txt"，而 `${hello:replaceEmpty('abc')}` 将返回"abc”。
+*Return Type*: [.returnType]#String#
 
+*Examples*: If the attribute "filename" has the value "a brand new filename.txt" and the attribute
+	"hello" has the value "  ", then the Expression `${filename:replaceEmpty('abc')}` will return
+	"a brand new filename.txt", while `${hello:replaceEmpty('abc')}` will return "abc".
 
 
 
-[.function] 
-=== length 
 
-*描述*: [.description]#返回主题的长度# 
+[.function]
+=== length
 
-*主题类型*: [.subject]#String# 
+*Description*: [.description]#Returns the length of the Subject#
 
-*参数*:没有参数
+*Subject Type*: [.subject]#String#
 
-*返回值类型*: [.returnType]#Number# 
+*Arguments*: No arguments
 
-*例子*:如果属性“filename”的值为"a brand new filename.txt"且属性"hello"不存在，表达式 `${filename:length()}` 将返回24. `${hello:length()}` 将返回0. 
+*Return Type*: [.returnType]#Number#
 
+*Examples*: If the attribute "filename" has a value of "a brand new filename.txt" and the attribute
+	"hello" does not exist, then the Expression `${filename:length()}` will return 24. `${hello:length()}`
+	will return 0.
 
-[[encode]] 
-== 编码/解码功能 
 
-以下每个函数都将根据给定数据格式的规则对字符串进行编码。 
+[[encode]]
+== Encode/Decode Functions
 
+Each of the following functions will encode a string according the rules of the given data format.
 
 
 
-[.function] 
-=== escapeJson 
 
-*描述*: [.description]#该函数通过使用Json String规则转义要插入JSON文档的主题字符串中的字符。该函数正确地转义引号和控制字符(制表符，反斜杠，cr，ff等)。)# 
+[.function]
+=== escapeJson
 
-*主题类型*: [.subject]#String# 
+*Description*: [.description]#This function prepares the Subject to be inserted into JSON document by escaping the characters
+        in the String using Json String rules. The function correctly escapes quotes and control-chars (tab, backslash,
+        cr, ff, etc.)#
 
-*参数*:没有参数
+*Subject Type*: [.subject]#String#
 
-*返回值类型*: [.returnType]#String# 
+*Arguments*: No arguments
 
-*例子*:如果"message"属性是 'He didn't say, "Stop!"' ，表达式 `${message:escapeJson()}` 将返回 'He didn't say, \"Stop!\"'。
+*Return Type*: [.returnType]#String#
 
+*Examples*: If the "message" attribute is 'He didn't say, "Stop!"', then the Expression `${message:escapeJson()}`
+        will return 'He didn't say, \"Stop!\"'
 
 
-[.function] 
-=== escapeXml 
 
-*描述*: [.description]#该函数通过使用XML实体转义要插入到XML文档中的主题字符串中的字符。该函数正确地转义引号，撇号，＆符号，<，>和控制字符。# 
 
-*主题类型*: [.subject]#String# 
+[.function]
+=== escapeXml
 
-*参数*:没有参数
+*Description*: [.description]#This function prepares the Subject to be inserted into XML document by escaping the characters
+        in a String using XML entities. The function correctly escapes quotes, apostrophe, ampersand, <, > and
+        control-chars.#
 
-*返回值类型*: [.returnType]#String# 
+*Subject Type*: [.subject]#String#
 
-*例子*:如果"message"属性是 '"bread" & "butter"'，则表达式 `${message:escapeXml()}` 
-        将返回 '\&quot;bread\&quot; \&amp; \&quot;butter\&quot;'
+*Arguments*: No arguments
 
+*Return Type*: [.returnType]#String#
 
+*Examples*: If the "message" attribute is '"bread" & "butter"', then the Expression `${message:escapeXml()}`
+        will return '&quot;bread&quot; &amp; &quot;butter&quot;'
 
 
-[.function] 
-=== escapeCsv 
 
-*描述*: [.description]#该函数通过使用RFC 4180中的规则转义要插入CSV文档的主题字符串中的字符。该函数正确地转义引号并在需要的时候用引号括起字符串。# 
 
-*主题类型*: [.subject]#String# 
+[.function]
+=== escapeCsv
 
-*参数*:没有参数
+*Description*: [.description]#This function prepares the Subject to be inserted into CSV document by escaping the characters
+        in a String using the rules in RFC 4180. The function correctly escapes quotes and surround the string in quotes if needed.#
 
-*返回值类型*: [.returnType]#String# 
+*Subject Type*: [.subject]#String#
 
-*例子*:如果"message"属性是 'But finally, she left'，表达式 `${message:escapeCsv()}` 将返回'"But finally, she left"'。
+*Arguments*: No arguments
 
+*Return Type*: [.returnType]#String#
 
+*Examples*: If the "message" attribute is 'But finally, she left', then the Expression `${message:escapeCsv()}`
+        will return '"But finally, she left"'
 
 
-[.function] 
-=== escapeHtml3 
 
-*描述*: [.description]#该函数通过使用HTML实体转义要插入HTML文档的主题字符串中的字符。仅支持HTML 3.0 实体。# 
 
-*主题类型*: [.subject]#String# 
+[.function]
+=== escapeHtml3
 
-*参数*:没有参数
+*Description*: [.description]#This function prepares the Subject to be inserted into HTML document by escaping the characters
+        in a String using the HTML entities. Supports only the HTML 3.0 entities.#
 
-*返回值类型*: [.returnType]#String# 
+*Subject Type*: [.subject]#String#
 
-*例子*:如果"message"属性是 '"bread" & "butter"'，则表达式 `${message:escapeHtml3()}` 将返回 '\&quot;bread\&quot; \&amp; \&quot;butter\&quot;'。
+*Arguments*: No arguments
 
+*Return Type*: [.returnType]#String#
 
+*Examples*: If the "message" attribute is '"bread" & "butter"', then the Expression `${message:escapeHtml3()}`
+        will return '&quot;bread&quot; &amp; &quot;butter&quot;'
 
 
-[.function] 
-=== escapeHtml4 
 
-*描述*: [.description]#该函数通过使用HTML实体转义要插入HTML文档的主题字符串中的字符。支持所有已知的HTML 4.0个实体。# 
 
-*主题类型*: [.subject]#String# 
+[.function]
+=== escapeHtml4
 
-*参数*:没有参数
+*Description*: [.description]#This function prepares the Subject to be inserted into HTML document by escaping the characters
+        in a String using the HTML entities. Supports all known HTML 4.0 entities.#
 
-*返回值类型*: [.returnType]#String# 
+*Subject Type*: [.subject]#String#
 
-*例子*:如果"message"属性是 '"bread" & "butter"'，则表达式 `${message:escapeHtml4()}` 将返回'\&quot;bread\&quot; \&amp; \&quot;butter\&quot;'。
+*Arguments*: No arguments
 
+*Return Type*: [.returnType]#String#
 
+*Examples*: If the "message" attribute is '"bread" & "butter"', then the Expression `${message:escapeHtml4()}`
+        will return '&quot;bread&quot; &amp; &quot;butter&quot;'
 
 
-[.function] 
-=== unescapeJson 
 
-*描述*: [.description]#该函数反转义在String中找到的任何Json文字。# 
 
-*主题类型*: [.subject]#String# 
+[.function]
+=== unescapeJson
 
-*参数*:没有参数
+*Description*: [.description]#This function unescapes any Json literals found in the String.#
 
-*返回值类型*: [.returnType]#String# 
+*Subject Type*: [.subject]#String#
 
-*例子*:如果"message"属性是 'He didn't say, \"Stop!\"', 则表达式 `${message:unescapeJson()}` 将返回 'He didn't say, "Stop!"'
+*Arguments*: No arguments
 
+*Return Type*: [.returnType]#String#
 
+*Examples*: If the "message" attribute is 'He didn't say, \"Stop!\"', then the Expression `${message:unescapeJson()}`
+        will return 'He didn't say, "Stop!"'
 
 
-[.function] 
-=== unescapeXml 
 
-*描述*: [.description]#该函数将包含XML实体转义的字符串转义为包含与转义对应的实际Unicode字符的字符串。仅支持五个基本XML实体(gt，lt，quot，amp，apos)。# 
 
-*主题类型*: [.subject]#String# 
+[.function]
+=== unescapeXml
 
-*参数*:没有参数
+*Description*: [.description]#This function unescapes a string containing XML entity escapes to a string containing the
+        actual Unicode characters corresponding to the escapes. Supports only the five basic XML entities (gt, lt,
+        quot, amp, apos).#
 
-*返回值类型*: [.returnType]#String# 
+*Subject Type*: [.subject]#String#
 
-*例子*:如果"message"属性为'\&quot;bread\&quot; \&amp; \&quot;butter\&quot;'，则表达 `${message:unescapeXml()}` 将返回 '"bread" & "butter"' 。
+*Arguments*: No arguments
 
+*Return Type*: [.returnType]#String#
 
+*Examples*: If the "message" attribute is '&quot;bread&quot; &amp; &quot;butter&quot;', then the Expression `${message:unescapeXml()}`
+        will return '"bread" & "butter"'
 
 
-[.function] 
-=== unescapeCsv 
 
-*描述*: [.description]#该函数根据RFC 4180的规则从CSV文档中反转义字符串。# 
 
-*主题类型*: [.subject]#String# 
+[.function]
+=== unescapeCsv
 
-*参数*:没有参数
+*Description*: [.description]#This function unescapes a String from a CSV document according to the rules of RFC 4180.#
 
-*返回值类型*: [.returnType]#String# 
+*Subject Type*: [.subject]#String#
 
-*例子*:如果"message"属性是 '"But finally, she left"'，则表达式 `${message:unescapeCsv()}` 将返回 'But finally, she left'。
+*Arguments*: No arguments
 
+*Return Type*: [.returnType]#String#
 
+*Examples*: If the "message" attribute is '"But finally, she left"', then the Expression `${message:unescapeCsv()}`
+        will return 'But finally, she left'
 
-[.function] 
-=== unescapeHtml3 
 
-*描述*: [.description]#该函数将包含HTML 3实体的字符串转义为包含与转义对应的实际Unicode字符的字符串。仅支持HTML 3.0实体。# 
 
-*主题类型*: [.subject]#String# 
 
-*参数*:没有参数
+[.function]
+=== unescapeHtml3
 
-*返回值类型*: [.returnType]#String# 
+*Description*: [.description]#This function unescapes a string containing HTML 3 entity to a string containing the
+        actual Unicode characters corresponding to the escapes. Supports only HTML 3.0 entities.#
 
-*例子*:如果"message"属性为'\&quot;bread\&quot; \&amp; \&quot;butter\&quot;'，则表达式 `${message:unescapeHtml3()}` 将返回'"bread" & "butter"'。
+*Subject Type*: [.subject]#String#
 
+*Arguments*: No arguments
 
+*Return Type*: [.returnType]#String#
 
+*Examples*: If the "message" attribute is '&quot;bread&quot; &amp; &quot;butter&quot;', then the Expression `${message:unescapeHtml3()}`
+        will return '"bread" & "butter"'
 
-[.function] 
-=== unescapeHtml4 
 
-*描述*: [.description]#该函数将包含HTML 4实体的字符串转义为包含与转义对应的实际Unicode字符的字符串。支持所有已知的HTML 4.0个实体。# 
 
-*主题类型*: [.subject]#String# 
 
-*参数*:没有参数
+[.function]
+=== unescapeHtml4
 
-*返回值类型*: [.returnType]#String# 
+*Description*: [.description]#This function unescapes a string containing HTML 4 entity to a string containing the
+        actual Unicode characters corresponding to the escapes. Supports all known HTML 4.0 entities.#
 
-*例子*:如果"message"属性为 '\&quot;bread\&quot; \&amp; \&quot;butter\&quot;'，则表达式 `${message:unescapeHtml4()}` 将返回'"bread" & "butter"'。
+*Subject Type*: [.subject]#String#
 
+*Arguments*: No arguments
 
+*Return Type*: [.returnType]#String#
 
+*Examples*: If the "message" attribute is '&quot;bread&quot; &amp; &quot;butter&quot;', then the Expression `${message:unescapeHtml4()}`
+        will return '"bread" & "butter"'
 
-[.function] 
-=== urlEncode 
 
-*描述*: [.description]#返回主题的URL友好（URL-friendly ）版本。例如，当使用属性值指示网站的URL时，这很有用。# 
 
-*主题类型*: [.subject]#String# 
 
-*参数*:没有参数
+[.function]
+=== urlEncode
 
-*返回值类型*: [.returnType]#String# 
+*Description*: [.description]#Returns a URL-friendly version of the Subject. This is useful, for instance, when using an
+	attribute value to indicate the URL of a website.#
 
-*例子*:我们可以使用表达式 `${url:urlEncode()}` 对名为"url"的属性进行URL编码。如果"url"属性的值为"https://www.baishancloud.com/some value with spaces"，此表达式将返回"https://www.baishancloud.com/some%20value%20with%20spaces"
+*Subject Type*: [.subject]#String#
 
+*Arguments*: No arguments
 
+*Return Type*: [.returnType]#String#
 
+*Examples*: We can URL-Encode an attribute named "url" by using the Expression `${url:urlEncode()}`. If
+	the value of the "url" attribute is "https://nifi.apache.org/some value with spaces", this
+	Expression will then return "https://nifi.apache.org/some%20value%20with%20spaces".
 
-[.function] 
-=== urlDecode 
 
-*描述*: [.description]#将对象的URL友好版本转换为人类可读的形式。# 
 
-*主题类型*: [.subject]#String# 
 
-*参数*:没有参数
+[.function]
+=== urlDecode
 
-*返回值类型*: [.returnType]#String# 
+*Description*: [.description]#Converts a URL-friendly version of the Subject into a human-readable form.#
 
-*例子*:如果我们有一个名为"url"的做过URL-Encoded的属性，其值为"https://www.baishancloud.com/some%20value%20with%20spaces"，则表达式 `${url:urlDecode()}` 将返回"https://www.baishancloud.com/some value with spaces"。 
+*Subject Type*: [.subject]#String#
 
+*Arguments*: No arguments
 
+*Return Type*: [.returnType]#String#
 
+*Examples*: If we have a URL-Encoded attribute named "url" with the value
+	"https://nifi.apache.org/some%20value%20with%20spaces", then the Expression
+	`${url:urlDecode()}` will return "https://nifi.apache.org/some value with spaces".
 
-[.function] 
-=== base64Encode 
 
-*描述*: [.description]#返回Base64编码的字符串。这对于能够将二进制数据传输为ascii非常有用。# 
 
-*主题类型*: [.subject]#String# 
 
-*参数*:没有参数
+[.function]
+=== base64Encode
 
-*返回值类型*: [.returnType]#String# 
+*Description*: [.description]#Returns a Base64 encoded string. This is useful for being able to transfer binary data as ascii.#
 
-*例子*:我们可以使用表达式 `${payload:base64Encode()}` Base64编码名为"payload"的属性，如果属性有效的值为"admin:admin”，则表达式  `${payload:base64Encode()}` 将返回"YWRtaW46YWRtaW4 ="。 
+*Subject Type*: [.subject]#String#
 
+*Arguments*: No arguments
 
+*Return Type*: [.returnType]#String#
 
+*Examples*: We can Base64-Encoded an attribute named "payload" by using the Expression
+	   `${payload:base64Encode()}` If the attribute payload had a value of "admin:admin"
+	    then the Expression  `${payload:base64Encode()}` will return "YWRtaW46YWRtaW4=".
 
-[.function] 
-=== base64Decode 
 
-*描述*: [.description]#解除给定字符串的Base64编码。# 
 
-*主题类型*: [.subject]#String# 
 
-*参数*:没有参数
+[.function]
+=== base64Decode
 
-*返回值类型*: [.returnType]#String# 
+*Description*: [.description]#Reverses the Base64 encoding on given string.#
 
-*例子*:如果我们有一个名为"payload"的做过Base64-Encoded的属性，其值为"YWRtaW46YWRtaW4 ="，那么表达式 `${payload:base64Decode()}` 将返回"admin:admin”. 
+*Subject Type*: [.subject]#String#
 
+*Arguments*: No arguments
 
+*Return Type*: [.returnType]#String#
 
-[[searching]] 
-== 搜索 
+*Examples*: If we have a Base64-Encoded attribute named "payload" with the value
+	"YWRtaW46YWRtaW4=", then the Expression
+	`${payload:base64Decode()}` will return "admin:admin".
 
-以下每个函数都用于搜索其主题以获取某些值。 
 
 
-[.function] 
-=== startsWith 
+[[searching]]
+== Searching
 
-*描述*: [.description]#如果主题以作为参数提供的字符串开头，返回 `true`。否则，返回 `false` 。# 
+Each of the following functions is used to search its subject for some value.
 
-*主题类型*: [.subject]#String# 
 
-*参数*: 
+[.function]
+=== startsWith
 
-- [.argName]#_value_#: [.argDesc]#要搜索的值# 
+*Description*: [.description]#Returns `true` if the Subject starts with the String provided as the argument,
+	`false` otherwise.#
 
+*Subject Type*: [.subject]#String#
 
-*返回值类型*: [.returnType]#Boolean# 
+*Arguments*:
 
-*例子*:如果“filename”属性的值为"a brand new filename.txt"，则表达式 `${filename:startsWith('a brand')}` 将返回 `true`。`${filename:startsWith('A BRAND')}` 返回 `false`。 `${filename:toUpper():startsWith('A BRAND')}` 返回 `true`。 
+	- [.argName]#_value_# : [.argDesc]#The value to search for#
 
 
+*Return Type*: [.returnType]#Boolean#
 
+*Examples*: If the "filename" attribute has the value "a brand new filename.txt", then the Expression
+	`${filename:startsWith('a brand')}` will return `true`. `${filename:startsWith('A BRAND')}` will
+	return `false`. `${filename:toUpper():startsWith('A BRAND')}` returns `true`.
 
 
-[.function] 
-=== endsWith 
 
-*描述*: [.description]#如果主题以提供作为参数的字符串结束，返回 `true`。否则，返回 `false`。# 
 
-*主题类型*: [.subject]#String# 
 
-*参数*: 
+[.function]
+=== endsWith
 
-- [.argName]#_value_#: [.argDesc]#要搜索的值# 
+*Description*: [.description]#Returns `true` if the Subject ends with the String provided as the argument,
+	`false` otherwise.#
 
-*返回值类型*: [.returnType]#Boolean# 
+*Subject Type*: [.subject]#String#
 
-*例子*:如果“filename”属性的值为"a brand new filename.txt"，则表达式 `${filename:endsWith('txt')}` 将返回 `true`。 `${filename:endsWith('TXT')}` 返回 `false`。`${filename:toUpper():endsWith('TXT')}` 返回 `true`。 
+*Arguments*:
 
+	- [.argName]#_value_# : [.argDesc]#The value to search for#
 
+*Return Type*: [.returnType]#Boolean#
 
+*Examples*: If the "filename" attribute has the value "a brand new filename.txt", then the Expression
+	`${filename:endsWith('txt')}` will return `true`. `${filename:endsWith('TXT')}` will
+	return `false`. `${filename:toUpper():endsWith('TXT')}` returns `true`.
 
 
-[.function] 
-=== contains 
 
-*描述*: [.description]#如果主题中任何位置包含传入的参数值则返回 `true` 。# 
 
-*主题类型*: [.subject]#String# 
 
-*参数*: 
+[.function]
+=== contains
 
-- [.argName]#_value_#: [.argDesc]#要搜索的值# 
+*Description*: [.description]#Returns `true` if the Subject contains the value of the argument anywhere in the value.#
 
-*返回值类型*: [.returnType]#Boolean# 
+*Subject Type*: [.subject]#String#
 
-*例子*:如果“filename”属性的值为"a brand new filename.txt"，则表达式 `${filename:contains('new')}` 将返回 `true`。`${filename:contains('NEW')}` 返回 `false`。`${filename:toUpper():contains('NEW')}` 返回 `true`。 
+*Arguments*:
 
+	- [.argName]#_value_# : [.argDesc]#The value to search for#
 
+*Return Type*: [.returnType]#Boolean#
 
+*Examples*: If the "filename" attribute has the value "a brand new filename.txt", then the Expression
+	`${filename:contains('new')}` will return `true`. `${filename:contains('NEW')}` will
+	return `false`. `${filename:toUpper():contains('NEW')}` returns `true`.
 
 
-[.function] 
-=== in 
 
-*描述*: [.description]#如果主题匹配参数的其中一个则返回 `true` 。# 
 
-*主题类型*: [.subject]#String# 
 
-*参数*: 
+[.function]
+=== in
 
-- [.argName]#_value1_#: [.argDesc]#First匹配值#First 
-- [.argName]#_valueN_#: [.argDesc]#Nth匹配值#N 
+*Description*: [.description]#Returns `true` if the Subject is matching one of the provided arguments.#
 
-*返回值类型*: [.returnType]#Boolean# 
+*Subject Type*: [.subject]#String#
 
-*例子*:如果"myEnum”属性的值为"JOHN”，则表达式 `${myEnum:in("PAUL", "JOHN", "MIKE")}` 将返回 `true`。 `${myEnum:in("RED", "GREEN", "BLUE")}` 返回 `false`。
+*Arguments*:
 
+	- [.argName]#_value1_# : [.argDesc]#First possible matching value#
+	- [.argName]#_valueN_# : [.argDesc]#Nth possible matching value#
 
+*Return Type*: [.returnType]#Boolean#
 
+*Examples*: If the "myEnum" attribute has the value "JOHN", then the Expression
+	`${myEnum:in("PAUL", "JOHN", "MIKE")}` will return `true`. `${myEnum:in("RED", "GREEN", "BLUE")}` will
+	return `false`.
 
 
-[.function] 
-=== find 
 
-*描述*: [.description]#如果主题包含与参数提供的正则表达式匹配的任何字符序列则返回 `true`。# 
 
-*主题类型*: [.subject]#String# 
 
-*参数*: 
+[.function]
+=== find
 
-- [.argName]#_Regex_#: [.argDesc]#正则表达式(在Java Pattern语法中)与主题匹配# 
+*Description*: [.description]#Returns `true` if the Subject contains any sequence of characters that matches the
+	Regular Expression provided by the argument.#
 
-*返回值类型*: [.returnType]#Boolean# 
+*Subject Type*: [.subject]#String#
 
-*例子*: 
+*Arguments*:
 
-如果“filename”属性的值为"a brand new filename.txt"，则表达式将返回以下结果: 
+	- [.argName]#_Regex_# : [.argDesc]#The Regular Expression (in the Java Pattern syntax) to match against the Subject#
 
+*Return Type*: [.returnType]#Boolean#
 
-.find 示例 
+*Examples*:
+
+If the "filename" attribute has the value "a brand new filename.txt", then the following
+Expressions will provide the following results:
+
+
+.find Examples
 |=======================================================================================
-| 表达式 | 值
+| Expression | Value
 | `${filename:find('a [Bb]rand [Nn]ew')}` | `true`
 | `${filename:find('Brand.*')}` | `false`
 | `${filename:find('brand')}` | `true`
@@ -1146,28 +1389,28 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
+[.function]
+=== matches
 
-[.function] 
-=== matches 
+*Description*: [.description]#Returns `true` if the Subject exactly matches the Regular Expression provided by the argument.#
 
-*描述*: [.description]#如果主题与参数提供的正则表达式完全匹配则返回 `true` 。# 
+*Subject Type*: [.subject]#String#
 
-*主题类型*: [.subject]#String# 
+*Arguments*:
 
-*参数*: 
+	- [.argName]#_Regex_# : [.argDesc]#The Regular Expression (in the Java Pattern syntax) to match against the Subject#
 
-- [.argName]#_Regex_#: [.argDesc]#正则表达式(在Java Pattern语法中)与主题匹配# 
+*Return Type*: [.returnType]#Boolean#
 
-*返回值类型*: [.returnType]#Boolean# 
+*Examples*:
 
-*例子*: 
-
-如果“filename”属性的值为"a brand new filename.txt"，则以下表达式将返回以下结果: 
+If the "filename" attribute has the value "a brand new filename.txt", then the following
+Expressions will provide the following results:
 
 
-.matches 示例
+.matches Examples
 |=======================================================================================
-| 表达式 | 值
+| Expression | Value
 | `${filename:matches('a.*txt')}` | `true`
 | `${filename:matches('brand')}` | `false`
 | `${filename:matches('.+brand.+')}` | `true`
@@ -1176,27 +1419,31 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
+[.function]
+=== indexOf
 
-[.function] 
-=== indexOf 
+*Description*: [.description]#Returns the index of the first character in the Subject that matches the String value provided
+	as an argument. If the argument is found multiple times within the Subject, the value returned is the
+	starting index of the *first* occurrence.
+	If the argument cannot be found in the Subject, returns `-1`. The index is zero-based. This means that if
+	the search string is found at the beginning of the Subject, the value returned will be `0`, not `1`.#
 
-*描述*: [.description]#返回主题中与参数匹配的第一个字符的索引。如果在主题中多次匹配到参数，则返回的值是*第一次*匹配的位置。如果在主题中找不到参数，则返回 `-1`。 索引是从零开始的，这意味着如果在主题的开头找到搜索字符串，则返回的值将是 `0` 而不是 `1`。# 
+*Subject Type*: [.subject]#String#
 
-*主题类型*: [.subject]#String# 
+*Arguments*:
 
-*参数*: 
+	- [.argName]#_value_# : [.argDesc]#The value to search for in the Subject#
 
-- [.argName]#_value_#: [.argDesc]#在主题中搜索的值# 
+*Return Type*: [.returnType]#Number#
 
-*返回值类型*: [.returnType]#Number# 
-
-*例子*:如果“filename”属性的值为"a brand new filename.txt"，则以下表达式将返回以下结果: 
-
+*Examples*: If the "filename" attribute has the value "a brand new filename.txt", then the following
+Expressions will provide the following results:
 
 
-.indexOf示例 
+
+.indexOf Examples
 |===============================================
-| 表达式 | 值
+| Expression | Value
 | `${filename:indexOf('a.*txt')}` | `-1`
 | `${filename:indexOf('.')}` | `20`
 | `${filename:indexOf('a')}` | `0`
@@ -1206,24 +1453,29 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
-[.function] 
-=== lastIndexOf 
+[.function]
+=== lastIndexOf
 
-*描述*: [.description]#返回主题中与参数匹配的第一个字符的索引。如果在Subject中多次找到参数，则返回的值是*最后一次* 匹配的位置。如果在主题中找不到参数，则返回 `-1`. 索引是从零开始的，这意味着如果在主题的开头找到搜索字符串，则返回的值将是 `0`而不是 `1`。# 
+*Description*: [.description]#Returns the index of the first character in the Subject that matches the String value provided
+	as an argument. If the argument is found multiple times within the Subject, the value returned is the
+	starting index of the *last* occurrence.
+	If the argument cannot be found in the Subject, returns `-1`. The index is zero-based. This means that if
+	the search string is found at the beginning of the Subject, the value returned will be `0`, not `1`.#
 
-*主题类型*: [.subject]#String# 
+*Subject Type*: [.subject]#String#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_value_#: [.argDesc]#在主题中搜索的值# 
+	- [.argName]#_value_# : [.argDesc]#The value to search for in the Subject#
 
-*返回值类型*: [.returnType]#Number# 
+*Return Type*: [.returnType]#Number#
 
-*例子*:如果“filename”属性的值为"a brand new filename.txt"，则以下表达式将返回以下结果: 
+*Examples*: If the "filename" attribute has the value "a brand new filename.txt", then the following
+Expressions will provide the following results:
 
-.lastIndexOf 示例
+.lastIndexOf Examples
 |=======================================================================================
-| 表达式 | 值
+| Expression | Value
 | `${filename:lastIndexOf('a.*txt')}` | `-1`
 | `${filename:lastIndexOf('.')}` | `20`
 | `${filename:lastIndexOf('a')}` | `17`
@@ -1231,20 +1483,23 @@ ${filename:toLower():equals( ${filename} ):or(
 |=======================================================================================
 
 
+[.function]
+=== jsonPath
 
-[.function] 
-=== jsonPath 
+*Description*: [.description]#The `jsonPath` function generates a string by evaluating the Subject as JSON and applying a JSON
+  path expression. An empty string is generated if the Subject does not contain valid JSON, the _jsonPath_ is invalid, or the path
+	does not exist in the Subject.  If the evaluation results in a scalar value, the string representation of scalar value is
+	generated.  Otherwise a string representation of the JSON result is generated.  A JSON array of length 1 is special cased
+	when `[0]` is a scalar, the string representation of `[0]` is generated.^1^#
 
-*描述*: [.description]#`jsonPath` 函数通过将主题视为JSON并应用JSON路径表达式来生成字符串。如果主题不包含有效的JSON， _jsonPath_ 无效，或者主题中不存在路径，都将生成空字符串。如果评估结果为标量值，则生成标量值的字符串表示。否则，将生成JSON结果的字符串。当 `[0]` 作为标量时，长度为1的JSON数组是特殊情况，会生成一个代表 `[0]` 的字符串。# 
+*Subject Type*: [.subject]#String#
 
-*主题类型*: [.subject]#String# 
+*Arguments*:
+	 [.argName]#_jsonPath_# : [.argDesc]#the JSON path expression used to evaluate the Subject.#
 
-*参数*: 
-[.argName]#_jsonPath_#: [.argDesc]#用于主题的JSON路径表达式。# 
+*Return Type*: [.returnType]#String#
 
-*返回值类型*: [.returnType]#String# 
-
-*例子*:如果"myJson"属性是 
+*Examples*: If the "myJson" attribute is
 
 ..........
 {
@@ -1273,12 +1528,9 @@ ${filename:toLower():equals( ${filename} ):or(
 }
 ..........
 
-
-
-
-.jsonPath 示例
+.jsonPath Examples
 |===================================================================
-| 表达式 | 值
+| Expression | Value
 | `${myJson:jsonPath('$.firstName')}` | `John`
 | `${myJson:jsonPath('$.address.postalCode')}` | `10021-3100`
 | `${myJson:jsonPath('$.phoneNumbers[?(@.type=="home")].number')}`^1^ | `212 555-1234`
@@ -1287,127 +1539,137 @@ ${filename:toLower():equals( ${filename} ):or(
 | `${myJson:jsonPath('$.bad-json-path..')}` | _exception bulletin_
 |===================================================================
 
-空主题值或具有无效JSON文档的主题值将导致异常公告。
+An empty subject value or a subject value with an invalid JSON document results in an exception bulletin.
 
-[[numbers]] 
-== 数学运算和数值处理 
+[[numbers]]
+== Mathematical Operations and Numeric Manipulation
 
-对于那些支持Decimal和Number(整数)类型的函数，返回值类型取决于输入类型。如果主题或参数是十进制，则结果将是十进制。如果两个值均为Numbers，则结果为Number。这样适用于除法。这是为了保持向后兼容性并且不产生舍入错误。 
+For those functions that support Decimal and Number (whole number) types, the return value type depends on the input types. If either the
+subject or argument are a Decimal then the result will be a Decimal. If both values are Numbers then the result will be a Number. This includes
+Divide. This is to preserve backwards compatibility and to not force rounding errors.
 
 
-[.function] 
-=== plus 
+[.function]
+=== plus
 
-*描述*: [.description]#向主题添加数值。如果参数或主题无法强制转换为数字，则返回 `null`。# 
+*Description*: [.description]#Adds a numeric value to the Subject. If either the argument or the Subject cannot be
+	coerced into a Number, returns `null`.#
 
-*主题类型*: [.subject]#Number或Decimal# 
+*Subject Type*: [.subject]#Number or Decimal#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_Operand_#: [.argDesc]#要添加到主题的值# 
+	- [.argName]#_Operand_# : [.argDesc]#The value to add to the Subject#
 
-*返回值类型*: [.returnType]#Number或Decimal(取决于输入类型)# 
+*Return Type*: [.returnType]#Number or Decimal (depending on input types)#
 
-*例子*:如果"fileSize"属性的值为100，则表达式 `${fileSize:plus(1000)}` 将返回值 `1100`. 
+*Examples*: If the "fileSize" attribute has a value of 100, then the Expression `${fileSize:plus(1000)}`
+	will return the value `1100`.
 
 
 
 
 
-[.function] 
-=== minus 
+[.function]
+=== minus
 
-*描述*: [.description]#从主题中减去数值。# 
+*Description*: [.description]#Subtracts a numeric value from the Subject.#
 
-*主题类型*: [.subject]#Number或Decimal# 
+*Subject Type*: [.subject]#Number or Decimal#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_Operand_#: [.argDesc]#要从主题中减去的值# 
+	- [.argName]#_Operand_# : [.argDesc]#The value to subtract from the Subject#
 
-*返回值类型*: [.returnType]#Number或Decimal(取决于输入类型)# 
+*Return Type*: [.returnType]#Number or Decimal (depending on input types)#
 
-*例子*:如果"fileSize"属性的值为100，则表达式 `${fileSize:minus(100)}` 将返回值 `0`。
+*Examples*: If the "fileSize" attribute has a value of 100, then the Expression `${fileSize:minus(100)}`
+	will return the value `0`.
 
 
 
 
 
-[.function] 
-=== multiply 
+[.function]
+=== multiply
 
-*描述*: [.description]#返回主题与数值的乘积。# 
+*Description*: [.description]#Multiplies a numeric value by the Subject and returns the product.#
 
-*主题类型*: [.subject]#Number或Decimal# 
+*Subject Type*: [.subject]#Number or Decimal#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_Operand_#: [.argDesc]#对多个主题的值# 
+	- [.argName]#_Operand_# : [.argDesc]#The value to multiple the Subject by#
 
-*返回值类型*: [.returnType]#Number或Decimal(取决于输入类型)# 
+*Return Type*: [.returnType]#Number or Decimal (depending on input types)#
 
-*例子*:如果"fileSize"属性的值为100，则表达式 `${fileSize:multiply(1024)}` 将返回值 `102400`。
+*Examples*: If the "fileSize" attribute has a value of 100, then the Expression `${fileSize:multiply(1024)}`
+	will return the value `102400`.
 
 
 
 
-[.function] 
-=== 划分 
+[.function]
+=== divide
 
-*描述*: [.description]#主题除以一个数值并返回结果。# 
+*Description*: [.description]#Divides the Subject by a numeric value and returns the result.#
 
-*主题类型*: [.subject]#Number或Decimal# 
+*Subject Type*: [.subject]#Number or Decimal#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_Operand_#: [.argDesc]#将主题除以的数值# 
+	- [.argName]#_Operand_# : [.argDesc]#The value to divide the Subject by#
 
-*返回值类型*: [.returnType]#Number或Decimal(取决于输入类型)# 
+*Return Type*: [.returnType]#Number or Decimal (depending on input types)#
 
-*例子*:如果"fileSize"属性的值为100，则表达式 `${fileSize:divide(12)}` 将返回值 `8`。
+*Examples*: If the "fileSize" attribute has a value of 100, then the Expression `${fileSize:divide(12)}`
+	will return the value `8`.
 
 
 
 
-[.function] 
-=== mod 
+[.function]
+=== mod
 
-*描述*: [.description]#通过参数执行对主题的取模。# 
+*Description*: [.description]#Performs a modular division of the Subject by the argument. That is, this function will divide
+	the Subject by the value of the argument and return not the quotient but rather the remainder.#
 
-*主题类型*: [.subject]#Number或Decimal# 
+*Subject Type*: [.subject]#Number or Decimal#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_Operand_#: [.argDesc]#将主题取模的值# 
+	- [.argName]#_Operand_# : [.argDesc]#The value to divide the Subject by#
 
-*返回值类型*: [.returnType]#Number或Decimal(取决于输入类型)# 
+*Return Type*: [.returnType]#Number or Decimal (depending on input types)#
 
-*例子*:如果"fileSize"属性的值为100，则表达式 `${fileSize:mod(12)}` 将返回值 `4`。 
+*Examples*: If the "fileSize" attribute has a value of 100, then the Expression `${fileSize:mod(12)}`
+	will return the value `4`.
 
 
 
 
 
-[.function] 
-=== toRadix 
+[.function]
+=== toRadix
 
-*描述*: [.description]#将主题从10进制转换为不同的进制(或数字基数)。可选的第二个参数可用于指示要使用的最小字符数。如果转换后的值少于此字符数，则该数字将以前导零填充。如果将小数作为主题传递，则首先将其转换为整数然后进行处理。# 
+*Description*: [.description]#Converts the Subject from a Base 10 number to a different Radix (or number base). An optional second argument can be used to indicate the minimum number of characters to be used. If the converted value has fewer than this number of characters, the number will be padded with leading zeroes. If a decimal is passed as the subject, it will first be converted to a whole number and then processed.#
 
-*主题类型*: [.subject]#Number# 
+*Subject Type*: [.subject]#Number#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_Desired Base_#: [.argDesc]#一个介于2和36之间的数字(含)# 
-- [.argName]#_Padding_#: [.argDesc]#可选参数，指定转换后的输出中的最小字符数# 
+	- [.argName]#_Desired Base_# : [.argDesc]#A Number between 2 and 36 (inclusive)#
+	- [.argName]#_Padding_# : [.argDesc]#Optional argument that specifies the minimum number of characters in the converted output#
 
-*返回值类型*: [.returnType]#String# 
+*Return Type*: [.returnType]#String#
 
-*例子*:如果"fileSize"属性的值为1024，则以下表达式将产生以下结果: 
+*Examples*: If the "fileSize" attributes has a value of 1024, then the following Expressions will yield
+	the following results:
 
 
-.toRadix示例 
+.toRadix Examples
 |=======================================================================================
-| 表达式 | 值
+| Expression | Value
 | `${fileSize:toRadix(10)}` | `1024`
 | `${fileSize:toRadix(10, 1)}` | `1024`
 | `${fileSize:toRadix(10, 8)}` | `00001024`
@@ -1417,95 +1679,100 @@ ${filename:toLower():equals( ${filename} ):or(
 | `${fileSize:toRadix(2, 16)}` | `0000010000000000`
 |=======================================================================================
 
-[.function] 
-=== fromRadix 
+[.function]
+=== fromRadix
 
-*描述*: [.description]#将主题从指定的进制(或数字基数)转换为10进制整数。主题将按原样进行转换，无需解释，并且所有字符必须对转换的机制有效。例如，由于"x”是无效的十六进制字符，从十六进制转换“0xFF”将不起作用。如果将小数作为主题传递，则首先将其转换为整数然后进行处理。# 
+*Description*: [.description]#Converts the Subject from a specified Radix (or number base) to a base ten whole number. The subject will converted as is, without interpretation, and all characters must be valid for the base being converted from. For example converting "0xFF" from hex will not work due to "x" being a invalid hex character. If a decimal is passed as the subject, it will first be converted to a whole number and then processed.#
 
-*主题类型*: [.subject]#String# 
+*Subject Type*: [.subject]#String#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_Subject Base_#: [.argDesc]#一个介于2和36之间的数字(含)# 
+	- [.argName]#_Subject Base_# : [.argDesc]#A Number between 2 and 36 (inclusive)#
 
-*返回值类型*: [.returnType]#Number# 
+*Return Type*: [.returnType]#Number#
 
-*例子*:如果"fileSize"属性的值为1234A，则以下表达式将产生以下结果: 
+*Examples*: If the "fileSize" attributes has a value of 1234A, then the following Expressions will yield
+	the following results:
 
 
-.fromRadix示例 
-|======================================================================================= 
-| 表达式 | 值 
-| `${fileSize:fromRadix(11)}` | `17720` 
-| `${fileSize:fromRadix(16)}` | `74570` 
-| `${fileSize:fromRadix(20)}` | `177290` 
-|======================================================================================= 
+.toRadix Examples
+|=======================================================================================
+| Expression | Value
+| `${fileSize:fromRadix(11)}` | `17720`
+| `${fileSize:fromRadix(16)}` | `74570`
+| `${fileSize:fromRadix(20)}` | `177290`
+|=======================================================================================
 
-[.function] 
-=== random 
+[.function]
+=== random
 
-*描述*: [.description]#返回随机整数(0 到 2^63^ - 1)，使用不安全的随机数生成器。# 
+*Description*: [.description]#Returns a random whole number ( 0 to 2^63 - 1) using an insecure random number generator.#
 
-*主题类型*: [.subjectless]#无主题# 
+*Subject Type*: [.subjectless]#No subject#
 
-*参数*:没有参数
+*Arguments*: No arguments
 
-*返回值类型*: [.returnType]#Number# 
+*Return Type*: [.returnType]#Number#
 
-*例子*: `${random():mod(10):plus(1)}` 返回1到10之间的随机数。
+*Examples*: ${random():mod(10):plus(1)} returns random number between 1 and 10 inclusive.
 
-[.function] 
-=== math 
+[.function]
+=== math
 
-*描述*: [.description]#高级特性。此表达式仅供高级用户使用。 它利用Java Reflection来运行java.lang.Math静态方法。确切的API将取决于您运行的Java版本。Java 8 API可以在这里找到: link:https://docs.oracle.com/javase/8/docs/api/java/lang/Math.html[https://docs.oracle.com/javase/8/docs/api/java/lang/Math.html^] 
+*Description*: [.description]#ADVANCED FEATURE. This expression is designed to be used by advanced users only. It utilizes Java Reflection to run arbitrary java.lang.Math static methods. The exact API will depend on the version of Java you are running. The Java 8 API can be found here: link:https://docs.oracle.com/javase/8/docs/api/java/lang/Math.html[https://docs.oracle.com/javase/8/docs/api/java/lang/Math.html^]
  +
-为了运行正确的方法，参数类型必须正确。表达式语言 "Number" (整数)类型被解释为Java中的"long". "Decimal"类型被解释为Java中的"double"。运行所需的方法可能需要调用"toNumber()"或"toDecimal()"，以便将值"转换(cast)"为所需的类型。当级联调用"math()"时，这也很重要，因为返回类型取决于运行的方法。# 
+In order to run the correct method, the parameter types must be correct. The Expression Language "Number" (whole number) type is interpreted as a Java "long". The "Decimal" type is interpreted as a Java "double". Running the desired method may require calling "toNumber()" or "toDecimal()" in order to "cast" the value to the desired type. This also is important to remember when cascading "math()" calls since the return type depends on the method that was run.#
 
-*主题类型*: [.subject .subjectless]#Subjectless，Number或Decimal(取决于所需的运行方法)# 
+*Subject Type*: [.subject .subjectless]#Subjectless, Number or Decimal (depending on the desired method to run)#
 
-*参数*: 
-- [.argName]#_Method_#: [.argDesc]#要运行的Java Math方法的名称# 
-- [.argName]#_Optional Argument_#: [.argDesc]#Optional参数作为方法的第二个参数。# 
+*Arguments*:
+	- [.argName]#_Method_# : [.argDesc]#The name of the Java Math method to run#
+	- [.argName]#_Optional Argument_# : [.argDesc]#Optional argument that acts as the second parameter to the method.#
 
-*返回值类型*: [.returnType]#Number或Decimal(取决于方法运行)# 
+*Return Type*: [.returnType]#Number or Decimal (depending on method run)#
 
-*例子*: 
+*Examples*:
 
-- ${math("random")} 运行 Math.random()。 
+	- ${math("random")} runs Math.random().
 
-- ${literal(2):toDecimal:math("pow", 2.5)} 运行 Math.pow(2D,2.5D)。 
+	- ${literal(2):toDecimal:math("pow", 2.5)} runs Math.pow(2D,2.5D).
 
-- ${literal(64):toDouble():math("cbrt"):toNumber():math("max", 5)} 运行 Math.max((Double.valueOf(Math.cbrt(64D))).longValue(), 5L)。请注意，需要toDecimal()是因为"cbrt"将"double"作为输入，"64"将被解释为long。"toDecimal()"调用是正确调用该方法所必需的。"toNumber()"调用也是必要的，因为"cbrt"返回一个double类型而且"max"方法必须具有相同类型的参数，"5"被解释为long。
+	- ${literal(64):toDouble():math("cbrt"):toNumber():math("max", 5)} runs Math.max((Double.valueOf(Math.cbrt(64D))).longValue(), 5L). Note that the toDecimal() is needed because "cbrt" takes a "double" as input and the "64" will get interpreted as a long. The "toDecimal()" call is necessary to correctly call the method. that the "toNumber()" call is necessary because "cbrt" returns a double and the "max" method is must have parameters of the same type and "5" is interpreted as a long.
 
-- ${literal(5.4):math("scalb", 2)} 执行 Math.scalb(5.4, 2)。这个例子很重要，因为Orchsym Studio EL将所有整数视为"long"，并且没有"int"的概念. "scalb"接受"int"的第二个参数，并且它不会超载以接受long，所以如果没有特殊的类型处理它就无法运行。在使用"double"和"long"类型的参数找不到Java方法的情况下，"math()" EL函数将尝试查找具有相同名称但参数为"double"和"int"的Java方法。
+	- ${literal(5.4):math("scalb", 2)} runs Math.scalb(5.4, 2). This example is important because NiFi EL treats all whole numbers as "longs" and there is no concept of an "int". "scalb" takes a second parameter of an "int" and it is not overloaded to accept longs so it could not be run without special type handling. In the instance where the Java method cannot be found using parameters of type "double" and "long" the "math()" EL function will attempt to find a Java method with the same name but parameters of "double" and "int".
 
-- ${first:toDecimal():math("pow", ${second:toDecimal()})} 其中属性评估为"first" = 2.5 and "second" = 2。 此示例运行Math.POW(2.5D，2D)。由于EL的动态特性，对toDecimal()的显式调用很重要。 在创建流时，用户不知道表达式语言值是否能够被解释为整数。在没有显式调用"toDecimal"的示例中，"math”函数将尝试运行类型为"double"和"long"(不存在)的Java方法"pow"。 
+	- ${first:toDecimal():math("pow", ${second:toDecimal()})} where attributes evaluate to "first" = 2.5 and "second" = 2. This example runs Math.pow(2.5D, 2D). The explicit calls to toDecimal() are important because of the dynamic nature of EL. When creating the flow, the user is unaware if the expression language values will be able to be interpreted as a whole number or not. In this example without the explicit calls "toDecimal" the "math" function would attempt to run a Java method "pow" with types "double" and "long" (which doesn't exist).
 
-[[dates]] 
-== 日期操作 
+[[dates]]
+== Date Manipulation
 
 
 
-[[format]] 
-[.function] 
-=== format 
+[[format]]
+[.function]
+=== format
 
-*描述*: [.description]#根据参数指定的格式将数字格式化为日期/时间。参数必须是有效的Java SimpleDateFormat格式的String。主题是一个数字，表示自1970年1月1日格林尼治标准时间午夜以来的毫秒数。除非在第二个可选参数中指定，否则将使用本地的时区计算。# 
+*Description*: [.description]#Formats a number as a date/time according to the format specified by the argument. The argument
+	must be a String that is a valid Java SimpleDateFormat format. The Subject is expected to be a Number that
+	represents the number of milliseconds since Midnight GMT on January 1, 1970. The number will be evaluated using the local
+	time zone unless specified in the second optional argument.#
 
-*主题类型*: [.subject]#Number# 
+*Subject Type*: [.subject]#Number#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_format_#: [.argDesc]#在Java SimpleDateFormat语法中使用的格式# 
-- [.argName]#_time zone_#: [.argDesc]#可选参数，指定要使用的时区(在Java TimeZone语法中)# 
+	- [.argName]#_format_# : [.argDesc]#The format to use in the Java SimpleDateFormat syntax#
+	- [.argName]#_time zone_# : [.argDesc]#Optional argument that specifies the time zone to use (in the Java TimeZone syntax)#
 
-*返回值类型*: [.returnType]#String# 
+*Return Type*: [.returnType]#String#
 
-*例子*:如果属性"time"的值为"1420058163264"，则以下表达式将产生以下结果: 
+*Examples*: If the attribute "time" has the value "1420058163264", then the following Expressions will yield
+	the following results:
 
-.格式示例 
+.format Examples
 |============================================================================
-| 表达式 | 值
+| Expression | Value
 | `${time:format("yyyy/MM/dd HH:mm:ss.SSS'Z'", "GMT")}` | `2014/12/31 20:36:03.264Z`
 | `${time:format("yyyy/MM/dd HH:mm:ss.SSS'Z'", "America/Los_Angeles")}` | `2014/12/31 12:36:03.264Z`
 | `${time:format("yyyy/MM/dd HH:mm:ss.SSS'Z'", "Asia/Tokyo")}` | `2015/01/01 05:36:03.264Z`
@@ -1518,241 +1785,278 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
-[.function] 
-=== toDate 
+[.function]
+=== toDate
 
-*描述*: [.description]#根据参数指定的格式将String转换为Date数据类型。参数必须是一个有效的Java SimpleDateFormat语法的String。主题应该是一个根据参数格式化的String。 除非在第二个可选参数中指定，否则将使用本地的时区计算日期。# 
+*Description*: [.description]#Converts a String into a Date data type, based on the format specified by the argument. The argument
+	must be a String that is a valid Java SimpleDateFormat syntax. The Subject is expected to be a String that is formatted
+	according the argument. The date will be evaluated using the local time zone unless specified in the second optional argument.#
 
-*主题类型*: [.subject]#String# 
+*Subject Type*: [.subject]#String#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_format_#: [.argDesc]#在Java SimpleDateFormat语法中解析Subject时使用的当前格式。# 
-- [.argName]#_time zone_#: [.argDesc]#Optional参数，用于指定在Java TimeZone语法中解析主题时使用的时区。# 
-
-
-*返回值类型*: [.returnType]#日期# 
-
-*例子*:如果属性"year"的值为"2014"，属性"time"的值为 "2014/12/31 15:36:03.264Z"，则表达式 `${year:toDate('yyyy', 'GMT')}` 将返回一个日期数据类型，其值代表2014年一月一号，午夜，格林威治标准时间（GMT）。表达式 `${time:toDate("yyyy/MM/dd HH:mm:ss.SSS'Z'", "GMT")}` 将返回15:36:03.264 GMT on December 31, 2014。 
-
-通常，此函数与<<format>>函数结合使用以更改日期/时间的格式。例如，如果属性"date“的值为"12-24-2014"，并且我们想要将格式更改为"2014/12/24"，我们可以通过将两个函数链接在一起来实现: `${date:toDate('MM-dd-yyyy'):format('yyyy/MM/dd')}`. 
+		- [.argName]#_format_# : [.argDesc]#The current format to use when parsing the Subject, in the Java SimpleDateFormat syntax.#
+		- [.argName]#_time zone_# : [.argDesc]#Optional argument that specifies the time zone to use when parsing the Subject, in the Java TimeZone syntax.#
 
 
+*Return Type*: [.returnType]#Date#
+
+*Examples*: If the attribute "year" has the value "2014" and the attribute "time" has the value "2014/12/31 15:36:03.264Z",
+	then the Expression `${year:toDate('yyyy', 'GMT')}` will return a Date data type with a value representing Midnight GMT on
+	January 1, 2014. The Expression `${time:toDate("yyyy/MM/dd HH:mm:ss.SSS'Z'", "GMT")}` will result in a Date data type for
+	15:36:03.264 GMT on December 31, 2014.
+
+Often, this function is used in conjunction with the <<format>> function to change the format of a date/time. For example,
+if the attribute "date" has the value "12-24-2014" and we want to change the format to "2014/12/24", we can do so by
+chaining together the two functions: `${date:toDate('MM-dd-yyyy'):format('yyyy/MM/dd')}`.
 
 
-[.function] 
-=== now 
 
-*描述*: [.description]#返回当前日期和时间作为Date数据类型对象。# 
 
-*主题类型*: [.subjectless]#无主题# 
+[.function]
+=== now
 
-*参数*:没有参数
+*Description*: [.description]#Returns the current date and time as a Date data type object.#
 
-*返回值类型*: [.returnType]#日期# 
+*Subject Type*: [.subjectless]#No Subject#
 
-*例子*:我们可以使用 `${now()}` 函数获取当前日期和时间。例如，如果当期时间是东部时间2014年12月31日星期三下午3点36分36.123秒， `${now()}` 获取的当前日期显示为 `Wed Dec 31 15:36:03 EST 2014`。 
+*Arguments*: No arguments
 
-利用<<toNumber>>方法， `now` 可以提供当前日期和时间作为1970年1月1日格林尼治标准时间午夜以来的毫秒数。例如，如果不是执行 `${now()}` 在前面的例子中 `${now():toNumber()}` 运行会输出 `1453843201123`。此方法提供毫秒级精度，并提供 
-操作值的功能. 
+*Return Type*: [.returnType]#Date#
 
-.now 示例
+*Examples*: We can get the current date and time as a Date data type by using the `now` function: `${now()}`. As an example,
+	on Wednesday December 31st 2014 at 36 minutes after 3pm and 36.123 seconds EST `${now()}` would be evaluated to be a
+	Date type representing that time. Since whole Expression Language expressions can only return Strings it would formatted as
+	`Wed Dec 31 15:36:03 EST 2014` when the expression completes.
+
+Utilizing the <<toNumber>> method, `now` can provide the current date and time as the number of milliseconds since
+Midnight GMT on January 1, 1970. For instance, if instead of executing `${now()}` in the previous example `${now():toNumber()}`
+was run then it would output `1453843201123`. This method provides millisecond-level precision and provides the ability to
+manipulate the value.
+
+.now Examples
 |==================================================================================================================
-| 表达式 | 值 
-| `${now()}` | 表示当前日期和时间的Date类型，精确到毫秒 
-| `${now():toNumber()}` | 自格林威治标准时间1970年1月1日午夜起的毫秒数(比如`1453843201123`) 
-| `${now():toNumber():minus(86400000)` | 显示24小时前的时间数字 
-| `${now():format('yyyy')}` | 本年度 
-| `${now():toNumber():minus(86400000):format('E')}` |昨天星期几，星期为3个首字母的缩写(例如， `Wed`) 
+| Expression | Value
+| `${now()}` | A Date type representing the current date and time to the nearest millisecond
+| `${now():toNumber()}` | The number of milliseconds since midnight GMT Jan 1, 1970 (`1453843201123`, for example)
+| `${now():toNumber():minus(86400000)` | A number presenting the time 24 hours ago
+| `${now():format('yyyy')}` | The current year
+| `${now():toNumber():minus(86400000):format('E')}` | The day of the week that was yesterday,
+													  as a 3-letter abbreviation (For example, `Wed`)
 |==================================================================================================================
 
 
 
 
-[[type_cast]] 
-== 类型强制转换 
+[[type_cast]]
+== Type Coercion
 
-[.function] 
-=== toString 
+[.function]
+=== toString
 
-*描述*: [.description]#将主题强制转换为字符串# 
+*Description*: [.description]#Coerces the Subject into a String#
 
-*主题类型*: [.subject]#任何类型# 
+*Subject Type*: [.subject]#Any type#
 
-*参数*:没有参数
+*Arguments*: No arguments
 
-*返回值类型*: [.returnType]#String# 
+*Return Type*: [.returnType]#String#
 
-*例子*: 表达方式 `${fileSize:toNumber():toString()}` 将"fileSize"属性的值转换为数字并返回String。
+*Examples*: The Expression `${fileSize:toNumber():toString()}` converts the value of "fileSize" attribute to a number and
+	back to a String.
 
 
 
-[.function] 
-=== toNumber 
+[.function]
+=== toNumber
 
-*描述*: [.description]#将主题强制转换为数字# 
+*Description*: [.description]#Coerces the Subject into a Number#
 
-*主题类型*: [.subject]#String，Decimal或Date# 
+*Subject Type*: [.subject]#String, Decimal, or Date#
 
-*参数*:没有参数
+*Arguments*: No arguments
 
-*返回值类型*: [.returnType]#Number# 
+*Return Type*: [.returnType]#Number#
 
-*例子*: 表达方式 `${fileSize:toNumber()}` 将"fileSize"的属性值转换为数字。
+*Examples*: The Expression `${fileSize:toNumber()}` converts the attribute value of "fileSize" to a number.
 
 
-[.function] 
-=== toDecimal 
+[.function]
+=== toDecimal
 
-*描述*: [.description]#将主题强制转换为小数# 
+*Description*: [.description]#Coerces the Subject into a Decimal#
 
-*主题类型*: [.subject]#String，整数或日期# 
+*Subject Type*: [.subject]#String, Whole Number or Date#
 
-*参数*:没有参数
+*Arguments*: No arguments
 
-*返回值类型*: [.returnType]#小数# 
+*Return Type*: [.returnType]#Decimal#
 
-*例子*: 表达方式 `${fileSize:toDecimal()}` 将"fileSize"的属性值转换为小数。
+*Examples*: The Expression `${fileSize:toDecimal()}` converts the attribute value of "fileSize" to a decimal.
 
 
 
 
-[[subjectless]] 
-== 无主题函数 
+[[subjectless]]
+== Subjectless Functions
 
-尽管表达式语言中的大多数函数都是通过 `${attributeName:function()}` 语法调用的，但有一些函数是没有主题的，在这种情况下，属性名称是不存在的。例如，可以使用表达式 `${ip()}` 获得机器的IP地址。本节中的所有函数都是在没有主题的情况下调用的。
-在验证函数时，尝试调用无主题函数并向其提供主题将导致错误。 
+While the majority of functions in the Expression Language are called by using the syntax
+`${attributeName:function()}`, there exist a few functions that are not expected to have subjects.
+In this case, the attribute name is not present. For example, the IP address of the machine can
+be obtained by using the Expression `${ip()}`. All of the functions in this section are to be called
+without a subject. Attempting to call a subjectless function and provide it a subject will result in
+an error when validating the function.
 
 
-[.function] 
-=== ip 
+[.function]
+=== ip
 
-*描述*: [.description]#返回机器的IP地址。# 
+*Description*: [.description]#Returns the IP address of the machine.#
 
-*主题类型*: [.subjectless]#无主题# 
+*Subject Type*: [.subjectless]#No subject#
 
-*参数*:没有参数
+*Arguments*: No arguments
 
-*返回值类型*: [.returnType]#String# 
+*Return Type*: [.returnType]#String#
 
-*例子*:可以使用表达式 `${ip()}` 获取机器的IP地址。
+*Examples*: The IP address of the machine can be obtained by using the Expression `${ip()}`.
 
 
 
 
 
-[.function] 
-=== hostname 
+[.function]
+=== hostname
 
-*描述*: [.description]#返回机器的主机名，可以提供类型为Boolean的可选参数，以指定是否应使用完全限定域名。如果 `false` 或者未指定，主机名将不是完全限定的。如果参数是 `true` 但无法解析完全限定的主机名，将返回简单的主机名。# 
+*Description*: [.description]#Returns the Hostname of the machine. An optional argument of type Boolean can be provided
+	to specify whether or not the Fully Qualified Domain Name should be used. If `false`, or not specified,
+	the hostname will not be fully qualified. If the argument is `true` but the fully qualified hostname
+	cannot be resolved, the simple hostname will be returned.#
 
-*主题类型*: [.subjectless]#无主题# 
+*Subject Type*: [.subjectless]#No subject#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_Fully Qualified_#: [.argDesc]#Optional参数，指定主机名是否应完全限定。如果未指定，则默认为false。# 
+	- [.argName]#_Fully Qualified_# : [.argDesc]#Optional parameter that specifies whether or not the hostname should be
+		fully qualified. If not specified, defaults to false.#
 
-*返回值类型*: [.returnType]#String# 
+*Return Type*: [.returnType]#String#
 
-*例子*:可以使用表达式 `${hostname(true)}` 获取计算机的完全限定主机名，而简单的主机名可以通过 `${hostname(false)}` 或简单的 `${hostname()}` 来获取。 
+*Examples*: The fully qualified hostname of the machine can be obtained by using the Expression `${hostname(true)}`,
+	while the simple hostname can be obtained by using either `${hostname(false)}` or simply `${hostname()}`.
 
 
 
 
 
-[.function] 
-=== UUID 
+[.function]
+=== UUID
 
-*描述*: [.description]#返回随机生成的UUID。# 
+*Description*: [.description]#Returns a randomly generated UUID.#
 
-*主题类型*: [.subjectless]#无主题# 
+*Subject Type*: [.subjectless]#No Subject#
 
-*参数*:没有参数
+*Arguments*: No arguments
 
-*返回值类型*: [.returnType]#String# 
+*Return Type*: [.returnType]#String#
 
-*例子*: `${UUID()}` 返回类似于de305d54-75b4-431b-adb2-eb6b9e546013的值。
+*Examples*: ${UUID()} returns a value similar to de305d54-75b4-431b-adb2-eb6b9e546013
 
 
 
 
 
-[.function] 
-=== nextInt 
+[.function]
+=== nextInt
 
-*描述*: [.description]#返回一个增1后的值（从0开始）。在运行的Orchsym Studio实例的生命周期内增加。 
-此值不会在重新启动后保留，并且不保证在群集中是唯一的。该值被认为是“往上加一”，如果在Orchsym Studio实例上多次调用，则值将是连续增加的。但是，此计数器在所有Orchsym Studio组件中共享，因此从一个组件多次调用此函数将无法保证特定组件环境中的顺序值。# 
+*Description*: [.description]#Returns a one-up value (starting at 0) and increasing over the lifetime of the running instance of NiFi.
+	This value is not persisted across restarts and is not guaranteed to be unique across a cluster.
+	This value is considered "one-up" in that if called multiple times across the NiFi instance, the values will be sequential.
+	However, this counter is shared across all NiFi components, so calling this function multiple times from one Processor will
+	not guarantee sequential values within the context of a particular Processor.#
 
-*主题类型*: [.subjectless]#无主题# 
+*Subject Type*: [.subjectless]#No Subject#
 
-*参数*:没有参数
+*Arguments*: No arguments
 
-*返回值类型*: [.returnType]#Number# 
+*Return Type*: [.returnType]#Number#
 
-*例子*:如果返回前一个值 `nextInt` 是 `5`， 表达方式 `${nextInt():divide(2)}` 获取下一个可用的整数(6)并将结果除以2，返回值 `3`。
+*Examples*: If the previous value returned by `nextInt` was `5`, the Expression `${nextInt():divide(2)}` obtains the next available
+	integer (6) and divides the result by 2, returning a value of `3`.
 
 
 
-[.function] 
-=== literal 
+[.function]
+=== literal
 
-*描述*: [.description]#将其参数作为文字字符串值返回。这对于将表达式开头的字符串或数字视为实际值而不是将其视为属性名称很有用。此外，当参数是嵌入式表达式时，我们可以使用它，然后我们要计算其他函数。# 
+*Description*: [.description]#Returns its argument as a literal String value. This is useful in order to treat a string or a number
+	at the beginning of an Expression as an actual value, rather than treating it as an attribute name. Additionally, it
+	can be used when the argument is an embedded Expression that we would then like to evaluate additional functions against.#
 
-*主题类型*: [.subjectless]#无主题# 
+*Subject Type*: [.subjectless]#No Subject#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_value_#: [.argDesc]#要作为文字字符串，数字或布尔值处理的值。# 
+	- [.argName]#_value_# : [.argDesc]#The value to be treated as a literal string, number, or boolean value.#
 
-*返回值类型*: [.returnType]#String# 
+*Return Type*: [.returnType]#String#
 
-*例子*: `${literal(2):gt(1)}` 返回 `true` 
+*Examples*: `${literal(2):gt(1)}` returns `true`
 
-`${literal( ${allMatchingAttributes('a.*'):count()} ):gt(3)}` 如果有超过3个属性的名称以字母 `a` 开头，则返回true。
+`${literal( ${allMatchingAttributes('a.*'):count()} ):gt(3)}` returns true if there are more than 3 attributes whose
+names begin with the letter `a`.
 
-[.function] 
-=== getStateValue 
+[.function]
+=== getStateValue
 
-*描述*: [.description]#通过传入一个String类型的key来访问组件的状态值，并将状态值作为String返回。这是一种特殊的表达式函数，仅适用于明确允许EL查询状态的组件。目前只有UpdateAttribute可以使用。# 
+*Description*: [.description]#Access a processor's state values by passing in the String key and getting the value back as a String. This
+ is a special Expression Language function that only works with processors that explicitly allow EL to query state. Currently only UpdateAttribute
+ does.#
 
-*主题类型*: [.subjectless]#无主题# 
+*Subject Type*: [.subjectless]#No Subject#
 
-*参数*: 
+*Arguments*:
 
-- [.String]#_Key_#: [.argDesc]#访问状态图时使用的key。# 
+	- [.String]#_Key_# : [.argDesc]#The key to use when accessing the state map.#
 
-*返回值类型*: [.returnType]#String# 
+*Return Type*: [.returnType]#String#
 
-*例子*:UpdateAttribute组件在状态中存储了值"20"的键"count"，则 `${getStateValue("count")}` 返回 `20`。 
+*Examples*: UpdateAttribute processor has stored the key "count" with value "20" in state. '${getStateValue("count")}` returns `20`.
 
-[[multi]] 
-== 对多个属性求值 
+[[multi]]
+== Evaluating Multiple Attributes
 
-当需要针对多个相同条件的属性求值时，可以通过 `and` 和 `or` 函数来实现。 但是这很乏味，容易出错并且难以维护。因此，Orchsym Studio 提供了多种功能，可以同时针对一组属性求值。
+When it becomes necessary to evaluate the same conditions against multiple attributes, this can be accomplished by means of the
+`and` and `or` functions. However, this quickly becomes tedious, error-prone, and difficult to maintain. For this reason, NiFi
+provides several functions for evaluating the same conditions against groups of attributes at the same time.
 
 
 
 
-[.function] 
-=== anyAttribute 
+[.function]
+=== anyAttribute
 
-*描述*: [.description]#查看是否有任何给定的属性与给定条件匹配。此函数没有主题，可接受一个或多个参数，这些参数是要应用表达式其余部分的属性的名称。如果指定的任何属性在针对表达式的其余部分计算时，则返回值 `true`，然后这个函数将返回 `true`。否则，此函数将返回 `false`。# 
+*Description*: [.description]#Checks to see if any of the given attributes, match the given condition. This function has no subject and takes one or more
+	arguments that are the names of attributes to which the remainder of the Expression is to be applied. If any of the attributes specified,
+	when evaluated against the rest of the Expression, returns a value of `true`, then this function will return `true`. Otherwise, this function
+	will return `false`.#
 
-*主题类型*: [.subjectless]#无主题# 
+*Subject Type*: [.subjectless]#No Subject#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_Attribute Names_#: [.argDesc]#要评估的一个或多个属性名称# 
+	- [.argName]#_Attribute Names_# : [.argDesc]#One or more attribute names to evaluate#
 
 
-*返回值类型*: [.returnType]#Boolean# 
+*Return Type*: [.returnType]#Boolean#
 
-*例子*:比如"abc"属性包含值"hello world"，"xyz"包含"good bye world"， 
-“filename"包含"file.txt",参考以下示例: 
+*Examples*: Given that the "abc" attribute contains the value "hello world", "xyz" contains "good bye world",
+	and "filename" contains "file.txt" consider the following examples:
 
-.anyAttribute示例 
+.anyAttribute Examples
 |=======================================================================
-| 表达式 | 值
+| Expression | Value
 | `${anyAttribute("abc", "xyz"):contains("bye")}` | `true`
 | `${anyAttribute("filename","xyz"):toUpper():contains("e")}` | `false`
 |=======================================================================
@@ -1760,53 +2064,60 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
-[.function] 
-=== allAttributes 
+[.function]
+=== allAttributes
 
-*描述*: [.description]#查看所有给定属性是否与给定条件匹配.此函数没有主题，并且接受一个或多个参数，这些参数是要应用表达式其余部分的属性的名称。如果指定的所有属性在针对Expression的其余部分进行求值时返回值 `true`，然后这个函数将返回 `true`。否则，此函数将返回 `false`。# 
+*Description*: [.description]#Checks to see if all of the given attributes match the given condition. This function has no subject and takes one or more
+	arguments that are the names of attributes to which the remainder of the Expression is to be applied. If all of the attributes specified,
+	when evaluated against the rest of the Expression, returns a value of `true`, then this function will return `true`. Otherwise, this function
+	will return `false`.#
 
-*主题类型*: [.subjectless]#无主题# 
+*Subject Type*: [.subjectless]#No Subject#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_Attribute Names_#: [.argDesc]#要评估的一个或多个属性名称# 
+	- [.argName]#_Attribute Names_# : [.argDesc]#One or more attribute names to evaluate#
 
-*返回值类型*: [.returnType]#Boolean# 
+*Return Type*: [.returnType]#Boolean#
 
-*例子*:比如"abc"属性包含值"hello world"，"xyz"包含"good bye world"， 
-“filename"包含"file.txt",参考以下示例: 
+*Examples*: Given that the "abc" attribute contains the value "hello world", "xyz" contains "good bye world",
+	and "filename" contains "file.txt" consider the following examples:
 
-.allAttributes示例 
-|============================================================================= 
-| 表达式 | 值 
-| `${allAttributes("abc", "xyz"):contains("world")}` | `true` 
-| `${allAttributes("abc", "filename","xyz"):toUpper():contains("e")}` | `false` 
-|============================================================================= 
-
-
-
-
-
-[.function] 
-=== anyMatchingAttribute 
-
-*描述*: [.description]#查看是否有任何给定的属性与给定条件匹配。此函数没有主题，并且使用一个或多个正则表达式的参数来匹配属性名称。任何匹配给定正则表达式的属性的名称，都检查是否满足表达式的剩余部分。如果指定的任何属性在表达式的其余部分验证成立，则返回值 `true`，然后这个函数将返回 `true`。否则，此函数将返回 `false`。# 
-
-*主题类型*: [.subjectless]#无主题# 
-
-*参数*: 
-
-- [.argName]#_Regex_#: [.argDesc]#一个或者多个正则表达式(在Java模式语法中)来评估属性名称# 
+.allAttributes Example
+|=============================================================================
+| Expression | Value
+| `${allAttributes("abc", "xyz"):contains("world")}` | `true`
+| `${allAttributes("abc", "filename","xyz"):toUpper():contains("e")}` | `false`
+|=============================================================================
 
 
-*返回值类型*: [.returnType]#Boolean# 
 
-*例子*:比如"abc"属性包含值"hello world"，"xyz"包含"good bye world"， 
-“filename"包含"file.txt",参考以下示例: 
 
-.anyMatchingAttribute示例 
+
+[.function]
+=== anyMatchingAttribute
+
+*Description*: [.description]#Checks to see if any of the given attributes, match the given condition. This function has no subject and takes one or more
+	arguments that are Regular Expressions to match against attribute names. Any attribute whose name matches one of the supplied
+	Regular Expressions will be evaluated against the rest of the Expression. If any of the attributes specified,
+	when evaluated against the rest of the Expression, returns a value of `true`, then this function will return `true`. Otherwise, this function
+	will return `false`.#
+
+*Subject Type*: [.subjectless]#No Subject#
+
+*Arguments*:
+
+	- [.argName]#_Regex_# : [.argDesc]#One or more Regular Expressions (in the Java Pattern syntax) to evaluate against attribute names#
+
+
+*Return Type*: [.returnType]#Boolean#
+
+*Examples*: Given that the "abc" attribute contains the value "hello world", "xyz" contains "good bye world",
+	and "filename" contains "file.txt" consider the following examples:
+
+.anyMatchingAttribute Example
 |==============================================================
-| 表达式 | 值
+| Expression | Value
 | `${anyMatchingAttribute("[ax].*"):contains('bye')}` | `true`
 | `${anyMatchingAttribute(".*"):isNull()}` | `false`
 |==============================================================
@@ -1814,76 +2125,90 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
-[.function] 
-=== allMatchingAttributes 
 
-*描述*: [.description]#查看是否有任何给定的属性与给定条件匹配。此函数没有主题，并且使用一个或多个正则表达式的参数来匹配属性名称。任何匹配给定正则表达式的属性的名称，都检查是否满足表达式的剩余部分。如果指定的所有属性在表达式的其余部分验证成立，则返回值 `true`，然后这个函数将返回 `true`。否则，此函数将返回 `false`。# 
+[.function]
+=== allMatchingAttributes
 
-*主题类型*: [.subjectless]#无主题# 
+*Description*: [.description]#Checks to see if any of the given attributes, match the given condition. This function has no subject and takes one or more
+	arguments that are Regular Expressions to match against attribute names. Any attribute whose name matches one of the supplied
+	Regular Expressions will be evaluated against the rest of the Expression. If all of the attributes specified,
+	when evaluated against the rest of the Expression, return a value of `true`, then this function will return `true`. Otherwise, this function
+	will return `false`.#
 
-- [.argName]#_Regex_#: [.argDesc]#One或更多正则表达式(在Java模式语法中)来评估属性名称# 
+*Subject Type*: [.subjectless]#No Subject#
 
-*返回值类型*: [.returnType]#Boolean# 
+	- [.argName]#_Regex_# : [.argDesc]#One or more Regular Expressions (in the Java Pattern syntax) to evaluate against attribute names#
 
-*例子*:比如"abc"属性包含值"hello world"，"xyz"包含"good bye world"， 
-“filename"包含"file.txt",参考以下示例: 
+*Return Type*: [.returnType]#Boolean#
 
-.anyMatchingAttributes示例 
-|============================================================== 
-| 表达式 | 值 
-| `${allMatchingAttributes("[ax].*"):contains("world")}` | `true` 
-| `${allMatchingAttributes(".*"):isNull()}` | `false` 
-| `${allMatchingAttributes("f.*"):count()}` | `1` 
-|============================================================== 
+*Examples*: Given that the "abc" attribute contains the value "hello world", "xyz" contains "good bye world",
+	and "filename" contains "file.txt" consider the following examples:
+
+.anyMatchingAttributes Examples
+|==============================================================
+| Expression | Value
+| `${allMatchingAttributes("[ax].*"):contains("world")}` | `true`
+| `${allMatchingAttributes(".*"):isNull()}` | `false`
+| `${allMatchingAttributes("f.*"):count()}` | `1`
+|==============================================================
 
 
 
 
 
-[.function] 
-=== anyDelineatedValue 
+[.function]
+=== anyDelineatedValue
 
-*描述*: [.description]#根据提供的分隔符分离String，然后根据表达式的其余部分计算每个值。如果表达式在针对任何单个值进行评估时返回 `true`，这个函数返回 `true`。否则，函数返回 `false`。# 
+*Description*: [.description]#Splits a String apart according to a delimiter that is provided, and then evaluates each of the values against
+	the rest of the Expression. If the Expression, when evaluated against any of the individual values, returns `true`, this
+	function returns `true`. Otherwise, the function returns `false`.#
 
-*主题类型*: [.subjectless]#无主题# 
+*Subject Type*: [.subjectless]#No Subject#
 
-*参数*: 
+*Arguments*:
 
-- [.argName]#_Delineated Value_#: [.argDesc]#描述的值。这通常是嵌入式表达式，但并非必须如此。# 
-- [.argName]#_Delimiter_#: [.argDesc]#用于拆分 _delineatedValue_ 参数的值。# 
+	- [.argName]#_Delineated Value_# : [.argDesc]#The value that is delineated. This is generally an embedded Expression,
+		though it does not have to be.#
+	- [.argName]#_Delimiter_# : [.argDesc]#The value to use to split apart the _delineatedValue_ argument.#
 
-*返回值类型*: [.returnType]#Boolean# 
+*Return Type*: [.returnType]#Boolean#
 
-*例子*: 给定"number_list" 属性包括值 "1,2,3,4,5", "word_list" 属性包括值 "the,and,or,not", 参考以下示例: 
+*Examples*: Given that the "number_list" attribute contains the value "1,2,3,4,5", and the "word_list" attribute contains the value "the,and,or,not",
+	consider the following examples:
 
-.anyDelineatedValue示例 
+.anyDelineatedValue Examples
 |===============================================================================
-| 表达式 | 值
+| Expression | Value
 | `${anyDelineatedValue("${number_list}", ","):contains("5")}` | `true`
 | `${anyDelineatedValue("this that and", ","):equals("${word_list}")}` | `false`
 |===============================================================================
 
 
-[.function] 
-=== allDelineatedValues 
 
-*描述*: [.description]#根据提供的分隔符分离String，然后根据表达式的其余部分计算每个值。如果表达式在针对所有单个值进行评估时都返回 `true` ，然后此函数返回 `true`。否则，函数返回 `false`。# 
+[.function]
+=== allDelineatedValues
 
-*主题类型*: [.subjectless]#无主题# 
+*Description*: [.description]#Splits a String apart according to a delimiter that is provided, and then evaluates each of the values against
+	the rest of the Expression. If the Expression, when evaluated against all of the individual values, returns `true` in each
+	case, then this function returns `true`. Otherwise, the function returns `false`.#
 
-*参数*: 
+*Subject Type*: [.subjectless]#No Subject#
 
-- [.argName]#_Delineated Value_#: [.argDesc]#描述的值。这通常是嵌入式表达式，但并非必须如此。# 
+*Arguments*:
 
-- [.argName]#_Delimiter_#: [.argDesc]#用于拆分 _delineatedValue_ 参数的值。# 
+	- [.argName]#_Delineated Value_# : [.argDesc]#The value that is delineated. This is generally
+		an embedded Expression, though it does not have to be.#
 
-*返回值类型*: [.returnType]#Boolean# 
+	- [.argName]#_Delimiter_# : [.argDesc]#The value to use to split apart the _delineatedValue_ argument.#
 
-*例子*：给定 "number_list" 属性包含"1,2,3,4,5", "word_list" 属性包含 "those,known,or,not",参考以下示例: 
+*Return Type*: [.returnType]#Boolean#
 
-.allDelineatedValues示例 
+*Examples*: Given that the "number_list" attribute contains the value "1,2,3,4,5", and the "word_list" attribute contains the value "those,known,or,not",
+	consider the following examples:
+
+.allDelineatedValues Examples
 |===============================================================================
-| 表达式 | 值
+| Expression | Value
 | `${allDelineatedValues("${word_list}", ","):contains("o")}` | `true`
 | `${allDelineatedValues("${number_list}", ","):count()}` | `4`
 | `${allDelineatedValues("${number_list}", ","):matches("[0-9]+")}` | `true`
@@ -1893,25 +2218,27 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
+[.function]
+=== join
 
-[.function] 
-=== join 
+*Description*: [.description]#Aggregate function that concatenates multiple values with the specified delimiter. This function
+	may be used only in conjunction with the `allAttributes`, `allMatchingAttributes`, and `allDelineatedValues`
+	functions.#
 
-*描述*: [.description]#聚合函数，用于将多个值与指定的分隔符连接起来。此功能只能与 `allAttributes` ， `allMatchingAttributes` 和 `allDelineatedValues` 一起使用。# 
+*Subject Type*: [.subject]#String#
 
-*主题类型*: [.subject]#String# 
+*Arguments*:
 
-*参数*: 
+	- [.argName]#_Delimiter_# : [.argDesc]#The String delimiter to use when joining values#
 
-- [.argName]#_Delimiter_#: [.argDesc]#连接值时使用的字符串分隔符# 
+*Return Type*: [.returnType]#String#
 
-*返回值类型*: [.returnType]#String# 
+*Examples*: Given that the "abc" attribute contains the value "hello world", "xyz" contains "good bye world",
+	and "filename" contains "file.txt" consider the following examples:
 
-*例子*: 给定"abc" 属性包含"hello world", "xyz" 属性包含 "good bye world","filename" 包含 "file.txt"，参考以下示例: 
-
-.join 示例 
+.join Examples
 |=======================================================================================
-| 表达式 | 值
+| Expression | Value
 | `${allMatchingAttributes("[ax].*"):substringBefore(" "):join("-")}` | `hello-good`
 | `${allAttributes("abc", "xyz"):join(" now")}` | `hello world nowgood bye world now`
 |=======================================================================================
@@ -1921,23 +2248,26 @@ ${filename:toLower():equals( ${filename} ):or(
 
 
 
+[.function]
+=== count
 
-[.function] 
-=== count 
+*Description*: [.description]#Aggregate function that counts the number of non-null, non-false values returned by the
+	`allAttributes`, `allMatchingAttributes`, and `allDelineatedValues`. This function
+	may be used only in conjunction with the `allAttributes`, `allMatchingAttributes`, and `allDelineatedValues`
+	functions.#
 
-*描述*: [.description]#聚合函数，用于计算由 `allAttributes`， `allMatchingAttributes` 和 `allDelineatedValues` 返回的非null，非false值的数量。此功能只能与 `allAttributes`，`allMatchingAttributes` 和 `allDelineatedValues` 一起使用。# 
+*Subject Type*: [.subject]#Any#
 
-*主题类型*: [.subject]#任意# 
+*Arguments*: No arguments
 
-*参数*:没有参数
+*Return Type*: [.returnType]#Number#
 
-*返回值类型*: [.returnType]#Number# 
+*Examples*: Given that the "abc" attribute contains the value "hello world", "xyz" contains "good bye world",
+	and "number_list" contains "1,2,3,4,5" consider the following examples:
 
-*例子*:给定"abc" 属性包含"hello world", "xyz" 包含 "good bye world", "number_list" 包含 "1,2,3,4,5"，参考以下示例: 
-
-.count 示例
+.count Examples
 |===========================================================================
-| 表达式 | 值
+| Expression | Value
 | `${allMatchingAttributes("[ax].*"):substringBefore(" "):count()}` | `2`
 | `${allAttributes("abc", "xyz"):contains("world"):count()}` | `1`
 | `${allDelineatedValues(${number_list}, ","):count()}` | `5`

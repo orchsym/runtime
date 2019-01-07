@@ -67,6 +67,7 @@ public class ConnectableTask {
     private final ProcessContext processContext;
     private final FlowController flowController;
     private final int numRelationships;
+
     private AtomicInteger currentExceptionCount = new AtomicInteger(0);
     private int exceptionToleranceCount;
 
