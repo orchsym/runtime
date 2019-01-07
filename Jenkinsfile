@@ -4,7 +4,8 @@ pipeline {
   environment {
     PROJECT_NAME = 'runtime'
     BUILD_OUTPUT_FILE = "${WORKSPACE}/build.output"
-    VERSION_NAME= "1.7.0-${BRANCH_NAME}"
+    BUILD_VERSION_NAME= "1.7.1-${BRANCH_NAME}"
+    VERSION_NAME= "${BRANCH_NAME}"
   }
 
   tools {
@@ -40,7 +41,7 @@ pipeline {
       steps {
         sh """
           mvn clean
-          mvn build-helper:parse-version versions:set -DgenerateBackupPoms=false -DnewVersion=${env.VERSION_NAME}
+          mvn build-helper:parse-version versions:set -DgenerateBackupPoms=false -DnewVersion=${env.BUILD_VERSION_NAME}
           mvn -T 4 install -Dmaven.test.failure.ignore=true
           echo "\n${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz" >> ${env.BUILD_OUTPUT_FILE}
         """
@@ -57,7 +58,7 @@ pipeline {
 
       steps {
         sh """
-          scp nifi-assembly/target/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz root@${env.ANSIBLE_DEPLOY_HOST}:${env.ANSIBLE_DEVOPS_PATH}/ansible/packages/services/
+          scp orchsym/orchsym-assembly/target/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz root@${env.ANSIBLE_DEPLOY_HOST}:${env.ANSIBLE_DEVOPS_PATH}/ansible/packages/services/
         """
 
         dingTalk (
@@ -187,7 +188,7 @@ pipeline {
         )
 
         sh """
-          sudo rsync --progress ${env.WORKSPACE}/nifi-assembly/target/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz ${env.SAMBA_LOCAL_MOUNT_PATH}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/
+          sudo rsync --progress ${env.WORKSPACE}/orchsym/orchsym-assembly/target/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz ${env.SAMBA_LOCAL_MOUNT_PATH}/${env.SAMBA_UPLOAD_PATH_RUNTIME}/
         """
 
         dingTalk (
@@ -208,7 +209,7 @@ pipeline {
 
 
         sh """
-          s3cmd put --acl-public ${env.WORKSPACE}/nifi-assembly/target/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz ${env.S3_PACKAGES_URL}/services/
+          s3cmd put --acl-public ${env.WORKSPACE}/orchsym/orchsym-assembly/target/${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz ${env.S3_PACKAGES_URL}/services/
         """
 
         dingTalk (

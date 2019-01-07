@@ -216,6 +216,7 @@ import org.apache.nifi.web.api.entity.TenantEntity;
 import org.apache.nifi.web.api.entity.VariableEntity;
 import org.apache.nifi.web.controller.ControllerFacade;
 import org.apache.nifi.web.revision.RevisionManager;
+import org.apache.nifi.web.util.OrchsymVersionHelper;
 
 import javax.ws.rs.WebApplicationException;
 import java.text.Collator;
@@ -3198,18 +3199,14 @@ public final class DtoFactory {
         dto.setOsVersion(System.getProperty("os.version"));
         dto.setOsArchitecture(System.getProperty("os.arch"));
 
-        final Bundle frameworkBundle = NarClassLoaders.getInstance().getFrameworkBundle();
-        if (frameworkBundle != null) {
-            final BundleDetails frameworkDetails = frameworkBundle.getBundleDetails();
 
-            dto.setNiFiVersion(frameworkDetails.getCoordinate().getVersion());
+        dto.setNiFiVersion(OrchsymVersionHelper.INSTANCE.getOrchsymVersion()); //for system details
 
-            // Get build info
-            dto.setBuildTag(frameworkDetails.getBuildTag());
-            dto.setBuildRevision(frameworkDetails.getBuildRevision());
-            dto.setBuildBranch(frameworkDetails.getBuildBranch());
-            dto.setBuildTimestamp(frameworkDetails.getBuildTimestampDate());
-        }
+        // Get build info
+        dto.setBuildTag(OrchsymVersionHelper.INSTANCE.getBuildTag());
+        dto.setBuildRevision(OrchsymVersionHelper.INSTANCE.getBuildRevision());
+        dto.setBuildBranch(OrchsymVersionHelper.INSTANCE.getBuildBranch());
+        dto.setBuildTimestamp(OrchsymVersionHelper.INSTANCE.getBuildTimestampDate());
 
         return dto;
     }

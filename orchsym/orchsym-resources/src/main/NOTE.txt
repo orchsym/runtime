@@ -1,0 +1,11 @@
+注：
+1. resources下bin与conf文件暂不做修改，同nifi-resources下的一样，否则以后同步会出现覆盖问题。
+2. 文件中也许需要替换NiFi字样（bin和conf下都存在）
+
+conf文件说明：
+	1. 发现conf里的文件变量都被字面值替换，则pom中无需再提供properties设置（如果都采用默认值，字面值也是可以接受）
+	2. bootstrap.conf中存在变量也许也可采用字面值。
+	3. orchsym.properties中headless变量不应该是字面值，否则该功能失效。
+	4. 部分值带nifi字样的，应尝试替换。
+
+

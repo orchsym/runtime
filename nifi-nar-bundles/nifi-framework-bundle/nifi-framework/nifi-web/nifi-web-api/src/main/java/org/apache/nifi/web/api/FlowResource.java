@@ -113,6 +113,7 @@ import org.apache.nifi.web.api.request.BulletinBoardPatternParameter;
 import org.apache.nifi.web.api.request.DateTimeParameter;
 import org.apache.nifi.web.api.request.IntegerParameter;
 import org.apache.nifi.web.api.request.LongParameter;
+import org.apache.nifi.web.util.OrchsymVersionHelper;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -1103,7 +1104,7 @@ public class FlowResource extends ApplicationResource {
 
         // create the about dto
         final AboutDTO aboutDTO = new AboutDTO();
-        
+
         final BrandingProperties brandingProp = new BrandingProperties();
         final String productName = brandingProp.getProductName();
         aboutDTO.setTitle(productName);
@@ -1116,52 +1117,27 @@ public class FlowResource extends ApplicationResource {
         final NiFiProperties properties = getProperties();
         aboutDTO.setContentViewerUrl(properties.getProperty(NiFiProperties.CONTENT_VIEWER_URL));
 
-        final Bundle frameworkBundle = NarClassLoaders.getInstance().getFrameworkBundle();
-        if (frameworkBundle != null) {
-            final BundleDetails frameworkDetails = frameworkBundle.getBundleDetails();
+        aboutDTO.setVersion(OrchsymVersionHelper.INSTANCE.getNifiVersion());
 
-            // set the version
-            final String bundleVersion = frameworkDetails.getCoordinate().getVersion();
-            aboutDTO.setVersion(bundleVersion);
-
-            // Get build info
-            final String buildRevision = frameworkDetails.getBuildRevision();
-            aboutDTO.setBuildTag(frameworkDetails.getBuildTag());
-            aboutDTO.setBuildRevision(buildRevision);
-            aboutDTO.setBuildBranch(frameworkDetails.getBuildBranch());
-            final Date buildTimestampDate = frameworkDetails.getBuildTimestampDate();
-            aboutDTO.setBuildTimestamp(buildTimestampDate);
-            
+        // Get build info
+        aboutDTO.setBuildTag(OrchsymVersionHelper.INSTANCE.getBuildTag());
+        aboutDTO.setBuildRevision(OrchsymVersionHelper.INSTANCE.getBuildRevision());
+        aboutDTO.setBuildBranch(OrchsymVersionHelper.INSTANCE.getBuildBranch());
+        final Date buildTimestampDate = OrchsymVersionHelper.INSTANCE.getBuildTimestampDate();
+        aboutDTO.setBuildTimestamp(buildTimestampDate);
+        
+        if (buildTimestampDate != null) {
             Instant instant = buildTimestampDate.toInstant();
             ZoneId zone = ZoneId.systemDefault();
             LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, zone);
             LocalDate localDate = localDateTime.toLocalDate();
             aboutDTO.setBuildDate(localDate);
-            
-            String productVersion = "2.1.0"; // default is fix one
-
-            try {
-                final Class<?> versionClass = Class.forName("com.orchsym.core.ver.VersionUtil");
-                final java.lang.reflect.Method getProductVersionMethod = versionClass.getDeclaredMethod("getProductVersion");
-                getProductVersionMethod.setAccessible(true);
-                final Object ver = getProductVersionMethod.invoke(null);
-                if (ver != null) {
-                    productVersion = ver.toString();
-                }
-            } catch (Exception e) {
-                final int lineIndex = bundleVersion.indexOf('-');
-                if (lineIndex > 0 && !bundleVersion.endsWith("SNAPSHOT")) { // like 1.7.1-2.2.0
-                    productVersion = bundleVersion.substring(lineIndex);
-                }
-            }
-            if (bundleVersion.contains("SNAPSHOT"))
-                productVersion += '-' + buildRevision;
-
-            aboutDTO.setProductVersion(productVersion);
         }
 
-        aboutDTO.setLocale(properties.getLocale()); //default locale
-        
+        aboutDTO.setProductVersion(OrchsymVersionHelper.INSTANCE.getOrchsymVersion());
+
+        aboutDTO.setLocale(properties.getLocale()); // default locale
+
         // create the response entity
         final AboutEntity entity = new AboutEntity();
         entity.setAbout(aboutDTO);

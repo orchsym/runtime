@@ -369,7 +369,8 @@ public class StandardManagedAuthorizerTest {
                 .build();
 
         final StandardManagedAuthorizer managedAuthorizer = getStandardManagedAuthorizer(accessPolicyProvider);
-        assertTrue(AuthorizationResult.denied().getResult().equals(managedAuthorizer.authorize(request).getResult()));
+        //ORCHSYM-2469, if unknow user, add basic read rights and approved for API manager
+        assertTrue(AuthorizationResult.approved().getResult().equals(managedAuthorizer.authorize(request).getResult())); 
     }
 
     @Test
