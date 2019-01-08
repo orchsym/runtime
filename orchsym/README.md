@@ -65,3 +65,6 @@ git push origin 2.2.0
 mvn package
 ```
 
+如果由于JUnit失败导致，打包不成功，可添加`-DskipTests`，跳过执行单元测试，但仍旧进行编译。
+
+

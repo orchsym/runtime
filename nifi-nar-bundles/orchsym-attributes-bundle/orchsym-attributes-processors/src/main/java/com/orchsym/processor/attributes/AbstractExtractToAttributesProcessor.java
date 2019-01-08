@@ -66,6 +66,7 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
             .description("Include the record fields with seperating via colon ';', If don't set this includes, also no excludes, means include all. and support expression too.")//
             .required(false)//
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES) //
+            .addValidator(Validator.VALID)
             .build();
 
     protected static final PropertyDescriptor EXCLUDE_FIELDS = new PropertyDescriptor.Builder()//
@@ -74,6 +75,7 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
             .description("Exclude the record fields with seperating via colon ';'. and support expression too.")//
             .required(false)//
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES) //
+            .addValidator(Validator.VALID)
             .build();
 
     protected static final PropertyDescriptor FIELDS_CASE_SENSITIVE = new PropertyDescriptor.Builder()//
