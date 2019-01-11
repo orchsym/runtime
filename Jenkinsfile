@@ -41,7 +41,7 @@ pipeline {
       steps {
         sh """
           mvn clean
-          mvn build-helper:parse-version versions:set -DgenerateBackupPoms=false -DnewVersion=${env.BUILD_VERSION_NAME}
+          mvn build-helper:parse-version versions:set -DgenerateBackupPoms=false -DnewVersion=${env.BUILD_VERSION_NAME} -Dorchsym.product.version=${env.VERSION_NAME}
           mvn -T 4 install -Dmaven.test.failure.ignore=true
           echo "\n${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz" >> ${env.BUILD_OUTPUT_FILE}
         """
