@@ -41,8 +41,8 @@ pipeline {
       steps {
         sh """
           mvn clean
-          mvn build-helper:parse-version versions:set -DgenerateBackupPoms=false -DnewVersion=${env.BUILD_VERSION_NAME} -Dorchsym.product.version=${env.VERSION_NAME}
-          mvn -T 4 install -Dmaven.test.failure.ignore=true
+          mvn build-helper:parse-version versions:set -DgenerateBackupPoms=false -DnewVersion=${env.BUILD_VERSION_NAME}
+          if [[ "${BRANCH_NAME}" =~ '^PR.*' ]]; then mvn -T 4 package -Dorchsym.product.version=${env.VERSION_NAME}; else mvn -T 4 package -DskipTests -Dmaven.test.failure.ignore=true -Dorchsym.product.version=${env.VERSION_NAME}; fi
           echo "\n${env.PROJECT_NAME}-${env.VERSION_NAME}.tar.gz" >> ${env.BUILD_OUTPUT_FILE}
         """
 
