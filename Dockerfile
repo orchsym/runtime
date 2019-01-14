@@ -4,21 +4,23 @@ ARG PROJECT_NAME=runtime
 ARG VERSION_NAME="1.7.0-SNAPSHOT"
 
 ENV \
-  STUDIO_BINARY_FILE=${PROJECT_NAME}-${VERSION_NAME}.tar.gz \
-  STUDIO_HOME_DIR=/opt/orchsym/${PROJECT_NAME} \
-  STUDIO_LOG_DIR=/data/${PROJECT_NAME}/log \
-  STUDIO_DATA_DIR=/data/${PROJECT_NAME}/data
+  RUNTIME_BINARY_FILE=${PROJECT_NAME}-${VERSION_NAME}.tar.gz \
+  RUNTIME_HOME_DIR=/opt/orchsym/${PROJECT_NAME} \
+  RUNTIME_LOG_DIR=/data/${PROJECT_NAME}/log \
+  RUNTIME_DATA_DIR=/data/${PROJECT_NAME}/data
 
 RUN yum install -y xmlstarlet && yum clean all
 
-ADD nifi-assembly/target/${STUDIO_BINARY_FILE} /opt/orchsym/
-ADD docker/sh/ ${STUDIO_HOME_DIR}/scripts/
+ADD orchsym/orchsym-assembly/target/${RUNTIME_BINARY_FILE} /opt/orchsym/
+ADD docker/sh/ ${RUNTIME_HOME_DIR}/scripts/
 
 RUN \
-  mkdir -p ${STUDIO_LOG_DIR}/logs/ && \
-  chmod +x ${STUDIO_HOME_DIR}/scripts/*.sh
+  mkdir -p ${RUNTIME_LOG_DIR} && \
+  sed -i "/^export ORCHSYM_LOG_DIR=/c\export ORCHSYM_LOG_DIR=${RUNTIME_LOG_DIR}" ${RUNTIME_HOME_DIR}/bin/orchsym-env.sh && \
+  sed -i "/^export NIFI_LOG_DIR=/c\export NIFI_LOG_DIR=${RUNTIME_LOG_DIR}" ${RUNTIME_HOME_DIR}/bin/orchsym-env.sh && \
+  chmod +x ${RUNTIME_HOME_DIR}/scripts/*.sh
 
-WORKDIR ${STUDIO_HOME_DIR}
+WORKDIR ${RUNTIME_HOME_DIR}
 
 # Apply configuration and start NiFi
-ENTRYPOINT bash ${STUDIO_HOME_DIR}/scripts/start.sh
+ENTRYPOINT bash ${RUNTIME_HOME_DIR}/scripts/start.sh

@@ -14,7 +14,7 @@ bash ${SCRIPT_DIR}/orchsym.properties.secure.sh
 bash ${SCRIPT_DIR}/orchsym.properties.web.sh
 
 # cluster mode
-if [[ $STUDIO_SINGLE_NODE == 'false' ]]; then
+if [[ $RUNTIME_SINGLE_NODE == 'false' ]]; then
     bash ${SCRIPT_DIR}/state-management.sh
     bash ${SCRIPT_DIR}/zookeeper.properties.sh
 
@@ -22,11 +22,11 @@ fi
 
 
 # secure mode
-if [[ $STUDIO_IS_SECURE == 'true' ]]; then
+if [[ $RUNTIME_SSL_ENABLED == 'true' ]]; then
     bash ${SCRIPT_DIR}/authorizers.xml.sh
 
-    # auth type only take effects when STUDIO_IS_SECURE set to true
-    case ${STUDIO_AUTH_TYPE} in
+    # auth type only take effects when RUNTIME_SSL_ENABLED set to true
+    case ${RUNTIME_AUTH_TYPE} in
         tls)
             # echo 'Enabling Two-Way SSL user authentication'
             # . "${SCRIPT_DIR}/secure.sh"
@@ -55,4 +55,4 @@ fi
 
 # echo NiFi running with PID ${nifi_pid}.
 # wait ${nifi_pid}
-exec "${STUDIO_HOME_DIR}/bin/orchsym.sh" run
+exec "${RUNTIME_HOME_DIR}/bin/orchsym.sh" run

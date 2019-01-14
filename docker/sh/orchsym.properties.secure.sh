@@ -9,14 +9,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Perform idempotent changes of configuration to support secure environments
 echo 'Configuring environment with SSL settings'
 
-if [[ $STUDIO_IS_SECURE == 'true' ]]; then
-  prop_replace 'orchsym.security.keystore' ${STUDIO_SECURITY_KEYSTORE}
-  prop_replace 'orchsym.security.keystoreType' ${STUDIO_SECURITY_KEYSTORETYPE}
-  prop_replace 'orchsym.security.keystorePasswd' ${STUDIO_SECURITY_KEYSTOREPASSWD}
-  prop_replace 'orchsym.security.keyPasswd' ${STUDIO_SECURITY_KEYPASSWD}
-  prop_replace 'orchsym.security.truststore' ${STUDIO_SECURITY_TRUSTSTORE}
-  prop_replace 'orchsym.security.truststoreType' ${STUDIO_SECURITY_TRUSTSTORETYPE}
-  prop_replace 'orchsym.security.truststorePasswd' ${STUDIO_SECURITY_TRUSTSTOREPASSWD}
+if [[ $RUNTIME_SSL_ENABLED == 'true' ]]; then
+  prop_replace 'orchsym.security.keystore' ${RUNTIME_SECURITY_KEYSTORE}
+  prop_replace 'orchsym.security.keystoreType' ${RUNTIME_SECURITY_KEYSTORETYPE}
+  prop_replace 'orchsym.security.keystorePasswd' ${RUNTIME_SECURITY_KEYSTOREPASSWD}
+  prop_replace 'orchsym.security.keyPasswd' ${RUNTIME_SECURITY_KEYPASSWD}
+  prop_replace 'orchsym.security.truststore' ${RUNTIME_SECURITY_TRUSTSTORE}
+  prop_replace 'orchsym.security.truststoreType' ${RUNTIME_SECURITY_TRUSTSTORETYPE}
+  prop_replace 'orchsym.security.truststorePasswd' ${RUNTIME_SECURITY_TRUSTSTOREPASSWD}
 else
   prop_replace 'orchsym.security.keystore' ''
   prop_replace 'orchsym.security.keystoreType' ''
@@ -27,4 +27,4 @@ else
   prop_replace 'orchsym.security.truststorePasswd' ''
 fi
 
-prop_replace 'orchsym.security.needClientAuth' ${STUDIO_NEED_CLIENT_AUTH}
+prop_replace 'orchsym.security.needClientAuth' ${RUNTIME_NEED_CLIENT_AUTH}

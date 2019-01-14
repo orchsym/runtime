@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [ -f "${SCRIPT_DIR}/common.sh" ] && source "${SCRIPT_DIR}/common.sh"
 
 
-login_providers_file=${STUDIO_CONF_DIR}/login-identity-providers.xml
+login_providers_file=${RUNTIME_CONF_DIR}/login-identity-providers.xml
 property_xpath='//loginIdentityProviders/provider/property'
 
 # Update a given property in the login-identity-providers file if a value is specified

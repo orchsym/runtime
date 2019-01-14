@@ -1,3 +1,4 @@
 *
+!orchsym/orchsym-assembly/target/*.tar.gz
 !nifi-assembly/target/*.tar.gz
 !^docker/
