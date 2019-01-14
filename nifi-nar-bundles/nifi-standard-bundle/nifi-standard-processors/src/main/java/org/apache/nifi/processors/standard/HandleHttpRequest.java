@@ -60,6 +60,7 @@ import org.apache.nifi.annotation.lifecycle.OnRemoved;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
 import org.apache.nifi.apiregistry.ApiRegistryService;
+import org.apache.nifi.authentication.APIAuthenticationService;
 import org.apache.nifi.components.AllowableValue;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
@@ -256,9 +257,16 @@ public class HandleHttpRequest extends AbstractProcessor {
             .build();
     public static final PropertyDescriptor HTTP_API_REGISTRY = new PropertyDescriptor.Builder() //
             .name("HTTP API Registry Service") //
-            .description("this is service is for api registry, will be deprecated, should try to use <" + SUPPORT_API_REGISTRY.getDisplayName() + "> instead") //
+            .description("this service is for api registry, will be deprecated, should try to use <" + SUPPORT_API_REGISTRY.getDisplayName() + "> instead") //
             .required(false) //
             .identifiesControllerService(ApiRegistryService.class) //
+            .build();
+
+    public static final PropertyDescriptor HTTP_AUTHENTICATION = new PropertyDescriptor.Builder() //
+            .name("HTTP Authentication") //
+            .description("this service is for request authentication") //
+            .required(false) //
+            .identifiesControllerService(APIAuthenticationService.class) //
             .build();
 
     public static final Relationship REL_SUCCESS = new Relationship.Builder() //
@@ -275,6 +283,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         descriptors.add(SSL_CONTEXT);
         descriptors.add(HTTP_CONTEXT_MAP);
         descriptors.add(HTTP_API_REGISTRY);
+        descriptors.add(HTTP_AUTHENTICATION);
         descriptors.add(SUPPORT_API_REGISTRY);
         descriptors.add(PATH_REGEX);
         descriptors.add(URL_CHARACTER_SET);
@@ -621,6 +630,34 @@ public class HandleHttpRequest extends AbstractProcessor {
         }
     }
 
+    //验证请求信息是否合法
+    private boolean authenticateRequestInfo(APIAuthenticationService authenService, HttpServletRequest request, HttpRequestContainer container) {
+        //验证该地址是否可以通过
+        String ipAddress = request.getRemoteAddr();
+        if (!authenService.authenticateAddress(ipAddress)) {
+            //该地址不通过
+            getLogger().warn("the address {} is failed to pass!", new Object[] { ipAddress });
+            sendBadRequest(container, request, Status.UNAUTHORIZED.getStatusCode());
+            return false;
+        }
+        if (authenService.shouldAuthenticateAuthorizationInfo()) {
+            //验证授权信息
+            String authorizationInfo = request.getHeader("Authorization");
+            try {
+                if (authorizationInfo == null || !authenService.authenticateAuthorizationInfo(request.getMethod(), authorizationInfo)) {
+                    getLogger().warn("the request {} is failed to authorize!", new Object[] { request });
+                    sendBadRequest(container, request, Status.UNAUTHORIZED.getStatusCode());
+                    return false;
+                }
+            } catch (final Exception e) {
+                getLogger().warn("the request {} is failed to authorize!", new Object[] { request });
+                sendBadRequest(container, request, Status.UNAUTHORIZED.getStatusCode());
+                return false;
+            } 
+        }
+        return true;
+    }
+
     @Override
     public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
         try {
@@ -655,6 +692,11 @@ public class HandleHttpRequest extends AbstractProcessor {
         final long start = System.nanoTime();
         final HttpServletRequest request = container.getRequest();
 
+        final APIAuthenticationService authenService = context.getProperty(HTTP_AUTHENTICATION).asControllerService(APIAuthenticationService.class);
+        if (authenService != null && !authenticateRequestInfo(authenService, request, container)) {
+            return;
+        }
+        
         final Map<String, String> attributes = new HashMap<>();
         putAttribute(attributes, CoreAttributes.MIME_TYPE.key(), request.getContentType()); // set first, maybe will be modify in process
 
@@ -668,15 +710,7 @@ public class HandleHttpRequest extends AbstractProcessor {
             // processed and makes it aware that the connection can be closed.
             getLogger().error("Failed to receive content from HTTP Request from {} due to {}", new Object[] { request.getRemoteAddr(), e });
             session.remove(flowFile);
-
-            try {
-                HttpServletResponse response = container.getResponse();
-                response.sendError(Status.BAD_REQUEST.getStatusCode());
-                response.flushBuffer();
-                container.getContext().complete();
-            } catch (final IOException ioe) {
-                getLogger().warn("Failed to send HTTP response to {} due to {}", new Object[] { request.getRemoteAddr(), ioe });
-            }
+            sendBadRequest(container, request, Status.BAD_REQUEST.getStatusCode());
             return;
         }
 
@@ -877,6 +911,17 @@ public class HandleHttpRequest extends AbstractProcessor {
 
         public AsyncContext getContext() {
             return context;
+        }
+    }
+
+    private void sendBadRequest(HttpRequestContainer container, HttpServletRequest request, int code) {
+        try {
+            HttpServletResponse response = container.getResponse();
+            response.sendError(code);
+            response.flushBuffer();
+            container.getContext().complete();
+        } catch (final IOException ioe) {
+            getLogger().warn("Failed to send HTTP response to {} due to {}", new Object[] { request.getRemoteAddr(), ioe });
         }
     }
 

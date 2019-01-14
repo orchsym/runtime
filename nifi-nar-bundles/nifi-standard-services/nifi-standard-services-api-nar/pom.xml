@@ -80,6 +80,12 @@
         </dependency>
         <dependency>
             <groupId>org.apache.nifi</groupId>
+            <artifactId>nifi-authentication-service-api</artifactId>
+            <scope>compile</scope>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-record</artifactId>
             <scope>compile</scope>
         </dependency>

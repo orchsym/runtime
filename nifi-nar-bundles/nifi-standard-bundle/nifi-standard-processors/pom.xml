@@ -54,6 +54,11 @@
         </dependency>
         <dependency>
             <groupId>org.apache.nifi</groupId>
+            <artifactId>nifi-authentication-service-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-flowfile-packager</artifactId>
             <version>1.7.1-SNAPSHOT</version>
         </dependency>

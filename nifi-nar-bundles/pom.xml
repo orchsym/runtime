@@ -219,6 +219,12 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.nifi</groupId>
+                <artifactId>nifi-authentication-service-api</artifactId>
+                <version>${project.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.nifi</groupId>
                 <artifactId>nifi-kerberos-credentials-service-api</artifactId>
                 <version>1.7.1-SNAPSHOT</version>
                 <scope>provided</scope>

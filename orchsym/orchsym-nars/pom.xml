@@ -31,6 +31,12 @@
 		</dependency>
 		<dependency>
 			<groupId>org.apache.nifi</groupId>
+			<artifactId>nifi-authentication-service-nar</artifactId>
+			<version>${nifi.version}</version>
+			<type>nar</type>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.nifi</groupId>
 			<artifactId>nifi-orchsym-iaa-providers-nar</artifactId>
 			<version>${nifi.version}</version>
 			<type>nar</type>
