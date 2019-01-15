@@ -288,6 +288,7 @@ public class ValidationResource extends ApplicationResource {
     }
 
     public void setFlowController(FlowController flowController) {
+        super.setFlowController(flowController);
         this.flowController = flowController;
     }
 
