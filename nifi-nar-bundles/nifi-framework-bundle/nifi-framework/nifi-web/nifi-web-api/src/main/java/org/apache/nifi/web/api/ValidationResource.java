@@ -16,22 +16,15 @@
  */
 package org.apache.nifi.web.api;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import org.apache.nifi.controller.FlowController;
-import org.apache.nifi.controller.status.RunStatus;
-import org.apache.nifi.web.NiFiServiceFacade;
-import org.apache.nifi.web.ResourceNotFoundException;
-import org.apache.nifi.web.Revision;
-import org.apache.nifi.web.api.entity.ProcessorEntity;
-import org.apache.nifi.web.api.entity.ProcessGroupEntity;
-import org.apache.nifi.web.api.dto.ProcessorDTO;
-import org.apache.nifi.web.api.dto.ProcessGroupDTO;
-import org.apache.nifi.web.api.dto.FlowSnippetDTO;
-import org.apache.nifi.util.FormatUtils;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -41,28 +34,36 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 
-import java.util.List;
-import java.util.Set;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.nifi.controller.FlowController;
+import org.apache.nifi.controller.status.RunStatus;
+import org.apache.nifi.scheduling.SchedulingStrategy;
+import org.apache.nifi.util.FormatUtils;
+import org.apache.nifi.web.NiFiServiceFacade;
+import org.apache.nifi.web.ResourceNotFoundException;
+import org.apache.nifi.web.Revision;
+import org.apache.nifi.web.api.dto.FlowSnippetDTO;
+import org.apache.nifi.web.api.dto.ProcessGroupDTO;
+import org.apache.nifi.web.api.dto.ProcessorConfigDTO;
+import org.apache.nifi.web.api.dto.ProcessorDTO;
+import org.apache.nifi.web.api.entity.ProcessGroupEntity;
+import org.apache.nifi.web.api.entity.ProcessorEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonArray;
 import com.google.gson.reflect.TypeToken;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 /**
  * RESTful endpoint for retrieving a Processor or Process Group's validation informations.
@@ -117,7 +118,7 @@ public class ValidationResource extends ApplicationResource {
             return Collections.emptyList();
         }
         List<Map<String, String>> resultArr = new ArrayList<>();
-        
+
         resultArr.addAll(retrieveProcessor(blacklist, id));
 
         // snippet, select the processor and group
@@ -209,7 +210,12 @@ public class ValidationResource extends ApplicationResource {
         if (!blacklist.contains(typeName)) { // 不在黑名单中，忽略
             return null;
         }
-        String schedulingPeriod = entity.getComponent().getConfig().getSchedulingPeriod();
+        final ProcessorConfigDTO config = entity.getComponent().getConfig();
+        // ignore for others, except time driven
+        if (!SchedulingStrategy.TIMER_DRIVEN.name().equals(config.getSchedulingStrategy())) {
+            return null;
+        }
+        String schedulingPeriod = config.getSchedulingPeriod();
         long schedulingNanos = 0L;
         if (StringUtils.isNotBlank(schedulingPeriod)) {
             schedulingNanos = FormatUtils.getTimeDuration(schedulingPeriod, TimeUnit.SECONDS);
