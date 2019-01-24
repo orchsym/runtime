@@ -177,7 +177,6 @@ public class HandleHttpRequest extends AbstractProcessor {
                     + "specified and the path of the HTTP Requests does not match this Regular Expression, the Processor will respond with a " //
                     + "404: NotFound") //
             .required(true) //
-            .defaultValue("/")
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR) //
             .expressionLanguageSupported(ExpressionLanguageScope.NONE) //
             .build();

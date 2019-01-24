@@ -84,6 +84,7 @@ public class TestHandleHttpRequest {
     public void testRequestAddedToService() throws InitializationException, MalformedURLException, IOException, InterruptedException {
         final TestRunner runner = TestRunners.newTestRunner(HandleHttpRequest.class);
         runner.setProperty(HandleHttpRequest.PORT, "0");
+        runner.setProperty(HandleHttpRequest.PATH_REGEX,"/my/path");
 
         final MockHttpContextMap contextMap = new MockHttpContextMap();
         runner.addControllerService("http-context-map", contextMap);
@@ -144,6 +145,7 @@ public class TestHandleHttpRequest {
     public void testFailToRegister() throws InitializationException, MalformedURLException, IOException, InterruptedException {
         final TestRunner runner = TestRunners.newTestRunner(HandleHttpRequest.class);
         runner.setProperty(HandleHttpRequest.PORT, "0");
+        runner.setProperty(HandleHttpRequest.PATH_REGEX,"/my/path");
 
         final MockHttpContextMap contextMap = new MockHttpContextMap();
         runner.addControllerService("http-context-map", contextMap);
@@ -207,6 +209,7 @@ public class TestHandleHttpRequest {
     public void testSecure() throws InitializationException {
         final TestRunner runner = TestRunners.newTestRunner(HandleHttpRequest.class);
         runner.setProperty(HandleHttpRequest.PORT, "0");
+        runner.setProperty(HandleHttpRequest.PATH_REGEX,"/my/path");
 
         final MockHttpContextMap contextMap = new MockHttpContextMap();
         runner.addControllerService("http-context-map", contextMap);

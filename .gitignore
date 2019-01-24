@@ -9,7 +9,7 @@ nb-configuration.xml
 .metadata
 .recommenders
 .factorypath
-.vscode
+.vscode/
 
 # Intellij
 .idea/
