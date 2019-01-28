@@ -1180,7 +1180,7 @@ nf._ = (function () {
         "nf-actions.Header6": "粘贴错误",
         "nf-actions.EmptyQueue": "清空队列",
         "nf-actions.Message6": "是否确定要清空队列？所有队列里的流文件将被移除.",
-        "nf-actions.Empty": "空",
+        "nf-actions.Empty": "清空",
         "nf-actions.Stop": "停止",
         "nf-actions.Message7": " 被从队列里移除.",
         "nf-actions.Message8": "没有流文件被移除.",

@@ -155,12 +155,10 @@ public class LogMessage extends AbstractProcessor {
                 break;
         }
 
-        if (!isLogLevelEnabled) {
-            transferChunk(session);
-            return;
+        if (isLogLevelEnabled) {
+            processFlowFile(logger, logLevel, flowFile, context);
         }
 
-        processFlowFile(logger, logLevel, flowFile, context);
         session.transfer(flowFile, REL_SUCCESS);
     }
 
@@ -199,13 +197,6 @@ public class LogMessage extends AbstractProcessor {
                 break;
             default:
                 logger.debug(messageToWrite);
-        }
-    }
-
-    private void transferChunk(final ProcessSession session) {
-        final List<FlowFile> flowFiles = session.get(CHUNK_SIZE);
-        if (!flowFiles.isEmpty()) {
-            session.transfer(flowFiles, REL_SUCCESS);
         }
     }
 
