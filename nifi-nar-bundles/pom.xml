@@ -98,6 +98,7 @@
         <module>nifi-mapper-bundle</module>
         <module>nifi-store-procedure-bundle</module>
         <module>orchsym-attributes-bundle</module>
+        <module>orchsym-json-xml-bundle</module>
     </modules>
     <build>
         <plugins>

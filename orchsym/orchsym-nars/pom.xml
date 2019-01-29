@@ -66,6 +66,12 @@
 			<version>${project.version}</version>
 			<type>nar</type>
 		</dependency>
+		<dependency>
+			<groupId>com.orchsym.processor</groupId>
+			<artifactId>orchsym-json-xml-nar</artifactId>
+			<version>${project.version}</version>
+			<type>nar</type>
+		</dependency>
 	</dependencies>
 
 </project>
