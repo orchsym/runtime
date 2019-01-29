@@ -25,9 +25,14 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.io.DatumReader;
 import org.apache.nifi.web.ViewableContent.DisplayMode;
+import org.apache.nifi.stream.io.StreamUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
+import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -43,12 +48,18 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.StringReader;
 import java.util.HashSet;
 import java.util.Set;
 
 public class StandardContentViewerController extends HttpServlet {
 
+    private static final Logger logger = LoggerFactory.getLogger(StandardContentViewerController.class);
+
     private static final Set<String> supportedMimeTypes = new HashSet<>();
+
+    //1MB，最多显示的字节数，防止buffer过大造成页面卡顿。
+    private final static int MAX_BUFFER_LENGTH = 1024 * 1024;
 
     static {
         supportedMimeTypes.add("application/json");
@@ -74,38 +85,41 @@ public class StandardContentViewerController extends HttpServlet {
 
         // handle json/xml specifically, treat others as plain text
         String contentType = content.getContentType();
+        byte[] byteContent = getLimitContentBytes(content.getContentStream());
         if (supportedMimeTypes.contains(contentType)) {
             final String formatted;
-
             // leave the content alone if specified
             if (DisplayMode.Original.equals(content.getDisplayMode())) {
-                formatted = content.getContent();
+                formatted = new String(byteContent);
             } else {
                 if ("application/json".equals(contentType)) {
                     // format json
-                    final ObjectMapper mapper = new ObjectMapper();
-                    final Object objectJson = mapper.readValue(content.getContentStream(), Object.class);
-                    formatted = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectJson);
+                    String contentStr = new String(byteContent);
+                    formatted = prettyPrintJSONAsString(contentStr);
                 } else if ("application/xml".equals(contentType) || "text/xml".equals(contentType)) {
                     // format xml
                     final StringWriter writer = new StringWriter();
+                    if (byteContent.length < MAX_BUFFER_LENGTH) {
+                        String contentStr = new String(byteContent);
+                        try {
+                            final StreamSource source = new StreamSource(new StringReader(contentStr));
+                            final StreamResult result = new StreamResult(writer);
 
-                    try {
-                        final StreamSource source = new StreamSource(content.getContentStream());
-                        final StreamResult result = new StreamResult(writer);
+                            final TransformerFactory transformFactory = TransformerFactory.newInstance();
+                            final Transformer transformer = transformFactory.newTransformer();
+                            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+                            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 
-                        final TransformerFactory transformFactory = TransformerFactory.newInstance();
-                        final Transformer transformer = transformFactory.newTransformer();
-                        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-                        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-
-                        transformer.transform(source, result);
-                    } catch (final TransformerFactoryConfigurationError | TransformerException te) {
-                        throw new IOException("Unable to transform content as XML: " + te, te);
+                            transformer.transform(source, result);
+                        } catch (final TransformerFactoryConfigurationError | TransformerException te) {
+                            throw new IOException("Unable to transform content as XML: " + te, te);
+                        }
+                        // get the transformed xml
+                        formatted = writer.toString();
+                    } else {
+                        //ontentStr's length larger than expected, do not transform to xml
+                        formatted = new String(byteContent);
                     }
-
-                    // get the transformed xml
-                    formatted = writer.toString();
                 } else if ("application/avro-binary".equals(contentType) || "avro/binary".equals(contentType) || "application/avro+binary".equals(contentType)) {
                     final StringBuilder sb = new StringBuilder();
                     sb.append("[");
@@ -126,33 +140,32 @@ public class StandardContentViewerController extends HttpServlet {
                     genericData.addLogicalTypeConversion(new TimeConversions.TimeConversion());
                     genericData.addLogicalTypeConversion(new TimeConversions.TimestampConversion());
                     final DatumReader<GenericData.Record> datumReader = new GenericDatumReader<>(null, null, genericData);
-                    try (final DataFileStream<GenericData.Record> dataFileReader = new DataFileStream<>(content.getContentStream(), datumReader)) {
-                        while (dataFileReader.hasNext()) {
-                            final GenericData.Record record = dataFileReader.next();
-                            final String formattedRecord = genericData.toString(record);
-                            sb.append(formattedRecord);
-                            sb.append(",");
-                            // Do not format more than 10 MB of content.
-                            if (sb.length() > 1024 * 1024 * 2) {
-                                break;
+                    if (byteContent.length < MAX_BUFFER_LENGTH) {
+                        try (final DataFileStream<GenericData.Record> dataFileReader = new DataFileStream<>(new ByteArrayInputStream(byteContent), datumReader)) {
+                            while (dataFileReader.hasNext()) {
+                                final GenericData.Record record = dataFileReader.next();
+                                final String formattedRecord = genericData.toString(record);
+                                sb.append(formattedRecord);
+                                sb.append(",");
                             }
                         }
+                        if (sb.length() > 1) {
+                            sb.deleteCharAt(sb.length() - 1);
+                        }
+                        sb.append("]");
+                        final String json = sb.toString();
+
+                        final ObjectMapper mapper = new ObjectMapper();
+                        final Object objectJson = mapper.readValue(json, Object.class);
+                        formatted = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectJson);
+                    } else {
+                        //contentStr's length larger than expected, do not transform to json
+                        formatted = new String(byteContent);;
                     }
-
-                    if (sb.length() > 1) {
-                        sb.deleteCharAt(sb.length() - 1);
-                    }
-                    sb.append("]");
-                    final String json = sb.toString();
-
-                    final ObjectMapper mapper = new ObjectMapper();
-                    final Object objectJson = mapper.readValue(json, Object.class);
-                    formatted = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectJson);
-
                     contentType = "application/json";
                 } else {
                     // leave plain text alone when formatting
-                    formatted = content.getContent();
+                    formatted = new String(byteContent);
                 }
             }
 
@@ -162,7 +175,101 @@ public class StandardContentViewerController extends HttpServlet {
             request.getRequestDispatcher("/WEB-INF/jsp/codemirror.jsp").include(request, response);
         } else {
             final PrintWriter out = response.getWriter();
-            out.println("Unexpected content type: " + contentType);
+        }
+    }
+
+    private byte[] getLimitContentBytes(InputStream inputStream) {
+
+        byte[] bytes = null;
+        try {
+            final byte[] buffer = new byte[MAX_BUFFER_LENGTH];
+            final int read = StreamUtils.fillBuffer(inputStream, buffer, false);
+            // trim the byte array if necessary
+            bytes = buffer;
+            if (read != buffer.length) {
+                bytes = new byte[read];
+                System.arraycopy(buffer, 0, bytes, 0, read);
+            }
+        } catch (Exception e) {
+            logger.error("fail to getLimitContentBytes: ", e);
+        }
+        return bytes;
+    }
+
+    public String prettyPrintJSONAsString(String jsonString) {
+        int tabCount = 0;
+        StringBuffer prettyPrintJson = new StringBuffer();
+        String lineSeparator = "\r\n";
+        String tab = "  ";
+        boolean ignoreNext = false;
+        boolean inQuote = false;
+        char character;
+        //遍历每个字符，格式化输出
+        for (int i = 0; i < jsonString.length(); i++) {
+            character = jsonString.charAt(i);
+            if (inQuote) {
+                if (ignoreNext) {
+                    ignoreNext = false;
+                } else if (character == '"') {
+                    inQuote = !inQuote;
+                }
+                prettyPrintJson.append(character);
+            } else {
+                if (ignoreNext ? ignoreNext = !ignoreNext : ignoreNext);
+                switch (character) {
+                case '[':
+                    ++tabCount;
+                    prettyPrintJson.append(character);
+                    prettyPrintJson.append(lineSeparator);
+                    printIndent(tabCount, prettyPrintJson, tab);
+                    break;
+                case ']':
+                    --tabCount;
+                    prettyPrintJson.append(lineSeparator);
+                    printIndent(tabCount, prettyPrintJson, tab);
+                    prettyPrintJson.append(character);
+                    break;
+                case '{':
+                    ++tabCount;
+                    prettyPrintJson.append(character);
+                    prettyPrintJson.append(lineSeparator);
+                    printIndent(tabCount, prettyPrintJson, tab);
+                    break;
+                case '}':
+                    --tabCount;
+                    prettyPrintJson.append(lineSeparator);
+                    printIndent(tabCount, prettyPrintJson, tab);
+                    prettyPrintJson.append(character);
+                    break;
+                case '"':
+                    inQuote = !inQuote;
+                    prettyPrintJson.append(character);
+                    break;
+
+                case ',':
+                    prettyPrintJson.append(character);
+                    prettyPrintJson.append(lineSeparator);
+                    printIndent(tabCount, prettyPrintJson, tab);
+                    break;
+                case ':':
+                    prettyPrintJson.append(character + " ");
+                    break;
+                case '\\':
+                    prettyPrintJson.append(character);
+                    ignoreNext = true;
+                    break;
+                default:
+                    prettyPrintJson.append(character);
+                    break;
+                }
+            }
+        }
+        return prettyPrintJson.toString();
+    }
+
+    private void printIndent(int count, StringBuffer stringBuffer, String indent) {
+        for (int i = 0; i < count; i++) {
+            stringBuffer.append(indent);
         }
     }
 }

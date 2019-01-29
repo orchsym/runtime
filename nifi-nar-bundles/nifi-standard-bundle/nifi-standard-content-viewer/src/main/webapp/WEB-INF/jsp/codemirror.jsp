@@ -23,6 +23,7 @@
 <textarea id="codemirror-content"><%= request.getAttribute("content") == null ? "" : org.apache.nifi.util.EscapeUtils.escapeHtml(request.getAttribute("content").toString()) %></textarea>
 <span id="codemirror-mode" style="display: none;"><%= org.apache.nifi.util.EscapeUtils.escapeHtml(request.getAttribute("mode").toString()) %></span> 
 
+<div id="truncation-message" style="position: absolute;left: 100px;bottom: 30px;">Showing up to 1 MB</div>
 <script type="text/javascript">
     $(document).ready(function() {
         var mode = $('#codemirror-mode').text();
