@@ -34,6 +34,8 @@ mvn package -Dheadless
 
 由于该库基于nifi，则版本保留与官方同步的版本规范，比如1.7.1-SNAPSHOT。发布产品将SNAPSHOT替换为产品版本号2.2.0,最终nifi的打包版本号将为1.7.1-2.2.0。
 
+在打包发布版本之前，需先修改Release Notes文件`orchsym/orchsym-resources/src/main/resources/Release Notes.md`，在JIRA上由Sprint生成的“Release Notes”筛选后拷贝到该文件中，并提交修改。
+
 ### 发布流程
 1.基于master创建一个分支，比如release/2.2.0:
 
@@ -59,12 +61,12 @@ git push origin 2.2.0
 
 **注**：可先只提交，然后打包，确认没有问题后，再打tag，推送tag。
 
-5.最后执行打包：
+5.执行打包：
 
 ```
-mvn package
+mvn clean install
 ```
 
 如果由于JUnit失败导致，打包不成功，可添加`-DskipTests`，跳过执行单元测试，但仍旧进行编译。
 
-
+6.最后回到master，将`orchsym.product.version` 属性修改为 `2.3.0-SNAPSHOT`，并提交，为下次发布做好准备。
