@@ -3,8 +3,29 @@
 ----------------------------
 # Version 2.2.0
 
+发行于2019-01-30， 2019新春祝福版
+
+## 新功能
+ - [ORCHSYM-2473] - [Processor]提供简便的XML与JSON互转组件
+ - [ORCHSYM-2558] - [Processor]提供简便的XML与JSON抽取成属性
+ - [ORCHSYM-2845] - 升级集成平台到NiFi 1.7.1正式版
+ - [ORCHSYM-2880] - 编排平台需要支持 OEM 配置
+ - [ORCHSYM-2998] - 分离集成平台CE和EE代码库
+
+## 改进
+ - [ORCHSYM-2652] - 支持队列查看文件内容或格式化支持最大行数或record记录数
+ - [ORCHSYM-2700] - 升级集成平台中组件Groovy版本
+ - [ORCHSYM-2964] - HandleHttpRequest 组件将 allowed path 设置为必填项
+ - [ORCHSYM-2973] - HandleHTTPRequest组件功能增强
+ - [ORCHSYM-3036] - 提升编排平台数据存储配置默认值
+ - [ORCHSYM-3064] - 支持Dubbox
 
 
+## 缺陷
+ - [ORCHSYM-2968] - host:8443/nifi-api/apis 接口报 500 错误
+ - [ORCHSYM-3000] - 无法全部启动当前模块的所有组件
+ - [ORCHSYM-3063] - 组件CRON 设置始终无效
+ - [ORCHSYM-3098] - LogMessage 不能正常处理Flowfile
 
 ----------------------------
 # Version 2.1.0
