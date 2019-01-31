@@ -488,6 +488,7 @@ public class StatsResource extends ApplicationResource {
 
         List<ProcessorCounterDTO> processorCounterList = new ArrayList<>();
         processors.stream() //
+                .filter(p -> p.getComponent() != null && p.getComponent().getType() != null)//
                 .collect(Collectors.groupingBy(e -> e.getComponent().getType(), Collectors.counting())).entrySet() //
                 .forEach(entry -> {
                     ProcessorCounterDTO processorCounterDTO = new ProcessorCounterDTO();
