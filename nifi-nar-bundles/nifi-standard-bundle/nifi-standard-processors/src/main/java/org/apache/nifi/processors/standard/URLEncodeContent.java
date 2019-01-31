@@ -46,7 +46,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 
-@Marks(categories={"数据处理/数据抓取", "转换控制/数据转换"}, createdDate="2018-09-02")
+@Marks(categories={"Data Process/Fetch", "Convert & Control/Convert"}, createdDate="2018-09-02")
 @Tags({"encode", "urlencode"})
 @CapabilityDescription("Encodes or decodes json content to and from urlencode, the content must be json")
 @InputRequirement(Requirement.INPUT_REQUIRED)

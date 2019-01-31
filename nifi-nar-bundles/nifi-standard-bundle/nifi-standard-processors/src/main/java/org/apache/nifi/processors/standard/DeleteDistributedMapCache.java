@@ -51,7 +51,7 @@ import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
-@Marks(categories={"数据处理/消息事件", "转换控制/数据转换"}, createdDate="2018-09-27")
+@Marks(categories={"Data Process/Message", "Convert & Control/Convert"}, createdDate="2018-09-27")
 @EventDriven
 @SupportsBatching
 @Tags({"map", "cache", "delete", "distributed"})

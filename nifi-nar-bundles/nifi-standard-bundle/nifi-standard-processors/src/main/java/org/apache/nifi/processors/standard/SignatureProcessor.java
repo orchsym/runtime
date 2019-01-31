@@ -68,7 +68,7 @@ import java.security.spec.X509EncodedKeySpec;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-@Marks(categories={"转换控制/数据转换", "网络/网络通信"}, createdDate="2018-09-17")
+@Marks(categories={"Convert & Control/Convert", "Network/Communication"}, createdDate="2018-09-17")
 @Tags({"sign", "encryption"})
 @CapabilityDescription("Digitally sign the specified content")
 public class SignatureProcessor extends AbstractProcessor {

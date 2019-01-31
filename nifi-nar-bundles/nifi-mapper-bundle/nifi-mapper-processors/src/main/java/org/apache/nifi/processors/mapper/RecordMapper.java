@@ -71,7 +71,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 
 @SideEffectFree
 @SupportsBatching
-@Marks(categories={"转换控制/数据转换"}, createdDate="2018-05-10")
+@Marks(categories={"Convert & Control/Convert"}, createdDate="2018-05-10")
 @Tags({ "map", "avro", "json", "xml", "flow" })
 @InputRequirement(Requirement.INPUT_REQUIRED)
 @CapabilityDescription("Enable to map the flows to another one.")

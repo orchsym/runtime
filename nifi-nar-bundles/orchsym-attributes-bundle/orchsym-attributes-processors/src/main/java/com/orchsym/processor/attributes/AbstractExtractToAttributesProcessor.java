@@ -38,6 +38,7 @@ import org.apache.nifi.processor.io.InputStreamCallback;
  */
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public abstract class AbstractExtractToAttributesProcessor extends AbstractProcessor {
+    protected static final String FIELD_SEP = ",";
 
     protected static final PropertyDescriptor RECURSE_CHILDREN = new PropertyDescriptor.Builder()//
             .name("recurse-children")//
@@ -63,20 +64,18 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
     protected static final PropertyDescriptor INCLUDE_FIELDS = new PropertyDescriptor.Builder()//
             .name("include-fields")//
             .displayName("Include Fields")//
-            .description("Include the record fields with seperating via colon ';', If don't set this includes, also no excludes, means include all. and support expression too.")//
+            .description("Include the record fields with seperating via comma '" + FIELD_SEP + "', If don't set this includes, also no excludes, means include all. and support Regex and expression language with flow attributes.")//
             .required(false)//
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES) //
-            .addValidator(Validator.VALID)
-            .build();
+            .addValidator(Validator.VALID).build();
 
     protected static final PropertyDescriptor EXCLUDE_FIELDS = new PropertyDescriptor.Builder()//
             .name("exclude-fields")//
             .displayName("Exclude Fields")//
-            .description("Exclude the record fields with seperating via colon ';'. and support expression too.")//
+            .description("Exclude the record fields with seperating via comma '" + FIELD_SEP + "'. and support Regex and expression language with flow attributes.")//
             .required(false)//
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES) //
-            .addValidator(Validator.VALID)
-            .build();
+            .addValidator(Validator.VALID).build();
 
     protected static final PropertyDescriptor FIELDS_CASE_SENSITIVE = new PropertyDescriptor.Builder()//
             .name("fields-case-sensitive")//
@@ -182,7 +181,7 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
             final String value = property.evaluateAttributeExpressions(flowFile).getValue();
             if (StringUtils.isNotBlank(value)) {
                 List<Pattern> list = new ArrayList<>();
-                for (String one : value.split(";")) {
+                for (String one : value.split(FIELD_SEP)) {
                     if (StringUtils.isNotBlank(one)) {
                         final Pattern pattern = Pattern.compile(one.trim(), fieldsCaseSensitive ? 0 : Pattern.CASE_INSENSITIVE);
                         list.add(pattern);
