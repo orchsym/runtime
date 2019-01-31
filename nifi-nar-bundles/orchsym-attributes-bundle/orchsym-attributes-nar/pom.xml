@@ -24,6 +24,12 @@
 			<artifactId>orchsym-attributes-processors</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.nifi</groupId>
+			<artifactId>nifi-record</artifactId>
+			<version>${project.version}</version>
+			<scope>runtime</scope><!-- 显式依赖，并保证runtime可打包到nar中 -->
+		</dependency>
 	</dependencies>
 
 </project>
