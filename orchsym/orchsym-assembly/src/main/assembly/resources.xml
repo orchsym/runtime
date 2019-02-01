@@ -31,23 +31,6 @@
 				</includes>
 			</unpackOptions>
 		</dependencySet>
-		<dependencySet>
-			<scope>runtime</scope>
-			<outputDirectory>./</outputDirectory>
-			<useProjectArtifact>false</useProjectArtifact>
-			<useTransitiveFiltering>true</useTransitiveFiltering>
-			<useTransitiveDependencies>true</useTransitiveDependencies>
-			<includes>
-				<include>orchsym-resources</include>
-			</includes>
-			<unpack>true</unpack>
-			<unpackOptions>
-				<filtered>false</filtered> <!-- can't filter for pics, else will be broken -->
-				<includes>
-					<include>conf/branding/**</include>
-				</includes>
-			</unpackOptions>
-		</dependencySet>
 
 		<!-- Write out the bin directory contents -->
 		<dependencySet>

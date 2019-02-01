@@ -38,10 +38,6 @@
 		<orchsym.headless>false</orchsym.headless>
 		<orchsym.locale>zh</orchsym.locale>
 
-		<!-- settings for branding.properties -->
-		<orchsym.runtime.name>Orchsym Runtime</orchsym.runtime.name>
-		<orchsym.product.name>Orchsym Studio</orchsym.product.name>
-		<orchsym.support.email>orchsym-support@baishancloud.com</orchsym.support.email>
 	</properties>
 
 	<build>

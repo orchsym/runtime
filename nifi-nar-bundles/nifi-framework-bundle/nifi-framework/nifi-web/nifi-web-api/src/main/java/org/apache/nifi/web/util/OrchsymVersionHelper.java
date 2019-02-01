@@ -15,6 +15,7 @@ import org.apache.nifi.nar.NarClassLoaders;
 public class OrchsymVersionHelper {
     public static final OrchsymVersionHelper INSTANCE = new OrchsymVersionHelper();
     private final static String SNAPSHOT = "SNAPSHOT";
+    private final static String MASTER = "master";
 
     private String nifiVersion;
     private String orchsymVersion;
@@ -59,8 +60,14 @@ public class OrchsymVersionHelper {
             orchsymVersion = nifiVersion;
         }
 
-        if (buildRevision != null && (nifiVersion.contains(SNAPSHOT) || orchsymVersion.contains(SNAPSHOT)))
-            orchsymVersion += '-' + buildRevision;
+        if (buildRevision != null) {
+            if (nifiVersion.contains(SNAPSHOT) || orchsymVersion.contains(SNAPSHOT)) {
+                orchsymVersion += '-' + buildRevision;
+            }
+            if (nifiVersion.contains(MASTER) || orchsymVersion.contains(MASTER)) {
+                orchsymVersion += '-' + buildRevision;
+            }
+        }
 
     }
 

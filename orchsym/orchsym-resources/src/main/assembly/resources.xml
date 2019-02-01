@@ -28,14 +28,6 @@
 				<include>*.md</include>
 			</includes>
 		</fileSet>
-		<fileSet>
-			<directory>src/main/resources/conf/branding</directory>
-			<outputDirectory>conf/branding</outputDirectory>
-			<filtered>false</filtered><!-- can't filter for pics, else will be broken -->
-			<includes>
-				<include>*.*</include>
-			</includes>
-		</fileSet>
 		<fileSet><!-- Overwrite the sh with file mode -->
 			<directory>src/main/resources/bin</directory>
 			<outputDirectory>bin</outputDirectory>

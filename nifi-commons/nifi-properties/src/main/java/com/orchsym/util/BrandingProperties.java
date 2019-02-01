@@ -65,10 +65,13 @@ public class BrandingProperties {
     }
 
     private void load() {
-        try (FileInputStream brandingStream = new FileInputStream(new File(confDir, FILE_NAME))) {
-            rawProperties.load(brandingStream);
-        } catch (IOException e) {
-            LOGGER.error("Can't load " + FILE_NAME, e);
+        final File brandingConf = new File(confDir, FILE_NAME);
+        if (brandingConf.exists()) {
+            try (FileInputStream brandingStream = new FileInputStream(brandingConf)) {
+                rawProperties.load(brandingStream);
+            } catch (IOException e) {
+                LOGGER.error("load {} failure" + FILE_NAME, e);
+            }
         }
     }
 

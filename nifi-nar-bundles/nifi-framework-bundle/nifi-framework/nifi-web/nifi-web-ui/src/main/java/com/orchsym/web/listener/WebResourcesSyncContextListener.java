@@ -10,6 +10,7 @@ import com.orchsym.util.BrandingProperties;
 /**
  * @author GU Guoqiang
  *
+ *         FIXME 可能需要弃用该方式，因为ORCHSYM-2843将前后端分离了，不能用简单的同步方式, 可能直接修改前端中的图片
  */
 public class WebResourcesSyncContextListener implements ServletContextListener {
     private static final String IMG_FOLDER = "images";
