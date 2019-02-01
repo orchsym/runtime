@@ -97,18 +97,6 @@ public class StatsResource extends ApplicationResource {
     }
 
     /**
-     * Authorizes access to the flow.
-     */
-    private void authorizeFlow() {
-        // FIXME, don't check the auth, should be available always
-
-        // serviceFacade.authorizeAccess(lookup -> {
-        // final Authorizable flow = lookup.getFlow();
-        // flow.authorize(authorizer, RequestAction.READ, NiFiUserUtils.getNiFiUser());
-        // });
-    }
-
-    /**
      * Retrieves all the counters of services, processors.
      *
      * @return A StatsEntity.
@@ -126,9 +114,6 @@ public class StatsResource extends ApplicationResource {
             @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
     })
     public Response getCounters() {
-
-        authorizeFlow();
-
         if (isReplicateRequest()) {
             return replicate(HttpMethod.GET);
         }
@@ -218,8 +203,6 @@ public class StatsResource extends ApplicationResource {
             @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
     })
     public Response getProcessors() {
-        authorizeFlow();
-
         if (isReplicateRequest()) {
             return replicate(HttpMethod.GET);
         }
@@ -250,8 +233,6 @@ public class StatsResource extends ApplicationResource {
             @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
     })
     public Response getServices() {
-        authorizeFlow();
-
         if (isReplicateRequest()) {
             return replicate(HttpMethod.GET);
         }
@@ -282,8 +263,6 @@ public class StatsResource extends ApplicationResource {
             @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
     })
     public Response getVars() {
-        authorizeFlow();
-
         if (isReplicateRequest()) {
             return replicate(HttpMethod.GET);
         }
@@ -551,6 +530,9 @@ public class StatsResource extends ApplicationResource {
             @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
     })
     public Response generateMarkdown(@QueryParam("lang") final String lang, @QueryParam("country") final String country, @QueryParam("all") final String all) {
+        if (isReplicateRequest()) {
+            return replicate(HttpMethod.GET);
+        }
         File mdOutputDir = new File("./work/md");
 
         return doGenerator(lang, country, "com.orchsym.docs.generator.md.MdDocsGenerator", mdOutputDir, all);
@@ -567,6 +549,9 @@ public class StatsResource extends ApplicationResource {
             @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
     })
     public Response generateHtmlDoc(@QueryParam("lang") final String lang, @QueryParam("country") final String country, @QueryParam("all") final String all) {
+        if (isReplicateRequest()) {
+            return replicate(HttpMethod.GET);
+        }
         File htmlOutputDir = new File("./work/html");
 
         return doGenerator(lang, country, "com.orchsym.docs.generator.html.HtmlDocsGenerator", htmlOutputDir, all);
@@ -583,6 +568,9 @@ public class StatsResource extends ApplicationResource {
             @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
     })
     public Response generateI18n(@QueryParam("lang") final String lang, @QueryParam("country") final String country, @QueryParam("all") final String all) {
+        if (isReplicateRequest()) {
+            return replicate(HttpMethod.GET);
+        }
         File i18nOutputDir = new File("./work/i18n");
 
         return doGenerator(lang, country, "com.orchsym.i18n.messages.generator.MessagesGenerator", i18nOutputDir, all);
@@ -599,6 +587,10 @@ public class StatsResource extends ApplicationResource {
             @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
     })
     public Response generateDocs() {
+        if (isReplicateRequest()) {
+            return replicate(HttpMethod.GET);
+        }
+
         Response response = generateMarkdown(Locale.ENGLISH.getLanguage(), null, Boolean.TRUE.toString());
         if (response.getStatus() != Status.OK.getStatusCode()) {
             return response;
@@ -690,7 +682,7 @@ public class StatsResource extends ApplicationResource {
     public Response verifyDelete(@Context final HttpServletRequest httpServletRequest,
             @ApiParam(value = "The id of processor, or group(remote), or snippet.", required = true) @PathParam("id") final String id) {
         if (isReplicateRequest()) {
-            return replicate(HttpMethod.DELETE);
+            return replicate(HttpMethod.GET);
         }
         Response response = null;
 
