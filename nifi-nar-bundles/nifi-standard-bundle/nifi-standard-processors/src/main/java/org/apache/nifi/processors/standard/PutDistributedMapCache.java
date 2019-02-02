@@ -22,11 +22,15 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.nifi.annotation.behavior.DynamicProperty;
 import org.apache.nifi.annotation.behavior.EventDriven;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
@@ -63,6 +67,7 @@ import org.apache.nifi.processor.util.StandardValidators;
     "'keep original' the entry is not replaced.'")
 @WritesAttribute(attribute = "cached", description = "All FlowFiles will have an attribute 'cached'. The value of this " +
     "attribute is true, is the FlowFile is cached, otherwise false.")
+@DynamicProperty(name = "Defined attribute to put into cache", value = "Define value for attribute to put into cache", expressionLanguageScope = ExpressionLanguageScope.FLOWFILE_ATTRIBUTES, description = "Specifies an attribute for put into cache defined by the Dynamic Property's key and value.")
 @SeeAlso(classNames = {"org.apache.nifi.distributed.cache.client.DistributedMapCacheClientService", "org.apache.nifi.distributed.cache.server.map.DistributedMapCacheServer",
         "org.apache.nifi.processors.standard.FetchDistributedMapCache"})
 public class PutDistributedMapCache extends AbstractProcessor {
@@ -144,6 +149,17 @@ public class PutDistributedMapCache extends AbstractProcessor {
     }
 
     @Override
+    protected PropertyDescriptor getSupportedDynamicPropertyDescriptor(final String propertyDescriptorName) {
+        return new PropertyDescriptor.Builder()
+                .name(propertyDescriptorName)
+                .required(false)
+                .addValidator(StandardValidators.ATTRIBUTE_KEY_PROPERTY_NAME_VALIDATOR)
+                .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+                .dynamic(true)
+                .build();
+    }
+
+    @Override
     public Set<Relationship> getRelationships() {
         return relationships;
     }
@@ -191,22 +207,9 @@ public class PutDistributedMapCache extends AbstractProcessor {
 
             }
 
-            // get flow file content
-            final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-            session.exportTo(flowFile, byteStream);
-            byte[] cacheValue = byteStream.toByteArray();
             final String updateStrategy = context.getProperty(CACHE_UPDATE_STRATEGY).getValue();
-            boolean cached = false;
-
-            if (updateStrategy.equals(CACHE_UPDATE_REPLACE.getValue())) {
-                cache.put(cacheKey, cacheValue, keySerializer, valueSerializer);
-                cached = true;
-            } else if (updateStrategy.equals(CACHE_UPDATE_KEEP_ORIGINAL.getValue())) {
-                final byte[] oldValue = cache.getAndPutIfAbsent(cacheKey, cacheValue, keySerializer, valueSerializer, valueDeserializer);
-                if (oldValue == null) {
-                    cached = true;
-                }
-            }
+            Map<String, byte[]> cacheMap = getCacheMap(context, session, flowFile);
+            boolean cached = putAllCache(updateStrategy, cache, cacheMap);
 
             // set 'cached' attribute
             flowFile = session.putAttribute(flowFile, CACHED_ATTRIBUTE_NAME, String.valueOf(cached));
@@ -252,6 +255,68 @@ public class PutDistributedMapCache extends AbstractProcessor {
         public void serialize(final String value, final OutputStream out) throws SerializationException, IOException {
             out.write(value.getBytes(StandardCharsets.UTF_8));
         }
+    }
+
+    private Map<String, byte[]> getCacheMap(final ProcessContext context, final ProcessSession session, FlowFile flowFile) {
+        Map<String, byte[]> cacheMap = new HashMap<String, byte[]>();
+        final String cacheKey = context.getProperty(CACHE_ENTRY_IDENTIFIER).evaluateAttributeExpressions(flowFile).getValue();
+        // get flow file content
+        final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        session.exportTo(flowFile, byteStream);
+        byte[] cacheValue = byteStream.toByteArray();
+        cacheMap.put(cacheKey, cacheValue);
+        Map<String, byte[]> getDynamicAttributeMap = getDynamicAttributeMap(context, flowFile);
+        cacheMap.putAll(getDynamicAttributeMap);
+        return cacheMap;
+    }
+
+    private Map<String, byte[]> getDynamicAttributeMap(final ProcessContext context, FlowFile flowFile) {
+        Map<String, byte[]> dynamicAttributeMap = new HashMap<String, byte[]>();
+        Map<PropertyDescriptor, String> processorProperties = context.getProperties();
+        for (final Map.Entry<PropertyDescriptor, String> entry : processorProperties.entrySet()) {
+            PropertyDescriptor property = entry.getKey();
+            if (property.isDynamic() && property.isExpressionLanguageSupported()) {
+                String dynamicKey = property.getName();
+                String dynamicValue = context.getProperty(property).evaluateAttributeExpressions(flowFile).getValue();
+                dynamicAttributeMap.put(dynamicKey, dynamicValue.getBytes());
+            }
+        }
+        return dynamicAttributeMap;
+    }
+
+    /**
+     * Put all key-value to cache
+     * */
+    private boolean putAllCache(String updateStrategy, DistributedMapCacheClient cache, Map<String, byte[]> cacheMap) throws IOException {
+        boolean cached = false;
+        boolean first = true;
+        Set<Entry<String, byte[]>> entrySet = cacheMap.entrySet();
+        for (Entry<String, byte[]> entry : entrySet) {
+            String cacheKey = entry.getKey();
+            byte[] cacheValue = entry.getValue();
+            if (cached || first) {
+                first = false;
+                cached = putCache(updateStrategy, cache, cacheKey, cacheValue);
+            }
+        }
+        return cached;
+    }
+
+    /**
+     * Put key-value to cache
+     * */
+    private boolean putCache(String updateStrategy, DistributedMapCacheClient cache, String cacheKey, byte[] cacheValue) throws IOException {
+        boolean cached = false;
+        if (updateStrategy.equals(CACHE_UPDATE_REPLACE.getValue())) {
+            cache.put(cacheKey, cacheValue, keySerializer, valueSerializer);
+            cached = true;
+        } else if (updateStrategy.equals(CACHE_UPDATE_KEEP_ORIGINAL.getValue())) {
+            final byte[] oldValue = cache.getAndPutIfAbsent(cacheKey, cacheValue, keySerializer, valueSerializer, valueDeserializer);
+            if (oldValue == null) {
+                cached = true;
+            }
+        }
+        return cached;
     }
 
 }
