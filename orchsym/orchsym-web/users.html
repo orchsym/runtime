@@ -1,0 +1,104 @@
+<!DOCTYPE html><html><head><title>Users</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="shortcut icon" href="images/orchsym16.ico"/><link rel="stylesheet" href="assets/reset.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/main.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/common-ui.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/banner.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/dialog.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/message-pane.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/users.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/tabbs/jquery.tabbs.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/combo/jquery.combo.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/modal/jquery.modal.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/qtip2/dist/jquery.qtip.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/jquery-ui-dist/jquery-ui.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/slickgrid/slick.grid.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/slick-nifi-theme.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="fonts/flowfont/flowfont.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/font-awesome/css/font-awesome.min.css?1.7.0-SNAPSHOT" type="text/css" /><script type="text/javascript" src="assets/d3/build/d3.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/jquery/dist/jquery.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/jquery-ui-dist/jquery-ui.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.base64.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.center.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/tabbs/jquery.tabbs.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/combo/jquery.combo.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/modal/jquery.modal.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.ellipsis.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.each.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/qtip2/dist/jquery.qtip.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/lib/jquery.event.drag-2.3.0.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.cellrangeselector.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.cellselectionmodel.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.rowselectionmodel.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.autotooltips.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.formatters.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.editors.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.dataview.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.core.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.grid.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-namespace.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-ng-namespace.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/globalization/resources.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-client.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-dialog.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-storage.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-common.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-error-handler.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-universal-capture.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-ajax-setup.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/users/nf-users-table.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/users/nf-users.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/propertytable/jquery.propertytable.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/nfeditor/languages/nfel.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/nfeditor/jquery.nfeditor.js?1.7.0-SNAPSHOT"></script></head><body ng-controller="ngSummaryAppCtrl"><div id="message-pane" class="message-pane hidden">
+    <div class="message-pane-message-box">
+        <div id="message-title" class="message-pane-title"></div>
+        <div id="user-links-container">
+            <ul class="links">
+                <li id="user-logout-container" style="display: none;">
+                    <span id="user-logout" class="link">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.message-pane.logout"] }}</span>
+                </li>
+                <li>
+                    <span id="user-home" class="link">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.message-pane.userhome"] }}</span>
+                </li>
+            </ul>
+        </div>
+        <div id="message-content" class="message-pane-content"></div>
+    </div>
+</div>
+
+<div id="banner-header" class="utility-banner-header"></div>
+<div id="banner-footer" class="utility-banner-footer"></div>
+<div id="nf-ok-dialog" class="hidden medium-short-dialog">
+    <div class="dialog-content">
+        <div id="nf-ok-dialog-content"></div>
+    </div>
+</div>
+<div id="user-dialog" class="hidden">
+    <div class="dialog-content">
+        <div class="setting">
+            <div class="setting-field">
+                <input id="individual-radio-button" type="radio" name="userOrGroup" value="individual" checked="checked"/> {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.users.user-dialog.Individual"] }}
+                <input id="group-radio-button" type="radio" name="userOrGroup" value="group" style="margin-left: 20px;"/> {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.users.user-dialog.Group"] }}
+            </div>
+            <div class="clear"></div>
+        </div>
+        <div class="setting">
+            <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.users.user-dialog.Identity"] }}</div>
+            <div class="setting-field">
+                <span id="user-id-edit-dialog" class="hidden"></span>
+                <input type="text" id="user-identity-edit-dialog"/>
+            </div>
+            <div class="clear"></div>
+        </div>
+        <div id="user-groups" class="setting">
+            <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.users.user-dialog.user-groups"] }}</div>
+            <div class="setting-field">
+                <ul id="available-groups" class="usersGroupsList"></ul>
+            </div>
+            <div class="clear"></div>
+        </div>
+        <div id="group-members" class="setting hidden">
+            <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.users.user-dialog.group-members"] }}</div>
+            <div class="setting-field">
+                <ul id="available-users" class="usersGroupsList"></ul>
+            </div>
+            <div class="clear"></div>
+        </div>
+    </div>
+</div>
+<div id="user-policies-dialog" class="hidden large-dialog">
+    <div class="dialog-content">
+        <div class="setting">
+            <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.users.user-policies-dialog.User"] }}</div>
+            <div class="setting-field">
+                <div id="policies-dialog-user-name"></div>
+            </div>
+        </div>
+        
+        <div id="user-policy-message" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.users.user-policies-dialog.user-policy-message"] }}">
+            {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.users.user-policies-dialog.user-policy-message"] }}
+        </div>
+        <div id="user-policies-table"></div>
+    </div>
+</div>
+<div id="user-delete-dialog" class="hidden">
+    <div class="dialog-content">
+        <input type="hidden" id="user-id-delete-dialog"/>
+        {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.users.user-delete-dialog.user-id-delete-dialog"] }} '<span id="user-identity-delete-dialog"></span>'?
+    </div>
+</div>
+<div id="users">
+    <div id="users-header-and-filter">
+        <div id="users-header-text">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.users.users-content.users-header-text"] }}</div>
+    </div>
+    <div id="users-filter-controls">
+        <div id="users-filter-status" class="filter-status">
+            {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.users.users-content.Displaying"] }}&nbsp;<span id="displayed-users"></span>&nbsp;{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.users.users-content.Of"] }}&nbsp;<span id="total-users"></span>
+        </div>
+        <div id="users-filter-container">
+        
+            <input type="text" placeholder="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.users.users-content.users-filter-container"] }}" id="users-filter" class="filter"/>
+            <div id="users-filter-type" class="filter-type"></div>
+        </div>
+        <button id="new-user-button" class="fa fa-user-plus"></button>
+        <div class="clear"></div>
+    </div>
+    <div id="users-table"></div>
+</div>
+<div id="users-refresh-container">
+	
+    <button id="user-refresh-button" class="refresh-button pointer fa fa-refresh" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.users.users-content.Refresh"] }}"></button>
+    <div id="users-last-refreshed-container" class="last-refreshed-container">
+        {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.users.users-content.LastUpdated"] }}:&nbsp;<span id="users-last-refreshed" class="value-color"></span>
+    </div>
+    <div id="users-loading-container" class="loading-container"></div>
+</div></body></html>

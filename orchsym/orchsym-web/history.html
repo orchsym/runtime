@@ -1,0 +1,157 @@
+<!DOCTYPE html><html><head><title>History</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="shortcut icon" href="images/orchsym16.ico"/><link rel="stylesheet" href="assets/reset.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/main.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/common-ui.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/banner.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/dialog.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/message-pane.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/history.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/combo/jquery.combo.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/modal/jquery.modal.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/qtip2/dist/jquery.qtip.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/jquery-ui-dist/jquery-ui.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/slickgrid/slick.grid.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/slick-nifi-theme.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="fonts/flowfont/flowfont.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/angular-material/angular-material.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/font-awesome/css/font-awesome.min.css?1.7.0-SNAPSHOT" type="text/css" /><script type="text/javascript" src="assets/jquery/dist/jquery.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.base64.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.center.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/modal/jquery.modal.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/combo/jquery.combo.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.ellipsis.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.each.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/jquery-ui-dist/jquery-ui.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/qtip2/dist/jquery.qtip.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/lib/jquery.event.drag-2.3.0.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.cellrangeselector.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.cellselectionmodel.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.rowselectionmodel.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.autotooltips.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.formatters.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.editors.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.dataview.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.core.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.grid.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-namespace.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/globalization/resources.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-dialog.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-storage.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-common.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-error-handler.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-universal-capture.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-ajax-setup.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-cluster-summary.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/history/nf-history-model.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/history/nf-history-table.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/history/nf-history.js?1.7.0-SNAPSHOT"></script></head><body><div id="message-pane" class="message-pane hidden">
+    <div class="message-pane-message-box">
+        <div id="message-title" class="message-pane-title"></div>
+        <div id="user-links-container">
+            <ul class="links">
+                <li id="user-logout-container" style="display: none;">
+                    <span id="user-logout" class="link">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.message-pane.logout"] }}</span>
+                </li>
+                <li>
+                    <span id="user-home" class="link">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.message-pane.userhome"] }}</span>
+                </li>
+            </ul>
+        </div>
+        <div id="message-content" class="message-pane-content"></div>
+    </div>
+</div>
+
+<div id="banner-header" class="utility-banner-header"></div>
+<div id="banner-footer" class="utility-banner-footer"></div>
+<div id="nf-ok-dialog" class="hidden medium-short-dialog">
+    <div class="dialog-content">
+        <div id="nf-ok-dialog-content"></div>
+    </div>
+</div>
+<div id="nf-yes-no-dialog" class="hidden small-dialog">
+    <div class="dialog-content">
+        <div id="nf-yes-no-dialog-content"></div>
+    </div>
+</div>
+<div id="history">
+    <div id="history-header-text">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.history.history-content.history-header-text"] }}</div>
+    <div id="history-filter-container">
+        <div id="cluster-history-message" class="hidden">
+            {{ appCtrl.serviceProvider.globalMenuCtrl.constant["paritals.history.history-content.cluster-history-message"] }}
+        </div>
+        <div style="float: right">
+            <div id="history-filter-overview">
+                {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.history.history-content.history-filter-overview"] }}&nbsp;
+                <span id="clear-history-filter" class="link">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.history.history-content.clear-history-filter"] }}</span>
+            </div>
+            
+            <button id="history-filter-button" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["paritals.history.history-content.history-filter-button.title"] }}" class="fa fa-filter"></button>
+            
+            <button id="history-purge-button" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["paritals.history.history-content.history-purge-button.title"] }}" class="fa fa-eraser hidden"></button>
+        </div>
+        <div class="clear"></div>
+    </div>
+    <div id="history-table"></div>
+</div>
+<div id="history-refresh-container">
+	
+    <button id="refresh-button" class="refresh-button pointer fa fa-refresh" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["paritals.history.history-content.refresh-button.title"] }}"></button>
+    <div id="history-last-refreshed-container" class="last-refreshed-container">
+        {{ appCtrl.serviceProvider.globalMenuCtrl.constant["paritals.history.history-content.history-last-refreshed-container"] }}:&nbsp;<span id="history-last-refreshed" class="value-color"></span>
+    </div>
+    <div id="history-loading-container" class="loading-container"></div>
+</div>
+<div id="action-details-dialog" class="hidden medium-dialog">
+    <div class="dialog-content">
+        <div class="setting">
+            <div class="setting-field">
+                <div id="action-details"></div>
+            </div>
+            <div class="clear"></div>
+        </div>
+    </div>
+</div>
+
+<div id="history-filter-dialog" class="hidden medium-dialog">
+    <div class="dialog-content">
+        <div class="setting">
+            <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.history.history-filter-dialog.Filter"] }}</div>
+            <div class="setting-field">
+                <div id="history-filter-controls">
+                    <input type="text" id="history-filter" class="history-large-input"/>
+                    <div id="history-filter-type"></div>
+                    <div class="clear"></div>
+                </div>
+            </div>
+        </div>
+        <div class="setting">
+            <div class="start-date-setting">
+                <div class="setting-name">
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.history.history-filter-dialog.StartDate"] }}
+                    
+                    <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.history.history-filter-dialog.StartDate.title"] }}"></div>
+                </div>
+                <div class="setting-field">
+                    <input type="text" id="history-filter-start-date" class="history-small-input"/>
+                </div>
+            </div>
+            <div class="start-time-setting">
+                <div class="setting-name">
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.history.history-filter-dialog.StartTime"] }} (<span class="timezone"></span>)
+                    
+                    <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.history.history-filter-dialog.StartTime.title"] }}"></div>
+                </div>
+                <div class="setting-field">
+                    <input type="text" id="history-filter-start-time" class="history-small-input"/>
+                </div>
+            </div>
+            <div class="clear"></div>
+        </div>
+        <div class="setting">
+            <div class="end-date-setting">
+                <div class="setting-name">
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.history.history-filter-dialog.EndDate"] }}
+                    
+                    <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.history.history-filter-dialog.EndDate.title"] }}"></div>
+                </div>
+                <div class="setting-field">
+                    <input type="text" id="history-filter-end-date" class="history-small-input"/>
+                </div>
+            </div>
+            <div class="end-time-setting">
+                <div class="setting-name">
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.history.history-filter-dialog.EndTime"] }} (<span class="timezone"></span>)
+                    
+                    <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.history.history-filter-dialog.EndTime.title"] }}"></div>
+                </div>
+                <div class="setting-field">
+                    <input type="text" id="history-filter-end-time" class="history-small-input"/>
+                </div>
+            </div>
+            <div class="clear"></div>
+        </div>
+    </div>
+</div>
+
+<div id="history-purge-dialog" class="hidden medium-dialog">
+    <div class="dialog-content">
+        <div class="setting" style="margin-bottom: 0px;">
+            <div class="end-date-setting">
+                <div class="setting-name">
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.history.history-purge-dialog.EndDate"] }}
+                    
+                    <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.history.history-purge-dialog.Title1"] }}"></div>
+                </div>
+                <div class="setting-field">
+                    <input type="text" id="history-purge-end-date" class="history-small-input"/>
+                </div>
+            </div>
+            <div class="end-time-setting">
+                <div class="setting-name">
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.history.history-purge-dialog.EndTime"] }} (<span class="timezone"></span>)
+                    
+                    <div class="fa fa-question-circle" id="purge-end-time-info" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.history.history-purge-dialog.Title2"] }}"></div>
+                </div>
+                <div class="setting-field">
+                    <input type="text" id="history-purge-end-time" class="history-small-input"/>
+                </div>
+            </div>
+            <div class="clear"></div>
+        </div>
+    </div>
+</div>
+</body></html>

@@ -1063,8 +1063,13 @@ public class JettyServer implements NiFiServer {
 
             // set frame options accordingly
             final HttpServletResponse response = (HttpServletResponse) resp;
-            response.setHeader(FRAME_OPTIONS, SAME_ORIGIN);
-
+            //The development environment is commented out first, and the production environment needs to specify a specific domain for security considerations.
+            // response.setHeader(FRAME_OPTIONS, SAME_ORIGIN);
+            response.setHeader("Access-Control-Allow-Origin","*");
+            response.setHeader("Access-Control-Allow-Credentials", "true");
+            response.setHeader("Access-Control-Allow-Methods", "POST, GET, PATCH, DELETE, PUT, HEAD, OPTIONS");
+            response.setHeader("Access-Control-Max-Age", "3600");
+            response.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, Locale");
             filterChain.doFilter(req, resp);
         }
 

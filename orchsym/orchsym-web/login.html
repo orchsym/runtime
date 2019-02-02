@@ -1,0 +1,36 @@
+<!DOCTYPE html><html><head><title>Login</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="shortcut icon" href="images/orchsym16.ico"/><link rel="stylesheet" href="assets/reset.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="fonts/flowfont/flowfont.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/font-awesome/css/font-awesome.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/main.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/common-ui.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/banner.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/dialog.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/message-pane.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/login.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/modal/jquery.modal.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/qtip2/dist/jquery.qtip.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/jquery-ui-dist/jquery-ui.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="fonts/flowfont/flowfont.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/angular-material/angular-material.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/font-awesome/css/font-awesome.min.css?1.7.0-SNAPSHOT" type="text/css" /><script type="text/javascript" src="assets/jquery/dist/jquery.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.base64.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.count.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.center.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/modal/jquery.modal.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/qtip2/dist/jquery.qtip.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/jquery-ui-dist/jquery-ui.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-namespace.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/globalization/resources.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-dialog.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-storage.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-common.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-error-handler.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-universal-capture.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-ajax-setup.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/login/nf-login.js?1.7.0-SNAPSHOT"></script></head><body class="login-body"><div id="login-user-links-container"><ul id="login-user-links" class="links"><li id="user-logout-container" style="display: none;"><span id="user-logout" class="link">log out</span></li><li><span id="user-home" class="link">home</span></li></ul><div class="clear"></div></div><div id="login-contents-container">
+<div id="login-message-container" class="hidden">
+    <div id="login-message-title"></div>
+    <div id="login-message"></div>
+</div>
+<div id="login-container" class="hidden">
+    <div class="login-title">Login</div>
+    <div class="setting">
+        <div class="setting-name">Username</div>
+        <div class="setting-field">
+        	
+            <input type="text" id="username"/>
+        </div>
+    </div>
+    <div class="setting">
+        <div class="setting-name">Password</div>
+        <div class="setting-field">
+        	
+            <input type="password" id="password"/>
+        </div>
+    </div>
+</div>
+
+<div id="login-submission-container" class="login-container hidden">
+    <div id="login-submission-button" class="button">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["paritals.login.login-submission.login-submission-button"] }}</div>
+</div>
+<div id="login-progress-container" class="login-container hidden">
+    <div id="login-progress-spinner" class="loading-container"></div>
+    <div id="login-progress-label"></div>
+    <div class="clear"></div>
+</div></div>
+<div id="nf-ok-dialog" class="hidden medium-short-dialog">
+    <div class="dialog-content">
+        <div id="nf-ok-dialog-content"></div>
+    </div>
+</div></body></html>

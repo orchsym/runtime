@@ -1,0 +1,53 @@
+<!DOCTYPE html><html><head><title>Counters</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="shortcut icon" href="images/orchsym16.ico"/><link rel="stylesheet" href="assets/reset.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/main.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/common-ui.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/banner.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/dialog.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/message-pane.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/counters.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/combo/jquery.combo.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/modal/jquery.modal.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/qtip2/dist/jquery.qtip.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/jquery-ui-dist/jquery-ui.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/slickgrid/slick.grid.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/slick-nifi-theme.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="fonts/flowfont/flowfont.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/angular-material/angular-material.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/font-awesome/css/font-awesome.min.css?1.7.0-SNAPSHOT" type="text/css" /><script type="text/javascript" src="assets/jquery/dist/jquery.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.base64.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.center.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/combo/jquery.combo.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/modal/jquery.modal.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.ellipsis.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.each.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/jquery-ui-dist/jquery-ui.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/qtip2/dist/jquery.qtip.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/lib/jquery.event.drag-2.3.0.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.cellrangeselector.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.cellselectionmodel.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.rowselectionmodel.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.autotooltips.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.formatters.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.editors.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.dataview.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.core.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.grid.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-namespace.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/globalization/resources.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-dialog.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-storage.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-common.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-error-handler.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-universal-capture.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-ajax-setup.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/counters/nf-counters-table.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/counters/nf-counters.js?1.7.0-SNAPSHOT"></script></head><body><div id="message-pane" class="message-pane hidden">
+    <div class="message-pane-message-box">
+        <div id="message-title" class="message-pane-title"></div>
+        <div id="user-links-container">
+            <ul class="links">
+                <li id="user-logout-container" style="display: none;">
+                    <span id="user-logout" class="link">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.message-pane.logout"] }}</span>
+                </li>
+                <li>
+                    <span id="user-home" class="link">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.message-pane.userhome"] }}</span>
+                </li>
+            </ul>
+        </div>
+        <div id="message-content" class="message-pane-content"></div>
+    </div>
+</div>
+
+<div id="banner-header" class="utility-banner-header"></div>
+<div id="banner-footer" class="utility-banner-footer"></div>
+<div id="nf-ok-dialog" class="hidden medium-short-dialog">
+    <div class="dialog-content">
+        <div id="nf-ok-dialog-content"></div>
+    </div>
+</div>
+<div id="nf-yes-no-dialog" class="hidden small-dialog">
+    <div class="dialog-content">
+        <div id="nf-yes-no-dialog-content"></div>
+    </div>
+</div>
+<div id="counters">
+    <div id="counters-header-and-filter">
+        <div id="counters-header-text">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.counters.counters-content.counters-header-text"] }}</div>
+        <div id="counters-filter-controls">
+            <div id="counters-filter-stats" class="filter-status">
+                {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.counters.counters-content.Displaying"] }}<span id="displayed-counters"></span>{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.counters.counters-content.Of"] }}<span id="total-counters"></span>
+            </div>
+            <div id="counters-filter-container" class="filter-container">
+            	
+                <input type="text" id="counters-filter" placeholder="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.counters.counters-content.Filter"] }}" class="filter"/>
+                <div id="counters-filter-type" class="filter-type"></div>
+            </div>
+        </div>
+    </div>
+    <div id="counters-table"></div>
+</div>
+<div id="counters-refresh-container">
+	
+    <button id="refresh-button" class="refresh-button pointer fa fa-refresh" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.counters.counters-content.Refresh"] }}"></button>
+    <div id="counters-last-refreshed-container" class="last-refreshed-container">
+        {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.counters.counters-content.LastUpdated"] }}<span id="counters-last-refreshed" class="value-color"></span>
+    </div>
+    <div id="counters-loading-container" class="loading-container"></div>
+</div></body></html>

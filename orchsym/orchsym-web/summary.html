@@ -1,0 +1,726 @@
+<!DOCTYPE html><html><head><title>Summary</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="shortcut icon" href="images/orchsym16.ico"/><link rel="stylesheet" href="assets/reset.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/main.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/common-ui.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/banner.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/dialog.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/processor-details.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/connection-details.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/message-pane.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/status-history.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/summary.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/tabbs/jquery.tabbs.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/combo/jquery.combo.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/propertytable/jquery.propertytable.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/modal/jquery.modal.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/codemirror/lib/codemirror.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/codemirror/addon/hint/show-hint.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/nfeditor/jquery.nfeditor.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/nfeditor/languages/nfel.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/qtip2/dist/jquery.qtip.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/jquery-ui-dist/jquery-ui.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/slickgrid/slick.grid.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/slick-nifi-theme.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="fonts/flowfont/flowfont.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/angular-material/angular-material.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/font-awesome/css/font-awesome.min.css?1.7.0-SNAPSHOT" type="text/css" /><script type="text/javascript" src="js/codemirror/lib/codemirror-compressed.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/d3/build/d3.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/jquery/dist/jquery.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/jquery-ui-dist/jquery-ui.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.base64.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.center.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/tabbs/jquery.tabbs.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/combo/jquery.combo.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/modal/jquery.modal.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.ellipsis.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.each.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/qtip2/dist/jquery.qtip.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/lib/jquery.event.drag-2.3.0.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.cellrangeselector.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.cellselectionmodel.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.rowselectionmodel.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.autotooltips.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.formatters.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.editors.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.dataview.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.core.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.grid.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/angular/angular.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/angular-messages/angular-messages.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/angular-resource/angular-resource.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/angular-route/angular-route.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/angular-aria/angular-aria.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/angular-animate/angular-animate.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/angular-material/angular-material.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-namespace.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-ng-namespace.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/globalization/resources.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-dialog.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-storage.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-common.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-error-handler.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-universal-capture.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-ajax-setup.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-client.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/canvas/nf-custom-ui.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-cluster-summary.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-processor-details.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/canvas/nf-settings.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/canvas/nf-process-group-configuration.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-connection-details.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-status-history.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-ng-bridge.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/summary/nf-summary-table.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/summary/nf-cluster-search.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-ng-service-provider.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-ng-app-controller.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-ng-app-config.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/summary/nf-summary.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/nfeditor/languages/nfel.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/nfeditor/jquery.nfeditor.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/propertytable/jquery.propertytable.js?1.7.0-SNAPSHOT"></script></head><body ng-controller="ngSummaryAppCtrl"><div id="message-pane" class="message-pane hidden">
+    <div class="message-pane-message-box">
+        <div id="message-title" class="message-pane-title"></div>
+        <div id="user-links-container">
+            <ul class="links">
+                <li id="user-logout-container" style="display: none;">
+                    <span id="user-logout" class="link">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.message-pane.logout"] }}</span>
+                </li>
+                <li>
+                    <span id="user-home" class="link">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.message-pane.userhome"] }}</span>
+                </li>
+            </ul>
+        </div>
+        <div id="message-content" class="message-pane-content"></div>
+    </div>
+</div>
+
+<div id="banner-header" class="utility-banner-header"></div>
+<div id="banner-footer" class="utility-banner-footer"></div>
+<div id="nf-ok-dialog" class="hidden medium-short-dialog">
+    <div class="dialog-content">
+        <div id="nf-ok-dialog-content"></div>
+    </div>
+</div>
+<div id="processor-details" class="hidden large-dialog">
+    <div class="dialog-content">
+        <div id="processor-details-tabs" class="tab-container"></div>
+        <div id="processor-details-tabs-content">
+            <div id="details-standard-settings-tab-content" class="details-tab">
+                <div class="settings-left">
+                    <div class="setting">
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-processor-name"] }}</div>
+                        <div class="setting-field">
+                            <span id="read-only-processor-name"></span>
+                        </div>
+                        <div class="clear"></div>
+                    </div>
+                    <div class="setting">
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-processor-id"] }}</div>
+                        <div class="setting-field">
+                            <span id="read-only-processor-id"></span>
+                        </div>
+                    </div>
+                    <div class="setting">
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-processor-type"] }}</div>
+                        <div id="read-only-processor-type" class="setting-field"></div>
+                        <div class="clear"></div>
+                    </div>
+                    <div class="setting">
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-processor-bundle"] }}</div>
+                        <div id="read-only-processor-bundle" class="setting-field"></div>
+                        <div class="clear"></div>
+                    </div>
+                    <div class="setting">
+                        <div class="penalty-duration-setting">
+                            <div class="setting-name">
+                                {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-penalty-duration"] }}
+                                
+                                <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-penalty-duration.title"] }}"></div>
+                            </div>
+                            <div class="setting-field">
+                                <span id="read-only-penalty-duration"></span>
+                            </div>
+                        </div>
+                        <div class="yield-duration-setting">
+                            <div class="setting-name">
+                                {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-yield-duration"] }}
+                                
+                                <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-yield-duration.title"] }}"></div>
+                            </div>
+                            <div class="setting-field">
+                                <span id="read-only-yield-duration"></span>
+                            </div>
+                        </div>
+                        <div class="clear"></div>
+                    </div>
+                    <div class="setting">
+                        <div class="bulletin-setting">
+                            <div class="setting-name">
+                                {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-bulletin-level"] }}
+                                
+                                <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-bulletin-level.title"] }}"></div>
+                            </div>
+                            <div class="setting-field">
+                                <span id="read-only-bulletin-level"></span>
+                            </div>
+                        </div>
+                        <div class="clear"></div>
+                    </div>
+                </div>
+                <div class="spacer">&nbsp;</div>
+                <div class="settings-right">
+                    <div class="setting">
+                        <div class="setting-name">
+                            {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-auto-terminate-relationship-names"] }}
+                            
+                            <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-auto-terminate-relationship-names.title"] }}"></div>
+                        </div>
+                        <div class="setting-field">
+                            <div id="read-only-auto-terminate-relationship-names"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="details-scheduling-tab-content" class="details-tab">
+                <div class="settings-left">
+                    <div class="setting">
+                        <div class="scheduling-strategy-setting">
+                            <div class="setting-name">
+                                {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-scheduling-strategy"] }}
+                                
+                                <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-scheduling-strategy.title"] }}"></div>
+                            </div>
+                            <div class="setting-field">
+                                <span id="read-only-scheduling-strategy"></span>
+                            </div>
+                        </div>
+                        <div class="clear"></div>
+                    </div>
+                    <div class="setting">
+                        <div class="concurrently-schedulable-tasks-setting">
+                            <div class="setting-name">
+                                {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-concurrently-schedulable-tasks"] }}
+                                
+                                <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-concurrently-schedulable-tasks.title"] }}"></div>
+                            </div>
+                            <div class="setting-field">
+                                <span id="read-only-concurrently-schedulable-tasks"></span>
+                            </div>
+                        </div>
+                        <div id="read-only-run-schedule" class="scheduling-period-setting">
+                            <div class="setting-name">
+                                {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-scheduling-period"] }}
+                                
+                                <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-scheduling-period.title"] }}"></div>
+                            </div>
+                            <div class="setting-field">
+                                <span id="read-only-scheduling-period"></span>
+                            </div>
+                        </div>
+                        <div class="clear"></div>
+                    </div>
+                    <div id="read-only-execution-node-options" class="setting">
+                        <div class="execution-node-setting">
+                            <div class="setting-name">
+                                {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-execution-node-options"] }}
+                                
+                                <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-execution-node-options.title"] }}"></div>
+                            </div>
+                            <div class="setting-field">
+                                <span id="read-only-execution-node"></span>
+                            </div>
+                        </div>
+                        <div class="clear"></div>
+                    </div>
+                </div>
+                <div class="spacer">&nbsp;</div>
+                <div class="settings-right">
+                    <div class="setting">
+                        <div class="setting-name">
+                            {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-run-duration"] }}
+                            
+                            <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-run-duration.title"] }}"></div>
+                        </div>
+                        <div class="setting-field">
+                            <span id="read-only-run-duration"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="details-processor-properties-tab-content" class="details-tab">
+                <div id="read-only-processor-properties"></div>
+            </div>
+            <div id="details-processor-comments-tab-content" class="details-tab">
+                <div class="setting">
+                    <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.processor-details.read-only-processor-comments"] }}</div>
+                    <div class="setting-field">
+                        <div id="read-only-processor-comments"></div>
+                    </div>
+                    <div class="clear"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="connection-details">
+    <div class="connection-details-tab-container dialog-content">
+        <div id="connection-details-tabs" class="tab-container"></div>
+        <div id="connection-details-tabs-content">
+            <div id="read-only-connection-details-tab-content" class="configuration-tab">
+                <div class="settings-left">
+                    <div class="setting">
+                        <div id="read-only-connection-source-label" class="setting-name"></div>
+                        <div class="setting-field connection-terminal-label">
+                            <div id="read-only-connection-source" class="ellipsis"></div>
+                        </div>
+                    </div>
+                    <div class="setting">
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.connection-details.WithinGroup"] }}</div>
+                        <div class="setting-field">
+                            <div id="read-only-connection-source-group-name"></div>
+                        </div>
+                    </div>
+                    <div id="read-only-relationship-names-container" class="setting">
+                        <div class="setting-name">
+                            {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.connection-details.Relationships"] }}
+                            
+                            <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.connection-details.configuration-tab.read-only-relationship-names-container.title"] }}"></div>
+                        </div>
+                        <div class="setting-field">
+                            <div id="read-only-relationship-names"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="spacer">&nbsp;</div>
+                <div class="settings-right">
+                    <div class="setting">
+                        <div id="read-only-connection-target-label" class="setting-name"></div>
+                        <div class="setting-field connection-terminal-label">
+                            <div id="read-only-connection-target" class="ellipsis"></div>
+                        </div>
+                    </div>
+                    <div class="setting">
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.connection-details.WithinGroup"] }}</div>
+                        <div class="setting-field">
+                            <div id="read-only-connection-target-group-name"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="read-only-connection-settings-tab-content" class="configuration-tab">
+                <div class="settings-left">
+                    <div class="setting">
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.connection-details.Name"] }}</div>
+                        <div class="setting-field">
+                            <span id="read-only-connection-name"></span>
+                        </div>
+                    </div>
+                    <div class="setting">
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.connection-details.Id"] }}</div>
+                        <div class="setting-field">
+                            <span id="read-only-connection-id"></span>
+                        </div>
+                    </div>
+                    <div class="setting">
+                        <div class="setting-name">
+                            {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.connection-details.read-only-flow-file-expiration"] }}
+                            
+                            <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.connection-details.read-only-flow-file-expiration.title"] }}"></div>
+                        </div>
+                        <div class="setting-field">
+                            <span id="read-only-flow-file-expiration"></span>
+                        </div>
+                        <div class="clear"></div>
+                    </div>
+                    <div class="setting">
+                        <div class="setting-name">
+                            {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.connection-details.read-only-back-pressure-object-threshold"] }}
+                            
+                            <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.connection-details.read-only-back-pressure-object-threshold.title"] }}"></div>
+                        </div>
+                        <div class="setting-field">
+                            <span id="read-only-back-pressure-object-threshold"></span>
+                        </div>
+                        <div class="clear"></div>
+                    </div>
+                    <div class="setting">
+                        <div class="setting-name">
+                            {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.connection-details.read-only-back-pressure-data-size-threshold"] }}
+                            
+                            <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.connection-details.read-only-back-pressure-data-size-threshold.title"] }}"></div>
+                        </div>
+                        <div class="setting-field">
+                            <span id="read-only-back-pressure-data-size-threshold"></span>
+                        </div>
+                        <div class="clear"></div>
+                    </div>
+                </div>
+                <div class="spacer">&nbsp;</div>
+                <div class="settings-right">
+                    <div class="setting">
+                        <div class="setting-name">
+                            {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.connection-details.read-only-prioritizers"] }}
+                            
+                            <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.connection-details.read-only-prioritizers.title"] }}"></div>
+                        </div>
+                        <div class="setting-field">
+                            <div id="read-only-prioritizers"></div>
+                        </div>
+                        <div class="clear"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="status-history-dialog" class="hidden large-dialog">
+    <div id="status-history-refresh-container">
+    	
+        <button id="status-history-refresh-button" class="refresh-button pointer fa fa-refresh" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-refresh-container.refresh"] }}"></button>
+        <div id="status-history-last-refreshed-container" class="last-refreshed-container">
+            {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.status-history-dialog.LastUpdated"] }}:&nbsp;<span id="status-history-last-refreshed"></span>
+        </div>
+        <div id="status-history-loading-container" class="loading-container"></div>
+    </div>
+    <div class="dialog-content">
+        <div id="status-history-details"></div>
+        <div id="status-history-metric-combo"></div>
+        <div id="status-history-container">
+            <div id="status-history-chart-container"></div>
+            <div id="status-history-chart-control-container"></div>
+        </div>
+        <div class="clear"></div>
+    </div>
+</div>
+
+<div id="summary">
+    <div id="summary-header-and-filter">
+        <div id="summary-header-text">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.summary-content.summary-header-text"] }}</div>
+    </div>
+    <div id="summary-tabs" class="tab-container"></div>
+    <div id="summary-tabs-content">
+        <div id="summary-filter-controls" class="filter-controls">
+            <div id="summary-filter-status" class="filter-status">
+                {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.summary-content.Displaying"] }}&nbsp;<span id="displayed-items"></span>&nbsp;{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.summary-content.Of"] }}&nbsp;<span id="total-items"></span>
+            </div>
+            
+            <div id="summary-filter-container" class="filter-container">
+                <input type="text" placeholder="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.summary-content.summary-filter-container"] }}" id="summary-filter" class="filter"/>
+                <div id="summary-filter-type" class="filter-type"></div>
+            </div>
+        </div>
+        <div id="view-options-container">
+            {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.summary-content.View"] }}&nbsp;
+            <span id="view-single-node-link" class="link">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.summary-content.SingleNode"] }}</span>&nbsp;&nbsp;<span id="view-cluster-link" class="link">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.summary-content.Cluster"] }}</span>
+        </div>
+        <div id="processor-summary-tab-content" class="configuration-tab">
+            <div id="processor-summary-table" class="summary-table"></div>
+        </div>
+        <div id="connection-summary-tab-content" class="configuration-tab">
+            <div id="connection-summary-table" class="summary-table"></div>
+        </div>
+        <div id="process-group-summary-tab-content" class="configuration-tab">
+            <div id="process-group-summary-table" class="summary-table"></div>
+        </div>
+        <div id="input-port-summary-tab-content" class="configuration-tab">
+            <div id="input-port-summary-table" class="summary-table"></div>
+        </div>
+        <div id="output-port-summary-tab-content" class="configuration-tab">
+            <div id="output-port-summary-table" class="summary-table"></div>
+        </div>
+        <div id="remote-process-group-summary-tab-content" class="configuration-tab">
+            <div id="remote-process-group-summary-table" class="summary-table"></div>
+        </div>
+    </div>
+</div>
+<div id="flow-summary-refresh-container">
+	
+    <button id="refresh-button" class="refresh-button pointer fa fa-refresh" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-refresh-container.refresh"] }}"></button>
+    <div id="summary-last-refreshed-container" class="last-refreshed-container">
+        {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.summary-content.LastUpdated"] }}:&nbsp;<span id="summary-last-refreshed" class="value-color"></span>
+    </div>
+    <div id="summary-loading-container" class="loading-container"></div>
+    <div id="system-diagnostics-link-container">
+        <span id="system-diagnostics-link" class="link">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.summary-content.SystemDiagnostics"] }}</span>
+    </div>
+</div>
+<div id="cluster-processor-summary-dialog" class="hidden large-dialog">
+    <div class="dialog-content">
+        <div id="cluster-processor-summary-header">
+            <div id="cluster-processor-details-container">
+                <div id="cluster-processor-icon"></div>
+                <div id="cluster-processor-details">
+                    <div id="cluster-processor-name"></div>
+                    <div id="cluster-processor-type"></div>
+                    <div id="cluster-processor-group-id" class="hidden"></div>
+                </div>
+                <div id="cluster-processor-id"></div>
+            </div>
+        </div>
+        <div id="cluster-processor-summary-table"></div>
+    </div>
+    
+    <button id="cluster-processor-refresh-button" class="refresh-button pointer fa fa-refresh" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-refresh-container.refresh"] }}"></button>
+    <div id="cluster-processor-summary-last-refreshed-container" class="last-refreshed-container">
+        {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.cluster-processor-summary-dialog.LastUpdated"] }}&nbsp;<span id="cluster-processor-summary-last-refreshed" class="value-color"></span>
+    </div>
+    <div id="cluster-processor-summary-loading-container" class="loading-container"></div>
+</div>
+
+<div id="cluster-input-port-summary-dialog" class="hidden large-dialog">
+    <div class="dialog-content">
+        <div id="cluster-input-port-summary-header">
+            <div id="cluster-input-port-details-container">
+                <div id="cluster-input-port-icon"></div>
+                <div id="cluster-input-port-details">
+                    <div id="cluster-input-port-name"></div>
+                    <div id="cluster-input-port-type"></div>
+                    <div id="cluster-input-port-group-id" class="hidden"></div>
+                </div>
+                <div id="cluster-input-port-id"></div>
+            </div>
+        </div>
+        <div id="cluster-input-port-summary-table"></div>
+    </div>
+    
+    <button id="cluster-input-port-refresh-button" class="refresh-button pointer fa fa-refresh" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-refresh-container.refresh"] }}"></button>
+    <div id="cluster-input-port-summary-last-refreshed-container" class="last-refreshed-container">
+        {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.cluster-input-port-summary-dialog.LastUpdated"] }}&nbsp;<span id="cluster-input-port-summary-last-refreshed" class="value-color"></span>
+    </div>
+    <div id="cluster-input-port-summary-loading-container" class="loading-container"></div>
+</div>
+
+<div id="cluster-output-port-summary-dialog" class="hidden large-dialog">
+    <div class="dialog-content">
+        <div id="cluster-output-port-summary-header">
+            <div id="cluster-output-port-details-container">
+                <div id="cluster-output-port-icon"></div>
+                <div id="cluster-output-port-details">
+                    <div id="cluster-output-port-name"></div>
+                    <div id="cluster-output-port-type"></div>
+                    <div id="cluster-output-port-group-id" class="hidden"></div>
+                </div>
+                <div id="cluster-output-port-id"></div>
+            </div>
+        </div>
+        <div id="cluster-output-port-summary-table"></div>
+    </div>
+    
+    <button id="cluster-output-port-refresh-button" class="refresh-button pointer fa fa-refresh" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-refresh-container.refresh"] }}"></button>
+    <div id="cluster-output-port-summary-last-refreshed-container" class="last-refreshed-container">
+        {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.cluster-output-port-summary-dialog.LastUpdated"] }}&nbsp;<span id="cluster-output-port-summary-last-refreshed" class="value-color"></span>
+    </div>
+    <div id="cluster-output-port-summary-loading-container" class="loading-container"></div>
+</div>
+
+<div id="cluster-remote-process-group-summary-dialog" class="hidden large-dialog">
+    <div class="dialog-content">
+        <div id="cluster-remote-process-group-summary-header">
+            <div id="cluster-remote-process-group-details-container">
+                <div id="cluster-remote-process-group-icon"></div>
+                <div id="cluster-remote-process-group-details">
+                    <div id="cluster-remote-process-group-name"></div>
+                    <div id="cluster-remote-process-group-type"></div>
+                    <div id="cluster-remote-process-group-group-id" class="hidden"></div>
+                </div>
+                <div id="cluster-remote-process-group-id"></div>
+            </div>
+        </div>
+        <div id="cluster-remote-process-group-summary-table"></div>
+    </div>
+    
+    <button id="cluster-remote-process-group-refresh-button" class="refresh-button pointer fa fa-refresh" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-refresh-container.refresh"] }}"></button>
+    <div id="cluster-remote-process-group-summary-last-refreshed-container" class="last-refreshed-container">
+        {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.cluster-remote-process-group-summary-dialog.LastUpdated"] }}&nbsp;<span id="cluster-remote-process-group-summary-last-refreshed" class="value-color"></span>
+    </div>
+    <div id="cluster-remote-process-group-summary-loading-container" class="loading-container"></div>
+</div>
+
+<div id="cluster-connection-summary-dialog" class="hidden large-dialog">
+    <div class="dialog-content">
+        <div id="cluster-connection-summary-header">
+            <div id="cluster-connection-details-container">
+                <div id="cluster-connection-icon"></div>
+                <div id="cluster-connection-details">
+                    <div id="cluster-connection-name"></div>
+                    <div id="cluster-connection-type"></div>
+                    <div id="cluster-connection-group-id" class="hidden"></div>
+                </div>
+                <div id="cluster-connection-id"></div>
+            </div>
+        </div>
+        <div id="cluster-connection-summary-table"></div>
+    </div>
+    
+    <button id="cluster-connection-refresh-button" class="refresh-button pointer fa fa-refresh" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-refresh-container.refresh"] }}"></button>
+    <div id="cluster-connection-summary-last-refreshed-container" class="last-refreshed-container">
+        {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.cluster-connection-summary-dialog.LastUpdated"] }}&nbsp;<span id="cluster-connection-summary-last-refreshed" class="value-color"></span>
+    </div>
+    <div id="cluster-connection-summary-loading-container" class="loading-container"></div>
+</div>
+
+<div id="cluster-process-group-summary-dialog" class="hidden large-dialog">
+    <div class="dialog-content">
+        <div id="cluster-process-group-summary-header">
+            <div id="cluster-process-group-details-container">
+                <div id="cluster-process-group-icon"></div>
+                <div id="cluster-process-group-details">
+                    <div id="cluster-process-group-name"></div>
+                    <div id="cluster-process-group-type"></div>
+                </div>
+                <div id="cluster-process-group-id"></div>
+            </div>
+        </div>
+        <div id="cluster-process-group-summary-table"></div>
+    </div>
+    
+    <button id="cluster-process-group-refresh-button" class="refresh-button pointer fa fa-refresh" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-refresh-container.refresh"] }}"></button>
+    <div id="cluster-process-group-summary-last-refreshed-container" class="last-refreshed-container">
+        {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.cluster-process-group-summary-dialog.LastUpdated"] }}&nbsp;<span id="cluster-process-group-summary-last-refreshed" class="value-color"></span>
+    </div>
+    <div id="cluster-process-group-summary-loading-container" class="loading-container"></div>
+</div>
+
+<div id="system-diagnostics-dialog" class="hidden large-dialog">
+    <div class="dialog-content">
+        <div id="system-diagnostics-tabs" class="tab-container"></div>
+        <div id="system-diagnostics-tabs-content">
+            <div id="jvm-tab-content" class="configuration-tab">
+                <div class="settings-left">
+                    <div class="setting">
+                        <input type="hidden" id=""/>
+                        <div class="setting-header">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.Heap"] }} <span id="utilization-heap"></span></div>
+                        <div class="setting-field">
+                            <table id="heap-table">
+                                <tbody>
+                                <tr>
+                                    <td class="memory-header setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.Max"] }}:</td>
+                                </tr>
+                                <tr>
+                                    <td><span id="max-heap"></span></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.Total"] }}:</td>
+                                </tr>
+                                <tr>
+                                    <td><span id="total-heap"></span></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.Used"] }}:</td>
+                                </tr>
+                                <tr>
+                                    <td><span id="used-heap"></span></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.Free"] }}:</td>
+                                </tr>
+                                <tr>
+                                    <td><span id="free-heap"></span></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="clear"></div>
+                    </div>
+                </div>
+                <div class="spacer"></div>
+                <div class="settings-right">
+                    <div class="setting">
+                        <div class="setting-header">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.NonHeap"] }} <span id="utilization-non-heap"></span></div>
+                        <div class="setting-field">
+                            <table id="non-heap-table">
+                                <tbody>
+                                <tr>
+                                    <td class="memory-header setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.Max"] }}:</td>
+                                </tr>
+                                <tr>
+                                    <td><span id="max-non-heap"></span></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.Total"] }}:</td>
+                                </tr>
+                                <tr>
+                                    <td><span id="total-non-heap"></span></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.Used"] }}:</td>
+                                </tr>
+                                <tr>
+                                    <td><span id="used-non-heap"></span></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.Free"] }}:</td>
+                                </tr>
+                                <tr>
+                                    <td><span id="free-non-heap"></span></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="clear"></div>
+                    </div>
+                </div>
+                <div class="clear"></div>
+                <div class="setting">
+                    <div class="setting-header">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.GarbageCollection"] }}</div>
+                    <div id="garbage-collection-container" class="setting-field">
+                        <table id="garbage-collection-table">
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="setting">
+                    <div class="setting-header">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.Runtime"] }}</div>
+                    <div id="jvm-runtime-container" class="setting-field">
+                        <table id="jvm-runtime-table">
+                            <tbody>
+                                <tr>
+                                    <td class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.Uptime"] }}:</td>
+                                </tr>
+                                <tr>
+                                    <td><span id="uptime"></span></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div id="system-tab-content"class="configuration-tab">
+                <div class="settings-left">
+                    <div class="setting">
+                        <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.AvailableProcessors"] }}:</div>
+                        <div class="setting-field">
+                            <div id="available-processors"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="spacer"></div>
+                <div class="settings-right">
+                    <div class="setting">
+                        <div class="setting-name">
+                            {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.ProcessorLoadAverage"] }}:
+                            
+                            <div class="fa fa-question-circle" alt="Info" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.ProcessorLoadAverage.title"] }}"></div>
+                        </div>
+                        <div class="setting-field">
+                            <div id="processor-load-average"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="clear"></div>
+                <div class="setting">
+                    <div class="setting-header">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.FlowFileRepositoryStorageUsage"] }}</div>
+                    <div class="setting-field">
+                        <div id="flow-file-repository-storage-usage-container"></div>
+                    </div>
+                </div>
+                <div class="setting">
+                    <div class="setting-header">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.ContentRepositoryStorageUsage"] }}</div>
+                    <div class="setting-field">
+                        <div id="content-repository-storage-usage-container"></div>
+                    </div>
+                </div>
+                <div class="setting">
+                    <div class="setting-header">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-dialog.ProvenanceRepositoryStorageUsage"] }}</div>
+                    <div class="setting-field">
+                        <div id="provenance-repository-storage-usage-container"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="version-tab-content" class="configuration-tab">
+                <div class="setting">
+
+                    <div class="setting-header">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.version-tab-content.nifi"] }}</div>
+                    <dl class="setting-attributes-list">
+                        <dt>{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.version-tab-content.nifiVersion"] }}</dt><dd><span id="version-nifi"></span></dd>
+                        <dt>{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.version-tab-content.tag"] }}</dt><dd><span id="version-build-tag"></span></dd>
+                        <dt>{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.version-tab-content.buildDate"] }}</dt><dd><span id="version-build-timestamp"></span></dd>
+                        <dt>{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.version-tab-content.branch"] }}</dt><dd><span id="version-build-branch"></span></dd>
+                        <dt>{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.version-tab-content.revision"] }}</dt><dd><span id="version-build-revision"></span></dd>
+                    </dl>
+                </div>
+                <div class="setting">
+                    <div class="setting-header">Java</div>
+                    <dl class="setting-attributes-list">
+                        <dt>{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.version-tab-content.Version"] }}</dt><dd><span id="version-java-version"></span></dd>
+                        <dt>{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.version-tab-content.Vendor"] }}</dt><dd><span id="version-java-vendor"></span></dd>
+                    </dl>
+                </div>
+                <div class="setting">
+                    <div class="setting-header">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.version-tab-content.Operating"] }}</div>
+                    <dl class="setting-attributes-list">
+                        <dt>{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.version-tab-content.Name"] }}</dt><dd><span id="version-os-name"></span></dd>
+                        <dt>{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.version-tab-content.Version"] }}</dt><dd><span id="version-os-version"></span></dd>
+                        <dt>{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.version-tab-content.Architecture"] }}</dt><dd><span id="version-os-arch"></span></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div id="system-diagnostics-refresh-container">
+        
+            <button id="system-diagnostics-refresh-button" class="refresh-button pointer fa fa-refresh" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.system-diagnostics-refresh-container.refresh"] }}"></button>
+            <div id="system-diagnostics-last-refreshed-container" class="last-refreshed-container">
+                <span id="system-diagnostics-last-refreshed" class="value-color"></span>
+            </div>
+            <div id="system-diagnostics-loading-container" class="loading-container"></div>
+        </div>
+    </div>
+</div>
+
+<div id="view-single-node-dialog" class="hidden small-dialog">
+    <div class="dialog-content">
+        <input id="cluster-search-field" type="text"/>
+        <div id="cluster-search-example">({{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.summary.view-single-node-dialog.cluster-search-example"] }}&nbsp;my.host:80)</div>
+    </div>
+</div>
+<div id="search-cluster-results"></div>
+</body></html>

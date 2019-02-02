@@ -1,0 +1,381 @@
+<!DOCTYPE html><html><head><title>Data Provenance</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><link rel="shortcut icon" href="images/orchsym16.ico"/><link rel="stylesheet" href="assets/reset.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/main.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/common-ui.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/banner.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/dialog.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/message-pane.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/provenance.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/tabbs/jquery.tabbs.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/combo/jquery.combo.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="js/jquery/modal/jquery.modal.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/qtip2/dist/jquery.qtip.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/jquery-ui-dist/jquery-ui.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/slickgrid/slick.grid.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="css/slick-nifi-theme.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="fonts/flowfont/flowfont.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/angular-material/angular-material.min.css?1.7.0-SNAPSHOT" type="text/css" /><link rel="stylesheet" href="assets/font-awesome/css/font-awesome.min.css?1.7.0-SNAPSHOT" type="text/css" /><script type="text/javascript" src="assets/d3/build/d3.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/d3-selection-multi/build/d3-selection-multi.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/jquery/dist/jquery.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.base64.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.center.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/modal/jquery.modal.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/tabbs/jquery.tabbs.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/combo/jquery.combo.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.ellipsis.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/jquery/jquery.each.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/jquery-ui-dist/jquery-ui.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/qtip2/dist/jquery.qtip.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/lib/jquery.event.drag-2.3.0.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.cellrangeselector.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.cellselectionmodel.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.rowselectionmodel.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/plugins/slick.autotooltips.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.formatters.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.editors.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.dataview.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.core.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/slickgrid/slick.grid.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/angular/angular.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/angular-messages/angular-messages.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/angular-resource/angular-resource.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/angular-route/angular-route.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/angular-aria/angular-aria.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/angular-animate/angular-animate.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="assets/angular-material/angular-material.min.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-namespace.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-ng-namespace.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/globalization/resources.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-dialog.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-storage.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-common.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-error-handler.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-universal-capture.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-ajax-setup.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-ng-bridge.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-ng-app-controller.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/nf-ng-app-config.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/provenance/nf-provenance-table.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/provenance/nf-provenance-lineage.js?1.7.0-SNAPSHOT"></script><script type="text/javascript" src="js/nf/provenance/nf-provenance.js?1.7.0-SNAPSHOT"></script></head><body ng-controller="ngProvenanceAppCtrl"><div id="message-pane" class="message-pane hidden">
+    <div class="message-pane-message-box">
+        <div id="message-title" class="message-pane-title"></div>
+        <div id="user-links-container">
+            <ul class="links">
+                <li id="user-logout-container" style="display: none;">
+                    <span id="user-logout" class="link">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.message-pane.logout"] }}</span>
+                </li>
+                <li>
+                    <span id="user-home" class="link">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.message-pane.userhome"] }}</span>
+                </li>
+            </ul>
+        </div>
+        <div id="message-content" class="message-pane-content"></div>
+    </div>
+</div>
+
+<div id="banner-header" class="utility-banner-header"></div>
+<div id="banner-footer" class="utility-banner-footer"></div>
+<div id="nf-ok-dialog" class="hidden medium-short-dialog">
+    <div class="dialog-content">
+        <div id="nf-ok-dialog-content"></div>
+    </div>
+</div>
+<div id="nf-yes-no-dialog" class="hidden small-dialog">
+    <div class="dialog-content">
+        <div id="nf-yes-no-dialog-content"></div>
+    </div>
+</div>
+<div id="provenance">
+    <span id="initial-component-query" class="hidden"><c:out value="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["empty"] }}"/></span>
+    <span id="initial-flowfile-query" class="hidden"><c:out value="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["empty"] }}"/></span>
+    <span id="nifi-controller-uri" class="hidden"></span>
+    <span id="nifi-content-viewer-url" class="hidden"></span>
+    <div id="provenance-header-text">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-content.provenance-header-text"] }}</div>
+    <div id="provenance-event-search" class="provenance-panel">
+        <div id="provenance-filter-controls" class="filter-controls">
+            <div id="provenance-filter-stats" class="filter-status">
+                {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-content.Displaying"] }}&nbsp;<span id="displayed-events"></span>&nbsp;/&nbsp;<span id="total-events"></span>
+            </div>
+            <div id="oldest-event-message">
+                {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-content.oldest-event-message"] }}:&nbsp;<span id="oldest-event" class="value-color"></span>
+            </div>
+            
+            <div id="provenance-filter-container" class="filter-container">
+                <input type="text" placeholder="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["paritals.provenance.provenance-content.provenance-filter-container"] }}" id="provenance-filter" class="filter"/>
+                <div id="provenance-filter-type" class="filter-type"></div>
+            </div>
+        </div>
+        <div id="provenance-search-container">
+            <div id="provenance-search-overview">
+                <span id="provenance-query-message">&nbsp;</span>
+                <span id="clear-provenance-search" class="link">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-content.clear-provenance-search"] }}</span>
+            </div>
+            <button id="provenance-search-button" class="fa fa-search"></button>
+        </div>
+        <div id="provenance-table"></div>
+        <div id="provenance-refresh-container">
+        	
+            <button id="refresh-button" class="refresh-button pointer fa fa-refresh" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["paritals.provenance.provenance-content.refresh-button.title"] }}"></button>
+            <div id="provenance-last-refreshed-container" class="last-refreshed-container">
+                {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-content.LastUpdated"] }}:&nbsp;<span id="provenance-last-refreshed" class="value-color"></span>
+            </div>
+            <div id="provenance-loading-container" class="loading-container"></div>
+        </div>
+    </div>
+    <div id="provenance-lineage" class="provenance-panel hidden">
+        <div id="provenance-lineage-loading-container">
+            <div id="provenance-lineage-loading" class="loading-container"></div>
+        </div>
+        <div id="provenance-lineage-close-container">
+        	
+            <div id="provenance-lineage-downloader" class="fa fa-download" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["paritals.provenance.provenance-content.provenance-lineage-downloader.title"] }}"></div>
+            
+            <div id="provenance-lineage-closer" class="fa fa-long-arrow-left" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["paritals.provenance.provenance-content.provenance-lineage-closer.title"] }}"></div>
+        </div>
+        <div id="provenance-lineage-context-menu" class="context-menu"></div>
+        <div id="provenance-lineage-slider-container">
+            <div id="provenance-lineage-slider"></div>
+            <div id="event-timeline">
+                <div id="event-time"></div>
+                <span style="float: left;">&nbsp;</span>
+                <div id="event-timezone" class="timezone"></div>
+                <div id="clear"></div>
+            </div>
+        </div>
+        <div id="provenance-lineage-container"></div>
+    </div>
+    <a id="image-download-link" hreflang="image/svg+xml" class="hidden" target="_blank"></a>
+</div>
+<div id="event-details-dialog" class="hidden large-dialog">
+    <div id="event-details-dialog-content"class="dialog-content">
+        <div id="event-details-tabs" class="tab-container"></div>
+        <div id="event-details-tabs-content">
+            <div id="event-details-tab-content" class="details-tab">
+                <span id="provenance-event-id" class="hidden"></span>
+                <span id="provenance-event-cluster-node-id" class="hidden"></span>
+                <div class="settings-left">
+                    <div id="event-details">
+                        <div class="event-detail">
+                            <div class="detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Time"] }}</div>
+                            <div id="provenance-event-time" class="detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div class="detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.EventDuration"] }}</div>
+                            <div id="provenance-event-duration" class="detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div class="detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.LineageDuration"] }}</div>
+                            <div id="provenance-lineage-duration" class="detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div class="detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Type"] }}</div>
+                            <div id="provenance-event-type" class="detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div class="detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.FlowFileUuid"] }}</div>
+                            <div id="provenance-event-flowfile-uuid" class="detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div class="detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.FileSize"] }}</div>
+                            <div id="provenance-event-file-size" class="detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div class="detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.ComponentId"] }}</div>
+                            <div id="provenance-event-component-id" class="detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div class="detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.ComponentName"] }}</div>
+                            <div id="provenance-event-component-name" class="detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div class="detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.ComponentType"] }}</div>
+                            <div id="provenance-event-component-type" class="detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div id="additional-provenance-details"></div>
+                        <div class="event-detail">
+                            <div class="detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Details"] }}</div>
+                            <div id="provenance-event-details" class="detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="spacer">&nbsp;</div>
+                <div class="settings-right">
+                    <div id="parent-flowfiles">
+                        <div class="event-header">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.ParentFlowFiles"] }}(<span id="parent-flowfile-count"></span>)</div>
+                        <div id="parent-flowfiles-container" class="flowfile-container"></div>
+                    </div>
+                    <div id="child-flowfiles">
+                        <div class="event-header">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.ChildFlowFiles"] }}(<span id="child-flowfile-count"></span>)</div>
+                        <div id="child-flowfiles-container"class="flowfile-container"></div>
+                    </div>
+                </div>
+                <div class="clear"></div>
+            </div>
+            <div id="attributes-tab-content" class="details-tab">
+                <div id="attributes-details">
+                    <div id="attributes-header" class="event-header">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.AttributeValues"] }}</div>
+                    <div id="modified-attribute-toggle-container">
+                        <div id="modified-attribute-toggle" class="nf-checkbox checkbox-unchecked"></div>
+                        <div id="modified-attribute-toggle-label" class="nf-checkbox-label">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.OnlyShowModified"] }}</div>
+                        <div class="clear"></div>
+                    </div>
+                    <div class="clear"></div>
+                    <div id="attributes-container"></div>
+                </div>
+            </div>
+            <div id="content-tab-content" class="details-tab">
+                <div class="settings-left">
+                    <div id="input-content-details" class="content-details">
+                        <div id="input-content-header" class="event-header">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.InputClaim"] }}</div>
+                        <div class="event-detail">
+                            <div class="content-detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Container"] }}</div>
+                            <div id="input-content-container" class="content-detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div class="content-detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Section"] }}</div>
+                            <div id="input-content-section" class="content-detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div class="content-detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Identifier"] }}</div>
+                            <div id="input-content-identifier" class="content-detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div class="content-detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Offset"] }}</div>
+                            <div id="input-content-offset" class="content-detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div class="content-detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Size"] }}</div>
+                            <div id="input-content-size" class="content-detail-value"></div>
+                            <div id="input-content-bytes" class="content-detail-value hidden"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div id="input-content-download" class="secondary-button hidden fa fa-download button-icon"><span>{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Download"] }}</span></div>
+                            <div id="input-content-view" class="secondary-button fa fa-eye button-icon hidden"><span>{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.View"] }}</span></div>
+                            <div class="clear"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="spacer">&nbsp;</div>
+                <div class="settings-right">
+                    <div id="output-content-details" class="content-details">
+                        <div class="event-header">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.OutputClaim"] }}</div>
+                        <div class="event-detail">
+                            <div class="content-detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Container"] }}</div>
+                            <div id="output-content-container" class="content-detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div class="content-detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Section"] }}</div>
+                            <div id="output-content-section" class="content-detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div class="content-detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Identifier"] }}</div>
+                            <div id="output-content-identifier" class="content-detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div class="content-detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Offset"] }}</div>
+                            <div id="output-content-offset" class="content-detail-value"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div class="content-detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Size"] }}</div>
+                            <div id="output-content-size" class="content-detail-value"></div>
+                            <div id="output-content-bytes" class="content-detail-value hidden"></div>
+                            <div class="clear"></div>
+                        </div>
+                        <div class="event-detail">
+                            <div id="output-content-download" class="secondary-button fa fa-download button-icon hidden"><span>{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Download"] }}</span></div>
+                            <div id="output-content-view" class="secondary-button fa fa-eye button-icon hidden"><span>{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.View"] }}</span></div>
+                            <div class="clear"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="clear"></div>
+                <div id="replay-details" class="content-details hidden">
+                    <div class="event-header">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Replay"] }}</div>
+                    <div id="replay-content-connection" class="event-detail">
+                        <div class="content-detail-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.ConnectionId"] }}</div>
+                        <div id="replay-connection-id" class="content-detail-value"></div>
+                        <div class="clear"></div>
+                    </div>
+                    <div id="replay-content-message" class="hidden"></div>
+                    <div class="event-detail">
+                        <div id="replay-content" class="secondary-button fa fa-repeat button-icon"><span>{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-event-details-dialog.Replay"] }}</span></div>
+                        <div class="clear"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="provenance-search-dialog" class="hidden medium-dialog">
+    <div class="dialog-content">
+        <div class="setting">
+            <div class="setting-name">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-search-dialog.Fields"] }}</div>
+            <div class="setting-field">
+                <div id="searchable-fields-container">
+                    <div id="no-searchable-fields" class="unset">{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-search-dialog.no-searchable-fields"] }}.</div>
+                </div>
+            </div>
+        </div>
+        <div class="setting">
+            <div class="start-date-setting">
+                <div class="setting-name">
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-search-dialog.StartDate"] }}
+                    
+                    <div class="fa fa-question-circle" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-search-dialog.StartDate.title"] }}"></div>
+                </div>
+                <div class="setting-field">
+                    <input type="text" id="provenance-search-start-date" class="provenance-small-input"/>
+                </div>
+            </div>
+            <div class="start-time-setting">
+                <div class="setting-name">
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-search-dialog.StartTime"] }}(<span class="timezone"></span>)
+                    
+                    <div class="fa fa-question-circle" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-search-dialog.StartTime.title"] }}"></div>
+                </div>
+                <div class="setting-field">
+                    <input type="text" id="provenance-search-start-time" class="provenance-time-input"/>
+                </div>
+            </div>
+            <div class="clear"></div>
+        </div>
+        <div class="setting">
+            <div class="end-date-setting">
+                <div class="setting-name">
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-search-dialog.EndDate"] }}
+                    
+                    <div class="fa fa-question-circle" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-search-dialog.EndDate.title"] }}"></div>
+                </div>
+                <div class="setting-field">
+                    <input type="text" id="provenance-search-end-date" class="provenance-small-input"/>
+                </div>
+            </div>
+            <div class="end-time-setting">
+                <div class="setting-name">
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-search-dialog.EndTime"] }}(<span class="timezone"></span>)
+                    
+                    <div class="fa fa-question-circle" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-search-dialog.EndTime.title"] }}"></div>
+                </div>
+                <div class="setting-field">
+                    <input type="text" id="provenance-search-end-time" class="provenance-time-input"/>
+                </div>
+            </div>
+            <div class="clear"></div>
+        </div>
+        <div class="setting">
+            <div class="end-date-setting">
+                <div class="setting-name">
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-search-dialog.MinimumFileSize"] }}
+                    
+                    <div class="fa fa-question-circle" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-search-dialog.MinimumFileSize.title"] }}"></div>
+                </div>
+                <div class="setting-field">
+                    <input type="text" id="provenance-search-minimum-file-size" class="provenance-small-input"/>
+                </div>
+            </div>
+            <div class="end-time-setting">
+                <div class="setting-name">
+                    {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-search-dialog.MaximumFileSize"] }}
+                    
+                    <div class="fa fa-question-circle" title="{{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-search-dialog.MaximumFileSize.title"] }}"></div>
+                </div>
+                <div class="setting-field">
+                    <input type="text" id="provenance-search-maximum-file-size" class="provenance-time-input"/>
+                </div>
+            </div>
+            <div class="clear"></div>
+        </div>
+        <div id="provenance-search-location-container" class="setting">
+            <div class="setting-name">
+                {{ appCtrl.serviceProvider.globalMenuCtrl.constant["partials.provenance.provenance-search-dialog.SearchLocation"] }}
+            </div>
+            <div class="setting-field">
+                <div id="provenance-search-location"></div>
+            </div>
+            <div class="clear"></div>
+        </div>
+    </div>
+</div>
+
+<div id="provenance-query-dialog" class="hidden small-dialog">
+    <div class="dialog-content">
+        <div class="setting">
+            <div class="setting-field">
+                <div id="provenance-percent-complete"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="lineage-query-dialog" class="hidden small-dialog">
+    <div class="dialog-content">
+        <div class="setting">
+            <div class="setting-field">
+                <div id="lineage-percent-complete"></div>
+            </div>
+        </div>
+    </div>
+</div>
+</body></html>
