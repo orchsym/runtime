@@ -1,6 +1,6 @@
 FROM ocr.baishancloud.com/orchsym/openjdk:1.8.0
 
-ARG PROJECT_NAME=runtime
+ARG PROJECT_NAME=runtime-ce
 ARG VERSION_NAME="1.7.0-SNAPSHOT"
 
 ENV \
@@ -22,5 +22,5 @@ RUN \
 
 WORKDIR ${RUNTIME_HOME_DIR}
 
-# Apply configuration and start NiFi
+# Apply configuration and start Runtime
 ENTRYPOINT bash ${RUNTIME_HOME_DIR}/scripts/start.sh

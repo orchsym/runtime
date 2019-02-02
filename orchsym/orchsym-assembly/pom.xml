@@ -23,7 +23,7 @@
 	<packaging>pom</packaging>
 
 	<properties>
-		<orchsym.build.product.name>runtime</orchsym.build.product.name>
+		<orchsym.build.product.name>runtime-ce</orchsym.build.product.name>
 	</properties>
 
 	<dependencies>
@@ -147,7 +147,7 @@
 				</property>
 			</activation>
 			<properties>
-				<orchsym.build.product.name>runtime-engine</orchsym.build.product.name>
+				<orchsym.build.product.name>runtime-engine-ce</orchsym.build.product.name>
 			</properties>
 		</profile>
 	</profiles>

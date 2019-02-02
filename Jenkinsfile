@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    PROJECT_NAME = 'runtime'
+    PROJECT_NAME = 'runtime-ce'
     BUILD_OUTPUT_FILE = "${WORKSPACE}/build.output"
     BUILD_VERSION_NAME= "1.7.1-${BRANCH_NAME}"
     VERSION_NAME= "${BRANCH_NAME}"
