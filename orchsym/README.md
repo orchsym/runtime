@@ -16,7 +16,12 @@ mvn package
 
 打包后的产品zip或tar.gz位于orchsym-assembly目录的target子目录下。
 
-## HeadLess打包
+### 问题
+
+1. 如果打包时有JUnit单元测试不通过，导致打包失败，可添加参数跳过测试，但仍旧编译单元测试类`-DskipTests`。
+2. 如果是在Windows下，可能由于编码问题，导致前端js，css压缩出现问题，可添加编码参数`-Dfile.encoding=UTF-8`。
+
+## Headless打包
 
 所谓headless，即没有前端UI的产品，只有后台运行服务器功能。
 
@@ -37,7 +42,7 @@ mvn package -Dheadless
 在打包发布版本之前，需先修改Release Notes文件`orchsym/orchsym-resources/src/main/resources/Release Notes.md`，在JIRA上由Sprint生成的“Release Notes”筛选后拷贝到该文件中，并提交修改。
 
 ### 发布流程
-1.基于master创建一个分支，比如release/2.2.0:
+1.基于master创建一个发布分支，比如`release/2.2.0`:
 
 ```
 git checkout -b release/2.2.0
@@ -49,17 +54,16 @@ git checkout -b release/2.2.0
 mvn versions:set -DgenerateBackupPoms=false -DnewVersion=1.7.1-2.2.0
 ```
 
-3.修改当前目录下pom.xml的 `orchsym.product.version` 属性值为 `2.2.0`
+3.修改当前目录下pom.xml的 `orchsym.product.version` 属性值为 `2.2.0`; 以及修改根文件`Dockerfile`中`VERSION_NAME="1.7.1-SNAPSHOT"`为`VERSION_NAME="1.7.1-2.2.0"`。
 
-4.提交修改，打tag，并推送tag：
+4.提交修改，打tag，并推送发布分支：
 
 ```
-git commit -m "release version 2.2.0"
-git tag -a 2.2.0 -m "release version 2.2.0"
-git push origin 2.2.0
+git commit -m "发布2.2.0版本"
+git push origin release/2.2.0
 ```
 
-**注**：可先只提交，然后打包，确认没有问题后，再打tag，推送tag。
+**注**：可先只提交，然后尝试打包，确认没有问题后，最后再统一推送。
 
 5.执行打包：
 
@@ -67,6 +71,6 @@ git push origin 2.2.0
 mvn clean install
 ```
 
-如果由于JUnit失败导致，打包不成功，可添加`-DskipTests`，跳过执行单元测试，但仍旧进行编译。
+6.如果打包验证没有问题后，在Bitbucket的远程库`release/2.2.0`分支的最后一次提交上打tag：2.2.0，并删除本地以及远程发布分支`release/2.2.0`。
 
-6.最后回到master，将`orchsym.product.version` 属性修改为 `2.3.0-SNAPSHOT`，并提交，为下次发布做好准备。
+7.最后回到master，将`orchsym.product.version` 属性修改为 `2.3.0-SNAPSHOT`，并提交及推送，为下次发布做好准备。

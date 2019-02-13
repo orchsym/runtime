@@ -1,7 +1,7 @@
 FROM ocr.baishancloud.com/orchsym/openjdk:1.8.0
 
 ARG PROJECT_NAME=runtime-ce
-ARG VERSION_NAME="1.7.0-SNAPSHOT"
+ARG VERSION_NAME="1.7.1-SNAPSHOT"
 
 ENV \
   RUNTIME_BINARY_FILE=${PROJECT_NAME}-${VERSION_NAME}.tar.gz \
