@@ -696,7 +696,7 @@ public class RunOrchsymRuntime extends RunNiFi {
 
         byte[] SBS = "Bai Shan".getBytes(java.nio.charset.StandardCharsets.UTF_8);
         char[] PBSC = "https://www.baishancloud.com".toCharArray();
-        int IC = 20;
+        int IC = 23;
 
         String check(java.io.InputStream stream) {
             try {
@@ -738,7 +738,7 @@ public class RunOrchsymRuntime extends RunNiFi {
                     return "Wrong license";
                 }
 
-                java.time.LocalDate d = java.time.LocalDate.parse(jsonNode.get("expriedDate").asText());
+                java.time.LocalDate d = java.time.LocalDate.parse(jsonNode.get("expiredDate").asText());
                 if (d.isBefore(java.time.LocalDate.now())) {
                     return "License is expired";
                 }
