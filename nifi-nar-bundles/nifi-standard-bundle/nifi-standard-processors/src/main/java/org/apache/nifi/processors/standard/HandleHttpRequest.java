@@ -142,7 +142,7 @@ public class HandleHttpRequest extends AbstractProcessor {
             .required(true) //
             .addValidator(StandardValidators.createLongValidator(0L, 65535L, true)) //
             .expressionLanguageSupported(ExpressionLanguageScope.NONE) //
-            .defaultValue("80") //
+            .defaultValue("20001") //
             .build();
     public static final PropertyDescriptor HOSTNAME = new PropertyDescriptor.Builder() //
             .name("Hostname") //
