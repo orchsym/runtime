@@ -109,6 +109,15 @@ public class InvokeSOAP extends AbstractProcessor {
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
 
+    protected static final PropertyDescriptor SOAP_ACTION = new PropertyDescriptor
+            .Builder()
+            .name("SOAP Action")
+            .description("The name of the soap action.")
+            .required(false)
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+            .build();
+
     protected static final PropertyDescriptor ELEMENT_QUALIFIED = new PropertyDescriptor
             .Builder()
             .name("Element is qualified")
@@ -118,6 +127,16 @@ public class InvokeSOAP extends AbstractProcessor {
             .defaultValue("false")
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
             .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
+            .build();
+
+    protected static final PropertyDescriptor NAMESPACE_PREFIX = new PropertyDescriptor
+            .Builder()
+            .name("Namespace prefix")
+            .description("The prefix name of the namespace")
+            .required(false)
+            .defaultValue("ons")
+            .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
+            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
 
     protected static final PropertyDescriptor USER_NAME = new PropertyDescriptor
@@ -212,7 +231,9 @@ public class InvokeSOAP extends AbstractProcessor {
         descriptors.add(ENDPOINT_URL);
         descriptors.add(TARGET_NAMESPACE);
         descriptors.add(METHOD_NAME);
+        descriptors.add(SOAP_ACTION);
         descriptors.add(ELEMENT_QUALIFIED);
+        descriptors.add(NAMESPACE_PREFIX);
         descriptors.add(USER_NAME);
         descriptors.add(PASSWORD);
         descriptors.add(KEEP_ALIVE);
@@ -285,6 +306,10 @@ public class InvokeSOAP extends AbstractProcessor {
         //can handle keep alive
         options.setProperty(HTTPConstants.REUSE_HTTP_CLIENT, true);
         options.setProperty(HTTPConstants.CACHED_HTTP_CLIENT, httpClient);
+
+        //soapaction
+        final String soapAction = context.getProperty(SOAP_ACTION).evaluateAttributeExpressions().getValue();
+        options.setAction(soapAction);
     
         try {
             serviceClient = new ServiceClient();
@@ -321,7 +346,8 @@ public class InvokeSOAP extends AbstractProcessor {
         try {
             // get the dynamic properties, execute the call and return the results
             OMFactory fac = OMAbstractFactory.getOMFactory();
-            OMNamespace omNamespace = fac.createOMNamespace(context.getProperty(TARGET_NAMESPACE).evaluateAttributeExpressions().getValue(), "nifi");
+            String prefix = context.getProperty(NAMESPACE_PREFIX).evaluateAttributeExpressions().getValue();
+            OMNamespace omNamespace = fac.createOMNamespace(context.getProperty(TARGET_NAMESPACE).evaluateAttributeExpressions().getValue(), prefix);
             String methodName;
             if(ff != null) {
                 methodName = context.getProperty(METHOD_NAME).evaluateAttributeExpressions(ff).getValue();
@@ -420,12 +446,24 @@ public class InvokeSOAP extends AbstractProcessor {
                     dynamicValue = context.getProperty(descriptor).evaluateAttributeExpressions().getValue();
                 if (null != logger)
                     logger.debug("Processing dynamic property: " + descriptor.getName() + " with value: " + dynamicValue);
+                
                 OMElement value;
-                if(isQualifed)
-                    value = getSoapMethod(fac, omNamespace, descriptor.getName());
-                else
-                    value = getSoapMethod(fac, null, descriptor.getName());
-                value.addChild(AXIOMUtil.stringToOM(dynamicValue));
+                String xmlRegex = "<(\\S+?)(.*?)>(.*?)</\\1>";
+                if (dynamicValue.matches(xmlRegex)) {
+                    //is xml
+                    OMElement elment = AXIOMUtil.stringToOM(dynamicValue);
+                    if(isQualifed) {
+                        value = getSoapMethod(fac, omNamespace, descriptor.getName());
+                        elment.setNamespace(omNamespace);
+                    } else {
+                        value = getSoapMethod(fac, null, descriptor.getName());
+                    }
+                    value.addChild(elment);
+                } else {
+                    //not xml
+                    value = isQualifed ? getSoapMethod(fac, omNamespace, descriptor.getName()) : getSoapMethod(fac, null, descriptor.getName());
+                    value.setText(dynamicValue);
+                }
                 method.addChild(value);
             }
         }
