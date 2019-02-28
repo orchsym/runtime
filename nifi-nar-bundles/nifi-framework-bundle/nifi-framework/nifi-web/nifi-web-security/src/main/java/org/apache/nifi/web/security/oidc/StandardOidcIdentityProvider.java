@@ -27,7 +27,6 @@ import com.nimbusds.oauth2.sdk.AuthorizationGrant;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.TokenErrorResponse;
-import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.TokenResponse;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod;
@@ -69,6 +68,9 @@ import java.util.concurrent.TimeUnit;
 
 import static com.nimbusds.openid.connect.sdk.claims.UserInfo.EMAIL_CLAIM_NAME;
 
+import org.apache.nifi.web.security.oidc.adfs.HTTPSRequest;
+import org.apache.nifi.web.security.oidc.adfs.OrchsymHTTPRequest;
+import org.apache.nifi.web.security.oidc.adfs.OrchsymTokenRequest;
 
 /**
  * OidcProvider for managing the OpenId Connect Authorization flow.
@@ -216,6 +218,10 @@ public class StandardOidcIdentityProvider implements OidcIdentityProvider {
 
     private OIDCProviderMetadata retrieveOidcProviderMetadata(final String discoveryUri) throws IOException, ParseException {
         final URL url = new URL(discoveryUri);
+        if(discoveryUri != null && discoveryUri.toLowerCase().startsWith("https")){
+            final String jsonString = HTTPSRequest.getString(url);
+            return OIDCProviderMetadata.parse(jsonString);
+        }
         final HTTPRequest httpRequest = new HTTPRequest(HTTPRequest.Method.GET, url);
         httpRequest.setConnectTimeout(oidcConnectTimeout);
         httpRequest.setReadTimeout(oidcReadTimeout);
@@ -291,8 +297,8 @@ public class StandardOidcIdentityProvider implements OidcIdentityProvider {
 
         try {
             // build the token request
-            final TokenRequest request = new TokenRequest(oidcProviderMetadata.getTokenEndpointURI(), clientAuthentication, authorizationGrant, getScope());
-            final HTTPRequest tokenHttpRequest = request.toHTTPRequest();
+            final OrchsymTokenRequest request = new OrchsymTokenRequest(oidcProviderMetadata.getTokenEndpointURI(), clientAuthentication, authorizationGrant, getScope());
+            final OrchsymHTTPRequest tokenHttpRequest = request.toHTTPRequest();
             tokenHttpRequest.setConnectTimeout(oidcConnectTimeout);
             tokenHttpRequest.setReadTimeout(oidcReadTimeout);
 
@@ -308,7 +314,7 @@ public class StandardOidcIdentityProvider implements OidcIdentityProvider {
                 final IDTokenClaimsSet claimsSet = tokenValidator.validate(oidcJwt, null);
 
                 // attempt to extract the email from the id token if possible
-                String email = claimsSet.getStringClaim(EMAIL_CLAIM_NAME);
+                String email = claimsSet.getStringClaim(OrchsymTokenRequest.getEmailKey(claimsSet));
                 if (StringUtils.isBlank(email)) {
                     // extract the bearer access token
                     final BearerAccessToken bearerAccessToken = oidcTokens.getBearerAccessToken();

@@ -103,6 +103,10 @@ public class StandardManagedAuthorizer implements ManagedAuthorizer {
                 return AuthorizationResult.denied(String.format("user identity can't be '%s'.", request.getIdentity()));
             }
             User newUser = new User.Builder().identifier(generateUuid()).identity(request.getIdentity()).build();
+
+            if(!autoGenerateUser(newUser)){
+                return AuthorizationResult.denied("Unable to access!");
+            }
             // create new user and add to userGroup
             ((ConfigurableUserGroupProvider)userGroupProvider).addUser(newUser);
             //set access pilicy for the new user
@@ -116,6 +120,22 @@ public class StandardManagedAuthorizer implements ManagedAuthorizer {
             return AuthorizationResult.approved();
         }
         return AuthorizationResult.denied(request.getExplanationSupplier().get());
+    }
+
+    public boolean isSecurityUserAutoGenerateEnabled() {
+        org.apache.nifi.util.NiFiProperties nifiProperties = org.apache.nifi.util.NiFiProperties.createBasicNiFiProperties(null, null);
+        return Boolean.parseBoolean(nifiProperties.getProperty("orchsym.security.user.auto.generate", Boolean.FALSE.toString()));
+    }
+
+    private boolean autoGenerateUser(User newUser) {
+        try {
+            boolean isSecurityUserAutoGenerateEnabled = isSecurityUserAutoGenerateEnabled();
+            // boolean configured = ((ConfigurableUserGroupProvider)userGroupProvider).isConfigurable(newUser);
+            // return isSecurityUserAutoGenerateEnabled || configured;
+            return isSecurityUserAutoGenerateEnabled;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private String generateUuid() {
