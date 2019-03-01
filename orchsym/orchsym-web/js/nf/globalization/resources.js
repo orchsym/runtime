@@ -56,6 +56,7 @@ nf._ = (function () {
             return null;
     }
     locale = getCookie('locale') || defaultLocale;
+    localStorage.setItem('locale', locale);
     var en = {
         "empty": "",
         "nf-actions.UpdateResource": "Update Resource",

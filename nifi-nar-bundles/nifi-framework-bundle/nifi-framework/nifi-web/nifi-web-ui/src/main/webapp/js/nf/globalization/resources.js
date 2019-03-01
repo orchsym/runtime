@@ -36,7 +36,7 @@ $.ajax({
         }catch (e) {
             console.error('Data format does not meet expectations.')
         }
-        
+
     },
     error: function(err){
         defaultLocale = 'zh'
@@ -44,17 +44,18 @@ $.ajax({
 })
 
 nf._ = (function () {
-    function getCookie(name) 
-    { 
+    function getCookie(name)
+    {
         var arr,reg=new RegExp("(^| )"+name+"=([^;]*)(;|$)");
-     
+
         if(arr=document.cookie.match(reg))
-     
-            return unescape(arr[2]); 
-        else 
-            return null; 
-    } 
+
+            return unescape(arr[2]);
+        else
+            return null;
+    }
     locale = getCookie('locale') || defaultLocale;
+    localStorage.setItem('locale', locale);
     var en = {
         "nf-actions.UpdateResource": "Update Resource",
         "nf-actions.Refreshing": "Refreshing",
@@ -1025,7 +1026,7 @@ nf._ = (function () {
         "nf-summary-table.ClusterRemoteProcessGroupSummary": "Cluster Remote Process Group Summary",
         "nf-summary-table.JVM": "JVM",
         "nf-summary-table.System": "System",
-        "nf-summary-table.Version": "Version", 
+        "nf-summary-table.Version": "Version",
         "nf-summary-table.SystemDiagnostics": "System Diagnostics",
         "nf-summary-table.Summary": " Summary",
         "nf-summary-table.Message4": "Based on the presence of announcements",
@@ -1989,8 +1990,8 @@ nf._ = (function () {
         "nf-dialog.Cancel": "取消",
         "nf-dialog.Update": "更新",
         "nf-dialog.Import": "导入",
-        "nf-dialog.Save": "保存", 
-        "nf-dialog.Change": "切换", 
+        "nf-dialog.Save": "保存",
+        "nf-dialog.Change": "切换",
         "nf-dialog.Disconnect": "断开",
         "nf-dialog.Revert": "还原",
         "nf-processor-details.Settings": "设置",
@@ -2215,7 +2216,7 @@ nf._ = (function () {
         "nf-flow-version.import.table.comments": "注释",
         "nf-flow-version.local-change-table.ComponentName": "组件",
         "nf-flow-version.local-change-table.ChangeType": "修改类型",
-        "nf-flow-version.local-change-table.Difference": "差异", 
+        "nf-flow-version.local-change-table.Difference": "差异",
         "nf-flow-version.LocalChangeDescription": "本地修改了 ",
         "nf-flow-version.NoVersionAvailableMessage": "此流程还没有任何版本.",
         "nf-flow-version.VersionChangedMessage": "此模块的版本已经修改.",
@@ -2268,7 +2269,7 @@ nf._ = (function () {
         "jquery-tagcloud.NoTagsSpecified": "未指定标签",
         "tag.filter.allgroup": "所有分类"
     };
-    window.en = en 
+    window.en = en
     window.zh = zh
     return {
         msg: function (key) {

@@ -6,8 +6,9 @@ $(function(){
     var ApiTools = {};
     var token = 'Bearer '
     if(JSON.parse(localStorage.getItem('jwt'))){
-            token = token + JSON.parse(localStorage.getItem('jwt'))['item']
+        token = token + JSON.parse(localStorage.getItem('jwt'))['item']
     }
+    var locale = localStorage.getItem('locale')
 
     ApiTools.path = {
         node: $("input[name=path]")
@@ -677,6 +678,7 @@ $(function(){
             contentType: 'application/json',
             headers:{
                 Authorization: token,
+                Locale: locale,
             },
         }).then(function (response) {
             console.log(response);
@@ -1000,6 +1002,7 @@ $(function(){
             }),
             headers:{
                 Authorization: token,
+                Locale: locale,
             },
         }).done(function (response) {
             Swagger = response;
@@ -1010,7 +1013,7 @@ $(function(){
             if (Swagger.methods.length > 0) {
                 ApiTools.method.selectMethod = Swagger.methods[0];
             };
-            
+
             ModelTools.model.showList();
             for(x in ApiTools) {
                 if(ApiTools[x]["set"]) {
@@ -1184,7 +1187,7 @@ $(function(){
         }
         return [];
     }
-    
+
     function getClientId() {
         return $('#http-request-client-id').text();
     }

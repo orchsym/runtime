@@ -39,13 +39,15 @@
         // include jwt when possible
         $.ajaxSetup({
             'beforeSend': function (xhr) {
+                var locale = locale || localStorage.getItem('locale');
+                if(locale) {
+                  xhr.setRequestHeader('Locale', locale);
+                }
                 var hadToken = nfStorage.hasItem('jwt');
-
                 // get the token to include in all requests
                 var token = nfStorage.getItem('jwt');
                 if (token !== null) {
                     xhr.setRequestHeader('Authorization', 'Bearer ' + token);
-                    xhr.setRequestHeader('Locale', locale);
                 } else {
                     // if the current user was logged in with a token and the token just expired, cancel the request
                     if (hadToken === true) {

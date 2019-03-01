@@ -21,7 +21,10 @@ $(document).ready(function () {
     ua.editable = $('#attribute-updater-editable').text() === 'true';
     ua.init();
 });
-
+if(JSON.parse(localStorage.getItem('jwt'))){
+    token = token + JSON.parse(localStorage.getItem('jwt'))['item']
+}
+var locale = localStorage.getItem('locale')
 /**
  * Determine if an `element` has content overflow and adds a colored bottom border if it does.
  *
@@ -46,10 +49,10 @@ var toggleScrollable = function (element) {
 var ua = {
     newRuleIndex: 0,
     editable: false,
-    
+
     /**
      * Initializes this web application.
-     * 
+     *
      * @returns {undefined}
      */
     init: function () {
@@ -240,7 +243,11 @@ var ua = {
                             url: 'api/criteria/evaluation-context',
                             data: JSON.stringify(entity),
                             processData: false,
-                            contentType: 'application/json'
+                            contentType: 'application/json',
+                            headers:{
+                                Authorization: token,
+                                Locale: locale,
+                            },
                         }).then(function (evaluationContext) {
                             ua.showMessage('FlowFile Policy saved as "' + selectedOption.text + '".');
 
@@ -295,10 +302,10 @@ var ua = {
             }
         });
     },
-    
+
     /**
      * Initializes the new rule dialog.
-     * 
+     *
      * @returns {undefined}
      */
     initNewRuleDialog: function () {
@@ -348,7 +355,11 @@ var ua = {
                                         q: copyFromRuleName
                                     },
                                     dataType: 'json',
-                                    url: 'api/criteria/rules/search-results'
+                                    url: 'api/criteria/rules/search-results',
+                                    headers:{
+                                        Authorization: token,
+                                        Locale: locale,
+                                    },
                                 }).then(function (response) {
                                     var rules = response.rules;
 
@@ -483,7 +494,11 @@ var ua = {
                         q: request.term
                     },
                     dataType: 'json',
-                    url: 'api/criteria/rules/search-results'
+                    url: 'api/criteria/rules/search-results',
+                    headers:{
+                        Authorization: token,
+                        Locale: locale,
+                    },
                 }).done(function (searchResponse) {
                     response(searchResponse);
                 });
@@ -499,7 +514,7 @@ var ua = {
             }
         });
     },
-    
+
     /**
      * Initializes the new condition dialog.
      */
@@ -532,7 +547,11 @@ var ua = {
                     url: 'api/criteria/rules/conditions',
                     data: JSON.stringify(entity),
                     processData: false,
-                    contentType: 'application/json'
+                    contentType: 'application/json',
+                    headers:{
+                        Authorization: token,
+                        Locale: locale,
+                    },
                 }).then(function (response) {
                     var conditionsGrid = $('#selected-rule-conditions').data('gridInstance');
                     var conditionsData = conditionsGrid.getData();
@@ -575,7 +594,7 @@ var ua = {
             containment: 'parent'
         }).on('click', '#new-condition-add', add).on('click', '#new-condition-cancel', cancel);
     },
-    
+
     /**
      * Initializes the new action dialog.
      */
@@ -610,7 +629,11 @@ var ua = {
                     url: 'api/criteria/rules/actions',
                     data: JSON.stringify(entity),
                     processData: false,
-                    contentType: 'application/json'
+                    contentType: 'application/json',
+                    headers:{
+                        Authorization: token,
+                        Locale: locale,
+                    },
                 }).then(function (response) {
                     var actionsGrid = $('#selected-rule-actions').data('gridInstance');
                     var actionsData = actionsGrid.getData();
@@ -663,10 +686,10 @@ var ua = {
             }
         });
     },
-    
+
     /**
      * Configure the ok dialog.
-     * 
+     *
      * @returns {undefined}
      */
     initOkDialog: function () {
@@ -695,10 +718,10 @@ var ua = {
             }
         });
     },
-    
+
     /**
      * Configure the yes no dialog.
-     * 
+     *
      * @returns {undefined}
      */
     initYesNoDialog: function () {
@@ -707,10 +730,10 @@ var ua = {
             overlayBackground: false
         });
     },
-    
+
     /**
      * Initializes the conditions grid.
-     * 
+     *
      * @returns {undefined}
      */
     initConditionsGrid: function () {
@@ -798,7 +821,7 @@ var ua = {
         $('#selected-rule-conditions').data('gridInstance', conditionsGrid);
         return conditionsGrid;
     },
-    
+
     /**
      * Initializes the actions grid.
      */
@@ -887,10 +910,10 @@ var ua = {
         $('#selected-rule-actions').data('gridInstance', actionsGrid);
         return actionsGrid;
     },
-    
+
     /**
      * Initializes the rule list.
-     * 
+     *
      * @returns {undefined}
      */
     initRuleList: function () {
@@ -1039,7 +1062,7 @@ var ua = {
             e.stopPropagation();
         }).children(':first').click();
     },
-    
+
     /**
      * Saves the current rule order
      */
@@ -1067,7 +1090,11 @@ var ua = {
             url: 'api/criteria/evaluation-context',
             data: JSON.stringify(entity),
             processData: false,
-            contentType: 'application/json'
+            contentType: 'application/json',
+            headers:{
+                Authorization: token,
+                Locale: locale,
+            },
         }).then(function () {
             ua.showMessage('New rule ordering saved.');
         }, function (xhr, status, error) {
@@ -1076,7 +1103,7 @@ var ua = {
             $('#ok-dialog').modal('setHeaderText', 'Error').modal('show');
         });
     },
-    
+
     /**
      * Clears the rule details.
      */
@@ -1108,10 +1135,10 @@ var ua = {
         var actionsData = actionsGrid.getData();
         actionsData.setItems([]);
     },
-    
+
     /**
      * Loads the rule list.
-     * 
+     *
      * @returns {undefined}
      */
     loadRuleList: function () {
@@ -1120,7 +1147,11 @@ var ua = {
             url: 'api/criteria/rules?' + $.param({
                 processorId: ua.getProcessorId(),
                 verbose: true
-            })
+            }),
+            headers:{
+                Authorization: token,
+                Locale: locale,
+            },
         }).done(function (response) {
             var rules = response.rules;
 
@@ -1145,7 +1176,11 @@ var ua = {
             type: 'GET',
             url: 'api/criteria/evaluation-context?' + $.param({
                 processorId: ua.getProcessorId()
-            })
+            }),
+            headers:{
+                Authorization: token,
+                Locale: locale,
+            },
         }).done(function (evaluationContext) {
             // record the currently selected value
             $('#selected-flowfile-policy').text(evaluationContext.flowFilePolicy);
@@ -1168,12 +1203,12 @@ var ua = {
             });
         }).promise();
     },
-    
+
     /**
      * Selects the specified rule and populates its details.
-     * 
+     *
      * @param {object} rule
-     * @returns 
+     * @returns
      */
     selectRule: function (rule) {
         var ruleId = rule.id;
@@ -1192,7 +1227,11 @@ var ua = {
                     url: 'api/criteria/rules/' + encodeURIComponent(ruleId) + '?' + $.param({
                         processorId: ua.getProcessorId(),
                         verbose: true
-                    })
+                    }),
+                    headers:{
+                        Authorization: token,
+                        Locale: locale,
+                    },
                 }).then(function (response) {
                     deferred.resolveWith(this, [response.rule]);
                 }, function () {
@@ -1231,12 +1270,12 @@ var ua = {
             actionsGrid.invalidate();
         }).promise();
     },
-    
+
     /**
      * Deletes the specified rule.
-     * 
+     *
      * @param {type} rule
-     * @returns 
+     * @returns
      */
     deleteRule: function (rule) {
         var ruleId = rule.id;
@@ -1261,6 +1300,10 @@ var ua = {
                             if (ruleId.indexOf('unsaved-rule-') === -1) {
                                 $.ajax({
                                     type: 'DELETE',
+                                    headers:{
+                                        Authorization: token,
+                                        Locale: locale,
+                                    },
                                     url: 'api/criteria/rules/' + encodeURIComponent(ruleId) + '?' + $.param({
                                         processorId: ua.getProcessorId(),
                                         revision: ua.getRevision(),
@@ -1301,10 +1344,10 @@ var ua = {
 
         }).promise();
     },
-    
+
     /**
      * Saves the currently selected rule.
-     * 
+     *
      * @returns {unresolved}
      */
     saveSelectedRule: function () {
@@ -1362,7 +1405,11 @@ var ua = {
             url: url,
             data: JSON.stringify(entity),
             processData: false,
-            contentType: 'application/json'
+            contentType: 'application/json',
+            headers:{
+                Authorization: token,
+                Locale: locale,
+            },
         }).then(function (response) {
             var rule = response.rule;
 
@@ -1380,10 +1427,10 @@ var ua = {
             $('#ok-dialog').modal('setHeaderText', 'Error').modal('show');
         });
     },
-    
+
     /**
      * Deletes the specified row from the specified grid.
-     * 
+     *
      * @param {type} gridSelector
      * @param {type} row
      * @returns {undefined}
@@ -1397,10 +1444,10 @@ var ua = {
         // mark the rule as modified
         $('#rule-list').children('li.selected').addClass('unsaved');
     },
-    
+
     /**
      * Creates a new rule and adds it to the rule list.
-     * 
+     *
      * @param {type} rule
      */
     createNewRuleItem: function (rule) {
@@ -1422,10 +1469,10 @@ var ua = {
 
         return ruleItem;
     },
-    
+
     /**
      * Hides the rule list.
-     * 
+     *
      * @returns {undefined}
      */
     hideRuleList: function () {
@@ -1433,10 +1480,10 @@ var ua = {
         $('#no-rules').show();
         $('#rule-filter-controls').hide();
     },
-    
+
     /**
      * Shows the rule list.
-     * 
+     *
      * @returns {undefined}
      */
     showRuleList: function () {
@@ -1447,21 +1494,21 @@ var ua = {
         // apply the filter
         ua.applyRuleFilter();
     },
-    
-    // Rule filter functions. 
+
+    // Rule filter functions.
 
     /**
      * Get the filter text.
-     * 
+     *
      * @returns {unresolved}
      */
     getFilterText: function () {
         return $('#rule-filter').val();
     },
-    
+
     /**
      * Get the text for the rule to be filtered.
-     * 
+     *
      * @param {type} li
      * @returns {Array}
      */
@@ -1487,10 +1534,10 @@ var ua = {
             return actions;
         }
     },
-    
+
     /**
      * Apply the rule filter.
-     * 
+     *
      * @returns {undefined}
      */
     applyRuleFilter: function () {
@@ -1558,10 +1605,10 @@ var ua = {
         $('#displayed-rules').text(matchingRules);
         $('#total-rules').text(ruleItems.length);
     },
-    
+
     /**
      * Adds a hover effects to the specified selector.
-     * 
+     *
      * @param {type} selector
      * @param {type} normalStyle
      * @param {type} overStyle
@@ -1574,10 +1621,10 @@ var ua = {
         });
         return $(selector).addClass(normalStyle);
     },
-    
+
     /**
      * Shows the specified text and clears it after 10 seconds.
-     * 
+     *
      * @param {type} text
      * @returns {undefined}
      */
@@ -1587,10 +1634,10 @@ var ua = {
             toggleScrollable($('#message').text('').get(0));
         }, 10000);
     },
-    
+
     /**
      * Custom validator for required fields.
-     * 
+     *
      * @param {type} value
      */
     requiredFieldValidator: function (value) {
@@ -1600,10 +1647,10 @@ var ua = {
             return {valid: true, msg: null};
         }
     },
-    
+
     /**
      * Function for prevent cell editing before a rule is selected.
-     * 
+     *
      * @param {type} e
      * @param {type} args
      */
@@ -1618,10 +1665,10 @@ var ua = {
             return false;
         }
     },
-    
+
     /**
      * Shows the property value for the specified row and cell.
-     * 
+     *
      * @param {slickgrid} grid
      * @param {integer} row
      * @param {integer} cell
@@ -1729,17 +1776,17 @@ var ua = {
             'right': '0'
         }).append(ok).append('<div class="clear"></div>').appendTo(wrapper);
     },
-    
+
     /**
      * Removes all currently open process property detail dialogs.
      */
     removeAllDetailDialogs: function () {
         nf.UniversalCapture.removeAllPropertyDetailDialogs();
     },
-    
+
     /**
      * Gets a custom editor for editing long values.
-     * 
+     *
      * @param {type} args
      */
     getCustomLongTextEditor: function (args) {
@@ -1871,10 +1918,10 @@ var ua = {
         // initialize the custom long text editor
         this.init();
     },
-    
+
     /**
      * Gets a custom editor for editing long values.
-     * 
+     *
      * @param {type} args
      */
     getNfelEditor: function (args) {
@@ -2002,20 +2049,20 @@ var ua = {
         // initialize the custom long text editor
         this.init();
     },
-    
+
     /**
      * Gets the client id.
-     * 
-     * @returns 
+     *
+     * @returns
      */
     getClientId: function () {
         return $('#attribute-updater-client-id').text();
     },
-    
+
     /**
      * Gets the revision.
-     * 
-     * @returns 
+     *
+     * @returns
      */
     getRevision: function () {
         return $('#attribute-updater-revision').text();
@@ -2029,10 +2076,10 @@ var ua = {
     getDisconnectionAcknowledged: function () {
         return $('#attribute-updater-disconnected-node-acknowledged').text();
     },
-    
+
     /**
      * Gets the processor id.
-     * 
+     *
      * @returns
      */
     getProcessorId: function () {
