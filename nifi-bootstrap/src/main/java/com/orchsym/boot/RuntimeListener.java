@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.baishancloud.orchsym.boot;
+package com.orchsym.boot;
 
 import java.io.IOException;
 import java.io.InputStream;

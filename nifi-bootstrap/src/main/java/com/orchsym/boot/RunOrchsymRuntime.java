@@ -1,4 +1,4 @@
-package com.baishancloud.orchsym.boot;
+package com.orchsym.boot;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -49,9 +49,11 @@ public class RunOrchsymRuntime extends RunNiFi {
         }
     };
 
-    public RunOrchsymRuntime(File bootstrapConfigFile, boolean verbose) throws IOException {
-        super(bootstrapConfigFile);
-        setRuntimeName(bootstrapConfigFile);
+    protected final static File configFile = getDefaultBootstrapConfFile();
+
+    public RunOrchsymRuntime() throws IOException {
+        super(configFile);
+        setRuntimeName(configFile);
 
         this.cmdLogger = LoggerFactory.getLogger("com.orchsym.bootstrap.Command");
         this.defaultLogger = LoggerFactory.getLogger(RunOrchsymRuntime.class);
@@ -275,12 +277,20 @@ public class RunOrchsymRuntime extends RunNiFi {
         }
     }
 
-    private void addProperty(List<String> cmd, String propKey, Object value) {
+    protected void addProperty(List<String> cmd, String propKey, Object value) {
         if (value != null) {
             String str = value.toString();
             if (!str.trim().isEmpty())
                 cmd.add("-D" + propKey + "=" + value);
         }
+    }
+
+    protected void addAddtionsCmds(List<String> cmd) {
+        //
+    }
+
+    protected String getRuntimeApp() {
+        return "com.orchsym.OrchsymRuntime";
     }
 
     /**
@@ -392,7 +402,6 @@ public class RunOrchsymRuntime extends RunNiFi {
             }
         }
 
-        final String classPath = classPathBuilder.toString();
         String javaCmd = props.get("java");
         if (javaCmd == null) {
             javaCmd = DEFAULT_JAVA_CMD;
@@ -415,20 +424,20 @@ public class RunOrchsymRuntime extends RunNiFi {
 
         cmd.add(javaCmd);
         cmd.add("-classpath");
-        cmd.add(classPath);
+        cmd.add(classPathBuilder.toString());
         cmd.addAll(javaAdditionalArgs);
         addProperty(cmd, OrchsymProperties.PROPERTIES_FILE_PATH, nifiPropsFilename);
         addProperty(cmd, OrchsymProperties.BOOTSTRAP_LISTEN_PORT, listenPort);
         addProperty(cmd, OrchsymProperties.APP, BrandingProperties.DEFAULT_SHORT_RUNTIME_NAME);
-        addProperty(cmd, OrchsymProperties.NIFI_BOOTSTRAP_LOG_DIR, nifiLogDir); //because logback still use it
+        addProperty(cmd, OrchsymProperties.NIFI_BOOTSTRAP_LOG_DIR, nifiLogDir); // because logback still use it
         addProperty(cmd, OrchsymProperties.BOOTSTRAP_LOG_DIR, nifiLogDir);
-        addProperty(cmd, OrchsymProperties.LIC_PATH, getLicFile().getAbsolutePath());
         addProperty(cmd, NativeLibrariesLoader.KEY_LIB_PATH, libraryPaths);
+        addAddtionsCmds(cmd);
         if (!System.getProperty("java.version").startsWith("1.")) {
             // running on Java 9+, java.xml.bind module must be made available
             cmd.add("--add-modules=java.xml.bind");
         }
-        cmd.add("com.orchsym.OrchsymRuntime");
+        cmd.add(getRuntimeApp());
         if (isSensitiveKeyPresent(props)) {
             Path sensitiveKeyFile = createSensitiveKeyFile(confDir);
             writeSensitiveKeyFile(props, sensitiveKeyFile);
@@ -596,29 +605,13 @@ public class RunOrchsymRuntime extends RunNiFi {
         return jarFiles;
     }
 
-    private static void printErr(String message) {
+    protected static void printErr(String message) {
         System.err.println();
         System.err.println(message);
         System.err.println();
     }
 
-    private static File getLicFile() {
-        return new File(System.getProperty(OrchsymProperties.LIC_PATH, "./conf/lic"));
-    }
-
-    public static void main(String[] args) throws IOException, InterruptedException {
-        // FIXME for lic
-        File licFile = getLicFile();
-        if (!licFile.exists()) {
-            printErr("License not found!");
-            return;
-        }
-        final String message = new LicChecker().check(new FileInputStream(licFile));
-        if (message != null) { // have error
-            printErr(message);
-            return;
-        }
-
+    public void run(String[] args) throws IOException, InterruptedException {
         /*
          * 
          */
@@ -659,32 +652,29 @@ public class RunOrchsymRuntime extends RunNiFi {
             return;
         }
 
-        final File configFile = getDefaultBootstrapConfFile();
-        final RunOrchsymRuntime runtime = new RunOrchsymRuntime(configFile, verbose); // FIXME use special runtime
-
         Integer exitStatus = null;
         switch (cmd.toLowerCase()) {
         case "start":
-            runtime.start();
+            start();
             break;
         case "run":
-            runtime.start();
+            start();
             break;
         case "stop":
-            runtime.stop();
+            stop();
             break;
         case "status":
-            exitStatus = runtime.status();
+            exitStatus = status();
             break;
         case "restart":
-            runtime.stop();
-            runtime.start();
+            stop();
+            start();
             break;
         case "dump":
-            runtime.dump(dumpFile);
+            dump(dumpFile);
             break;
         case "env":
-            runtime.env();
+            env();
             break;
         }
         if (exitStatus != null) {
@@ -692,60 +682,9 @@ public class RunOrchsymRuntime extends RunNiFi {
         }
     }
 
-    static class LicChecker {
+    public static void main(String[] args) throws IOException, InterruptedException {
+        final RunOrchsymRuntime runtime = new RunOrchsymRuntime();
+        runtime.run(args);
 
-        byte[] SBS = "Bai Shan".getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        char[] PBSC = "https://www.baishancloud.com".toCharArray();
-        int IC = 23;
-
-        String check(java.io.InputStream stream) {
-            try {
-                if (stream == null) {
-                    return "License not found";
-                }
-                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(stream));
-                final String str = reader.readLine();
-
-                int underlineIndex = str.indexOf('_');
-                if (underlineIndex < 0) {
-                    return "Wrong contents of license";
-                }
-                final String name = str.substring(0, underlineIndex);
-                final String eStr = str.substring(underlineIndex + 1);
-
-                final javax.crypto.SecretKey key = javax.crypto.SecretKeyFactory.getInstance("PBEWithMD5AndDES").generateSecret(new javax.crypto.spec.PBEKeySpec(PBSC, SBS, IC));
-                final javax.crypto.Cipher dcipher = javax.crypto.Cipher.getInstance(key.getAlgorithm());
-                dcipher.init(javax.crypto.Cipher.DECRYPT_MODE, key, new javax.crypto.spec.PBEParameterSpec(SBS, IC));
-                final String dStr = new String(dcipher.doFinal(java.util.Base64.getDecoder().decode(eStr.getBytes(java.nio.charset.StandardCharsets.UTF_8))), java.nio.charset.StandardCharsets.UTF_8);
-
-                com.fasterxml.jackson.databind.JsonNode jsonNode = new com.fasterxml.jackson.databind.ObjectMapper().readTree(dStr);
-                if (!name.equals(jsonNode.get("name").asText())) {
-                    return "Wrong license, company name is unmatched";
-                }
-                com.fasterxml.jackson.databind.JsonNode pkjson = jsonNode.get("pk");
-                if (!pkjson.has("mod")) {
-                    return "Missing required field";
-                }
-                if (!pkjson.has("exp")) {
-                    return "Missing required field";
-                }
-                String vstr = jsonNode.get("version").asText();
-                if (vstr == null || vstr.isEmpty()) {
-                    return "Wrong version of license";
-                }
-                int ic = Integer.parseInt(vstr.replace(".", ""));
-                if (ic != IC) {
-                    return "Wrong license";
-                }
-
-                java.time.LocalDate d = java.time.LocalDate.parse(jsonNode.get("expiredDate").asText());
-                if (d.isBefore(java.time.LocalDate.now())) {
-                    return "License is expired";
-                }
-                return null;
-            } catch (Throwable e) {
-                return "Can't parse license";
-            }
-        }
     }
 }

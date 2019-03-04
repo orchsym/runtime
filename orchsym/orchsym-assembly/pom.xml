@@ -24,6 +24,9 @@
 
 	<properties>
 		<orchsym.build.product.name>runtime-ce</orchsym.build.product.name>
+
+		<!-- bin -->
+		<orchsym.boot.app>com.orchsym.boot.RunOrchsymRuntime</orchsym.boot.app>
 	</properties>
 
 	<dependencies>

@@ -368,8 +368,14 @@ public class JettyServer implements NiFiServer {
             handlers.addHandler(webErrorContext);
         }
 
+        loadWars(props, warToBundleLookup, handlers);
+        
         // deploy the web apps
         return gzip(handlers);
+    }
+
+    protected void loadWars(final NiFiProperties settings, final Map<File, Bundle> warToBundleLookup, HandlerCollection handlers) {
+        // load other wars
     }
 
     /**
@@ -489,7 +495,7 @@ public class JettyServer implements NiFiServer {
         return null;
     }
 
-    private WebAppContext loadWar(final File warFile, final String contextPath, final ClassLoader parentClassLoader) {
+    protected WebAppContext loadWar(final File warFile, final String contextPath, final ClassLoader parentClassLoader) {
         final WebAppContext webappContext = new WebAppContext(warFile.getPath(), contextPath);
         webappContext.setContextPath(contextPath);
         webappContext.setDisplayName(contextPath);

@@ -127,6 +127,8 @@ public class NiFi {
         // expand the nars
         final ExtensionMapping extensionMapping = NarUnpacker.unpackNars(properties, systemBundle);
 
+        afterUnpackNars(properties);
+
         // load the extensions classloaders
         NarClassLoaders narClassLoaders = NarClassLoaders.getInstance();
 
@@ -143,9 +145,9 @@ public class NiFi {
 
         // load the server from the framework classloader
         Thread.currentThread().setContextClassLoader(frameworkClassLoader);
-        Class<?> jettyServer = Class.forName("org.apache.nifi.web.server.JettyServer", true, frameworkClassLoader);
+        Class<?> jettyServer = Class.forName(getJettyServer(), true, frameworkClassLoader);
         Constructor<?> jettyConstructor = jettyServer.getConstructor(NiFiProperties.class, Set.class);
-
+        
         final long startTime = System.nanoTime();
         nifiServer = (NiFiServer) jettyConstructor.newInstance(properties, narBundles);
         nifiServer.setExtensionMapping(extensionMapping);
@@ -164,6 +166,14 @@ public class NiFi {
             LOGGER.info("Controller initialization took " + duration + " nanoseconds "
                     + "(" + (int) TimeUnit.SECONDS.convert(duration, TimeUnit.NANOSECONDS) + " seconds).");
         }
+    }
+
+    protected void afterUnpackNars(final NiFiProperties properties) {
+        // nothing to do
+    }
+
+    protected String getJettyServer() {
+        return "org.apache.nifi.web.server.JettyServer";
     }
 
     protected void setDefaultUncaughtExceptionHandler() {

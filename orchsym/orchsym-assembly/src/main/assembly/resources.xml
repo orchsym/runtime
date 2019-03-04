@@ -23,7 +23,7 @@
 			</includes>
 			<unpack>true</unpack>
 			<unpackOptions>
-				<filtered>true</filtered>
+				<filtered>true</filtered> <!-- if need, replace some vars again -->
 				<includes>
 					<include>conf/*.*</include>
 					<include>lib/**</include>
@@ -46,7 +46,7 @@
 			</includes>
 			<unpack>true</unpack>
 			<unpackOptions>
-				<filtered>true</filtered>
+				<filtered>true</filtered> <!-- if need, replace some vars again -->
 				<includes>
 					<include>bin/*</include>
 				</includes>

@@ -24,21 +24,21 @@ public class OrchsymRuntime extends NiFi {
         super(properties);
     }
 
-    private static void setCompatibleProperties() {
+    protected static void setCompatibleProperties() {
         setNifiProperty(OrchsymProperties.PROPERTIES_FILE_PATH, NiFiProperties.PROPERTIES_FILE_PATH);
         setNifiProperty(OrchsymProperties.BOOTSTRAP_LISTEN_PORT, BOOTSTRAP_PORT_PROPERTY);
-         setNifiProperty(OrchsymProperties.BOOTSTRAP_LOG_DIR, OrchsymProperties.NIFI_BOOTSTRAP_LOG_DIR);
+        setNifiProperty(OrchsymProperties.BOOTSTRAP_LOG_DIR, OrchsymProperties.NIFI_BOOTSTRAP_LOG_DIR);
         setNifiProperty(OrchsymProperties.APP, "app");
     }
 
-    private static void setNifiProperty(String key, String nifiKey) {
+    protected static void setNifiProperty(String key, String nifiKey) {
         String propPath = System.getProperty(key);
         if (propPath != null && !propPath.isEmpty()) {
             System.setProperty(nifiKey, propPath);
         }
     }
 
-    public static void main(String[] args) {
+    protected static NiFiProperties loadSettings(String[] args) {
         try {
             setCompatibleProperties();
 
@@ -47,7 +47,19 @@ public class OrchsymRuntime extends NiFi {
             LOGGER.info("Launching " + runtimeName + "...");
 
             NiFiProperties properties = convertArgumentsToValidatedNiFiProperties(args);
-            new OrchsymRuntime(properties);
+            return properties;
+        } catch (final Throwable t) {
+            LOGGER.error("Failure to launch due to " + t, t);
+            return null;
+        }
+    }
+
+    public static void main(String[] args) {
+        try {
+
+            NiFiProperties properties = loadSettings(args);
+            if (properties != null)
+                new OrchsymRuntime(properties);
         } catch (final Throwable t) {
             LOGGER.error("Failure to launch due to " + t, t);
         }

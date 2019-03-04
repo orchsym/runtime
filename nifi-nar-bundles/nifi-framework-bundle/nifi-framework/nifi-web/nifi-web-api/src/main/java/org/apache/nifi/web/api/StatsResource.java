@@ -57,6 +57,11 @@ import org.apache.nifi.web.api.entity.StatsServicesEntity;
 import org.apache.nifi.web.api.entity.StatsVarsEntity;
 import org.apache.nifi.web.api.entity.TemplateEntity;
 import org.apache.nifi.web.api.entity.VariableRegistryEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -73,7 +78,9 @@ import io.swagger.annotations.ApiResponses;
 @Api(value = StatsResource.PATH, description = "Endpoint for accessing the statistics of flows and components.")
 public class StatsResource extends ApplicationResource {
     public static final String PATH = "/stats";
-
+    
+    private static final Logger logger = LoggerFactory.getLogger(StatsResource.class);
+    
     public static final String CODE_MESSAGE_400 = "Studio was unable to complete the request because it was invalid. The request should not be retried without modification.";
     public static final String CODE_MESSAGE_401 = "Client could not be authenticated.";
     public static final String CODE_MESSAGE_403 = "Client is not authorized to make this request.";
@@ -404,8 +411,20 @@ public class StatsResource extends ApplicationResource {
         // get all the controller services
         final Set<ControllerServiceEntity> controllerServices = serviceFacade.getControllerServices(flowController.getRootGroupId(), false, true);
 
+        // process error
+        controllerServices.stream() //
+                .filter(p -> p.getComponent() == null || p.getComponent().getType() == null).forEach(p -> {
+                    try {
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        logger.error("Null components? ===> " + objectMapper.writeValueAsString(p));
+                    } catch (JsonProcessingException e1) {
+                        logger.error(e1.getMessage());
+                    }
+                });
+
         List<ControllerServiceCounterDTO> serviceCounterList = new ArrayList<>();
         controllerServices.stream() //
+                .filter(p -> p.getComponent() != null && p.getComponent().getType() != null)//
                 .collect(Collectors.groupingBy(e -> e.getComponent().getType(), Collectors.counting())).entrySet() //
                 .forEach(entry -> {
                     ControllerServiceCounterDTO controllerServiceCounterDTO = new ControllerServiceCounterDTO();
@@ -464,6 +483,17 @@ public class StatsResource extends ApplicationResource {
 
     private List<ProcessorCounterDTO> getProcessorCounters(final boolean simple) {
         final Set<ProcessorEntity> processors = serviceFacade.getProcessors(flowController.getRootGroupId(), true);
+
+        // process error
+        processors.stream() //
+                .filter(p -> p.getComponent() == null || p.getComponent().getType() == null).forEach(p -> {
+                    try {
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        logger.error("Null components? ===> " + objectMapper.writeValueAsString(p));
+                    } catch (JsonProcessingException e1) {
+                        logger.error(e1.getMessage());
+                    }
+                });
 
         List<ProcessorCounterDTO> processorCounterList = new ArrayList<>();
         processors.stream() //

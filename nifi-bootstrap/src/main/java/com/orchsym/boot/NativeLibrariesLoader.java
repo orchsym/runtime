@@ -1,4 +1,4 @@
-package com.baishancloud.orchsym.boot;
+package com.orchsym.boot;
 
 import java.io.File;
 import java.io.FileFilter;
