@@ -21,6 +21,7 @@ $(document).ready(function () {
     ua.editable = $('#attribute-updater-editable').text() === 'true';
     ua.init();
 });
+var token = 'Bearer '
 if(JSON.parse(localStorage.getItem('jwt'))){
     token = token + JSON.parse(localStorage.getItem('jwt'))['item']
 }
