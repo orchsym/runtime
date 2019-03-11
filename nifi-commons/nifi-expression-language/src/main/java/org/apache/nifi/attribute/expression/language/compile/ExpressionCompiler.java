@@ -17,97 +17,7 @@
 
 package org.apache.nifi.attribute.expression.language.compile;
 
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.ALL_ATTRIBUTES;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.ALL_DELINEATED_VALUES;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.ALL_MATCHING_ATTRIBUTES;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.AND;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.ANY_ATTRIBUTE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.ANY_DELINEATED_VALUE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.ANY_MATCHING_ATTRIBUTE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.APPEND;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.ATTRIBUTE_REFERENCE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.ATTR_NAME;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.BASE64_DECODE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.BASE64_ENCODE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.CONTAINS;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.COUNT;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.DECIMAL;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.DIVIDE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.ENDS_WITH;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.EQUALS;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.EQUALS_IGNORE_CASE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.ESCAPE_CSV;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.ESCAPE_HTML3;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.ESCAPE_HTML4;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.ESCAPE_JSON;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.ESCAPE_XML;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.EXPRESSION;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.FALSE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.FIND;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.FORMAT;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.FROM_RADIX;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.GET_DELIMITED_FIELD;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.GET_STATE_VALUE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.GREATER_THAN;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.GREATER_THAN_OR_EQUAL;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.HOSTNAME;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.IF_ELSE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.IN;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.INDEX_OF;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.IP;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.IS_EMPTY;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.IS_NULL;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.JOIN;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.JSON_PATH;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.LAST_INDEX_OF;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.LENGTH;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.LESS_THAN;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.LESS_THAN_OR_EQUAL;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.MATCHES;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.MATH;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.MINUS;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.MOD;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.MULTIPLY;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.MULTI_ATTRIBUTE_REFERENCE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.NEXT_INT;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.NOT;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.NOT_NULL;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.NOW;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.OR;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.PLUS;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.PREPEND;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.RANDOM;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.REPLACE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.REPLACE_ALL;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.REPLACE_EMPTY;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.REPLACE_FIRST;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.REPLACE_NULL;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.STARTS_WITH;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.STRING_LITERAL;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.SUBSTRING;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.SUBSTRING_AFTER;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.SUBSTRING_AFTER_LAST;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.SUBSTRING_BEFORE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.SUBSTRING_BEFORE_LAST;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.TO_DATE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.TO_DECIMAL;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.TO_LITERAL;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.TO_LOWER;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.TO_NUMBER;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.TO_RADIX;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.TO_STRING;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.TO_UPPER;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.TRIM;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.TRUE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.UNESCAPE_CSV;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.UNESCAPE_HTML3;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.UNESCAPE_HTML4;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.UNESCAPE_JSON;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.UNESCAPE_XML;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.URL_DECODE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.URL_ENCODE;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.UUID;
-import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.WHOLE_NUMBER;
+import static org.apache.nifi.attribute.expression.language.antlr.AttributeExpressionParser.*;
 
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -197,6 +107,31 @@ import org.apache.nifi.attribute.expression.language.evaluation.functions.TrimEv
 import org.apache.nifi.attribute.expression.language.evaluation.functions.UrlDecodeEvaluator;
 import org.apache.nifi.attribute.expression.language.evaluation.functions.UrlEncodeEvaluator;
 import org.apache.nifi.attribute.expression.language.evaluation.functions.UuidEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.AddDaysEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.AddHoursEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.AddMinsEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.AddMonthsEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.AddSecsEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.AddWeeksEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.AddYearsEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.DateAfterEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.DateBeforeEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.GetDateForWeekEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.GetDayOfMonthEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.GetDayOfWeekEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.GetDayOfWeekInMonthEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.GetDayOfYearEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.GetHourEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.GetHourOfDayEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.GetMilliSecondEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.GetMinuteEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.GetMonthEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.GetQuarterEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.GetSecondEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.GetWeekOfMonthEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.GetWeekOfYearEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.GetYearEvaluator;
+import org.apache.nifi.attribute.expression.language.evaluation.functions.date.IsWeekendEvaluator;
 import org.apache.nifi.attribute.expression.language.evaluation.literals.BooleanLiteralEvaluator;
 import org.apache.nifi.attribute.expression.language.evaluation.literals.DecimalLiteralEvaluator;
 import org.apache.nifi.attribute.expression.language.evaluation.literals.StringLiteralEvaluator;
@@ -911,6 +846,144 @@ public class ExpressionCompiler {
                 return addToken(new IfElseEvaluator(toBooleanEvaluator(subjectEvaluator),
                     toStringEvaluator(argEvaluators.get(0), "argument to return if true"),
                     toStringEvaluator(argEvaluators.get(1), "argument to return if false")), "ifElse");
+            }
+
+            //date 
+            case ADD_YEARS: {
+            	verifyArgCount(argEvaluators, 1, "addYears");
+                return addToken(new AddYearsEvaluator(toDateEvaluator(subjectEvaluator),
+                	toNumberEvaluator(argEvaluators.get(0))), "addYears");
+            }
+            case ADD_MONTHS: {
+            	verifyArgCount(argEvaluators, 1, "addMonths");
+                return addToken(new AddMonthsEvaluator(toDateEvaluator(subjectEvaluator),
+                	toNumberEvaluator(argEvaluators.get(0))), "addMonths");
+            }
+            case ADD_WEEKS: {
+            	verifyArgCount(argEvaluators, 1, "addWeeks");
+                return addToken(new AddWeeksEvaluator(toDateEvaluator(subjectEvaluator),
+                	toNumberEvaluator(argEvaluators.get(0))), "addWeeks");
+            }
+            case ADD_DAYS: {
+            	verifyArgCount(argEvaluators, 1, "addDays");
+                return addToken(new AddDaysEvaluator(toDateEvaluator(subjectEvaluator),
+                	toNumberEvaluator(argEvaluators.get(0))), "addDays");
+            }
+            case ADD_HOURS: {
+            	verifyArgCount(argEvaluators, 1, "addHours");
+                return addToken(new AddHoursEvaluator(toDateEvaluator(subjectEvaluator),
+                	toNumberEvaluator(argEvaluators.get(0))), "addHours");
+            }
+            case ADD_MINS: {
+            	verifyArgCount(argEvaluators, 1, "addMinutes");
+                return addToken(new AddMinsEvaluator(toDateEvaluator(subjectEvaluator),
+                	toNumberEvaluator(argEvaluators.get(0))), "addMinutes");
+            }
+            case ADD_SECS: {
+            	verifyArgCount(argEvaluators, 1, "addSeconds");
+                return addToken(new AddSecsEvaluator(toDateEvaluator(subjectEvaluator),
+                	toNumberEvaluator(argEvaluators.get(0))), "addSeconds");
+            }
+            case GET_YEAR: {
+            	if (argEvaluators.isEmpty()) {
+                    return addToken(new GetYearEvaluator(toDateEvaluator(subjectEvaluator), null), "getYear");
+                } 
+                return addToken(new GetYearEvaluator(toDateEvaluator(subjectEvaluator), toStringEvaluator(argEvaluators.get(0))), "getYear");
+                
+            }
+            case GET_MONTH: {
+            	if (argEvaluators.isEmpty()) {
+                    return addToken(new GetMonthEvaluator(toDateEvaluator(subjectEvaluator), null), "getMonth");
+                }
+                return addToken(new GetMonthEvaluator(toDateEvaluator(subjectEvaluator), toStringEvaluator(argEvaluators.get(0))), "getMonth");
+            }
+            case GET_DAY_OF_YEAR: {
+            	if (argEvaluators.isEmpty()) {
+                    return addToken(new GetDayOfYearEvaluator(toDateEvaluator(subjectEvaluator), null), "getDayOfYear");
+                }
+                return addToken(new GetDayOfYearEvaluator(toDateEvaluator(subjectEvaluator), toStringEvaluator(argEvaluators.get(0))), "getDayOfYear");
+            }
+            case GET_DAY_OF_MONTH: {
+            	if (argEvaluators.isEmpty()) {
+                    return addToken(new GetDayOfMonthEvaluator(toDateEvaluator(subjectEvaluator), null), "getDayOfMonth");
+                }
+                return addToken(new GetDayOfMonthEvaluator(toDateEvaluator(subjectEvaluator), toStringEvaluator(argEvaluators.get(0))), "getDayOfMonth");
+            }
+            case GET_DAY_OF_WEEK: {
+            	if (argEvaluators.isEmpty()) {
+                    return addToken(new GetDayOfWeekEvaluator(toDateEvaluator(subjectEvaluator), null), "getDayOfWeek");
+                }
+                return addToken(new GetDayOfWeekEvaluator(toDateEvaluator(subjectEvaluator), toStringEvaluator(argEvaluators.get(0))), "getDayOfWeek");
+            }
+            case GET_DAY_OF_WEEK_IN_MONTH: {
+            	if (argEvaluators.isEmpty()) {
+                    return addToken(new GetDayOfWeekInMonthEvaluator(toDateEvaluator(subjectEvaluator), null), "getDayOfWeekInMonth");
+                }
+                return addToken(new GetDayOfWeekInMonthEvaluator(toDateEvaluator(subjectEvaluator), toStringEvaluator(argEvaluators.get(0))), "getDayOfWeekInMonth");
+            }
+            case GET_WEEK_OF_MONTH: {
+            	if (argEvaluators.isEmpty()) {
+                    return addToken(new GetWeekOfMonthEvaluator(toDateEvaluator(subjectEvaluator), null), "getWeekOfMonth");
+                }
+                return addToken(new GetWeekOfMonthEvaluator(toDateEvaluator(subjectEvaluator), toStringEvaluator(argEvaluators.get(0))), "getWeekOfMonth");
+            }
+            case GET_WEEK_OF_YEAR: {
+            	if (argEvaluators.isEmpty()) {
+                    return addToken(new GetWeekOfYearEvaluator(toDateEvaluator(subjectEvaluator), null), "getWeekOfYear");
+                }
+                return addToken(new GetWeekOfYearEvaluator(toDateEvaluator(subjectEvaluator), toStringEvaluator(argEvaluators.get(0))), "getWeekOfYear");
+            }
+            case GET_HOUR: {
+            	if (argEvaluators.isEmpty()) {
+                    return addToken(new GetHourEvaluator(toDateEvaluator(subjectEvaluator), null), "getHour");
+                }
+                return addToken(new GetHourEvaluator(toDateEvaluator(subjectEvaluator), toStringEvaluator(argEvaluators.get(0))), "getHour");
+            }
+            case GET_HOUR_OF_DAY: {
+            	if (argEvaluators.isEmpty()) {
+                    return addToken(new GetHourOfDayEvaluator(toDateEvaluator(subjectEvaluator), null), "getHourOfDay");
+                }
+                return addToken(new GetHourOfDayEvaluator(toDateEvaluator(subjectEvaluator), toStringEvaluator(argEvaluators.get(0))), "getHourOfDay");
+            }
+            case GET_MINUTE: {
+            	if (argEvaluators.isEmpty()) {
+                    return addToken(new GetMinuteEvaluator(toDateEvaluator(subjectEvaluator), null), "getMinute");
+                }
+                return addToken(new GetMinuteEvaluator(toDateEvaluator(subjectEvaluator), toStringEvaluator(argEvaluators.get(0))), "getMinute");
+            }
+            case GET_SECOND: {
+            	if (argEvaluators.isEmpty()) {
+                    return addToken(new GetSecondEvaluator(toDateEvaluator(subjectEvaluator), null), "getSecond");
+                }
+                return addToken(new GetSecondEvaluator(toDateEvaluator(subjectEvaluator), toStringEvaluator(argEvaluators.get(0))), "getSecond");
+            }
+            case GET_MILLISECOND: {
+            	if (argEvaluators.isEmpty()) {
+                    return addToken(new GetMilliSecondEvaluator(toDateEvaluator(subjectEvaluator), null), "getMilliSecond");
+                }
+                return addToken(new GetMilliSecondEvaluator(toDateEvaluator(subjectEvaluator), toStringEvaluator(argEvaluators.get(0))), "getMilliSecond");
+            }
+            case AFTER: {
+                verifyArgCount(argEvaluators, 1, "after");
+                return addToken(new DateAfterEvaluator(toDateEvaluator(subjectEvaluator), toDateEvaluator(argEvaluators.get(0))), "after");
+            }
+            case BEFORE: {
+                verifyArgCount(argEvaluators, 1, "before");
+                return addToken(new DateBeforeEvaluator(toDateEvaluator(subjectEvaluator), toDateEvaluator(argEvaluators.get(0))), "before");
+            }
+            case GET_DATE_FOR_WEEK: {
+                verifyArgCount(argEvaluators, 2, "getDateForWeek");
+                return addToken(new GetDateForWeekEvaluator(toDateEvaluator(subjectEvaluator), toNumberEvaluator(argEvaluators.get(0)), toNumberEvaluator(argEvaluators.get(1))), "getDateForWeek");
+            }
+            case IS_WEEKEND: {
+                verifyArgCount(argEvaluators, 0, "isWeekend");
+                return addToken(new IsWeekendEvaluator(toDateEvaluator(subjectEvaluator)), "isWeekend");
+            }
+            case GET_QUARTER: {
+                if (argEvaluators.isEmpty()) {
+                    return addToken(new GetQuarterEvaluator(toDateEvaluator(subjectEvaluator), null), "getQuarter");
+                }
+                return addToken(new GetQuarterEvaluator(toDateEvaluator(subjectEvaluator), toStringEvaluator(argEvaluators.get(0))), "getQuarter");
             }
             default:
                 throw new AttributeExpressionLanguageParsingException("Expected a Function-type expression but got " + tree.toString());
