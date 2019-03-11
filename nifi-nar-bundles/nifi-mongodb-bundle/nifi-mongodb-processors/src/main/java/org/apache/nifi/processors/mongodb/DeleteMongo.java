@@ -55,7 +55,7 @@ import java.util.Set;
 @ReadsAttribute(
     attribute = "mongodb.delete.mode",
     description = "Configurable parameter for controlling delete mode on a per-flowfile basis. The process must be " +
-            "configured to use this option. Acceptable values are 'one' and 'many.'"
+            "configured to use this option. Acceptable values are 'one' and 'many'"
 )
 public class DeleteMongo extends AbstractMongoProcessor {
 
@@ -65,7 +65,7 @@ public class DeleteMongo extends AbstractMongoProcessor {
     static final AllowableValue DELETE_ONE = new AllowableValue("one", "Delete One", "Delete only the first document that matches the query.");
     static final AllowableValue DELETE_MANY = new AllowableValue("many", "Delete Many", "Delete every document that matches the query.");
     static final AllowableValue DELETE_ATTR = new AllowableValue("attr", "Use 'mongodb.delete.mode' attribute",
-            "Read the 'mongodb.delete.mode attribute and use that mode. Acceptable values are 'many' and 'one.'");
+            "Read the 'mongodb.delete.mode attribute and use that mode. Acceptable values are 'many' and 'one'");
 
     static final AllowableValue YES_FAIL = new AllowableValue("true", "True", "Fail when no documents are deleted.");
     static final AllowableValue NO_FAIL  = new AllowableValue("false", "False", "Do not fail when nothing is deleted.");

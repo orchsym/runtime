@@ -76,7 +76,7 @@ import com.baishancloud.orchsym.processors.soap.util.FormatUtil;
  *
  */
 @InputRequirement(Requirement.INPUT_FORBIDDEN)
-@Marks(categories={"网络/网络通信"}, createdDate="2018-09-07")
+@Marks(categories={"Network/Communication"}, createdDate="2018-09-07")
 @Tags({ "SOAP", "Request", "http", "https", "Web Service", "WSDL" })
 @CapabilityDescription("Starts an HTTP Server and listens for SOAP Requests. For each request, creates a FlowFile and transfers to 'success'. "
         + "This Processor is designed to be used in conjunction with the HandleSOAPHttpResponse Processor in order to create a Web Service")

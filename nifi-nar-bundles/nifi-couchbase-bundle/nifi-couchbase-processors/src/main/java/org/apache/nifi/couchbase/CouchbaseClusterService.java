@@ -69,7 +69,7 @@ public class CouchbaseClusterService extends AbstractControllerService implement
             .displayName("User Name")
             .description("The user name to authenticate NiFi as a Couchbase client." +
                     " This configuration can be used against Couchbase Server 5.0 or later" +
-                    " supporting Roll-Based Access Control.")
+                    " supporting Role-Based Access Control.")
             .required(false)
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
@@ -81,7 +81,7 @@ public class CouchbaseClusterService extends AbstractControllerService implement
             .displayName("User Password")
             .description("The user password to authenticate NiFi as a Couchbase client." +
                     " This configuration can be used against Couchbase Server 5.0 or later" +
-                    " supporting Roll-Based Access Control.")
+                    " supporting Role-Based Access Control.")
             .required(false)
             .sensitive(true)
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)

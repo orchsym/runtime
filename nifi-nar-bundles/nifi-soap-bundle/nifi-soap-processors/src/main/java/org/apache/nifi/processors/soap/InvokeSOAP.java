@@ -65,7 +65,7 @@ import org.apache.nifi.processor.util.StandardValidators;
 
 
 @SupportsBatching
-@Marks(categories={"网络/网络通信"}, createdDate="2018-05-02")
+@Marks(categories={"Network/Communication"}, createdDate="2018-05-02")
 @InputRequirement(InputRequirement.Requirement.INPUT_ALLOWED)
 @Tags({"SOAP", "Get", "Ingest", "Ingress"})
 @CapabilityDescription("Execute provided request against the SOAP endpoint. The result will be left in it's orginal form. " +

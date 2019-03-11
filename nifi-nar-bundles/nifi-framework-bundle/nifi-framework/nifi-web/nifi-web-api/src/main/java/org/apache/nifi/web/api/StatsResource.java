@@ -34,6 +34,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.controller.FlowController;
 import org.apache.nifi.groups.ProcessGroup;
+import org.apache.nifi.nar.i18n.LanguageHelper;
 import org.apache.nifi.nar.i18n.MessagesProvider;
 import org.apache.nifi.util.FileUtils;
 import org.apache.nifi.web.NiFiServiceFacade;
@@ -78,9 +79,9 @@ import io.swagger.annotations.ApiResponses;
 @Api(value = StatsResource.PATH, description = "Endpoint for accessing the statistics of flows and components.")
 public class StatsResource extends ApplicationResource {
     public static final String PATH = "/stats";
-    
+
     private static final Logger logger = LoggerFactory.getLogger(StatsResource.class);
-    
+
     public static final String CODE_MESSAGE_400 = "Studio was unable to complete the request because it was invalid. The request should not be retried without modification.";
     public static final String CODE_MESSAGE_401 = "Client could not be authenticated.";
     public static final String CODE_MESSAGE_403 = "Client is not authorized to make this request.";
@@ -124,71 +125,85 @@ public class StatsResource extends ApplicationResource {
         if (isReplicateRequest()) {
             return replicate(HttpMethod.GET);
         }
+        try {
+            // create the response entity
+            final StatsCountersEntity entity = new StatsCountersEntity();
+            entity.setReportTime(new Date());
+            StatsCounterDTO dto = new StatsCounterDTO();
+            entity.setCounters(dto);
 
-        // create the response entity
-        final StatsCountersEntity entity = new StatsCountersEntity();
-        entity.setReportTime(new Date());
-        StatsCounterDTO dto = new StatsCounterDTO();
-        entity.setCounters(dto);
+            final String rootGroupId = flowController.getRootGroupId();
 
-        final String rootGroupId = flowController.getRootGroupId();
+            final SummaryCounterDTO summaryDTO = getSummaryDTO();
+            dto.setSummary(summaryDTO);
 
-        final SummaryCounterDTO summaryDTO = getSummaryDTO();
-        dto.setSummary(summaryDTO);
+            summaryDTO.setGroupCount(getGroupCount(rootGroupId, true));
+            summaryDTO.setGroupLeavesCount(getGroupCount(rootGroupId, false));
+            summaryDTO.setLabelCount(getLabelCount(rootGroupId));
 
-        summaryDTO.setGroupCount(getGroupCount(rootGroupId, true));
-        summaryDTO.setGroupLeavesCount(getGroupCount(rootGroupId, false));
-        summaryDTO.setLabelCount(getLabelCount(rootGroupId));
+            final List<VarCounterDTO> varCounter = getVarCount(rootGroupId, true);
+            summaryDTO.setVarCount(varCounter.stream().collect(Collectors.summingLong(VarCounterDTO::getCount)));
 
-        final List<VarCounterDTO> varCounter = getVarCount(rootGroupId, true);
-        summaryDTO.setVarCount(varCounter.stream().collect(Collectors.summingLong(VarCounterDTO::getCount)));
+            summaryDTO.setConnectionCount(getConnectionCount(rootGroupId));
+            summaryDTO.setFunnelCount(getFunnelCount(rootGroupId));
+            summaryDTO.setTemplateCount(getTemplateCount(rootGroupId));
 
-        summaryDTO.setConnectionCount(getConnectionCount(rootGroupId));
-        summaryDTO.setFunnelCount(getFunnelCount(rootGroupId));
-        summaryDTO.setTemplateCount(getTemplateCount(rootGroupId));
+            final List<ProcessorCounterDTO> processorCounters = getProcessorCounters(true);
+            summaryDTO.setProcessorUsedCount((long) processorCounters.size());
+            summaryDTO.setProcessorUsedTotalCount(processorCounters.stream().collect(Collectors.summingLong(ProcessorCounterDTO::getCount)));
+            summaryDTO.setProcessorUsedPropertiesCount(processorCounters.stream()//
+                    .filter(pc -> pc.getPropertiesCount() != null)//
+                    .map(pc -> pc.getPropertiesCount())//
+                    .reduce(Long::sum)//
+                    .orElse(0L));
+            dto.setProcessors(processorCounters.stream().sorted(new Comparator<ProcessorCounterDTO>() {
 
-        final List<ProcessorCounterDTO> processorCounters = getProcessorCounters(true);
-        summaryDTO.setProcessorUsedCount((long) processorCounters.size());
-        summaryDTO.setProcessorUsedTotalCount(processorCounters.stream().collect(Collectors.summingLong(ProcessorCounterDTO::getCount)));
-        summaryDTO.setProcessorUsedPropertiesCount(processorCounters.stream()//
-                .filter(pc -> pc.getPropertiesCount() != null)//
-                .map(pc -> pc.getPropertiesCount())//
-                .reduce(Long::sum)//
-                .orElse(0L));
-        dto.setProcessors(processorCounters.stream().sorted(new Comparator<ProcessorCounterDTO>() {
-
-            @Override
-            public int compare(ProcessorCounterDTO o1, ProcessorCounterDTO o2) {
-                int compare = o2.getCount() != null ? o2.getCount().compareTo(o1.getCount()) : 0;
-                if (compare != 0) {
-                    return compare;
+                @Override
+                public int compare(ProcessorCounterDTO o1, ProcessorCounterDTO o2) {
+                    int compare = o2.getCount() != null ? o2.getCount().compareTo(o1.getCount()) : 0;
+                    if (compare != 0) {
+                        return compare;
+                    }
+                    return o2.getName().compareTo(o1.getName());
                 }
-                return o2.getName().compareTo(o1.getName());
-            }
-        }).collect(Collectors.toList()));
+            }).collect(Collectors.toList()));
 
-        final List<ControllerServiceCounterDTO> serviceCounters = getServiceCounters(true);
-        summaryDTO.setControllerUsedCount((long) serviceCounters.size());
-        summaryDTO.setControllerUsedTotalCount(serviceCounters.stream().collect(Collectors.summingLong(ControllerServiceCounterDTO::getCount)));
-        summaryDTO.setControllerUsedPropertiesCount(serviceCounters.stream()//
-                .filter(csc -> csc.getPropertiesCount() != null)//
-                .map(csc -> csc.getPropertiesCount())//
-                .reduce(Long::sum)//
-                .orElse(0L));
-        dto.setServices(serviceCounters.stream().sorted(new Comparator<ControllerServiceCounterDTO>() {
+            final List<ControllerServiceCounterDTO> serviceCounters = getServiceCounters(true);
+            summaryDTO.setControllerUsedCount((long) serviceCounters.size());
+            summaryDTO.setControllerUsedTotalCount(serviceCounters.stream().collect(Collectors.summingLong(ControllerServiceCounterDTO::getCount)));
+            summaryDTO.setControllerUsedPropertiesCount(serviceCounters.stream()//
+                    .filter(csc -> csc.getPropertiesCount() != null)//
+                    .map(csc -> csc.getPropertiesCount())//
+                    .reduce(Long::sum)//
+                    .orElse(0L));
+            dto.setServices(serviceCounters.stream().sorted(new Comparator<ControllerServiceCounterDTO>() {
 
-            @Override
-            public int compare(ControllerServiceCounterDTO o1, ControllerServiceCounterDTO o2) {
-                int compare = o2.getCount() != null ? o2.getCount().compareTo(o1.getCount()) : 0;
-                if (compare != 0) {
-                    return compare;
+                @Override
+                public int compare(ControllerServiceCounterDTO o1, ControllerServiceCounterDTO o2) {
+                    int compare = o2.getCount() != null ? o2.getCount().compareTo(o1.getCount()) : 0;
+                    if (compare != 0) {
+                        return compare;
+                    }
+                    return o2.getService().compareTo(o1.getService());
                 }
-                return o2.getService().compareTo(o1.getService());
-            }
-        }).collect(Collectors.toList()));
+            }).collect(Collectors.toList()));
 
-        // generate the response
-        return generateOkResponse(entity).build();
+            // generate the response
+            return generateOkResponse(entity).build();
+        } catch (Throwable t) {
+            return createExceptionResponse(t);
+        }
+    }
+
+    private Response createExceptionResponse(Throwable t) {
+        logger.error(t.getMessage(), t);
+
+        StringWriter sw = new StringWriter();
+        try (PrintWriter pw = new PrintWriter(sw);) {
+            t.printStackTrace(pw);
+
+            return noCache(Response.serverError().entity(sw.toString())).build();
+        }
     }
 
     /**
@@ -213,12 +228,15 @@ public class StatsResource extends ApplicationResource {
         if (isReplicateRequest()) {
             return replicate(HttpMethod.GET);
         }
-
-        final List<ProcessorCounterDTO> processorCounters = getProcessorCounters(false);
-        StatsProcessorsEntity entity = new StatsProcessorsEntity();
-        entity.setProcessors(processorCounters);
-        // generate the response
-        return generateOkResponse(entity).build();
+        try {
+            final List<ProcessorCounterDTO> processorCounters = getProcessorCounters(false);
+            StatsProcessorsEntity entity = new StatsProcessorsEntity();
+            entity.setProcessors(processorCounters);
+            // generate the response
+            return generateOkResponse(entity).build();
+        } catch (Throwable t) {
+            return createExceptionResponse(t);
+        }
     }
 
     /**
@@ -243,12 +261,15 @@ public class StatsResource extends ApplicationResource {
         if (isReplicateRequest()) {
             return replicate(HttpMethod.GET);
         }
-
-        final List<ControllerServiceCounterDTO> serviceCounters = getServiceCounters(false);
-        StatsServicesEntity entity = new StatsServicesEntity();
-        entity.setServices(serviceCounters);
-        // generate the response
-        return generateOkResponse(entity).build();
+        try {
+            final List<ControllerServiceCounterDTO> serviceCounters = getServiceCounters(false);
+            StatsServicesEntity entity = new StatsServicesEntity();
+            entity.setServices(serviceCounters);
+            // generate the response
+            return generateOkResponse(entity).build();
+        } catch (Throwable t) {
+            return createExceptionResponse(t);
+        }
     }
 
     /**
@@ -273,13 +294,16 @@ public class StatsResource extends ApplicationResource {
         if (isReplicateRequest()) {
             return replicate(HttpMethod.GET);
         }
+        try {
+            final List<VarCounterDTO> varCounter = getVarCount(flowController.getRootGroupId(), false);
+            StatsVarsEntity entity = new StatsVarsEntity();
+            entity.setVars(varCounter);
 
-        final List<VarCounterDTO> varCounter = getVarCount(flowController.getRootGroupId(), false);
-        StatsVarsEntity entity = new StatsVarsEntity();
-        entity.setVars(varCounter);
-
-        // generate the response
-        return generateOkResponse(entity).build();
+            // generate the response
+            return generateOkResponse(entity).build();
+        } catch (Throwable t) {
+            return createExceptionResponse(t);
+        }
     }
 
     private SummaryCounterDTO getSummaryDTO() {
@@ -300,7 +324,13 @@ public class StatsResource extends ApplicationResource {
         summaryDTO.setSyncFailureCount(processGroup.getSyncFailureCount());
         summaryDTO.setUpToDateCount(processGroup.getUpToDateCount());
 
-        final Predicate<? super DocumentedTypeDTO> zhDescPredicate = type -> MessagesProvider.getDescription(Locale.CHINESE, type.getType()) != null;
+        final Predicate<? super DocumentedTypeDTO> zhDescPredicate = type -> {
+            String desc = MessagesProvider.getDescription(Locale.CHINESE, type.getType());
+            if (StringUtils.isNotBlank(desc) && LanguageHelper.isChinese(desc)) {
+                return true;
+            }
+            return false;
+        };
 
         Map<String, Long> processorI18nCount = new HashMap<>();
         final Set<DocumentedTypeDTO> processorTypes = serviceFacade.getProcessorTypes(null, null, null);
@@ -411,16 +441,26 @@ public class StatsResource extends ApplicationResource {
         // get all the controller services
         final Set<ControllerServiceEntity> controllerServices = serviceFacade.getControllerServices(flowController.getRootGroupId(), false, true);
 
-        // process error
-        controllerServices.stream() //
-                .filter(p -> p.getComponent() == null || p.getComponent().getType() == null).forEach(p -> {
-                    try {
-                        ObjectMapper objectMapper = new ObjectMapper();
-                        logger.error("Null components? ===> " + objectMapper.writeValueAsString(p));
-                    } catch (JsonProcessingException e1) {
-                        logger.error(e1.getMessage());
-                    }
-                });
+        // services error
+        List<ControllerServiceEntity> nullProcessorsList = controllerServices.stream() //
+                .filter(p -> p.getComponent() == null || p.getComponent().getType() == null).collect(Collectors.toList());
+        if (!nullProcessorsList.isEmpty()) { // exited null components?
+            logger.warn("All services: " + controllerServices.size());
+            logger.warn("NULL services: " + nullProcessorsList.size());
+
+            List<String> okComponents = controllerServices.stream().filter(p -> p.getComponent() != null && p.getComponent().getType() != null).map(p -> p.getComponent().getType())
+                    .map(t -> t.substring(t.lastIndexOf('.') + 1)).collect(Collectors.toList());
+            logger.info("OK services: " + String.join(",", okComponents));
+
+            for (int i = 0; i < nullProcessorsList.size(); i++) {
+                try {
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    logger.error(i + " NULL service: " + objectMapper.writeValueAsString(nullProcessorsList.get(i)));
+                } catch (JsonProcessingException e1) {
+                    logger.error(e1.getMessage());
+                }
+            }
+        }
 
         List<ControllerServiceCounterDTO> serviceCounterList = new ArrayList<>();
         controllerServices.stream() //
@@ -485,15 +525,25 @@ public class StatsResource extends ApplicationResource {
         final Set<ProcessorEntity> processors = serviceFacade.getProcessors(flowController.getRootGroupId(), true);
 
         // process error
-        processors.stream() //
-                .filter(p -> p.getComponent() == null || p.getComponent().getType() == null).forEach(p -> {
-                    try {
-                        ObjectMapper objectMapper = new ObjectMapper();
-                        logger.error("Null components? ===> " + objectMapper.writeValueAsString(p));
-                    } catch (JsonProcessingException e1) {
-                        logger.error(e1.getMessage());
-                    }
-                });
+        List<ProcessorEntity> nullProcessorsList = processors.stream() //
+                .filter(p -> p.getComponent() == null || p.getComponent().getType() == null).collect(Collectors.toList());
+        if (!nullProcessorsList.isEmpty()) { // exited null components?
+            logger.warn("All components: " + processors.size());
+            logger.warn("NULL components: " + nullProcessorsList.size());
+
+            List<String> okComponents = processors.stream().filter(p -> p.getComponent() != null && p.getComponent().getType() != null).map(p -> p.getComponent().getType())
+                    .map(t -> t.substring(t.lastIndexOf('.') + 1)).collect(Collectors.toList());
+            logger.info("OK components: " + String.join(",", okComponents));
+
+            for (int i = 0; i < nullProcessorsList.size(); i++) {
+                try {
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    logger.error(i + " NULL component: " + objectMapper.writeValueAsString(nullProcessorsList.get(i)));
+                } catch (JsonProcessingException e1) {
+                    logger.error(e1.getMessage());
+                }
+            }
+        }
 
         List<ProcessorCounterDTO> processorCounterList = new ArrayList<>();
         processors.stream() //
@@ -647,7 +697,7 @@ public class StatsResource extends ApplicationResource {
             return response;
         }
 
-        return generateOkResponse("Successfully to generate all docs at " + LocalDateTime.now()).build();
+        return generateOkResponse("Successfully to generate all at " + LocalDateTime.now()).build();
     }
 
     private Response doGenerator(String lang, String country, String generatorClass, File baseOutDir, String all) {
@@ -689,12 +739,8 @@ public class StatsResource extends ApplicationResource {
             final Method generateMethod = genClass.getDeclaredMethod("generate", File.class);
             generateMethod.setAccessible(true);
             generateMethod.invoke(mdGenerator, baseOutDir);
-        } catch (Throwable e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(sw.toString()).build();
-
+        } catch (Throwable t) {
+            return createExceptionResponse(t);
         }
         return generateOkResponse("Successfully to generate at " + LocalDateTime.now()).build();
     }

@@ -1,4 +1,28 @@
+----------------------------
+# Version 2.3.0
 
+版本：1.7.1-2.3.0
+
+发布时间：2019-02-28
+
+组件总数：301
+
+## 新功能
+- [ORCHSYM-3113] - 登录对接ADFS
+- [ORCHSYM-3205] - 分离集群心跳日志到orchsym-cluster.log
+
+## 改进
+- [ORCHSYM-2843] - 将集成平台前端JSP转换为HTML
+- [ORCHSYM-2851] - PutDistributedMapCache增加支持动态属性设置
+- [ORCHSYM-3028] - 增强InvokeSOAP组件
+- [ORCHSYM-3065] - 验证是否支持Dubbo最新版2.6.5
+- [ORCHSYM-3163] - 修改HandleHttpRequest默认端口
+- [ORCHSYM-3053] - 统一编排和管理平台3.0的许可
+
+## 缺陷
+- [ORCHSYM-3126] - 组件ExtractAvroToAttributes加载失败
+- [ORCHSYM-3164] - 删除组件不提示确认信息
+- [ORCHSYM-3328] - 回滚ORCHSYM-2700升级Groovy版本
 
 ----------------------------
 # Version 2.2.0

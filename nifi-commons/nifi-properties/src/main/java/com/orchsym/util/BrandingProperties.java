@@ -42,10 +42,15 @@ public class BrandingProperties {
     public static final String DEFAULT_PRODUCT_NAME = "Orchsym Studio";
     public static final String DEFAULT_SUPPORT_EMAIL = "orchsym-support@baishancloud.com";
 
-    private static final Map<String, String> logoImages = new HashMap<>();
+    private static final Map<String, String> imagesMap = new HashMap<>();
     static {
-        logoImages.put("logo.ico", "nifi16.ico");
-        logoImages.put("logo-error.png", "bg-error.png");
+        imagesMap.put(KEY_IMAGE_PREFIX + "logo.ico.path", "nifi16.ico");
+        imagesMap.put(KEY_IMAGE_PREFIX + "logo.svg.path", "logo.svg");
+        imagesMap.put(KEY_IMAGE_PREFIX + "logo.png.path", "logo.png");
+        imagesMap.put(KEY_IMAGE_PREFIX + "logo.error.path", "bg-error.png");
+        imagesMap.put(KEY_IMAGE_PREFIX + "splash.path", "splash.jpg");
+        imagesMap.put(KEY_IMAGE_PREFIX + "splash.logo.path", "splash-logo.png");
+        imagesMap.put(KEY_IMAGE_PREFIX + "about.bg.path", "about-bg.jpg");
     }
 
     /**
@@ -143,15 +148,12 @@ public class BrandingProperties {
         }
 
         final String imageName = srcImageFile.getName();
-        String webImageName = logoImages.get(imageName);
+        String webImageName = imagesMap.get(imageKey);
         if (webImageName == null) { // same name
             webImageName = imageName;
         } // else //diff name
 
         File webImageFile = new File(webImagesFolder, webImageName);
-        if (!webImageFile.exists()) {
-            return;
-        }
 
         final byte[] buffer = new byte[1024 * 4];
         int n;
