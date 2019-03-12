@@ -20,16 +20,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
+import java.util.Objects;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.nifi.bundle.Bundle;
 import org.apache.nifi.util.StringUtils;
@@ -44,11 +45,7 @@ class PropertiesExtensionManager {
 
     private static final Logger logger = LoggerFactory.getLogger(PropertiesExtensionManager.class);
     private static final Object SYN = new Object();
-
-    /*
-     * match a.b.c.X_zh_CN.properties
-     */
-    private static final Pattern PROP_PATTERN = Pattern.compile("([\\w.-]+?)_(\\w+?)(_(\\w+?))?\\.\\w+$", Pattern.CASE_INSENSITIVE);
+    private static final String UL = "_"; // underline
 
     static final Map<TypeLocale, PropertyBundle> typeBundleLookup = new HashMap<>();
     static final Map<TypeLocale, ResourceBundle> resBundleLookup = new HashMap<>();
@@ -79,38 +76,82 @@ class PropertiesExtensionManager {
         if (foundURLs.contains(url)) {
             return;
         }
-        TypeLocale tl = createTypeLocale(url);
-        if (tl != null) {
+        List<TypeLocale> tls = createTypeLocales(url);
+        if (tls != null && !tls.isEmpty()) {
             foundURLs.add(url);
-
-            if (typeBundleLookup.containsKey(tl)) {
-                final PropertyBundle oldTL = typeBundleLookup.get(tl);
-                logger.warn("Have existed the properties: " + oldTL.url + " in " + oldTL.bundle.getBundleDetails());
-            } else {
-                typeBundleLookup.put(tl, new PropertyBundle(url, bundle));
+            for (TypeLocale tl : tls) {
+                if (typeBundleLookup.containsKey(tl)) {
+                    final PropertyBundle oldTL = typeBundleLookup.get(tl);
+                    logger.warn("Have existed the properties: " + oldTL.url + " in " + oldTL.bundle.getBundleDetails());
+                } else {
+                    typeBundleLookup.put(tl, new PropertyBundle(url, bundle));
+                }
             }
         }
     }
 
-    static TypeLocale createTypeLocale(final URL url) {
-        final String fullname = url.getFile();
-        if (!fullname.endsWith(MessagesProvider.EXT)) {
-            return null;
+    /**
+     * in order to compatible for components with versioning, like XXX_0_11_en, also support the lang with country, like XXX_0_11_zh_CN
+     */
+    static List<TypeLocale> createTypeLocales(final URL url) {
+        final String fullPath = url.getFile();
+        if (!fullPath.endsWith(MessagesProvider.EXT)) {
+            return Collections.emptyList();
         }
-        final Matcher matcher = PROP_PATTERN.matcher(fullname);
-        if (matcher.find() && matcher.groupCount() > 1) {
-            final String type = matcher.group(1);
-            final String lang = matcher.group(2);
-            String country = null;
-            if (matcher.groupCount() > 2) {
-                country = matcher.group(4);
-            }
-            if (StringUtils.isEmpty(country)) {
-                country = "";
-            }
-            return new TypeLocale(type, new Locale(lang, country));
+        int pathIndex = fullPath.lastIndexOf('/');
+        if (-1 == pathIndex) {
+            pathIndex = fullPath.lastIndexOf('\\');
         }
-        return null;
+        String fullname = fullPath;
+        if (-1 != pathIndex) { // remove path
+            fullname = fullPath.substring(pathIndex + 1);
+        }
+        String name = fullname.substring(0, fullname.lastIndexOf(MessagesProvider.EXT));
+
+        if (name.contains(UL)) {
+
+            int _first = name.indexOf(UL);
+            int _last = name.lastIndexOf(UL);
+
+            if (Objects.equals(_first, _last)) { // only one lang, like XXX_zh
+                String type = name.substring(0, _first);
+                String lang = name.substring(_last + 1);
+                if (!lang.isEmpty()) {
+                    return Arrays.asList(new TypeLocale(type, new Locale(lang, "")));
+                }
+            } else { // more underline
+                List<TypeLocale> tls = new ArrayList<>(2);
+
+                // like for versioning, XXX_v10_en or XXX_0_11_en
+                String type = name.substring(0, _last);
+                String lang = name.substring(_last + 1);
+                tls.add(new TypeLocale(type, new Locale(lang, "")));
+
+                // FIXME, let it after versioning, because don't provide it with country normally.
+                String part = name.substring(_first + 1, _last);
+                int _partLast = part.lastIndexOf('_');
+
+                String country = name.substring(_last + 1);
+                if (-1 == _partLast) { // only 2
+                    // like XXX_en_US
+                    type = name.substring(0, _first);
+                    lang = part;
+
+                } else { // >2
+                    // like XXX_0_11_en_US
+                    type = name.substring(0, _first) + UL + part.substring(0, _partLast);
+                    lang = part.substring(_partLast + 1);
+                }
+                tls.add(new TypeLocale(type, new Locale(lang, country)));
+                return tls;
+
+            }
+
+        } else {
+            // return Arrays.asList(new TypeLocale(name, Locale.ROOT));
+        }
+        return Collections.emptyList();
+
     }
 
     static class PropertyBundle {

@@ -18,10 +18,11 @@ package org.apache.nifi.nar.i18n;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.util.List;
 import java.util.Locale;
 
 import org.apache.nifi.nar.i18n.PropertiesExtensionManager.TypeLocale;
@@ -43,7 +44,14 @@ public class PropertiesExtensionManagerTest {
     }
 
     private static File createTestFile(File workingFolder, String locale) throws IOException {
-        final File file = new File(workingFolder, TYPE + '_' + locale + MessagesProvider.EXT);
+        return createTestFile(workingFolder, null, locale);
+    }
+
+    private static File createTestFile(File workingFolder, String version, String locale) throws IOException {
+        if (version == null) {
+            version = "";
+        }
+        final File file = new File(workingFolder, TYPE + version + '_' + locale + MessagesProvider.EXT);
         file.createNewFile();
         return file;
     }
@@ -66,49 +74,124 @@ public class PropertiesExtensionManagerTest {
     private void doTestInvalid(String name) throws IOException {
         File file = new File(workingFolder, name);
         file.createNewFile();
-        TypeLocale tl = PropertiesExtensionManager.createTypeLocale(file.toURI().toURL());
-        assertNull(tl);
+        List<TypeLocale> tls = PropertiesExtensionManager.createTypeLocales(file.toURI().toURL());
+        assertNotNull(tls);
+        assertEquals(0, tls.size());
 
+    }
+
+    /**
+     * 
+     * like org.apache.nifi.processors.kafka.pubsub.ConsumeKafka_1_0_zh.properties, org.apache.nifi.processors.kafka.pubsub.ConsumeKafka_0_11_zh.properties
+     */
+    @Test
+    public void testCreateTypeLocale_Versioning() throws IOException {
+        File file = createTestFile(workingFolder, "_1_0", "zh");
+        List<TypeLocale> tls = PropertiesExtensionManager.createTypeLocales(file.toURI().toURL());
+        assertNotNull(tls);
+        assertEquals(2, tls.size());
+
+        assertEquals(TYPE + "_1_0", tls.get(0).type);
+        assertEquals("zh", tls.get(0).locale.getLanguage());
+        assertEquals("", tls.get(0).locale.getCountry());
+        assertEquals(new Locale("zh"), tls.get(0).locale);
+
+        assertEquals(TYPE + "_1", tls.get(1).type);
+        assertEquals("0", tls.get(1).locale.getLanguage());
+        assertEquals("ZH", tls.get(1).locale.getCountry());
+        assertEquals(new Locale("0", "zh"), tls.get(1).locale);
+
+        file = createTestFile(workingFolder, "_0_11", "en_US");
+        tls = PropertiesExtensionManager.createTypeLocales(file.toURI().toURL());
+        assertNotNull(tls);
+        assertEquals(2, tls.size());
+
+        assertEquals(TYPE + "_0_11_en", tls.get(0).type);
+        assertEquals("us", tls.get(0).locale.getLanguage());
+        assertEquals("", tls.get(0).locale.getCountry());
+        assertEquals(new Locale("US"), tls.get(0).locale);
+
+        assertEquals(TYPE + "_0_11", tls.get(1).type);
+        assertEquals("en", tls.get(1).locale.getLanguage());
+        assertEquals("US", tls.get(1).locale.getCountry());
+        assertEquals(new Locale("en", "US"), tls.get(1).locale);
+
+        file = createTestFile(workingFolder, "_1.0", "zh_CN");
+        tls = PropertiesExtensionManager.createTypeLocales(file.toURI().toURL());
+        assertNotNull(tls);
+        assertEquals(2, tls.size());
+
+        assertEquals(TYPE + "_1.0_zh", tls.get(0).type);
+        assertEquals("cn", tls.get(0).locale.getLanguage());
+        assertEquals("", tls.get(0).locale.getCountry());
+        assertEquals(new Locale("CN"), tls.get(0).locale);
+
+        assertEquals(TYPE + "_1.0", tls.get(1).type);
+        assertEquals("zh", tls.get(1).locale.getLanguage());
+        assertEquals("CN", tls.get(1).locale.getCountry());
+        assertEquals(new Locale("zh", "CN"), tls.get(1).locale);
+
+        file = createTestFile(workingFolder, "1.0", "zh_CN");
+        tls = PropertiesExtensionManager.createTypeLocales(file.toURI().toURL());
+        assertNotNull(tls);
+        assertEquals(2, tls.size());
+
+        assertEquals(TYPE + "1.0_zh", tls.get(0).type);
+        assertEquals("cn", tls.get(0).locale.getLanguage());
+        assertEquals("", tls.get(0).locale.getCountry());
+        assertEquals(new Locale("CN"), tls.get(0).locale);
+
+        assertEquals(TYPE + "1.0", tls.get(1).type);
+        assertEquals("zh", tls.get(1).locale.getLanguage());
+        assertEquals("CN", tls.get(1).locale.getCountry());
+        assertEquals(new Locale("zh", "CN"), tls.get(1).locale);
     }
 
     @Test
     public void testCreateTypeLocale_onlyLang() throws IOException {
         final File file = createTestFile(workingFolder, "en");
-        TypeLocale tl = PropertiesExtensionManager.createTypeLocale(file.toURI().toURL());
-        assertNotNull(tl);
-        assertEquals(TYPE, tl.type);
-        assertEquals(new Locale("en"), tl.locale);
-    }
-
-    @Test
-    public void testCreateTypeLocale_withCountry() throws IOException {
-        File file = createTestFile(workingFolder, "en_US");
-        TypeLocale tl = PropertiesExtensionManager.createTypeLocale(file.toURI().toURL());
-        assertNotNull(tl);
-        assertEquals(TYPE, tl.type);
-        assertEquals("en", tl.locale.getLanguage());
-        assertEquals("US", tl.locale.getCountry());
-        assertEquals(new Locale("en", "US"), tl.locale);
+        List<TypeLocale> tls = PropertiesExtensionManager.createTypeLocales(file.toURI().toURL());
+        assertNotNull(tls);
+        assertEquals(1, tls.size());
+        assertEquals(TYPE, tls.get(0).type);
+        assertEquals(new Locale("en"), tls.get(0).locale);
     }
 
     @Test
     public void testCreateTypeLocale_unknownLang() throws IOException {
         File file = createTestFile(workingFolder, "NIFI");
-        TypeLocale tl = PropertiesExtensionManager.createTypeLocale(file.toURI().toURL());
-        assertNotNull(tl);
-        assertEquals(TYPE, tl.type);
-        assertEquals("nifi", tl.locale.getLanguage());
-        assertEquals(new Locale("NIFI"), tl.locale);
+        List<TypeLocale> tls = PropertiesExtensionManager.createTypeLocales(file.toURI().toURL());
+        assertNotNull(tls);
+        assertEquals(1, tls.size());
+        assertEquals(TYPE, tls.get(0).type);
+        assertEquals(new Locale("NIFI"), tls.get(0).locale);
     }
 
     @Test
-    public void testCreateTypeLocale_unknownCountry() throws IOException {
+    public void testCreateTypeLocales_withCountry() throws IOException {
+        File file = createTestFile(workingFolder, "en_US");
+        doTestLangCountry(file.toURI().toURL(), "en", "US");
+    }
+
+    @Test
+    public void testCreateTypeLocales_unknownCountry() throws IOException {
         File file = createTestFile(workingFolder, "en_NIFI");
-        TypeLocale tl = PropertiesExtensionManager.createTypeLocale(file.toURI().toURL());
-        assertNotNull(tl);
-        assertEquals(TYPE, tl.type);
-        assertEquals("en", tl.locale.getLanguage());
-        assertEquals("NIFI", tl.locale.getCountry());
-        assertEquals(new Locale("en", "NIFI"), tl.locale);
+        doTestLangCountry(file.toURI().toURL(), "en", "NIFI");
+    }
+
+    private void doTestLangCountry(final URL url, final String lang, final String country) {
+        List<TypeLocale> tls = PropertiesExtensionManager.createTypeLocales(url);
+        assertNotNull(tls);
+        assertEquals(2, tls.size());
+
+        assertEquals(TYPE + "_" + lang, tls.get(0).type);
+        assertEquals(country.toLowerCase(), tls.get(0).locale.getLanguage());
+        assertEquals("", tls.get(0).locale.getCountry());
+        assertEquals(new Locale(country, ""), tls.get(0).locale);
+
+        assertEquals(TYPE, tls.get(1).type);
+        assertEquals(lang, tls.get(1).locale.getLanguage());
+        assertEquals(country.toUpperCase(), tls.get(1).locale.getCountry());
+        assertEquals(new Locale(lang, country.toUpperCase()), tls.get(1).locale);
     }
 }
