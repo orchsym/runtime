@@ -27,6 +27,7 @@ import org.apache.nifi.authorization.file.generated.Policies;
 import org.apache.nifi.authorization.file.generated.Policy;
 import org.apache.nifi.authorization.resource.ResourceFactory;
 import org.apache.nifi.authorization.resource.ResourceType;
+import org.apache.nifi.authorization.user.NiFiUserUtils;
 import org.apache.nifi.authorization.util.IdentityMapping;
 import org.apache.nifi.authorization.util.IdentityMappingUtil;
 import org.apache.nifi.components.PropertyValue;
@@ -207,6 +208,7 @@ public class FileAccessPolicyProvider implements ConfigurableAccessPolicyProvide
             // get the value of the initial admin identity
             final PropertyValue initialAdminIdentityProp = configurationContext.getProperty(PROP_INITIAL_ADMIN_IDENTITY);
             initialAdminIdentity = initialAdminIdentityProp.isSet() ? IdentityMappingUtil.mapIdentity(initialAdminIdentityProp.getValue(), identityMappings) : null;
+            NiFiUserUtils.setAdminIdentity(initialAdminIdentity);
 
             // get the value of the legacy authorized users file
             final PropertyValue legacyAuthorizedUsersProp = configurationContext.getProperty(FileAuthorizer.PROP_LEGACY_AUTHORIZED_USERS_FILE);

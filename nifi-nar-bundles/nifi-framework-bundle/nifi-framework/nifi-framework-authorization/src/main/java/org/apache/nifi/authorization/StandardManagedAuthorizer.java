@@ -22,6 +22,7 @@ import org.apache.nifi.authorization.exception.AuthorizerCreationException;
 import org.apache.nifi.authorization.exception.AuthorizerDestructionException;
 import org.apache.nifi.authorization.exception.UninheritableAuthorizationsException;
 import org.apache.nifi.authorization.User;
+import org.apache.nifi.authorization.user.NiFiUserUtils;
 import org.apache.nifi.authorization.ConfigurableUserGroupProvider;
 import org.apache.nifi.authorization.ConfigurableAccessPolicyProvider;
 import org.apache.nifi.components.PropertyValue;
@@ -85,6 +86,10 @@ public class StandardManagedAuthorizer implements ManagedAuthorizer {
 
     @Override
     public AuthorizationResult authorize(AuthorizationRequest request) throws AuthorizationAccessException {
+        if (isAdmin(request.getIdentity())) {
+            //if user is admin, gives all access rights.
+            return AuthorizationResult.approved();
+        }
         final String resourceIdentifier = request.getResource().getIdentifier();
         final AccessPolicy policy = accessPolicyProvider.getAccessPolicy(resourceIdentifier, request.getAction());
         if (policy == null) {
@@ -141,6 +146,17 @@ public class StandardManagedAuthorizer implements ManagedAuthorizer {
     private String generateUuid() {
         UUID uuid = UUID.randomUUID(); 
         return uuid.toString();
+    }
+
+    private boolean isAdmin(String requestIdentity) {
+        final UserAndGroups userAndGroups = userGroupProvider.getUserAndGroups(requestIdentity);
+        final User user = userAndGroups.getUser();
+        if (user == null) {
+            return false;
+        }
+        String userIdentity = user.getIdentity();
+        String adminIdentity = NiFiUserUtils.getAdminIdentity();
+        return userIdentity.equals(adminIdentity);
     }
 
     /**

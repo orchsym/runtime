@@ -29,6 +29,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
  */
 public final class NiFiUserUtils {
 
+    public static String adminIdentity = "";
     /**
      * Returns the current NiFiUser or null if the current user is not a NiFiUser.
      *
@@ -86,5 +87,13 @@ public final class NiFiUserUtils {
         }
 
         return proxyChain;
+    }
+
+    public static void setAdminIdentity(String identity) {
+        adminIdentity = identity;
+    }
+
+    public static String getAdminIdentity() {
+        return adminIdentity;
     }
 }
