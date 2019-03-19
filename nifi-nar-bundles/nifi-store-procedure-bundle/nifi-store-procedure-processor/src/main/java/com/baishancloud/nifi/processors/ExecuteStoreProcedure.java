@@ -70,9 +70,11 @@ import java.util.regex.Pattern;
 })
 public class ExecuteStoreProcedure extends AbstractProcessor {
 
-    public static final String RESULT_ROW_COUNT = "executesql.row.count";
-    public static final String RESULT_OUT_COUNT = "executesql.out.count";
-    public static final String RESULT_QUERY_DURATION = "executesql.query.duration";
+    public static final String RESULT_ROW_COUNT = "sp.row.count";
+    public static final String RESULT_OUT_COUNT = "sp.out.count";
+    public static final String RESULT_QUERY_DURATION = "sp.query.duration";
+    public static final String RESULT_QUERY_CALL = "sp.query.call";
+    public static final String RESULT_QUERY_PARAMS = "sp.query.params";
     public static final String PARAM_INDEX = "param.index";
     public static final String PARAM_VALUE = "param.value";
     public static final String PARAM_TYPE = "param.type";
@@ -336,14 +338,19 @@ public class ExecuteStoreProcedure extends AbstractProcessor {
                     }
                 }
             });
+            Map<String,String> attrs=new HashMap<>();
             if (list != null && list.size() > 0) {
-                fileToProcess = session.putAttribute(fileToProcess, RESULT_ROW_COUNT, String.valueOf(list.size()));
+                attrs.put(RESULT_ROW_COUNT, String.valueOf(list.size()));
             }
             if (outs != null && !outs.equals("")) {
-                fileToProcess = session.putAttribute(fileToProcess, RESULT_OUT_COUNT, String.valueOf(outs.length));
+                attrs.put(RESULT_OUT_COUNT, String.valueOf(outs.length));
             }
             long duration = stopWatch.getElapsed(TimeUnit.MILLISECONDS);
-            fileToProcess = session.putAttribute(fileToProcess, RESULT_QUERY_DURATION, String.valueOf(duration));
+            attrs.put(RESULT_QUERY_DURATION, String.valueOf(duration));
+            attrs.put( RESULT_QUERY_CALL, callQuery);
+            attrs.put(RESULT_QUERY_PARAMS, params);
+            
+            fileToProcess=session.putAllAttributes(fileToProcess, attrs);
             session.transfer(fileToProcess, REL_SUCCESS);
 
         } catch (final ProcessException | SQLException e) {
@@ -575,7 +582,7 @@ public class ExecuteStoreProcedure extends AbstractProcessor {
                 case LONGVARBINARY:
                     byte[] bValue;
                     paramFormat = paramFormat == null ? "" : paramFormat;
-                    switch (paramFormat) {
+                    switch (paramFormat.toLowerCase()) {
                         case "":
                         case "ascii":
                             bValue = parameterValue.getBytes("ASCII");
