@@ -1348,7 +1348,7 @@ public class RunNiFi {
         defaultLogger.info("Apache NiFi now running and listening for Bootstrap requests on port {}", port);
     }
 
-    int getNiFiCommandControlPort() {
+    protected int getNiFiCommandControlPort() {
         return this.ccPort;
     }
 

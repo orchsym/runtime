@@ -313,7 +313,6 @@ public class ExecuteStoreProcedure extends AbstractProcessor {
                 }
             });
             List<Object> paramList = null;
-            Object[] outArray = null;
             paramList = analyzeParamJsonArray(params);
             callQuery = GenerteCallQuery(methodName, paramList == null ? 0 : paramList.size());
             List<List<GroovyRowResult>> list = sql.callWithAllRows(callQuery, paramList == null ? new ArrayList<Object>() : paramList, new Closure(this) {
@@ -483,7 +482,8 @@ public class ExecuteStoreProcedure extends AbstractProcessor {
                     break;
                 case BOOLEAN:
                     object = Boolean.parseBoolean(parameterValue);
-                    TINYINT:
+                    break;
+                case TINYINT:
                     object = Byte.parseByte(parameterValue);
                     break;
                 case SMALLINT:

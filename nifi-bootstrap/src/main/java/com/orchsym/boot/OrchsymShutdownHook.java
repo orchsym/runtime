@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.nifi.bootstrap;
+package com.orchsym.boot;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,34 +24,24 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class ShutdownHook extends Thread {
+import org.apache.nifi.bootstrap.RunNiFi;
+import org.apache.nifi.bootstrap.ShutdownHook;
 
-    protected final Process nifiProcess;
-    private final RunNiFi runner;
-    protected final int gracefulShutdownSeconds;
-    protected final ExecutorService executor;
+public class OrchsymShutdownHook extends ShutdownHook {
+    private RunOrchsymRuntime runtime;
 
-    protected volatile String secretKey;
-
-    public ShutdownHook(final Process nifiProcess, final RunNiFi runner, final String secretKey, final int gracefulShutdownSeconds, final ExecutorService executor) {
-        this.nifiProcess = nifiProcess;
-        this.runner = runner;
-        this.secretKey = secretKey;
-        this.gracefulShutdownSeconds = gracefulShutdownSeconds;
-        this.executor = executor;
-    }
-
-    public void setSecretKey(final String secretKey) {
-        this.secretKey = secretKey;
+    public OrchsymShutdownHook(Process nifiProcess, RunOrchsymRuntime runner, String secretKey, int gracefulShutdownSeconds, ExecutorService executor) {
+        super(nifiProcess, runner, secretKey, gracefulShutdownSeconds, executor);
+        this.runtime = runner;
     }
 
     @Override
     public void run() {
         executor.shutdown();
-        runner.setAutoRestartNiFi(false);
-        final int ccPort = runner.getNiFiCommandControlPort();
+        runtime.setAutoRestartNiFi(false);
+        final int ccPort = runtime.getNiFiCommandControlPort();
         if (ccPort > 0) {
-            System.out.println("Initiating Shutdown of NiFi...");
+            System.out.println("Initiating Shutdown of " + RunOrchsymRuntime.RUNTIME_NAME + "...");
 
             try {
                 final Socket socket = new Socket("localhost", ccPort);
@@ -61,19 +51,19 @@ public class ShutdownHook extends Thread {
 
                 socket.close();
             } catch (final IOException ioe) {
-                System.out.println("Failed to Shutdown NiFi due to " + ioe);
+                System.out.println("Failed to Shutdown " + RunOrchsymRuntime.RUNTIME_NAME + " due to " + ioe);
             }
         }
 
-        runner.notifyStop();
-        System.out.println("Waiting for Apache NiFi to finish shutting down...");
+        runtime.notifyStop();
+        System.out.println("Waiting for " + RunOrchsymRuntime.RUNTIME_NAME + " to finish shutting down...");
         final long startWait = System.nanoTime();
         while (RunNiFi.isAlive(nifiProcess)) {
             final long waitNanos = System.nanoTime() - startWait;
             final long waitSeconds = TimeUnit.NANOSECONDS.toSeconds(waitNanos);
             if (waitSeconds >= gracefulShutdownSeconds && gracefulShutdownSeconds > 0) {
                 if (RunNiFi.isAlive(nifiProcess)) {
-                    System.out.println("NiFi has not finished shutting down after " + gracefulShutdownSeconds + " seconds. Killing process.");
+                    System.out.println(RunOrchsymRuntime.RUNTIME_NAME + " has not finished shutting down after " + gracefulShutdownSeconds + " seconds. Killing process.");
                     nifiProcess.destroy();
                 }
                 break;
@@ -86,11 +76,11 @@ public class ShutdownHook extends Thread {
         }
 
         try {
-            final File statusFile = runner.getStatusFile();
+            final File statusFile = runtime.getStatusFile();
             if (!statusFile.delete()) {
                 System.err.println("Failed to delete status file " + statusFile.getAbsolutePath() + "; this file should be cleaned up manually");
             }
-        }catch (IOException ex){
+        } catch (IOException ex) {
             System.err.println("Failed to retrieve status file " + ex);
         }
     }
