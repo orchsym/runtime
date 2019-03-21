@@ -928,7 +928,7 @@ public class HandleHttpRequest extends AbstractProcessor {
         if (hasAPIService || supportApiRegistry) {
             final String groupId = allProperties.get(NiFiProperties.GROUP_ID);
             final HttpContextMap httpContextMap = context.getProperty(HTTP_CONTEXT_MAP).asControllerService(HttpContextMap.class);
-            final ApiInfo apiInfo = getApiInfo(context.getName(), context.getAllProperties(), state, groupId, httpContextMap);
+            final ApiInfo apiInfo = getApiInfo(context.getName(), allProperties, state, groupId, httpContextMap);
             APIServicesManager.getInstance().register(apiInfo);
         } else {
             unregisterApiInfoFromService();
