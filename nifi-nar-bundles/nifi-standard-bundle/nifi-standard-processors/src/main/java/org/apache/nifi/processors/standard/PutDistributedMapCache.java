@@ -127,9 +127,9 @@ public class PutDistributedMapCache extends AbstractProcessor {
         .build();
     private final Set<Relationship> relationships;
 
-    private final Serializer<String> keySerializer = new StringSerializer();
-    private final Serializer<byte[]> valueSerializer = new CacheValueSerializer();
-    private final Deserializer<byte[]> valueDeserializer = new CacheValueDeserializer();
+    protected final Serializer<String> keySerializer = new StringSerializer();
+    protected final Serializer<byte[]> valueSerializer = new CacheValueSerializer();
+    protected final Deserializer<byte[]> valueDeserializer = new CacheValueDeserializer();
 
     public PutDistributedMapCache() {
         final Set<Relationship> rels = new HashSet<>();
@@ -257,7 +257,7 @@ public class PutDistributedMapCache extends AbstractProcessor {
         }
     }
 
-    private Map<String, byte[]> getCacheMap(final ProcessContext context, final ProcessSession session, FlowFile flowFile) {
+    public Map<String, byte[]> getCacheMap(final ProcessContext context, final ProcessSession session, FlowFile flowFile) {
         Map<String, byte[]> cacheMap = new HashMap<String, byte[]>();
         final String cacheKey = context.getProperty(CACHE_ENTRY_IDENTIFIER).evaluateAttributeExpressions(flowFile).getValue();
         // get flow file content
