@@ -178,7 +178,7 @@ public class ConvertXMLToJSON extends AbstractProcessor {
         final String jsonContent = gson.toJson(jsonMap);
         try {
             if (destinationContent) {
-                FlowFile contFlowfile = session.create();
+                FlowFile contFlowfile = session.create(flowFile);
                 contFlowfile = session.write(contFlowfile, (in, out) -> {
                     try (OutputStream outputStream = new BufferedOutputStream(out)) {
                         outputStream.write(jsonContent.getBytes("UTF-8"));
@@ -214,7 +214,6 @@ public class ConvertXMLToJSON extends AbstractProcessor {
                 ret = xmlJSONObj.toMap();
             } else {
                 NodeList nodeList = getNodeListFromXmlStr(xmlStr, xpathExpression);
-                System.out.println(nodeList.getLength());
                 ret = getJsonStringFromNodeList(nodeList, mark, keyName);
             }
         } catch (Exception e) {

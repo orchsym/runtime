@@ -202,7 +202,7 @@ public class ConvertJSONToXML extends AbstractProcessor {
         final String xmlContent = convertJsonToXMLStr(content, jsonPathExpression, attributeMark, nameSpace, contentKeyName, encoding, elementName);
         try {
             if (destinationContent) {
-                FlowFile contFlowfile = session.create();
+                FlowFile contFlowfile = session.create(flowFile);
                 contFlowfile = session.write(contFlowfile, (in, out) -> {
                     try (OutputStream outputStream = new BufferedOutputStream(out)) {
                         outputStream.write(xmlContent.getBytes("UTF-8"));
