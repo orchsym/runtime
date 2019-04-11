@@ -23,6 +23,7 @@ import org.apache.nifi.authorization.exception.AuthorizerDestructionException;
 import org.apache.nifi.authorization.exception.UninheritableAuthorizationsException;
 import org.apache.nifi.authorization.User;
 import org.apache.nifi.authorization.user.NiFiUserUtils;
+import org.apache.nifi.authorization.util.MD5Util;
 import org.apache.nifi.authorization.ConfigurableUserGroupProvider;
 import org.apache.nifi.authorization.ConfigurableAccessPolicyProvider;
 import org.apache.nifi.components.PropertyValue;
@@ -107,7 +108,7 @@ public class StandardManagedAuthorizer implements ManagedAuthorizer {
                 }
                 return AuthorizationResult.denied(String.format("user identity can't be '%s'.", request.getIdentity()));
             }
-            User newUser = new User.Builder().identifier(generateUuid()).identity(request.getIdentity()).build();
+            User newUser = new User.Builder().identifier(generateUuid(request.getIdentity())).identity(request.getIdentity()).build();
 
             if(!autoGenerateUser(newUser)){
                 return AuthorizationResult.denied("Unable to access!");
@@ -143,9 +144,13 @@ public class StandardManagedAuthorizer implements ManagedAuthorizer {
         }
     }
 
-    private String generateUuid() {
-        UUID uuid = UUID.randomUUID(); 
-        return uuid.toString();
+    private String generateUuid(String key) {
+        String md5Key = MD5Util.MD5(key);
+        if (md5Key.length() < 20) {
+            return md5Key;
+        }
+        String uuid = md5Key.substring(0, 8) + '-' + md5Key.substring(8, 12) + '-' + md5Key.substring(12, 16) + '-' + md5Key.substring(16, 20) + '-' + md5Key.substring(20);
+        return uuid;
     }
 
     private boolean isAdmin(String requestIdentity) {
