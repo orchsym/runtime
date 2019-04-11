@@ -129,7 +129,7 @@ public class StandardManagedAuthorizer implements ManagedAuthorizer {
 
     public boolean isSecurityUserAutoGenerateEnabled() {
         org.apache.nifi.util.NiFiProperties nifiProperties = org.apache.nifi.util.NiFiProperties.createBasicNiFiProperties(null, null);
-        return Boolean.parseBoolean(nifiProperties.getProperty("orchsym.security.user.auto.generate", Boolean.FALSE.toString()));
+        return Boolean.parseBoolean(nifiProperties.getProperty("orchsym.security.user.auto.generate", Boolean.TRUE.toString())) ; //if not set, enable to generate by default
     }
 
     private boolean autoGenerateUser(User newUser) {
