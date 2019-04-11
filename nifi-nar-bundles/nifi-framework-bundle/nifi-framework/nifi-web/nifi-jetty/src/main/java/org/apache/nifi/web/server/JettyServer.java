@@ -333,6 +333,8 @@ public class JettyServer implements NiFiServer {
         webApiContext = loadWar(webApiWar, "/nifi-api", frameworkClassLoader);
         handlers.addHandler(webApiContext);
 
+        loadWars(frameworkClassLoader, props, warToBundleLookup, handlers);
+        
         if (!headlessMode) {
             final String webPath = getWebPath();
             final WebAppContext runtimeWebUiContext = loadWar(webUiWar, '/' + webPath, frameworkClassLoader);
@@ -368,13 +370,11 @@ public class JettyServer implements NiFiServer {
             handlers.addHandler(webErrorContext);
         }
 
-        loadWars(props, warToBundleLookup, handlers);
-        
         // deploy the web apps
         return gzip(handlers);
     }
 
-    protected void loadWars(final NiFiProperties settings, final Map<File, Bundle> warToBundleLookup, HandlerCollection handlers) {
+    protected void loadWars(final ClassLoader frameworkClassLoader, final NiFiProperties settings, final Map<File, Bundle> warToBundleLookup, HandlerCollection handlers) {
         // load other wars
     }
 
