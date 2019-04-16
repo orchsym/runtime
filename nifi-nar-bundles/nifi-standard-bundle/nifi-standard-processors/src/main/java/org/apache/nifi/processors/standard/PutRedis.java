@@ -32,6 +32,7 @@ import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.behavior.SupportsBatching;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.components.PropertyDescriptor;
@@ -42,12 +43,12 @@ import org.apache.nifi.logging.ComponentLog;
 import org.apache.nifi.processor.DataUnit;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
-import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
 @EventDriven
 @SupportsBatching
+@Marks(categories = { "Data Process/Output" }, createdDate = "2019-03-26")
 @Tags({"map", "cache", "put", "distributed", "redis"})
 @InputRequirement(Requirement.INPUT_REQUIRED)
 @CapabilityDescription("Gets the content of a FlowFile and puts it to a redis cache, using a cache key " +
