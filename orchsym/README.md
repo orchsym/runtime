@@ -59,7 +59,8 @@ mvn versions:set -DgenerateBackupPoms=false -DnewVersion=1.7.1-2.2.0
 4.提交修改，打tag，并推送发布分支：
 
 ```
-git commit -m "发布2.2.0版本"
+git add .
+git commit -m "修改版本为2.2.0"
 git push origin release/2.2.0
 ```
 
