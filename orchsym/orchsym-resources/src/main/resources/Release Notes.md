@@ -1,3 +1,28 @@
+----------------------------
+# Version 2.4.0
+
+版本：1.7.1-2.4.0
+
+发布时间：2019-04-18
+
+组件总数：302
+
+## 新功能
+- [ORCHSYM-3652] - 创建支持Redis存储失效时间的组件
+- [ORCHSYM-3201] - 创建Orchsym web api
+
+## 改进
+- [ORCHSYM-3492] - 优化SAP RFC数据输出
+
+## 缺陷 
+- [ORCHSYM-2918] - 编排平台启用权限认证后flow根权限为只读
+- [ORCHSYM-3531] - 组件国际化不支持带版本的组件
+- [ORCHSYM-3601] - 存储过程ExecuteStoreProcedure组件问题
+- [ORCHSYM-3644] - HandleHTTPRequest开启API注册功能启动后Method不正确
+- [ORCHSYM-3679] - 控制器服务应默认启动
+- [ORCHSYM-3725] - XML和JSON转换组件丢失属性
+- [ORCHSYM-3824] - 编排平台用户列表显示不了管理平台创建并登录的账号
+- [ORCHSYM-3950] - 认证用户登录集成平台后默认不创建账号
 
 ----------------------------
 # Version 2.3.1
