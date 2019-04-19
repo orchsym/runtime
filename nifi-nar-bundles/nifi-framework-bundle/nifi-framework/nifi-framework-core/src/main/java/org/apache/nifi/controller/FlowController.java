@@ -1274,6 +1274,8 @@ public class FlowController implements EventAccess, ControllerServiceProvider, R
 
         final ClassLoader ctxClassLoader = Thread.currentThread().getContextClassLoader();
         try {
+            controllerServiceProvider.checkExtensionLoaded(Processor.class, type);
+
             final ClassLoader detectedClassLoaderForInstance = ExtensionManager.createInstanceClassLoader(type, identifier, processorBundle, additionalUrls);
             final Class<?> rawClass = Class.forName(type, true, detectedClassLoaderForInstance);
             Thread.currentThread().setContextClassLoader(detectedClassLoaderForInstance);
@@ -3585,6 +3587,8 @@ public class FlowController implements EventAccess, ControllerServiceProvider, R
                 throw new IllegalStateException("Unable to find bundle for coordinate " + bundleCoordinate.getCoordinate());
             }
 
+            controllerServiceProvider.checkExtensionLoaded(ReportingTask.class, type);
+ 
             final ClassLoader detectedClassLoader = ExtensionManager.createInstanceClassLoader(type, id, reportingTaskBundle, additionalUrls);
             final Class<?> rawClass = Class.forName(type, false, detectedClassLoader);
             Thread.currentThread().setContextClassLoader(detectedClassLoader);

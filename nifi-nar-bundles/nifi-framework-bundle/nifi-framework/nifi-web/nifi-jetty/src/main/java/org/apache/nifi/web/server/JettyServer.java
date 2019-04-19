@@ -865,6 +865,7 @@ public class JettyServer implements NiFiServer {
 
             DocGenerator.generate(props, extensionMapping);
 
+            beforeServerStart();
             // start the server
             server.start();
 
@@ -980,6 +981,10 @@ public class JettyServer implements NiFiServer {
         } catch (Exception ex) {
             startUpFailure(ex);
         }
+    }
+
+    protected void beforeServerStart() {
+        //
     }
 
     private void dumpUrls() throws SocketException {

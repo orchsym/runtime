@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -109,6 +110,16 @@ public class StandardControllerServiceProvider implements ControllerServiceProvi
         return stateManagerProvider.getStateManager(componentId);
     }
 
+    @SuppressWarnings("rawtypes")
+    public void checkExtensionLoaded(Class<?> typeClass, final String type) {
+        // loaded or not
+        final Set<Class> extensions = ExtensionManager.getExtensions(typeClass);
+        Optional<Class> foundType = extensions.stream().filter(c -> c.getName().equals(type)).findFirst();
+        if (!foundType.isPresent()) {
+            throw new RuntimeException("Didn't load the " + typeClass.getSimpleName() + ": " + type);
+        }
+    }
+
     @Override
     public ControllerServiceNode createControllerService(final String type, final String id, final BundleCoordinate bundleCoordinate, final Set<URL> additionalUrls, final boolean firstTimeAdded) {
         if (type == null || id == null || bundleCoordinate == null) {
@@ -124,6 +135,8 @@ public class StandardControllerServiceProvider implements ControllerServiceProvi
                 if (csBundle == null) {
                     throw new ControllerServiceInstantiationException("Unable to find bundle for coordinate " + bundleCoordinate.getCoordinate());
                 }
+
+                checkExtensionLoaded(ControllerService.class, type);
 
                 cl = ExtensionManager.createInstanceClassLoader(type, id, csBundle, additionalUrls);
                 Thread.currentThread().setContextClassLoader(cl);

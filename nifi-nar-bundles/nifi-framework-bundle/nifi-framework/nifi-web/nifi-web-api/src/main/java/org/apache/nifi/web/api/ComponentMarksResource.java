@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -283,6 +284,22 @@ public class ComponentMarksResource extends ApplicationResource {
                 // merge
                 items = mergeBuiltIn(requestLocale, categoryItems);
 
+                final List<String> loadedCompList = processorTypes.stream().map(d -> getTypeSimpleName(d.getType())).collect(Collectors.toList());
+                for (CategoryItem item : items) {
+                    item.classification.forEach(sub -> {
+                        
+                        final List<String> components = sub.components;
+                        // filter, if unloaded
+                        final Iterator<String> iterator = components.iterator();
+                        while (iterator.hasNext()) {
+                            final String name = iterator.next();
+                            if (!loadedCompList.contains(name)) {
+                                iterator.remove();
+                            }
+                        }
+                    });
+                }
+                
                 // sort
                 Comparator<Item> itemComparator = itemGeneraleComparator;
                 if (Locale.CHINESE.getLanguage().equals(requestLocale.getLanguage())) {
@@ -305,11 +322,15 @@ public class ComponentMarksResource extends ApplicationResource {
         return Response.ok(resultStr).build();
     }
 
+    private String getTypeSimpleName(String type) {
+        return type.lastIndexOf('.') > 0 ? type.substring(type.lastIndexOf('.') + 1) : type;
+    }
+
     private Collection<CategoryItem> createCategoryItems(final Locale requestLocale, Set<DocumentedTypeDTO> processorTypes) {
         Map<String, CategoryItem> categoryItems = new HashMap<String, CategoryItem>();
         for (DocumentedTypeDTO dto : processorTypes) {
             String type = dto.getType();
-            String processorName = type.lastIndexOf('.') > 0 ? type.substring(type.lastIndexOf('.') + 1) : type;
+            String processorName = getTypeSimpleName(type);
 
             for (String category : dto.getCategories()) {
                 String[] categoryArr = category.split("/");
