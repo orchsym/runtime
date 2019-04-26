@@ -141,6 +141,7 @@ public class PutRedis extends PutDistributedMapCache {
             flowFile = session.putAttribute(flowFile, CACHED_ATTRIBUTE_NAME, String.valueOf(cached));
 
             if (cached) {
+                session.getProvenanceReporter().modifyContent(flowFile);
                 session.transfer(flowFile, REL_SUCCESS);
             } else {
                 session.transfer(flowFile, REL_FAILURE);

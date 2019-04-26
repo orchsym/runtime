@@ -215,6 +215,7 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
             flowFile = session.putAllAttributes(flowFile, extractedAttributes);
         }
 
+        session.getProvenanceReporter().modifyAttributes(flowFile);
         session.transfer(flowFile, REL_SUCCESS);
     }
 

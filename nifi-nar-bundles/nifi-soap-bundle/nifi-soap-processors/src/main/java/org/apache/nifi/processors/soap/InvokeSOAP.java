@@ -364,6 +364,7 @@ public class InvokeSOAP extends AbstractProcessor {
                 responseFlowFile = session.putAllAttributes(responseFlowFile, ff.getAttributes());
                 session.transfer(ff, REL_ORIGINAL);
             }
+            session.getProvenanceReporter().create(responseFlowFile);
             session.transfer(responseFlowFile, REL_SUCCESS);
         } catch (final Exception e) {
             // penalize or yield

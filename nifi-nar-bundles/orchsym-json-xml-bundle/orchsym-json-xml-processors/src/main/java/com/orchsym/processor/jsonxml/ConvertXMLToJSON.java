@@ -17,6 +17,7 @@ import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.apache.nifi.util.StopWatch;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.flowfile.attributes.CoreAttributes;
 
@@ -32,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.HashSet;
 import java.util.Collections;
 
@@ -73,10 +75,7 @@ public class ConvertXMLToJSON extends AbstractProcessor {
     protected static final PropertyDescriptor XML_PATH_EXPRESSION = new PropertyDescriptor.Builder()//
             .name("xpath-expression")//
             .displayName("XPath Expression")//
-            .description("The XPath expression to extract the contents")
-            .required(false)
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .expressionLanguageSupported(ExpressionLanguageScope.NONE)
+            .description("The XPath expression to extract the contents").required(false).addValidator(StandardValidators.NON_EMPTY_VALIDATOR).expressionLanguageSupported(ExpressionLanguageScope.NONE)
             .build();
 
     protected static final PropertyDescriptor XML_ATTRIBUTE_MARK = new PropertyDescriptor.Builder()//
@@ -84,8 +83,7 @@ public class ConvertXMLToJSON extends AbstractProcessor {
             .displayName("XML Attribute Mark")//
             .description("Set the prefix of XML attribute name when extract XML attributes")//
             .required(false)//
-            .addValidator(Validator.VALID)
-            .defaultValue("@")//
+            .addValidator(Validator.VALID).defaultValue("@")//
             .build();
 
     protected static final PropertyDescriptor XML_CONTENT_KEY_NAME = new PropertyDescriptor.Builder()//
@@ -93,19 +91,13 @@ public class ConvertXMLToJSON extends AbstractProcessor {
             .displayName("XML Content Key Name")//
             .description("Set the key name of the content, which extract from the XML node text.")//
             .required(false)//
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .defaultValue("content")//
+            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR).defaultValue("content")//
             .build();
 
-    public static final PropertyDescriptor DESTINATION = new PropertyDescriptor.Builder()
-            .name("Destination")
-            .description("Control if JSON value is written as a new flowfile attribute '" + JSON_ATTRIBUTE_NAME + "' " +
-                    "or written in the flowfile content. Writing to flowfile content will overwrite any " +
-                    "existing flowfile content.")
-            .required(true)
-            .allowableValues(DESTINATION_ATTRIBUTE, DESTINATION_CONTENT)
-            .defaultValue(DESTINATION_ATTRIBUTE)
-            .build();
+    public static final PropertyDescriptor DESTINATION = new PropertyDescriptor.Builder().name("Destination")
+            .description("Control if JSON value is written as a new flowfile attribute '" + JSON_ATTRIBUTE_NAME + "' "
+                    + "or written in the flowfile content. Writing to flowfile content will overwrite any " + "existing flowfile content.")
+            .required(true).allowableValues(DESTINATION_ATTRIBUTE, DESTINATION_CONTENT).defaultValue(DESTINATION_ATTRIBUTE).build();
 
     public static final Relationship REL_SUCCESS = new Relationship.Builder()//
             .name("success") //
@@ -177,6 +169,8 @@ public class ConvertXMLToJSON extends AbstractProcessor {
         Gson gson = new GsonBuilder().create();
         final String jsonContent = gson.toJson(jsonMap);
         try {
+            final StopWatch stopWatch = new StopWatch(true);
+            FlowFile successFlow = null;
             if (destinationContent) {
                 FlowFile contFlowfile = session.create(flowFile);
                 contFlowfile = session.write(contFlowfile, (in, out) -> {
@@ -186,12 +180,14 @@ public class ConvertXMLToJSON extends AbstractProcessor {
                 });
                 contFlowfile = session.putAttribute(contFlowfile, CoreAttributes.MIME_TYPE.key(), APPLICATION_JSON);
                 session.remove(flowFile);
-                session.transfer(contFlowfile, REL_SUCCESS);
+                successFlow = contFlowfile;
             } else {
-                FlowFile atFlowfile = session.putAttribute(flowFile, JSON_ATTRIBUTE_NAME, jsonContent);
-                session.transfer(atFlowfile, REL_SUCCESS);
+                successFlow = session.putAttribute(flowFile, JSON_ATTRIBUTE_NAME, jsonContent);
             }
-            
+
+            session.getProvenanceReporter().modifyContent(successFlow, stopWatch.getElapsed(TimeUnit.MILLISECONDS));
+            session.transfer(successFlow, REL_SUCCESS);
+
         } catch (Exception e) {
             getLogger().error(e.getMessage());
             session.transfer(flowFile, REL_FAILURE);
@@ -219,7 +215,7 @@ public class ConvertXMLToJSON extends AbstractProcessor {
         } catch (Exception e) {
             return ret;
         }
-        
+
         return ret;
     }
 
@@ -233,7 +229,7 @@ public class ConvertXMLToJSON extends AbstractProcessor {
         DocumentBuilder builder = factory.newDocumentBuilder();
         InputSource inputSource = new InputSource(new StringReader(xmlStr));
         Document doc = builder.parse(inputSource);
-        
+
         XPathFactory xpf = XPathFactory.newInstance();
         XPath xpath = xpf.newXPath();
         XPathExpression compile = xpath.compile(xpathExpression);
@@ -241,23 +237,23 @@ public class ConvertXMLToJSON extends AbstractProcessor {
         return nodeList;
     }
 
-    private Map<String, Object> getJsonStringFromNodeList( NodeList nodeList, String mark, String keyName) {
+    private Map<String, Object> getJsonStringFromNodeList(NodeList nodeList, String mark, String keyName) {
         Map<String, Object> nodeMap = new HashMap<String, Object>();
         for (int i = 0; i < nodeList.getLength(); i++) {
             Node node = nodeList.item(i);
             String nodeName = node.getNodeName();
             Map<String, Object> map = new HashMap<String, Object>();
             processNodeChildren(node, map, mark, keyName);
-            
+
             Map<String, Object> attrMap = getNodeAttributes(node, mark);
             if (attrMap != null) {
-                ((Map<String, Object>)(map.get(nodeName))).putAll(attrMap);
+                ((Map<String, Object>) (map.get(nodeName))).putAll(attrMap);
             }
             mergeContentToMap(nodeMap, nodeName, map.get(nodeName));
         }
         return nodeMap;
     }
-    
+
     private void processNodeChildren(Node node, Map<String, Object> map, String mark, String keyName) {
         Map<String, Object> childMap = new HashMap<String, Object>();
         String nodeName = node.getNodeName();
@@ -267,21 +263,21 @@ public class ConvertXMLToJSON extends AbstractProcessor {
             for (int i = 0; i < node.getChildNodes().getLength(); i++) {
                 Node subNode = node.getChildNodes().item(i);
                 if (subNode.getChildNodes().getLength() > 1) {
-                    //递归获取所有子node
+                    // 递归获取所有子node
                     processNodeChildren(subNode, childMap, mark, keyName);
                 } else {
                     processNode(subNode, childMap, mark, keyName);
-                } 
+                }
             }
             map.put(nodeName, childMap);
         }
     }
-    
+
     private void processNode(Node node, Map<String, Object> map, String mark, String keyName) {
         String nodeKey = node.getNodeName();
         Object nodeContent = node.getTextContent();
         NamedNodeMap attributes = node.getAttributes();
-        
+
         Map<String, Object> attributeMap = getNodeAttributes(node, mark);
         if (attributeMap != null) {
             attributeMap.put(keyName, nodeContent);
@@ -289,36 +285,36 @@ public class ConvertXMLToJSON extends AbstractProcessor {
         }
         mergeContentToMap(map, nodeKey, nodeContent);
     }
-    
+
     private Map<String, Object> getNodeAttributes(Node node, String mark) {
         NamedNodeMap attributes = node.getAttributes();
         if (attributes == null || attributes.getLength() == 0) {
             return null;
-        } 
+        }
         Map<String, Object> map = new HashMap<String, Object>();
-        for (int i = 0; i < attributes.getLength(); i++){
+        for (int i = 0; i < attributes.getLength(); i++) {
             Attr attr = (Attr) attributes.item(i);
             String attrName = attr.getNodeName();
             attrName = mark + attrName;
             String attrValue = attr.getNodeValue();
             map.put(attrName, attrValue);
         }
-            return map;
+        return map;
     }
-    
+
     private void mergeContentToMap(Map<String, Object> map, String key, Object content) {
         if (map.containsKey(key)) {
             if (map.get(key) instanceof List<?>) {
-                ((List)map.get(key)).add(content);
+                ((List) map.get(key)).add(content);
             } else {
                 List<Object> conentArr = new ArrayList<Object>();
-                conentArr.add((Object)map.get(key));
+                conentArr.add((Object) map.get(key));
                 conentArr.add(content);
                 map.put(key, conentArr);
             }
         } else {
             map.put(key, content);
         }
-        
+
     }
 }
