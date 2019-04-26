@@ -16,6 +16,7 @@
  */
 package org.apache.nifi.processors.standard;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.annotation.behavior.EventDriven;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
@@ -78,6 +79,7 @@ public class PutFile extends AbstractProcessor {
     public static final String REPLACE_RESOLUTION = "replace";
     public static final String IGNORE_RESOLUTION = "ignore";
     public static final String FAIL_RESOLUTION = "fail";
+    public static final String APPEND_RESOLUTION = "append";
 
     public static final String FILE_MODIFY_DATE_ATTRIBUTE = "file.lastModifiedTime";
     public static final String FILE_MODIFY_DATE_ATTR_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
@@ -88,6 +90,14 @@ public class PutFile extends AbstractProcessor {
             .required(true)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+            .build();
+    public static final PropertyDescriptor FILENAME = new PropertyDescriptor.Builder()
+            .name("Filename")
+            .description("the name of file which will be written to. by default, will try to use the attribute from flow with name 'filename', if empty, will use 'filename' attribute of flowfile instead")
+            .required(true)
+            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+            .defaultValue("${filename}")
             .build();
     public static final PropertyDescriptor MAX_DESTINATION_FILES = new PropertyDescriptor.Builder()
             .name("Maximum File Count")
@@ -100,7 +110,7 @@ public class PutFile extends AbstractProcessor {
             .description("Indicates what should happen when a file with the same name already exists in the output directory")
             .required(true)
             .defaultValue(FAIL_RESOLUTION)
-            .allowableValues(REPLACE_RESOLUTION, IGNORE_RESOLUTION, FAIL_RESOLUTION)
+            .allowableValues(REPLACE_RESOLUTION, IGNORE_RESOLUTION, FAIL_RESOLUTION, APPEND_RESOLUTION)
             .build();
     public static final PropertyDescriptor CHANGE_LAST_MODIFIED_TIME = new PropertyDescriptor.Builder()
             .name("Last Modified Time")
@@ -167,6 +177,7 @@ public class PutFile extends AbstractProcessor {
         // descriptors
         final List<PropertyDescriptor> supDescriptors = new ArrayList<>();
         supDescriptors.add(DIRECTORY);
+        supDescriptors.add(FILENAME);
         supDescriptors.add(CONFLICT_RESOLUTION);
         supDescriptors.add(CREATE_DIRS);
         supDescriptors.add(MAX_DESTINATION_FILES);
@@ -196,15 +207,21 @@ public class PutFile extends AbstractProcessor {
 
         final StopWatch stopWatch = new StopWatch(true);
         final Path configuredRootDirPath = Paths.get(context.getProperty(DIRECTORY).evaluateAttributeExpressions(flowFile).getValue());
+        final String filename = context.getProperty(FILENAME).evaluateAttributeExpressions(flowFile).getValue();
         final String conflictResponse = context.getProperty(CONFLICT_RESOLUTION).getValue();
         final Integer maxDestinationFiles = context.getProperty(MAX_DESTINATION_FILES).asInteger();
         final ComponentLog logger = getLogger();
 
+        String outputFileName = filename;
+        if (StringUtils.isBlank(outputFileName)) {
+            outputFileName = flowFile.getAttribute(CoreAttributes.FILENAME.key());
+        }
+
         Path tempDotCopyFile = null;
         try {
             final Path rootDirPath = configuredRootDirPath;
-            final Path tempCopyFile = rootDirPath.resolve("." + flowFile.getAttribute(CoreAttributes.FILENAME.key()));
-            final Path copyFile = rootDirPath.resolve(flowFile.getAttribute(CoreAttributes.FILENAME.key()));
+            final Path dotCopyFile = rootDirPath.resolve("." + outputFileName);
+            final Path copyFile = rootDirPath.resolve(outputFileName);
 
             if (!Files.exists(rootDirPath)) {
                 if (context.getProperty(CREATE_DIRS).asBoolean()) {
@@ -218,7 +235,6 @@ public class PutFile extends AbstractProcessor {
                 }
             }
 
-            final Path dotCopyFile = tempCopyFile;
             tempDotCopyFile = dotCopyFile;
             Path finalCopyFile = copyFile;
 
@@ -234,7 +250,7 @@ public class PutFile extends AbstractProcessor {
                     return;
                 }
             }
-
+            boolean append = false;
             if (Files.exists(finalCopyFile)) {
                 switch (conflictResponse) {
                     case REPLACE_RESOLUTION:
@@ -250,19 +266,28 @@ public class PutFile extends AbstractProcessor {
                         logger.warn("Penalizing {} and routing to failure as configured because file with the same name already exists", new Object[]{flowFile});
                         session.transfer(flowFile, REL_FAILURE);
                         return;
+                    case APPEND_RESOLUTION:
+                        append = true;
+                        logger.info("Transferring {} to success and append to same name of file", new Object[] { flowFile });
+                        break;
                     default:
                         break;
                 }
             }
 
-            session.exportTo(flowFile, dotCopyFile, false);
+            Path outputFile = dotCopyFile;
+            if (append) {
+                // append to final file directly
+                outputFile = finalCopyFile;
+            }
+            session.exportTo(flowFile, outputFile, append);
 
             final String lastModifiedTime = context.getProperty(CHANGE_LAST_MODIFIED_TIME).evaluateAttributeExpressions(flowFile).getValue();
             if (lastModifiedTime != null && !lastModifiedTime.trim().isEmpty()) {
                 try {
                     final DateFormat formatter = new SimpleDateFormat(FILE_MODIFY_DATE_ATTR_FORMAT, Locale.US);
                     final Date fileModifyTime = formatter.parse(lastModifiedTime);
-                    dotCopyFile.toFile().setLastModified(fileModifyTime.getTime());
+                    outputFile.toFile().setLastModified(fileModifyTime.getTime());
                 } catch (Exception e) {
                     logger.warn("Could not set file lastModifiedTime to {} because {}", new Object[]{lastModifiedTime, e});
                 }
@@ -273,7 +298,7 @@ public class PutFile extends AbstractProcessor {
                 try {
                     String perms = stringPermissions(permissions);
                     if (!perms.isEmpty()) {
-                        Files.setPosixFilePermissions(dotCopyFile, PosixFilePermissions.fromString(perms));
+                        Files.setPosixFilePermissions(outputFile, PosixFilePermissions.fromString(perms));
                     }
                 } catch (Exception e) {
                     logger.warn("Could not set file permissions to {} because {}", new Object[]{permissions, e});
@@ -283,8 +308,8 @@ public class PutFile extends AbstractProcessor {
             final String owner = context.getProperty(CHANGE_OWNER).evaluateAttributeExpressions(flowFile).getValue();
             if (owner != null && !owner.trim().isEmpty()) {
                 try {
-                    UserPrincipalLookupService lookupService = dotCopyFile.getFileSystem().getUserPrincipalLookupService();
-                    Files.setOwner(dotCopyFile, lookupService.lookupPrincipalByName(owner));
+                    UserPrincipalLookupService lookupService = outputFile.getFileSystem().getUserPrincipalLookupService();
+                    Files.setOwner(outputFile, lookupService.lookupPrincipalByName(owner));
                 } catch (Exception e) {
                     logger.warn("Could not set file owner to {} because {}", new Object[]{owner, e});
                 }
@@ -293,30 +318,32 @@ public class PutFile extends AbstractProcessor {
             final String group = context.getProperty(CHANGE_GROUP).evaluateAttributeExpressions(flowFile).getValue();
             if (group != null && !group.trim().isEmpty()) {
                 try {
-                    UserPrincipalLookupService lookupService = dotCopyFile.getFileSystem().getUserPrincipalLookupService();
-                    PosixFileAttributeView view = Files.getFileAttributeView(dotCopyFile, PosixFileAttributeView.class);
+                    UserPrincipalLookupService lookupService = outputFile.getFileSystem().getUserPrincipalLookupService();
+                    PosixFileAttributeView view = Files.getFileAttributeView(outputFile, PosixFileAttributeView.class);
                     view.setGroup(lookupService.lookupPrincipalByGroupName(group));
                 } catch (Exception e) {
                     logger.warn("Could not set file group to {} because {}", new Object[]{group, e});
                 }
             }
 
-            boolean renamed = false;
-            for (int i = 0; i < 10; i++) { // try rename up to 10 times.
-                if (dotCopyFile.toFile().renameTo(finalCopyFile.toFile())) {
-                    renamed = true;
-                    break;// rename was successful
+            if (!append) {
+                boolean renamed = false;
+                for (int i = 0; i < 10; i++) { // try rename up to 10 times.
+                    if (dotCopyFile.toFile().renameTo(finalCopyFile.toFile())) {
+                        renamed = true;
+                        break;// rename was successful
+                    }
+                    Thread.sleep(100L);// try waiting a few ms to let whatever might cause rename failure to resolve
                 }
-                Thread.sleep(100L);// try waiting a few ms to let whatever might cause rename failure to resolve
-            }
 
-            if (!renamed) {
-                if (Files.exists(dotCopyFile) && dotCopyFile.toFile().delete()) {
-                    logger.debug("Deleted dot copy file {}", new Object[]{dotCopyFile});
+                if (!renamed) {
+                    if (Files.exists(dotCopyFile) && dotCopyFile.toFile().delete()) {
+                        logger.debug("Deleted dot copy file {}", new Object[] { dotCopyFile });
+                    }
+                    throw new ProcessException("Could not rename: " + dotCopyFile);
+                } else {
+                    logger.info("Produced copy of {} at location {}", new Object[] { flowFile, finalCopyFile });
                 }
-                throw new ProcessException("Could not rename: " + dotCopyFile);
-            } else {
-                logger.info("Produced copy of {} at location {}", new Object[]{flowFile, finalCopyFile});
             }
 
             session.getProvenanceReporter().send(flowFile, finalCopyFile.toFile().toURI().toString(), stopWatch.getElapsed(TimeUnit.MILLISECONDS));
