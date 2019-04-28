@@ -1,11 +1,23 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.nifi.web.api;
 
-import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
@@ -24,7 +36,6 @@ import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -36,7 +47,6 @@ import org.apache.nifi.controller.FlowController;
 import org.apache.nifi.groups.ProcessGroup;
 import org.apache.nifi.nar.i18n.LanguageHelper;
 import org.apache.nifi.nar.i18n.MessagesProvider;
-import org.apache.nifi.util.FileUtils;
 import org.apache.nifi.web.NiFiServiceFacade;
 import org.apache.nifi.web.ResourceNotFoundException;
 import org.apache.nifi.web.Revision;
@@ -77,16 +87,11 @@ import io.swagger.annotations.ApiResponses;
  */
 @Path(StatsResource.PATH)
 @Api(value = StatsResource.PATH, description = "Endpoint for accessing the statistics of flows and components.")
-public class StatsResource extends ApplicationResource {
+public class StatsResource extends ApplicationResource implements ICodeMessages{
     public static final String PATH = "/stats";
 
     private static final Logger logger = LoggerFactory.getLogger(StatsResource.class);
 
-    public static final String CODE_MESSAGE_400 = "Studio was unable to complete the request because it was invalid. The request should not be retried without modification.";
-    public static final String CODE_MESSAGE_401 = "Client could not be authenticated.";
-    public static final String CODE_MESSAGE_403 = "Client is not authorized to make this request.";
-    public static final String CODE_MESSAGE_404 = "The specified resource could not be found.";
-    public static final String CODE_MESSAGE_409 = "The request was valid but Studio was not in the appropriate state to process it. Retrying the same request later may be successful.";
 
     private NiFiServiceFacade serviceFacade;
     private FlowController flowController;
@@ -597,152 +602,6 @@ public class StatsResource extends ApplicationResource {
                 });
 
         return processorCounterList;
-    }
-
-    @GET
-    @Consumes(MediaType.WILDCARD)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/md")
-    @ApiResponses(value = { //
-            @ApiResponse(code = 400, message = CODE_MESSAGE_400), //
-            @ApiResponse(code = 401, message = CODE_MESSAGE_401), //
-            @ApiResponse(code = 403, message = CODE_MESSAGE_403), //
-            @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
-    })
-    public Response generateMarkdown(@QueryParam("lang") final String lang, @QueryParam("country") final String country, @QueryParam("all") final String all) {
-        if (isReplicateRequest()) {
-            return replicate(HttpMethod.GET);
-        }
-        File mdOutputDir = new File("./work/md");
-
-        return doGenerator(lang, country, "com.orchsym.docs.generator.md.MdDocsGenerator", mdOutputDir, all);
-    }
-
-    @GET
-    @Consumes(MediaType.WILDCARD)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/html")
-    @ApiResponses(value = { //
-            @ApiResponse(code = 400, message = CODE_MESSAGE_400), //
-            @ApiResponse(code = 401, message = CODE_MESSAGE_401), //
-            @ApiResponse(code = 403, message = CODE_MESSAGE_403), //
-            @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
-    })
-    public Response generateHtmlDoc(@QueryParam("lang") final String lang, @QueryParam("country") final String country, @QueryParam("all") final String all) {
-        if (isReplicateRequest()) {
-            return replicate(HttpMethod.GET);
-        }
-        File htmlOutputDir = new File("./work/html");
-
-        return doGenerator(lang, country, "com.orchsym.docs.generator.html.HtmlDocsGenerator", htmlOutputDir, all);
-    }
-
-    @GET
-    @Consumes(MediaType.WILDCARD)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/i18n")
-    @ApiResponses(value = { //
-            @ApiResponse(code = 400, message = CODE_MESSAGE_400), //
-            @ApiResponse(code = 401, message = CODE_MESSAGE_401), //
-            @ApiResponse(code = 403, message = CODE_MESSAGE_403), //
-            @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
-    })
-    public Response generateI18n(@QueryParam("lang") final String lang, @QueryParam("country") final String country, @QueryParam("all") final String all) {
-        if (isReplicateRequest()) {
-            return replicate(HttpMethod.GET);
-        }
-        File i18nOutputDir = new File("./work/i18n");
-
-        return doGenerator(lang, country, "com.orchsym.i18n.messages.generator.MessagesGenerator", i18nOutputDir, all);
-    }
-
-    @GET
-    @Consumes(MediaType.WILDCARD)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/gen")
-    @ApiResponses(value = { //
-            @ApiResponse(code = 400, message = CODE_MESSAGE_400), //
-            @ApiResponse(code = 401, message = CODE_MESSAGE_401), //
-            @ApiResponse(code = 403, message = CODE_MESSAGE_403), //
-            @ApiResponse(code = 409, message = CODE_MESSAGE_409) //
-    })
-    public Response generateDocs() {
-        if (isReplicateRequest()) {
-            return replicate(HttpMethod.GET);
-        }
-
-        Response response = generateMarkdown(Locale.ENGLISH.getLanguage(), null, Boolean.TRUE.toString());
-        if (response.getStatus() != Status.OK.getStatusCode()) {
-            return response;
-        }
-        response = generateMarkdown(Locale.CHINESE.getLanguage(), null, Boolean.TRUE.toString());
-        if (response.getStatus() != Status.OK.getStatusCode()) {
-            return response;
-        }
-        response = generateHtmlDoc(Locale.ENGLISH.getLanguage(), null, Boolean.TRUE.toString());
-        if (response.getStatus() != Status.OK.getStatusCode()) {
-            return response;
-        }
-        response = generateHtmlDoc(Locale.CHINESE.getLanguage(), null, Boolean.TRUE.toString());
-        if (response.getStatus() != Status.OK.getStatusCode()) {
-            return response;
-        }
-
-        response = generateI18n(Locale.ENGLISH.getLanguage(), null, Boolean.TRUE.toString());
-        if (response.getStatus() != Status.OK.getStatusCode()) {
-            return response;
-        }
-        response = generateI18n(Locale.CHINESE.getLanguage(), null, Boolean.TRUE.toString());
-        if (response.getStatus() != Status.OK.getStatusCode()) {
-            return response;
-        }
-
-        return generateOkResponse("Successfully to generate all at " + LocalDateTime.now()).build();
-    }
-
-    private Response doGenerator(String lang, String country, String generatorClass, File baseOutDir, String all) {
-        try {
-            boolean onlyI18n = (all == null); // if set and don't case the value all consider as generate all
-
-            Locale locale = null;
-            if (StringUtils.isNotBlank(lang)) {
-                if (StringUtils.isNotBlank(country)) {
-                    locale = new Locale(lang, country);
-                } else {
-                    locale = new Locale(lang);
-                }
-            }
-            if (locale != null) {
-                baseOutDir = new File(baseOutDir, locale.getLanguage() + (StringUtils.isBlank(locale.getCountry()) ? "" : "_" + locale.getCountry()));
-            }
-            if (baseOutDir.exists()) { // clean up
-                FileUtils.deleteFile(baseOutDir, true);
-            }
-            final ClassLoader classLoader = MessagesProvider.class.getClassLoader(); // make sure the classloader rightly.
-            final Class<?> genClass = Class.forName(generatorClass, false, classLoader);
-            final Constructor<?> genConstructor = genClass.getDeclaredConstructor(Locale.class);
-            genConstructor.setAccessible(true);
-            final Object mdGenerator = genConstructor.newInstance(locale);
-
-            if (onlyI18n) {// because false by default
-                // FilteredGenerator
-                try {
-                    final Class<?> filterClass = Class.forName("com.orchsym.generator.api.FilteredGenerator", false, classLoader);
-                    final Method onlyI18nMethod = filterClass.getDeclaredMethod("setOnlyI18n", boolean.class);
-                    onlyI18nMethod.setAccessible(true);
-                    onlyI18nMethod.invoke(mdGenerator, onlyI18n);
-                } catch (Throwable e) {
-                    // if no filter, will ignore
-                }
-            }
-
-            final Method generateMethod = genClass.getDeclaredMethod("generate", File.class);
-            generateMethod.setAccessible(true);
-            generateMethod.invoke(mdGenerator, baseOutDir);
-        } catch (Throwable t) {
-            return createExceptionResponse(t);
-        }
-        return generateOkResponse("Successfully to generate at " + LocalDateTime.now()).build();
     }
 
     @GET

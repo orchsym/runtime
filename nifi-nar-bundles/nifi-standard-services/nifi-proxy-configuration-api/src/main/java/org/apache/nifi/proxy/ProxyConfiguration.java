@@ -48,7 +48,7 @@ public class ProxyConfiguration {
             description.append(" If set, it supersedes proxy settings configured per component.");
         }
         description.append(" Supported proxies: ");
-        description.append(specs.stream().map(ProxySpec::getDisplayName).collect(Collectors.joining(", ")));
+        description.append(specs.stream().map(ProxySpec::getDisplayName).sorted().collect(Collectors.joining(", ")));
 
         return new PropertyDescriptor.Builder()
                 .fromPropertyDescriptor(ProxyConfigurationService.PROXY_CONFIGURATION_SERVICE)

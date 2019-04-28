@@ -419,7 +419,7 @@ public abstract class ApplicationResource {
      *
      * @return <code>true</code> if the request should be replicated, <code>false</code> otherwise
      */
-    boolean isReplicateRequest() {
+    protected boolean isReplicateRequest() {
         // If not a node in a cluster, we do not replicate
         if (!properties.isNode()) {
             return false;
