@@ -686,4 +686,24 @@ public class MockProcessGroup implements ProcessGroup {
     @Override
     public void terminateProcessor(ProcessorNode processor) {
     }
+
+    @Override
+    public Map<String, String> getAdditions() {
+        return null;
+    }
+
+    @Override
+    public void setAdditions(Map<String, String> additions) {
+        
+    }
+
+    @Override
+    public Set<String> getTags() {
+        return null;
+    }
+
+    @Override
+    public void setTags(Set<String> tags) {
+        
+    }
 }

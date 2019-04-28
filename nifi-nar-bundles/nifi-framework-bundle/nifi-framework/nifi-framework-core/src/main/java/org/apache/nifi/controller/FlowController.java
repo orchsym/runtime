@@ -2120,6 +2120,14 @@ public class FlowController implements EventAccess, ControllerServiceProvider, R
                     childGroup.setVariables(groupDTO.getVariables());
                 }
 
+                if (groupDTO.getTags() != null) {
+                    childGroup.setTags(groupDTO.getTags());
+                }
+
+                if (groupDTO.getAdditions() != null) {
+                    childGroup.setAdditions(groupDTO.getAdditions());
+                }
+
                 // If this Process Group is 'top level' then we do not set versioned component ID's.
                 // We do this only if this component is the child of a Versioned Component.
                 if (!topLevel) {

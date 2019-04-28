@@ -24,16 +24,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.connectable.Size;
 import org.apache.nifi.controller.ScheduledState;
 import org.apache.nifi.controller.service.ControllerServiceState;
 import org.apache.nifi.encrypt.EncryptionException;
 import org.apache.nifi.encrypt.StringEncryptor;
+import org.apache.nifi.groups.ProcessAdditions;
+import org.apache.nifi.groups.ProcessTags;
 import org.apache.nifi.groups.RemoteProcessGroupPortDescriptor;
 import org.apache.nifi.remote.StandardRemoteProcessGroupPortDescriptor;
 import org.apache.nifi.scheduling.ExecutionNode;
 import org.apache.nifi.scheduling.SchedulingStrategy;
 import org.apache.nifi.util.DomUtils;
+import org.apache.nifi.util.ProcessUtil;
 import org.apache.nifi.web.api.dto.BundleDTO;
 import org.apache.nifi.web.api.dto.ConnectableDTO;
 import org.apache.nifi.web.api.dto.ConnectionDTO;
@@ -52,6 +57,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.nifi.web.api.dto.VersionControlInformationDTO;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class FlowFromDOMFactory {
@@ -155,6 +161,12 @@ public class FlowFromDOMFactory {
             variables.put(name, value);
         }
         dto.setVariables(variables);
+
+        final Set<String> tags = ProcessUtil.getTags(element);
+        dto.setTags(tags);
+
+        final Map<String, String> additions = ProcessUtil.getAdditions(element);
+        dto.setAdditions(additions);
 
         final Element versionControlInfoElement = DomUtils.getChild(element, "versionControlInformation");
         dto.setVersionControlInformation(getVersionControlInformation(versionControlInfoElement));

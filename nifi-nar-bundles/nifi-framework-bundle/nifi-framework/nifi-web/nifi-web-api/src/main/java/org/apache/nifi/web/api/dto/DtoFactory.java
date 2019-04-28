@@ -2238,6 +2238,9 @@ public final class DtoFactory {
             .collect(Collectors.toMap(entry -> entry.getKey().getName(), entry -> entry.getValue()));
         dto.setVariables(variables);
 
+        dto.setTags(group.getTags());
+        dto.setAdditions(group.getAdditions());
+
         final ProcessGroup parentGroup = group.getParent();
         if (parentGroup != null) {
             dto.setParentGroupId(parentGroup.getIdentifier());
@@ -3928,6 +3931,14 @@ public final class DtoFactory {
 
         if (original.getVariables() != null) {
             copy.setVariables(new HashMap<>(original.getVariables()));
+        }
+
+        if (original.getTags() != null) {
+            copy.setTags(new HashSet<>(original.getTags()));
+        }
+
+        if (original.getAdditions() != null) {
+            copy.setAdditions(new HashMap<>(original.getAdditions()));
         }
 
         return copy;

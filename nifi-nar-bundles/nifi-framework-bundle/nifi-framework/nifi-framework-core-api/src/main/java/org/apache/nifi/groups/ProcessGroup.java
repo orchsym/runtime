@@ -55,7 +55,7 @@ import org.apache.nifi.remote.RemoteGroupPort;
  * <p>
  * MUST BE THREAD-SAFE</p>
  */
-public interface ProcessGroup extends ComponentAuthorizable, Positionable, VersionedComponent {
+public interface ProcessGroup extends ComponentAuthorizable, Positionable, VersionedComponent, ProcessAdditions, ProcessTags {
 
     /**
      * Predicate for starting eligible Processors.

@@ -79,7 +79,9 @@ import org.apache.nifi.events.BulletinFactory;
 import org.apache.nifi.fingerprint.FingerprintException;
 import org.apache.nifi.fingerprint.FingerprintFactory;
 import org.apache.nifi.flowfile.FlowFilePrioritizer;
+import org.apache.nifi.groups.ProcessAdditions;
 import org.apache.nifi.groups.ProcessGroup;
+import org.apache.nifi.groups.ProcessTags;
 import org.apache.nifi.groups.RemoteProcessGroup;
 import org.apache.nifi.groups.RemoteProcessGroupPortDescriptor;
 import org.apache.nifi.logging.ComponentLog;
@@ -102,6 +104,7 @@ import org.apache.nifi.util.BundleUtils;
 import org.apache.nifi.util.DomUtils;
 import org.apache.nifi.util.LoggingXmlParserErrorHandler;
 import org.apache.nifi.util.NiFiProperties;
+import org.apache.nifi.util.ProcessUtil;
 import org.apache.nifi.util.file.FileUtils;
 import org.apache.nifi.web.api.dto.BundleDTO;
 import org.apache.nifi.web.api.dto.ConnectableDTO;
@@ -1171,6 +1174,12 @@ public class StandardFlowSynchronizer implements FlowSynchronizer {
         }
 
         processGroup.setVariables(variables);
+
+        // Set tags
+        processGroup.setTags(ProcessUtil.getTags(processGroupElement));
+
+        // Set Additions
+        processGroup.setAdditions(ProcessUtil.getAdditions(processGroupElement));
 
         final VersionControlInformationDTO versionControlInfoDto = processGroupDTO.getVersionControlInformation();
         if (versionControlInfoDto != null) {

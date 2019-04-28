@@ -20,6 +20,7 @@ import io.swagger.annotations.ApiModelProperty;
 
 import javax.xml.bind.annotation.XmlType;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The details for a process group within this NiFi flow.
@@ -30,6 +31,8 @@ public class ProcessGroupDTO extends ComponentDTO {
     private String name;
     private String comments;
     private Map<String, String> variables;
+    private Set<String> tags;
+    private Map<String,String> additions;
     private VersionControlInformationDTO versionControlInformation;
 
     private Integer runningCount;
@@ -265,6 +268,24 @@ public class ProcessGroupDTO extends ComponentDTO {
 
     public void setVariables(final Map<String, String> variables) {
         this.variables = variables;
+    }
+
+    @ApiModelProperty(value = "The tags of process group.")
+    public Set<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(Set<String> tags) {
+        this.tags = tags;
+    }
+
+    @ApiModelProperty(value = "The additions settings of process group.")
+    public Map<String, String> getAdditions() {
+        return additions;
+    }
+
+    public void setAdditions(Map<String, String> additions) {
+        this.additions = additions;
     }
 
     @ApiModelProperty("The Version Control information that indicates which Flow Registry, and where in the Flow Registry, "
