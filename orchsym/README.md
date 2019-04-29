@@ -34,34 +34,34 @@ mvn package -Dheadless
 ## 发布产品
 
 ### 版本说明
-发布产品规范安装major.minor.patch规范，比如2.2.0，然后每发布一个版本则minor+1。
+发布产品规范安装major.minor_buildnumber规范，比如`2.0_05000`，然后每发布一个版本通过buildnumber的变更来表示。
 
 
-由于该库基于nifi，则版本保留与官方同步的版本规范，比如1.7.1-SNAPSHOT。发布产品将SNAPSHOT替换为产品版本号2.2.0,最终nifi的打包版本号将为1.7.1-2.2.0。
+由于该库基于nifi，则版本保留与官方同步的版本规范，比如`1.7.1-SNAPSHOT`。发布产品将SNAPSHOT替换为产品版本号`2.0_05000`,最终nifi库的打包版本号将为`1.7.1-2.0_05000`。
 
 在打包发布版本之前，需先修改Release Notes文件`orchsym/orchsym-resources/src/main/resources/Release Notes.md`，在JIRA上由Sprint生成的“Release Notes”筛选后拷贝到该文件中，并提交修改。
 
 ### 发布流程
-1.基于master创建一个发布分支，比如`release/2.2.0`:
+1.基于master创建一个发布分支，比如`release/2.0_05000`:
 
 ```
-git checkout -b release/2.2.0
+git checkout -b release/2.0_05000
 ```
 
-2.修改所有工程pom为发布版本号，比如 `1.7.1-2.2.0`:
+2.修改所有工程pom为发布版本号，比如 `1.7.1-2.0_05000`:
 
 ```
-mvn versions:set -DgenerateBackupPoms=false -DnewVersion=1.7.1-2.2.0
+mvn versions:set -DgenerateBackupPoms=false -DnewVersion=1.7.1-2.0_05000
 ```
 
-3.修改当前目录下pom.xml的 `orchsym.product.version` 属性值为 `2.2.0`; 以及修改根文件`Dockerfile`中`VERSION_NAME="1.7.1-SNAPSHOT"`为`VERSION_NAME="1.7.1-2.2.0"`。
+3.修改当前目录下pom.xml的 `orchsym.product.version` 属性值为 `2.0_05000`; 以及修改根文件`Dockerfile`中`VERSION_NAME="1.7.1-SNAPSHOT"`为`VERSION_NAME="1.7.1-2.0_05000"`。
 
 4.提交修改，打tag，并推送发布分支：
 
 ```
 git add .
-git commit -m "修改版本为2.2.0"
-git push origin release/2.2.0
+git commit -m "修改版本为2.0_05000"
+git push origin release/2.0_05000
 ```
 
 **注**：可先只提交，然后尝试打包，确认没有问题后，最后再统一推送。
@@ -72,6 +72,6 @@ git push origin release/2.2.0
 mvn clean install
 ```
 
-6.如果打包验证没有问题后，在Bitbucket的远程库`release/2.2.0`分支的最后一次提交上打tag：2.2.0，并删除本地以及远程发布分支`release/2.2.0`。
+6.如果打包验证没有问题后，在Bitbucket的远程库`release/2.0_05000`分支的最后一次提交上打tag：`2.0_05000`，并删除本地以及远程发布分支`release/2.0_05000`。
 
-7.最后回到master，将`orchsym.product.version` 属性修改为 `2.3.0-SNAPSHOT`，并提交及推送，为下次发布做好准备。
+7.最后回到master，将`orchsym.product.version` 属性修改为 `2.0_06000-SNAPSHOT`，并提交及推送，为下次发布做好准备。
