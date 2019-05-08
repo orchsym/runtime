@@ -40,6 +40,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.attribute.expression.language.StandardPropertyValue;
 import org.apache.nifi.bundle.Bundle;
 import org.apache.nifi.bundle.BundleCoordinate;
+import org.apache.nifi.components.ComponentsContext;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.ValidationContext;
 import org.apache.nifi.components.ValidationResult;
@@ -409,7 +410,16 @@ public abstract class AbstractComponentNode implements ComponentNode {
             final Collection<ValidationResult> results = getComponent().validate(validationContext);
             logger.debug("Computed validation errors with Validation Context {}; results = {}", validationContext, results);
 
-            return results;
+            if (!ComponentsContext.isPreview(getComponent().getClass())) {
+                return results;
+            }
+
+            List<ValidationResult> newResult = new ArrayList<ValidationResult>(results);
+            ValidationResult previewValidation = new ValidationResult.Builder().explanation("It's in preview mode, please contact admin for more details")
+                    .subject(getComponent().getClass().getSimpleName()).valid(false).build();
+            newResult.add(previewValidation);
+
+            return newResult;
         } catch (final ControllerServiceDisabledException e) {
             getLogger().debug("Failed to perform validation due to " + e, e);
             return Collections.singleton(

@@ -44,6 +44,8 @@ public class DocumentedTypeDTO {
     private String createdDate;
     private String note;
 
+    private boolean preview;
+
     /**
      * @return An optional description of the corresponding type
      */
@@ -218,6 +220,17 @@ public class DocumentedTypeDTO {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    @ApiModelProperty(
+            value = "is preview or not."
+    )
+    public boolean isPreview() {
+        return preview;
+    }
+
+    public void setPreview(boolean preview) {
+        this.preview = preview;
     }
 
     @Override

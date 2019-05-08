@@ -54,6 +54,7 @@ import org.apache.nifi.authorization.resource.Authorizable;
 import org.apache.nifi.authorization.resource.ResourceFactory;
 import org.apache.nifi.authorization.resource.ResourceType;
 import org.apache.nifi.bundle.BundleCoordinate;
+import org.apache.nifi.components.ComponentsContext;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.state.StateManager;
 import org.apache.nifi.components.state.StateManagerProvider;
@@ -1262,6 +1263,10 @@ public final class StandardProcessGroup implements ProcessGroup, ProcessTags, Pr
     public CompletableFuture<Void> startProcessor(final ProcessorNode processor, final boolean failIfStopping) {
         readLock.lock();
         try {
+            if (ComponentsContext.isPreview(processor.getComponentClass())) {
+                throw new IllegalStateException("Won't run the preview component " + processor.getComponentClass().getSimpleName() + " by reason, please contact to admin");
+            }
+
             if (getProcessor(processor.getIdentifier()) == null) {
                 throw new IllegalStateException("Processor is not a member of this Process Group");
             }

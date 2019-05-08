@@ -30,6 +30,16 @@ public class DtoI18nHelper {
         if (StringUtils.isNotBlank(description)) {
             dto.setDescription(description);
         }
+        if (dto.isPreview()) {
+            String previewMessage = MessagesProvider.getFrameworkValue(requestLocale, "Components.Preview.Message");
+            String oldDesc = dto.getDescription();
+
+            String previewDesc = "!!! " + previewMessage + " !!!  ";
+            if (StringUtils.isNotEmpty(oldDesc)) {
+                previewDesc += oldDesc;
+            }
+            dto.setDescription(previewDesc);
+        }
 
         // tags
         final Set<String> tagsSet = MessagesProvider.getTagsSet(requestLocale, type);

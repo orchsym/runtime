@@ -54,6 +54,21 @@
             <pattern>%date %level [%thread] %logger{40} %msg%n</pattern>
         </encoder>
     </appender>
+    
+    <appender name="REPOSITORY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${org.apache.nifi.bootstrap.config.log.dir}/orchsym-repository.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${org.apache.nifi.bootstrap.config.log.dir}/orchsym-repository_%d.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <!-- keep 7 log files worth of history -->
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <immediateFlush>true</immediateFlush>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%date %level [%thread] %logger{40} %msg%n</pattern>
+        </encoder>
+    </appender>
 
     <appender name="USER_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${org.apache.nifi.bootstrap.config.log.dir}/orchsym-user.log</file>
@@ -191,6 +206,13 @@
         <appender-ref ref="CLUSTER_FILE" />
     </logger>
 
+    <logger name="org.apache.nifi.provenance" level="INFO" additivity="false">
+        <appender-ref ref="REPOSITORY_FILE" />
+    </logger>
+    <logger name="org.apache.nifi.controller.repository" level="INFO" additivity="false">
+        <appender-ref ref="REPOSITORY_FILE" />
+    </logger>
+ 
     <root level="INFO">
         <appender-ref ref="APP_FILE"/>
     </root>

@@ -62,6 +62,7 @@ import org.apache.nifi.cluster.event.NodeEvent;
 import org.apache.nifi.cluster.manager.StatusMerger;
 import org.apache.nifi.cluster.protocol.NodeIdentifier;
 import org.apache.nifi.components.AllowableValue;
+import org.apache.nifi.components.ComponentsContext;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.ValidationResult;
 import org.apache.nifi.components.state.Scope;
@@ -2764,6 +2765,8 @@ public final class DtoFactory {
             dto.setTags(getTags(cls));
             setMarks(cls, dto);
             types.add(dto);
+
+            dto.setPreview(ComponentsContext.isPreviewType(dto.getType()));
         }
 
         return types;

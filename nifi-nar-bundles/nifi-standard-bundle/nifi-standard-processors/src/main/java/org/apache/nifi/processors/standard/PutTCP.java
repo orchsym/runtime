@@ -145,7 +145,7 @@ public class PutTCP extends AbstractPutEventProcessor {
 
     public static final PropertyDescriptor END_OF_MESSAGE_BYTE = new PropertyDescriptor.Builder()
             .name("end-of-message-byte")
-            .displayName("End of message delimiter byte")
+            .displayName("Receive message delimiter byte")
             .description("Byte value which denotes end of message. Must be specified as integer within "
                     + "the valid byte range (-128 thru 127). For example, '13' = Carriage return and '10' = New line. Default '13'."
                     + "Receive Buffer Size property must be set and should be greater than max message size")

@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.NiFiServer;
 import org.apache.nifi.bundle.Bundle;
 import org.apache.nifi.bundle.BundleDetails;
+import org.apache.nifi.components.ComponentsContext;
 import org.apache.nifi.controller.UninheritableFlowException;
 import org.apache.nifi.controller.serialization.FlowSerializationException;
 import org.apache.nifi.controller.serialization.FlowSynchronizationException;
@@ -984,7 +985,8 @@ public class JettyServer implements NiFiServer {
     }
 
     protected void beforeServerStart() {
-        //
+        System.setProperty(ComponentsContext.CONF_LIST, props.getProperty("orchsym.components.preview.list"));
+        System.setProperty(ComponentsContext.CONF_ENABLED, props.getProperty("orchsym.components.preview.enabled"));
     }
 
     private void dumpUrls() throws SocketException {

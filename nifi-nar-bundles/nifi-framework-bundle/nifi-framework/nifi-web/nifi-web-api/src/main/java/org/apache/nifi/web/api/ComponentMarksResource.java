@@ -45,6 +45,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.apache.nifi.components.ComponentsContext;
 import org.apache.nifi.i18n.DtoI18nHelper;
 import org.apache.nifi.i18n.Messages;
 import org.apache.nifi.web.NiFiServiceFacade;
@@ -266,6 +267,8 @@ public class ComponentMarksResource extends ApplicationResource {
             return replicate(HttpMethod.GET);
         }
 
+        final boolean enableCompPreview = ComponentsContext.isPreviewEnabled();
+
         final Locale requestLocale = this.getRequestLocale();
         List<CategoryItem> items = localeItemsMap.get(requestLocale);
         if (items == null) {
@@ -274,7 +277,13 @@ public class ComponentMarksResource extends ApplicationResource {
                 Set<DocumentedTypeDTO> processorTypes = serviceFacade.getProcessorTypes(null, null, null);
                 Set<DocumentedTypeDTO> processorTypesWithCategories = processorTypes.stream()//
                         .filter(dto -> dto.getCategories() != null && dto.getCategories().size() > 0)//
-                        .collect(Collectors.toSet());
+                        .filter(dto -> {
+                            // filter for component palette
+                            if (enableCompPreview) {
+                                return true;
+                            }
+                            return !ComponentsContext.isPreviewType(dto.getType());
+                        }).collect(Collectors.toSet());
 
                 if (requestLocale != null)
                     processorTypesWithCategories.forEach(dto -> DtoI18nHelper.fix(requestLocale, dto));
@@ -284,10 +293,10 @@ public class ComponentMarksResource extends ApplicationResource {
                 // merge
                 items = mergeBuiltIn(requestLocale, categoryItems);
 
-                final List<String> loadedCompList = processorTypes.stream().map(d -> getTypeSimpleName(d.getType())).collect(Collectors.toList());
+                final List<String> loadedCompList = processorTypes.stream().map(d -> ComponentsContext.FUN_TYPE_NAME.apply(d.getType())).collect(Collectors.toList());
                 for (CategoryItem item : items) {
                     item.classification.forEach(sub -> {
-                        
+
                         final List<String> components = sub.components;
                         // filter, if unloaded
                         final Iterator<String> iterator = components.iterator();
@@ -299,7 +308,7 @@ public class ComponentMarksResource extends ApplicationResource {
                         }
                     });
                 }
-                
+
                 // sort
                 Comparator<Item> itemComparator = itemGeneraleComparator;
                 if (Locale.CHINESE.getLanguage().equals(requestLocale.getLanguage())) {
@@ -322,15 +331,9 @@ public class ComponentMarksResource extends ApplicationResource {
         return Response.ok(resultStr).build();
     }
 
-    private String getTypeSimpleName(String type) {
-        return type.lastIndexOf('.') > 0 ? type.substring(type.lastIndexOf('.') + 1) : type;
-    }
-
     private Collection<CategoryItem> createCategoryItems(final Locale requestLocale, Set<DocumentedTypeDTO> processorTypes) {
         Map<String, CategoryItem> categoryItems = new HashMap<String, CategoryItem>();
         for (DocumentedTypeDTO dto : processorTypes) {
-            String type = dto.getType();
-            String processorName = getTypeSimpleName(type);
 
             for (String category : dto.getCategories()) {
                 String[] categoryArr = category.split("/");
@@ -357,7 +360,7 @@ public class ComponentMarksResource extends ApplicationResource {
                 } else {
                     subCategoryItem = classification.get(index);
                 }
-                subCategoryItem.components.add(processorName);
+                subCategoryItem.components.add(ComponentsContext.FUN_TYPE_NAME.apply(dto.getType()));
                 categoryItems.put(nameIndex1, categoryItem);
             }
         }
