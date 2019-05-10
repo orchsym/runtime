@@ -20,6 +20,9 @@ package org.apache.nifi.web.security.oidc;
 import com.nimbusds.oauth2.sdk.AuthorizationGrant;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.oauth2.sdk.token.RefreshToken;
+import com.nimbusds.openid.connect.sdk.OIDCTokenResponse;
+import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
 
 import java.io.IOException;
 import java.net.URI;
@@ -72,4 +75,11 @@ public interface OidcIdentityProvider {
      * @throws IOException if there was an exceptional error while communicating with the OIDC provider
      */
     String exchangeAuthorizationCode(AuthorizationGrant authorizationGrant) throws IOException;
+
+    OIDCTokens exchangeOIDCToken(final AuthorizationGrant authorizationGrant) throws IOException;
+
+    OIDCTokenResponse exchangeOIDCToken(final RefreshToken refreshToken) throws IOException;
+
+    String getJwtFromOIDCTokens(final OIDCTokens oidcTokens) throws IOException ;
+
 }

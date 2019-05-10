@@ -99,6 +99,7 @@
             controllerBulletins: '../nifi-api/flow/controller/bulletins',
             kerberos: '../nifi-api/access/kerberos',
             oidc: '../nifi-api/access/oidc/exchange',
+            oidcRefresh: '../nifi-api/access/oidc/refreshToken',
             revision: '../nifi-api/flow/revision',
             banners: '../nifi-api/flow/banners'
         }
@@ -204,7 +205,42 @@
             nfCommon.setCurrentUser(currentUser);
         });
     };
-
+    var refreshOIDCToken = function(){
+        try {
+            var oldJwt= nf.Storage.getItem('jwt');
+            if(oldJwt == null){
+                if(document.cookie.indexOf("oidc-request-rfid=")>-1){
+                    reloadOIDCToken();
+//                    console.log("Refresh jwt from rfid!");
+                }
+//                console.log("Old jwt is lost");
+                return;
+            }
+            var oldToken = nf.Common.getJwtPayload(oldJwt);
+            var oldToken_expiration = parseInt(oldToken['exp'], 10) * nf.Common.MILLIS_PER_SECOND;
+            var activeTime = oldToken_expiration -(new Date()).getTime();
+            //console.log("token active time left :"+activeTime );
+            var interval = 30;
+            var refresh_left_time = interval *1000*1.5;
+            if(activeTime <= refresh_left_time ){
+                reloadOIDCToken();
+            }else{
+//                console.log("Time is not up for refresh oidc token!");
+            }
+        } catch (e) {
+            console.log("Throw exception when refresh oidc token");
+        }
+    };
+    var reloadOIDCToken = function(){
+        $.ajax({
+            type: 'GET',
+            url: config.urls.oidcRefresh
+        }).done(function (jwt) {
+            var token = nf.Common.getJwtPayload(jwt);
+            var expiration = parseInt(token['exp'], 10) * nf.Common.MILLIS_PER_SECOND;
+            nf.Storage.setItem('jwt', jwt, expiration);
+        });
+    };
     var nfCanvas = {
         CANVAS_OFFSET: 0,
 
@@ -234,7 +270,6 @@
         disableRefreshHotKey: function () {
             allowPageRefresh = true;
         },
-
         /**
          * Reloads the flow from the server based on the currently specified group id.
          * To load another group, update nfCanvas.setGroupId, clear the canvas, and call nfCanvas.reload.
@@ -245,6 +280,7 @@
                 var processGroupXhr = reloadProcessGroup(nfCanvas.getGroupId(), options);
                 var statusXhr = nfNgBridge.injector.get('flowStatusCtrl').reloadFlowStatus();
                 var currentUserXhr = loadCurrentUser();
+                refreshOIDCToken();
                 var controllerBulletins = $.ajax({
                     type: 'GET',
                     url: config.urls.controllerBulletins,

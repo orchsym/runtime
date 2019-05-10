@@ -21,6 +21,10 @@ import com.google.common.cache.CacheBuilder;
 import com.nimbusds.oauth2.sdk.AuthorizationGrant;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.id.State;
+import com.nimbusds.oauth2.sdk.token.RefreshToken;
+import com.nimbusds.openid.connect.sdk.OIDCTokenResponse;
+import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
+
 import org.apache.nifi.web.security.util.CacheKey;
 
 import java.io.IOException;
@@ -192,14 +196,16 @@ public class OidcService {
      * @param authorizationGrant authorization grant
      * @throws IOException exceptional case for communication error with the OpenId Connect provider
      */
-    public void exchangeAuthorizationCode(final String oidcRequestIdentifier, final AuthorizationGrant authorizationGrant) throws IOException {
+    public RefreshToken exchangeAuthorizationCode(final String oidcRequestIdentifier, final AuthorizationGrant authorizationGrant) throws IOException {
         if (!isOidcEnabled()) {
             throw new IllegalStateException(OPEN_ID_CONNECT_SUPPORT_IS_NOT_CONFIGURED);
         }
 
         final CacheKey oidcRequestIdentifierKey = new CacheKey(oidcRequestIdentifier);
-        final String nifiJwt = identityProvider.exchangeAuthorizationCode(authorizationGrant);
-
+        //final String nifiJwt = identityProvider.exchangeAuthorizationCode(authorizationGrant);
+        final OIDCTokens oidcTokens = exchangeOIDCToken(authorizationGrant);
+        final RefreshToken oidcRefreshToken = oidcTokens.getRefreshToken();
+        final String nifiJwt = getJwtFromOIDCTokens(oidcTokens);
         try {
             // cache the jwt for later retrieval
             synchronized (jwtLookupForCompletedRequests) {
@@ -208,9 +214,22 @@ public class OidcService {
                     throw new IllegalStateException("An existing login request is already in progress.");
                 }
             }
+            return oidcRefreshToken;
         } catch (final ExecutionException e) {
             throw new IllegalStateException("Unable to store the login authentication token.");
         }
+    }
+
+    public String getJwtFromOIDCTokens(OIDCTokens oidcTokens) throws IOException {
+        return identityProvider.getJwtFromOIDCTokens(oidcTokens);
+    }
+
+    public OIDCTokens exchangeOIDCToken(AuthorizationGrant authorizationGrant) throws IOException {
+        return identityProvider.exchangeOIDCToken(authorizationGrant);
+    }
+
+    public OIDCTokenResponse exchangeOIDCToken(RefreshToken refreshToken) throws IOException {
+        return identityProvider.exchangeOIDCToken(refreshToken);
     }
 
     /**

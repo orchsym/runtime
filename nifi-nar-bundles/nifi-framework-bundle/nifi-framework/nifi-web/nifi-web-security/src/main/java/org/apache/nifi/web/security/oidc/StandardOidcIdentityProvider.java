@@ -25,6 +25,7 @@ import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.oauth2.sdk.AuthorizationGrant;
 import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.RefreshTokenGrant;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.TokenErrorResponse;
 import com.nimbusds.oauth2.sdk.TokenResponse;
@@ -37,6 +38,7 @@ import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
+import com.nimbusds.oauth2.sdk.token.RefreshToken;
 import com.nimbusds.openid.connect.sdk.OIDCScopeValue;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponse;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponseParser;
@@ -282,8 +284,40 @@ public class StandardOidcIdentityProvider implements OidcIdentityProvider {
         return clientId;
     }
 
-    @Override
-    public String exchangeAuthorizationCode(final AuthorizationGrant authorizationGrant) throws IOException {
+    public OIDCTokenResponse exchangeOIDCToken(RefreshToken refreshToken) throws IOException {
+        if (!isOidcEnabled()) {
+            throw new IllegalStateException(OPEN_ID_CONNECT_SUPPORT_IS_NOT_CONFIGURED);
+        }
+
+        final ClientAuthentication clientAuthentication;
+        if (oidcProviderMetadata.getTokenEndpointAuthMethods().contains(ClientAuthenticationMethod.CLIENT_SECRET_POST)) {
+            clientAuthentication = new ClientSecretPost(clientId, clientSecret);
+        } else {
+            clientAuthentication = new ClientSecretBasic(clientId, clientSecret);
+        }
+        try {
+            // build the token request
+            final OrchsymTokenRequest request = new OrchsymTokenRequest(oidcProviderMetadata.getTokenEndpointURI(), clientAuthentication, new RefreshTokenGrant(refreshToken), getScope());
+            final OrchsymHTTPRequest tokenHttpRequest = request.toHTTPRequest();
+            tokenHttpRequest.setConnectTimeout(oidcConnectTimeout);
+            tokenHttpRequest.setReadTimeout(oidcReadTimeout);
+
+            // get the token response
+            final TokenResponse response = OIDCTokenResponseParser.parse(tokenHttpRequest.send());
+
+            if (response.indicatesSuccess()) {
+                final OIDCTokenResponse oidcTokenResponse = (OIDCTokenResponse) response;
+                return oidcTokenResponse;
+            } else {
+                final TokenErrorResponse errorResponse = (TokenErrorResponse) response;
+                throw new RuntimeException("An error occurred while invoking the Token endpoint: " + errorResponse.getErrorObject().getDescription());
+            }
+        } catch (final ParseException e) {
+            throw new RuntimeException("Unable to parse the response from the Token request: " + e.getMessage());
+        }
+    }
+
+    public OIDCTokens exchangeOIDCToken(final AuthorizationGrant authorizationGrant) throws IOException {
         if (!isOidcEnabled()) {
             throw new IllegalStateException(OPEN_ID_CONNECT_SUPPORT_IS_NOT_CONFIGURED);
         }
@@ -308,37 +342,117 @@ public class StandardOidcIdentityProvider implements OidcIdentityProvider {
             if (response.indicatesSuccess()) {
                 final OIDCTokenResponse oidcTokenResponse = (OIDCTokenResponse) response;
                 final OIDCTokens oidcTokens = oidcTokenResponse.getOIDCTokens();
-                final JWT oidcJwt = oidcTokens.getIDToken();
-
-                // validate the token - no nonce required for authorization code flow
-                final IDTokenClaimsSet claimsSet = tokenValidator.validate(oidcJwt, null);
-
-                // attempt to extract the email from the id token if possible
-                String email = claimsSet.getStringClaim(OrchsymTokenRequest.getEmailKey(claimsSet));
-                if (StringUtils.isBlank(email)) {
-                    // extract the bearer access token
-                    final BearerAccessToken bearerAccessToken = oidcTokens.getBearerAccessToken();
-                    if (bearerAccessToken == null) {
-                        throw new IllegalStateException("No access token found in the ID tokens");
-                    }
-
-                    // invoke the UserInfo endpoint
-                    email = lookupEmail(bearerAccessToken);
-                }
-
-                // extract expiration details from the claims set
-                final Calendar now = Calendar.getInstance();
-                final Date expiration = claimsSet.getExpirationTime();
-                final long expiresIn = expiration.getTime() - now.getTimeInMillis();
-
-                // convert into a nifi jwt for retrieval later
-                final LoginAuthenticationToken loginToken = new LoginAuthenticationToken(email, email, expiresIn, claimsSet.getIssuer().getValue());
-                return jwtService.generateSignedToken(loginToken);
+                return oidcTokens;
             } else {
                 final TokenErrorResponse errorResponse = (TokenErrorResponse) response;
                 throw new RuntimeException("An error occurred while invoking the Token endpoint: " + errorResponse.getErrorObject().getDescription());
             }
-        } catch (final ParseException | JOSEException | BadJOSEException e) {
+        } catch (final ParseException e) {
+            throw new RuntimeException("Unable to parse the response from the Token request: " + e.getMessage());
+        }
+    }
+
+    public String getJwtFromOIDCTokens(final OIDCTokens oidcTokens) throws IOException {
+        try {
+            final JWT oidcJwt = oidcTokens.getIDToken();
+            // validate the token - no nonce required for authorization code flow
+            final IDTokenClaimsSet claimsSet = tokenValidator.validate(oidcJwt, null);
+
+            // attempt to extract the email from the id token if possible
+            String email = claimsSet.getStringClaim(OrchsymTokenRequest.getEmailKey(claimsSet));
+            if (StringUtils.isBlank(email)) {
+                // extract the bearer access token
+                final BearerAccessToken bearerAccessToken = oidcTokens.getBearerAccessToken();
+                if (bearerAccessToken == null) {
+                    throw new IllegalStateException("No access token found in the ID tokens");
+                }
+
+                // invoke the UserInfo endpoint
+                email = lookupEmail(bearerAccessToken);
+            }
+
+            // extract expiration details from the claims set
+            final Calendar now = Calendar.getInstance();
+            final Date expiration = claimsSet.getExpirationTime();
+            final long expiresIn = expiration.getTime() - now.getTimeInMillis();
+
+            // convert into a nifi jwt for retrieval later
+            final LoginAuthenticationToken loginToken = new LoginAuthenticationToken(email, email, expiresIn, claimsSet.getIssuer().getValue());
+            return jwtService.generateSignedToken(loginToken);
+        } catch (final JOSEException | BadJOSEException e) {
+            throw new RuntimeException("Unable to parse the response from the Token request: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public String exchangeAuthorizationCode(final AuthorizationGrant authorizationGrant) throws IOException {
+        final OIDCTokens oidcTokens = exchangeOIDCToken(authorizationGrant);
+        return getJwtFromOIDCTokens(oidcTokens);
+    }
+
+    public OIDCTokens refreshAuthorizationCode() throws IOException {
+        if (!isOidcEnabled()) {
+            throw new IllegalStateException(OPEN_ID_CONNECT_SUPPORT_IS_NOT_CONFIGURED);
+        }
+
+        final ClientAuthentication clientAuthentication;
+        if (oidcProviderMetadata.getTokenEndpointAuthMethods().contains(ClientAuthenticationMethod.CLIENT_SECRET_POST)) {
+            clientAuthentication = new ClientSecretPost(clientId, clientSecret);
+        } else {
+            clientAuthentication = new ClientSecretBasic(clientId, clientSecret);
+        }
+
+        try {
+            // build the token request
+            final OrchsymTokenRequest request = new OrchsymTokenRequest(oidcProviderMetadata.getTokenEndpointURI(), clientAuthentication, null, getScope());
+            final OrchsymHTTPRequest tokenHttpRequest = request.toHTTPRequest();
+            tokenHttpRequest.setConnectTimeout(oidcConnectTimeout);
+            tokenHttpRequest.setReadTimeout(oidcReadTimeout);
+
+            // get the token response
+            final TokenResponse response = OIDCTokenResponseParser.parse(tokenHttpRequest.send());
+
+            if (response.indicatesSuccess()) {
+                final OIDCTokenResponse oidcTokenResponse = (OIDCTokenResponse) response;
+                final OIDCTokens oidcTokens = oidcTokenResponse.getOIDCTokens();
+                return oidcTokens;
+            } else {
+                final TokenErrorResponse errorResponse = (TokenErrorResponse) response;
+                throw new RuntimeException("An error occurred while invoking the Token endpoint: " + errorResponse.getErrorObject().getDescription());
+            }
+        } catch (final ParseException e) {
+            throw new RuntimeException("Unable to parse the response from the Token request: " + e.getMessage());
+        }
+    }
+
+    public String getRuntimeToken(OIDCTokens oidcTokens){
+        final JWT oidcJwt = oidcTokens.getIDToken();
+        // validate the token - no nonce required for authorization code flow
+        IDTokenClaimsSet claimsSet;
+        try {
+            claimsSet = tokenValidator.validate(oidcJwt, null);
+
+            // attempt to extract the email from the id token if possible
+            String email = claimsSet.getStringClaim(OrchsymTokenRequest.getEmailKey(claimsSet));
+            if (StringUtils.isBlank(email)) {
+                // extract the bearer access token
+                final BearerAccessToken bearerAccessToken = oidcTokens.getBearerAccessToken();
+                if (bearerAccessToken == null) {
+                    throw new IllegalStateException("No access token found in the ID tokens");
+                }
+
+                // invoke the UserInfo endpoint
+                email = lookupEmail(bearerAccessToken);
+            }
+            // extract expiration details from the claims set
+            final Calendar now = Calendar.getInstance();
+            final Date expiration = claimsSet.getExpirationTime();
+            final long expiresIn = expiration.getTime() - now.getTimeInMillis();
+
+            // convert into a nifi jwt for retrieval later
+            final LoginAuthenticationToken loginToken = new LoginAuthenticationToken(email, email, expiresIn, claimsSet.getIssuer().getValue());
+            return jwtService.generateSignedToken(loginToken);
+        } catch (BadJOSEException | JOSEException | IOException e) {
             throw new RuntimeException("Unable to parse the response from the Token request: " + e.getMessage());
         }
     }

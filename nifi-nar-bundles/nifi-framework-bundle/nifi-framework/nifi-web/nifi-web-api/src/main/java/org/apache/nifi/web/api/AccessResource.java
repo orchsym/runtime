@@ -24,6 +24,10 @@ import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.openid.connect.sdk.AuthenticationErrorResponse;
 import com.nimbusds.openid.connect.sdk.AuthenticationResponseParser;
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse;
+import com.nimbusds.openid.connect.sdk.OIDCTokenResponse;
+import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
+import com.nimbusds.oauth2.sdk.token.RefreshToken;
+
 import io.jsonwebtoken.JwtException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -83,6 +87,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+
 import java.net.URI;
 import java.security.cert.X509Certificate;
 import java.util.UUID;
@@ -101,6 +106,7 @@ public class AccessResource extends ApplicationResource {
     private static final Logger logger = LoggerFactory.getLogger(AccessResource.class);
 
     private static final String OIDC_REQUEST_IDENTIFIER = "oidc-request-identifier";
+    private static final String OIDC_REFRESH_TOKEN_IDENTIFIER = "oidc-request-rfid";
     private static final String OIDC_ERROR_TITLE = "Unable to continue login sequence";
 
     private X509CertificateExtractor certificateExtractor;
@@ -253,7 +259,11 @@ public class AccessResource extends ApplicationResource {
                 // exchange authorization code for id token
                 final AuthorizationCode authorizationCode = successfulOidcResponse.getAuthorizationCode();
                 final AuthorizationGrant authorizationGrant = new AuthorizationCodeGrant(authorizationCode, URI.create(getOidcCallback()));
-                oidcService.exchangeAuthorizationCode(oidcRequestIdentifier, authorizationGrant);
+                RefreshToken refreshToken = oidcService.exchangeAuthorizationCode(oidcRequestIdentifier, authorizationGrant);
+                Cookie cookie = new Cookie(OIDC_REFRESH_TOKEN_IDENTIFIER,refreshToken.getValue());
+                cookie.setMaxAge(60*60);
+                cookie.setPath("/");
+                httpServletResponse.addCookie(cookie);
             } catch (final Exception e) {
                 logger.error("Unable to exchange authorization for ID token: " + e.getMessage(), e);
 
@@ -274,6 +284,51 @@ public class AccessResource extends ApplicationResource {
             // report the unsuccessful login
             final AuthenticationErrorResponse errorOidcResponse = (AuthenticationErrorResponse) oidcResponse;
             forwardToMessagePage(httpServletRequest, httpServletResponse, "Unsuccessful login attempt: " + errorOidcResponse.getErrorObject().getDescription());
+        }
+    }
+
+    @GET
+    @Consumes(MediaType.WILDCARD)
+    @Produces(MediaType.WILDCARD)
+    @Path("oidc/refreshToken")
+    @ApiOperation(
+            value = "Redirect/callback URI for processing the result of the OpenId Connect login sequence.",
+            notes = NON_GUARANTEED_ENDPOINT
+    )
+    public String oidcRefreshToken(@Context HttpServletRequest httpServletRequest, @Context HttpServletResponse httpServletResponse) throws Exception {
+        // only consider user specific access over https
+        if (!httpServletRequest.isSecure()) {
+            logger.error("User authentication/authorization is only supported when running over HTTPS.");
+            return "";
+        }
+        // ensure oidc is enabled
+        if (!oidcService.isOidcEnabled()) {
+            logger.error("OpenId Connect is not configured.");
+            return "";
+        }
+        String refresh_token_old = getCookieValue(httpServletRequest.getCookies(), OIDC_REFRESH_TOKEN_IDENTIFIER);
+        if (refresh_token_old == null) {
+            logger.error("The login request identifier was not found in the request. Unable to continue.");
+            return "";
+        }
+        RefreshToken refreshTokenOld = new RefreshToken(refresh_token_old);
+        OIDCTokenResponse oidcTokenResponse = oidcService.exchangeOIDCToken(refreshTokenOld);
+        String jwtToken = oidcService.getJwtFromOIDCTokens(oidcTokenResponse.getOIDCTokens());
+        reloadRefreshToken(httpServletResponse, oidcTokenResponse);
+        return jwtToken;
+    }
+
+    private void reloadRefreshToken(HttpServletResponse httpServletResponse, OIDCTokenResponse oidcTokenResponse) {
+        try {
+            OIDCTokens oidcTokens = oidcTokenResponse.getOIDCTokens();
+            RefreshToken refreshToken = oidcTokens.getRefreshToken();
+            int seconds = ((Long)oidcTokenResponse.getCustomParameters().get("refresh_expires_in")).intValue();
+            Cookie cookie = new Cookie(OIDC_REFRESH_TOKEN_IDENTIFIER,refreshToken.getValue());
+            cookie.setMaxAge(seconds);
+            cookie.setPath("/");
+            httpServletResponse.addCookie(cookie);
+        } catch (Exception e) {
+            logger.error("Update refresh token into cookie failed!",e);
         }
     }
 
