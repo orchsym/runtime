@@ -79,7 +79,7 @@ import org.apache.nifi.processor.util.StandardValidators;
         description = "The name provided will be the name sent in the SOAP method, therefore please make sure " +
                 "it matches the wsdl documentation for the SOAP service being called. In the case of arrays " +
                 "the name will be the name of the array and the key's specified in the value will be the element " +
-                "names pased.")
+                "names passed.")
 public class InvokeSOAP extends AbstractProcessor {
 
     protected static final PropertyDescriptor ENDPOINT_URL = new PropertyDescriptor
@@ -162,8 +162,8 @@ public class InvokeSOAP extends AbstractProcessor {
     protected static final PropertyDescriptor USER_AGENT = new PropertyDescriptor
             .Builder()
             .name("User Agent")
-            .defaultValue("SOAP Processor")
-            .description("The user agent string to use, the default is SOAP Processor")
+            .defaultValue("Orchsym")
+            .description("The user agent string to use")
             .required(false)
             .expressionLanguageSupported(ExpressionLanguageScope.NONE)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
