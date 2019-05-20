@@ -152,7 +152,7 @@ public class ExtensionManager {
                 try {
                     o = iterator.next();
                 } catch (Throwable e) {
-                    logger.error(String.format("Unable to create the component %s from %s due to %s", entry.getKey().getSimpleName(), bundle.getBundleDetails().toString(), e.getMessage()), e);
+                    logger.error(String.format("Unable to create the component %s from %s due to %s", entry.getKey().getSimpleName(), bundle.getBundleDetails().toString(), e.getMessage()));
                     continue; // try to load another components, so ignore current one
                 }
 

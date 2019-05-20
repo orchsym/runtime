@@ -869,6 +869,10 @@ public class JettyServer implements NiFiServer {
     @Override
     public void start() {
         try {
+            if (null == extensionMapping) {
+                throw new IllegalArgumentException("There is no any extensions to load");
+            }
+            
             ExtensionManager.discoverExtensions(systemBundle, bundles);
             ExtensionManager.logClassLoaderMapping();
             MessagesProvider.discoverExtensions(props.getLocale(), bundles);

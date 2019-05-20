@@ -108,17 +108,16 @@ public final class NarUnpacker {
 
     public static ExtensionMapping unpackNars(final NiFiProperties props, final Bundle systemBundle) {
         final List<Path> narLibraryDirs = props.getNarLibraryDirectories();
-        narLibraryDirs.addAll(getExtNarDirs(props)); //add ext nars
+        narLibraryDirs.addAll(getExtNarDirs(props)); // add ext nars
         final File frameworkWorkingDir = props.getFrameworkWorkingDirectory();
         final File extensionsWorkingDir = props.getExtensionsWorkingDirectory();
         final File docsWorkingDir = props.getComponentDocumentationWorkingDirectory();
         final Map<File, BundleCoordinate> unpackedNars = new HashMap<>();
 
+        File unpackedFramework = null;
+        final Set<File> unpackedExtensions = new HashSet<>();
+        final List<File> narFiles = new ArrayList<>();
         try {
-            File unpackedFramework = null;
-            final Set<File> unpackedExtensions = new HashSet<>();
-            final List<File> narFiles = new ArrayList<>();
-
             // make sure the nar directories are there and accessible
             FileUtils.ensureDirectoryExistAndCanReadAndWrite(frameworkWorkingDir);
             FileUtils.ensureDirectoryExistAndCanReadAndWrite(extensionsWorkingDir);
@@ -137,74 +136,81 @@ public final class NarUnpacker {
                     narFiles.addAll(fileList);
                 }
             }
+        } catch (IOException e) {
+            logger.error("Can't process the directories for libs", e);
+            return null;
+        }
 
-            if (!narFiles.isEmpty()) {
-                final long startTime = System.nanoTime();
-                logger.info("Expanding " + narFiles.size() + " NAR files with all processors...");
-                for (File narFile : narFiles) {
-                    logger.debug("Expanding NAR file: " + narFile.getAbsolutePath());
+        if (narFiles.isEmpty()) {
+            return null;
+        }
 
-                    // get the manifest for this nar
-                    try (final JarFile nar = new JarFile(narFile)) {
-                        final Manifest manifest = nar.getManifest();
+        final long startTime = System.nanoTime();
+        logger.info("Expanding " + narFiles.size() + " NAR files with all processors...");
+        for (File narFile : narFiles) {
+            logger.debug("Expanding NAR file: " + narFile.getAbsolutePath());
 
-                        // lookup the nar id
-                        final Attributes attributes = manifest.getMainAttributes();
-                        final String groupId = attributes.getValue(NarManifestEntry.NAR_GROUP.getManifestName());
-                        final String narId = attributes.getValue(NarManifestEntry.NAR_ID.getManifestName());
-                        final String version = attributes.getValue(NarManifestEntry.NAR_VERSION.getManifestName());
+            // get the manifest for this nar
+            try (final JarFile nar = new JarFile(narFile)) {
+                final Manifest manifest = nar.getManifest();
 
-                        // determine if this is the framework
-                        if (NarClassLoaders.FRAMEWORK_NAR_ID.equals(narId)) {
-                            if (unpackedFramework != null) {
-                                throw new IllegalStateException("Multiple framework NARs discovered. Only one framework is permitted.");
-                            }
+                // lookup the nar id
+                final Attributes attributes = manifest.getMainAttributes();
+                final String groupId = attributes.getValue(NarManifestEntry.NAR_GROUP.getManifestName());
+                final String narId = attributes.getValue(NarManifestEntry.NAR_ID.getManifestName());
+                final String version = attributes.getValue(NarManifestEntry.NAR_VERSION.getManifestName());
 
-                            // unpack the framework nar
-                            unpackedFramework = unpackNar(narFile, frameworkWorkingDir);
-                        } else {
-                            final File unpackedExtension = unpackNar(narFile, extensionsWorkingDir);
+                // determine if this is the framework
+                if (NarClassLoaders.FRAMEWORK_NAR_ID.equals(narId)) {
+                    if (unpackedFramework != null) {
+                        throw new IllegalStateException("Multiple framework NARs discovered. Only one framework is permitted.");
+                    }
 
-                            // record the current bundle
-                            unpackedNars.put(unpackedExtension, new BundleCoordinate(groupId, narId, version));
+                    // unpack the framework nar
+                    unpackedFramework = unpackNar(narFile, frameworkWorkingDir);
+                } else {
+                    final File unpackedExtension = unpackNar(narFile, extensionsWorkingDir);
 
-                            // unpack the extension nar
-                            unpackedExtensions.add(unpackedExtension);
-                        }
+                    // record the current bundle
+                    unpackedNars.put(unpackedExtension, new BundleCoordinate(groupId, narId, version));
+
+                    // unpack the extension nar
+                    unpackedExtensions.add(unpackedExtension);
+                }
+            } catch (IOException e) {
+                logger.error("Unable to load NAR library bundles due to '" + e.getMessage() + "' Will proceed without loading any further Nar bundles", e);
+                // ignore current error nar, and continue to do for others
+                continue;
+            }
+        }
+
+        // ensure we've found the framework nar
+        if (unpackedFramework == null) {
+            throw new IllegalStateException("No framework NAR found.");
+        } else if (!unpackedFramework.canRead()) {
+            throw new IllegalStateException("Framework NAR cannot be read.");
+        }
+
+        try {
+            // Determine if any nars no longer exist and delete their working directories. This happens
+            // if a new version of a nar is dropped into the lib dir. ensure no old framework are present
+            final File[] frameworkWorkingDirContents = frameworkWorkingDir.listFiles();
+            if (frameworkWorkingDirContents != null) {
+                for (final File unpackedNar : frameworkWorkingDirContents) {
+                    if (!unpackedFramework.equals(unpackedNar)) {
+                        FileUtils.deleteFile(unpackedNar, true);
                     }
                 }
+            }
 
-                // ensure we've found the framework nar
-                if (unpackedFramework == null) {
-                    throw new IllegalStateException("No framework NAR found.");
-                } else if (!unpackedFramework.canRead()) {
-                    throw new IllegalStateException("Framework NAR cannot be read.");
-                }
-
-                // Determine if any nars no longer exist and delete their working directories. This happens
-                // if a new version of a nar is dropped into the lib dir. ensure no old framework are present
-                final File[] frameworkWorkingDirContents = frameworkWorkingDir.listFiles();
-                if (frameworkWorkingDirContents != null) {
-                    for (final File unpackedNar : frameworkWorkingDirContents) {
-                        if (!unpackedFramework.equals(unpackedNar)) {
-                            FileUtils.deleteFile(unpackedNar, true);
-                        }
+            // ensure no old extensions are present
+            final File[] extensionsWorkingDirContents = extensionsWorkingDir.listFiles();
+            if (extensionsWorkingDirContents != null) {
+                for (final File unpackedNar : extensionsWorkingDirContents) {
+                    if (!unpackedExtensions.contains(unpackedNar)) {
+                        FileUtils.deleteFile(unpackedNar, true);
                     }
                 }
-
-                // ensure no old extensions are present
-                final File[] extensionsWorkingDirContents = extensionsWorkingDir.listFiles();
-                if (extensionsWorkingDirContents != null) {
-                    for (final File unpackedNar : extensionsWorkingDirContents) {
-                        if (!unpackedExtensions.contains(unpackedNar)) {
-                            FileUtils.deleteFile(unpackedNar, true);
-                        }
-                    }
-                }
-
-                final long duration = System.nanoTime() - startTime;
-                logger.info("NAR loading process took " + duration + " nanoseconds "
-                        + "(" + (int) TimeUnit.SECONDS.convert(duration, TimeUnit.NANOSECONDS) + " seconds).");
             }
 
             // attempt to delete any docs files that exist so that any components that have been removed
@@ -215,7 +221,15 @@ public final class NarUnpacker {
                     FileUtils.deleteFile(file, true);
                 }
             }
+        } catch (IOException e) {
+            logger.error("Can't delete non-existed libs directories", e);
+            // ignore
+        }
 
+        final long duration = System.nanoTime() - startTime;
+        logger.info("NAR loading process took " + duration + " nanoseconds " + "(" + (int) TimeUnit.SECONDS.convert(duration, TimeUnit.NANOSECONDS) + " seconds).");
+
+        try {
             final ExtensionMapping extensionMapping = new ExtensionMapping();
             mapExtensions(unpackedNars, docsWorkingDir, extensionMapping);
 
@@ -224,10 +238,7 @@ public final class NarUnpacker {
 
             return extensionMapping;
         } catch (IOException e) {
-            logger.warn("Unable to load NAR library bundles due to " + e + " Will proceed without loading any further Nar bundles");
-            if (logger.isDebugEnabled()) {
-                logger.warn("", e);
-            }
+            logger.error("Can't unpack bundles docs", e);
         }
 
         return null;
