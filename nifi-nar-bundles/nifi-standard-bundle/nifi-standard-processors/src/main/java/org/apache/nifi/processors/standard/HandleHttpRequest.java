@@ -407,6 +407,8 @@ public class HandleHttpRequest extends AbstractProcessor {
         this.containerQueue = new LinkedBlockingQueue<>(context.getProperty(CONTAINER_QUEUE_SIZE).asInteger());
         final String host = context.getProperty(HOSTNAME).getValue();
         final int port = getListeningPort(context);
+        final HttpContextMap httpContextMap = context.getProperty(HTTP_CONTEXT_MAP).asControllerService(HttpContextMap.class);
+        final long requestTimeout = httpContextMap.getRequestTimeout(TimeUnit.MILLISECONDS);
 
         final SslContextFactory sslFactory = createSslFactory(context);
         final Server server = new Server(port);
@@ -422,6 +424,9 @@ public class HandleHttpRequest extends AbstractProcessor {
                 http.setHost(host);
             }
             http.setPort(port);
+
+            // If request timeout is longer than default Idle Timeout, then increase Idle Timeout as well.
+            http.setIdleTimeout(Math.max(http.getIdleTimeout(), requestTimeout));
 
             // add this connector
             server.setConnectors(new Connector[] { http });
@@ -440,6 +445,9 @@ public class HandleHttpRequest extends AbstractProcessor {
                 https.setHost(host);
             }
             https.setPort(port);
+
+            // If request timeout is longer than default Idle Timeout, then increase Idle Timeout as well.
+            https.setIdleTimeout(Math.max(https.getIdleTimeout(), requestTimeout));
 
             // add this connector
             server.setConnectors(new Connector[] { https });
