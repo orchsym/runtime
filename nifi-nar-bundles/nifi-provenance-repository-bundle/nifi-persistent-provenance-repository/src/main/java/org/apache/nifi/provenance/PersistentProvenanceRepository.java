@@ -320,9 +320,7 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
                             purgeOldEvents();
                         } catch (final Exception e) {
                             logger.error("Failed to purge old events from Provenance Repo due to {}", e.toString());
-                            if (logger.isDebugEnabled()) {
-                                logger.error("", e);
-                            }
+                            logger.error("", e);
                             eventReporter.reportEvent(Severity.ERROR, EVENT_CATEGORY, "Failed to purge old events from Provenance Repo due to " + e.toString());
                         }
                     }
@@ -632,7 +630,7 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
                     maxIndexedId = eventId;
                 }
             } catch (final IOException ioe) {
-                logger.error("Failed to read Provenance Event File {} due to {}", maxIdFile, ioe);
+                logger.error("Failed to read Provenance Event File {} due to {}", maxIdFile, ioe.toString());
                 logger.error("", ioe);
             }
         }
@@ -1077,6 +1075,7 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
         } catch (final IOException ioe) {
             logger.warn("Unable to determine the maximum ID for Provenance Event Log File {}; values reported for the number of "
                     + "events in the Provenance Repository may be inaccurate.", firstLogFile);
+            logger.warn("", ioe);
         }
 
         // check if we can delete the index safely.
@@ -1112,6 +1111,7 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
                 }
             } catch (final IOException ioe) {
                 logger.warn("Failed to obtain timestamp of first event from Provenance Event Log File {}", logFile);
+                logger.warn("", ioe);
             }
         }
 
@@ -1594,9 +1594,7 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
                     deleteAction.execute(suggestedMergeFile);
                 } catch (final Exception e) {
                     logger.warn("Failed to delete records from Journal File {} from the index; this could potentially result in duplicates. Failure was due to {}", suggestedMergeFile, e.toString());
-                    if (logger.isDebugEnabled()) {
-                        logger.warn("", e);
-                    }
+                    logger.warn("", e);
                 }
 
                 // Since we only store the file's basename, block offset, and event ID, and because the newly created file could end up on
@@ -1638,9 +1636,7 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
                     // there's nothing here. Skip over it.
                 } catch (final IOException ioe) {
                     logger.warn("Unable to merge {} with other Journal Files due to {}", journalFile, ioe.toString());
-                    if (logger.isDebugEnabled()) {
-                        logger.warn("", ioe);
-                    }
+                    logger.warn("", ioe);
 
                     if (eventReporter != null) {
                         eventReporter.reportEvent(Severity.ERROR, EVENT_CATEGORY, "Failed to merge Journal Files due to " + ioe.toString());
@@ -1671,9 +1667,7 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
                     logger.warn("Failed to generate Provenance Event Record from Journal due to " + e + "; it's "
                             + "possible that the record wasn't completely written to the file. This journal will be "
                             + "skipped.");
-                    if (logger.isDebugEnabled()) {
-                        logger.warn("", e);
-                    }
+                    logger.warn("", e);
 
                     if (eventReporter != null) {
                         eventReporter.reportEvent(Severity.WARNING, EVENT_CATEGORY, "Failed to read Provenance Event "
@@ -1819,9 +1813,7 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
                                 logger.warn("Failed to generate Provenance Event Record from Journal due to " + e
                                         + "; it's possible that the record wasn't completely written to the file. "
                                         + "The remainder of this journal will be skipped.");
-                                if (logger.isDebugEnabled()) {
-                                    logger.warn("", e);
-                                }
+                                logger.warn("", e);
 
                                 if (eventReporter != null) {
                                     eventReporter.reportEvent(Severity.WARNING, EVENT_CATEGORY, "Failed to read "
@@ -2546,9 +2538,7 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
                 submission.getResult().update(mostRecent, totalNumDocs);
             } catch (final IOException ioe) {
                 logger.error("Failed to retrieve records from Provenance Repository: " + ioe.toString());
-                if (logger.isDebugEnabled()) {
-                    logger.error("", ioe);
-                }
+                logger.error("", ioe);
 
                 if (ioe.getMessage() == null) {
                     submission.getResult().setError("Failed to retrieve records from Provenance Repository: " + ioe.toString());
@@ -2583,9 +2573,7 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
                 submission.getResult().update(queryResult.getMatchingEvents(), queryResult.getTotalHitCount());
             } catch (final Throwable t) {
                 logger.error("Failed to query Provenance Repository Index {} due to {}", indexDir, t.toString());
-                if (logger.isDebugEnabled()) {
-                    logger.error("", t);
-                }
+                logger.error("", t);
 
                 if (t.getMessage() == null) {
                     submission.getResult().setError(t.toString());
@@ -2637,9 +2625,7 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
                         flowFileUuids, result.getComputationTime(TimeUnit.MILLISECONDS), result.getNodes().size(), result.getEdges().size());
             } catch (final Throwable t) {
                 logger.error("Failed to query provenance repository due to {}", t.toString());
-                if (logger.isDebugEnabled()) {
-                    logger.error("", t);
-                }
+                logger.error("", t);
 
                 if (t.getMessage() == null) {
                     submission.getResult().setError(t.toString());

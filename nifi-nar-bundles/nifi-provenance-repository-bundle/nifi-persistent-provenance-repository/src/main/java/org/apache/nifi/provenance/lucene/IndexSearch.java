@@ -147,9 +147,7 @@ public class IndexSearch {
         } catch (final FileNotFoundException e) {
             // nothing has been indexed yet, or the data has already aged off
             logger.warn("Attempted to search Provenance Index {} but could not find the file due to {}", indexDirectory, e);
-            if ( logger.isDebugEnabled() ) {
-                logger.warn("", e);
-            }
+            logger.warn("", e);
 
             sqr.update(Collections.<ProvenanceEventRecord>emptyList(), 0);
             return sqr;

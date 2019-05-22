@@ -197,9 +197,7 @@ public class CachingIndexManager implements Closeable, IndexManager {
                 }
             } catch (final IOException ioe) {
                 logger.warn("Failed to close Index Writer {} due to {}", writer, ioe);
-                if (logger.isDebugEnabled()) {
-                    logger.warn("", ioe);
-                }
+                logger.warn("", ioe);
             }
         } finally {
             lock.unlock();

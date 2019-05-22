@@ -142,7 +142,7 @@ public class StandardControllerServiceProvider implements ControllerServiceProvi
                 Thread.currentThread().setContextClassLoader(cl);
                 rawClass = Class.forName(type, false, cl);
             } catch (final Exception e) {
-                logger.error("Could not create Controller Service of type " + type + " for ID " + id + "; creating \"Ghost\" implementation", e);
+                logger.error("Could not create Controller Service of type {} for ID {} due to {}; then creating \"Ghost\" implementation", type, id, e.getMessage());
                 Thread.currentThread().setContextClassLoader(currentContextClassLoader);
                 return createGhostControllerService(type, id, bundleCoordinate);
             }
@@ -153,7 +153,7 @@ public class StandardControllerServiceProvider implements ControllerServiceProvi
             try {
                 originalService = controllerServiceClass.newInstance();
             } catch (Throwable e) {
-                logger.error(String.format("Unable to create the Controller Service %s from ID %s due to %s; then creating \"Ghost\" implementation", type, id, e.getMessage()), e);
+                logger.error("Unable to create the Controller Service {} from ID {} due to {}; then creating \"Ghost\" implementation", type, id, e.getMessage());
                 // if can't create the instance, use ghost instead
                 Thread.currentThread().setContextClassLoader(currentContextClassLoader);
                 return createGhostControllerService(type, id, bundleCoordinate);

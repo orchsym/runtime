@@ -88,9 +88,7 @@ public class LineageQuery {
         } catch (final FileNotFoundException fnfe) {
             // nothing has been indexed yet, or the data has already aged off
             logger.warn("Attempted to search Provenance Index {} but could not find the file due to {}", indexDirectory, fnfe);
-            if (logger.isDebugEnabled()) {
-                logger.warn("", fnfe);
-            }
+            logger.warn("", fnfe);
 
             return Collections.emptySet();
         }

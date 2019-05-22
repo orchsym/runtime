@@ -53,6 +53,7 @@ public class DeleteIndexAction implements ExpirationAction {
             maxEventId = reader.getMaxEventId();
         } catch (final IOException ioe) {
             logger.warn("Failed to obtain max ID present in journal file {}", expiredFile.getAbsolutePath());
+            logger.warn("", ioe);
         }
 
         // remove the records from the index

@@ -286,9 +286,7 @@ public final class StandardProcessSession implements ProcessSession, ProvenanceE
                     autoTerminatedEvents.add(dropEvent);
                 } catch (final Exception e) {
                     LOG.warn("Unable to generate Provenance Event for {} on behalf of {} due to {}", record.getCurrent(), connectableDescription, e);
-                    if (LOG.isDebugEnabled()) {
-                        LOG.warn("", e);
-                    }
+                    LOG.warn("", e);
                 }
             } else {
                 final Connection finalDestination = destinations.remove(destinations.size() - 1); // remove last element
@@ -490,7 +488,7 @@ public final class StandardProcessSession implements ProcessSession, ProvenanceE
             } catch (final Exception e1) {
                 e.addSuppressed(e1);
             }
-
+            LOG.warn("",e);
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
             } else {
@@ -1026,9 +1024,7 @@ public final class StandardProcessSession implements ProcessSession, ProvenanceE
                 context.getFlowFileRepository().updateRepository(abortedRecords);
             } catch (final IOException ioe) {
                 LOG.error("Unable to update FlowFile repository for aborted records due to {}", ioe.toString());
-                if (LOG.isDebugEnabled()) {
-                    LOG.error("", ioe);
-                }
+                LOG.error("", ioe);
             }
         }
 
@@ -1043,9 +1039,7 @@ public final class StandardProcessSession implements ProcessSession, ProvenanceE
                 context.getFlowFileRepository().updateRepository(Collections.singletonList(repoRecord));
             } catch (final IOException ioe) {
                 LOG.error("Unable to update FlowFile repository to cleanup transient claims due to {}", ioe.toString());
-                if (LOG.isDebugEnabled()) {
-                    LOG.error("", ioe);
-                }
+                LOG.error("", ioe);
             }
         }
 
@@ -1060,9 +1054,7 @@ public final class StandardProcessSession implements ProcessSession, ProvenanceE
             context.getFlowFileEventRepository().updateRepository(flowFileEvent);
         } catch (final Exception e) {
             LOG.error("Failed to update FlowFileEvent Repository due to " + e);
-            if (LOG.isDebugEnabled()) {
-                LOG.error("", e);
-            }
+            LOG.error("", e);
         }
 
         acknowledgeRecords();

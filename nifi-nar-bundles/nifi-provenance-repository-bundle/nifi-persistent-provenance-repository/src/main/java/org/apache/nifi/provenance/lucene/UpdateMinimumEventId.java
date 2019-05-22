@@ -45,6 +45,7 @@ public class UpdateMinimumEventId implements ExpirationAction {
             logger.info("Updated Minimum Event ID for Provenance Event Repository - Minimum Event ID now {}", maxEventId);
         } catch (final IOException ioe) {
             logger.warn("Failed to obtain max ID present in journal file {}", expiredFile.getAbsolutePath());
+            logger.warn("", ioe);
         }
 
         return expiredFile;
