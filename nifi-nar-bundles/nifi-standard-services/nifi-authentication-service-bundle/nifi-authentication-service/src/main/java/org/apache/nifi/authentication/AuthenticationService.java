@@ -33,7 +33,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
-import org.apache.nifi.annotation.lifecycle.OnDisabled;
 import org.apache.nifi.annotation.lifecycle.OnEnabled;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.AllowableValue;
@@ -42,14 +41,19 @@ import org.apache.nifi.controller.ConfigurationContext;
 import org.apache.nifi.controller.ControllerServiceInitializationContext;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.reporting.InitializationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Marks(createdDate = "2019-01-04")
 @Tags({ "authentication service" })
 @CapabilityDescription("This service is for authentication")
 public class AuthenticationService extends AbstractControllerService implements APIAuthenticationService {
+    private static final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
 
     private static final String AS_LIST_SEPARATOR = ",";
     private static final String AS_ITEM_SEPARATOR = ":";
+    private static final String PREFIX_BASIC = "Basic ";
+
     public static final AllowableValue AUTHENTICATION_BASIC = new AllowableValue("Basic Authentication", "Basic Authentication", //
             "HTTP Basic Authentication"); //
     public static final AllowableValue AUTHENTICATION_DIGEST = new AllowableValue("Digest Authentication", "Digest Authentication", //
@@ -173,16 +177,24 @@ public class AuthenticationService extends AbstractControllerService implements 
 
     //basic认证，返回验证信息中的用户名密码是否包含在Authorized User List中，如果是则验证通过
     private boolean authenticateAuthorizationInfoByBasic(String authorizationInfo) {
-        //base64 decode
-        byte[] decoded = Base64.getDecoder().decode(authorizationInfo);
-        String info = new String(decoded);
-        String[] userItems = StringUtils.split(info, AS_ITEM_SEPARATOR);
-        if (userItems != null) {
-            String name = userItems.length > 0 ? userItems[0].trim() : "";
-            String pwd = userItems.length > 1 ? userItems[1].trim() : "";
-            if (authorizedUserMap != null && authorizedUserMap.containsKey(name) && authorizedUserMap.get(name).equals(pwd)) {
-                return true;
+        authorizationInfo = authorizationInfo.trim();
+        if (authorizationInfo.toLowerCase().startsWith(PREFIX_BASIC.toLowerCase())) {
+            authorizationInfo = authorizationInfo.substring(PREFIX_BASIC.length()).trim();
+        }
+        try {
+            // base64 decode
+            byte[] decoded = Base64.getDecoder().decode(authorizationInfo);
+            String info = new String(decoded);
+            String[] userItems = StringUtils.split(info, AS_ITEM_SEPARATOR);
+            if (userItems != null) {
+                String name = userItems.length > 0 ? userItems[0].trim() : "";
+                String pwd = userItems.length > 1 ? userItems[1].trim() : "";
+                if (authorizedUserMap != null && authorizedUserMap.containsKey(name) && authorizedUserMap.get(name).equals(pwd)) {
+                    return true;
+                }
             }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
         }
         return false;
     }

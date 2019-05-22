@@ -106,7 +106,7 @@ public class AuthenticationServiceTest {
             Assert.assertNotNull(service);
             assertTrue(service instanceof AuthenticationService);
 
-            String authenticationInfo = "Y2h5aW5ncDoxMjM0NTY=";//“chyingp:123456”base64编码
+            String authenticationInfo = "Y2h5aW5ncDoxMjM0NTY=";// “chyingp:123456”base64编码
             assertEquals(true, service.authenticateAuthorizationInfo("GET", authenticationInfo));
 
             String invalidAuthenticationInfo = "AAAAaW5ncDoxMBBBBBB=";
@@ -135,6 +135,30 @@ public class AuthenticationServiceTest {
             String authenticationInfo = "Digest username=\"Mufasa\",realm=\"testrealm@host.com\",nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\",uri=\"/dir/index.html\",qop=auth,nc=00000001,cnonce=\"0a4f113b\",response=\"6629fae49393a05397450978507c4ef1\",opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"";
             assertEquals(true, service.authenticateAuthorizationInfo("GET", authenticationInfo));
 
+        } catch (Exception e) {
+            Assert.fail("Should not have thrown a exception " + e.getMessage());
+        }
+    }
+
+    @Test
+    public void testStandardBasicAuthentication() {
+        try {
+            TestRunner runner = TestRunners.newTestRunner(TestProcessor.class);
+            AuthenticationService service = new AuthenticationService();
+            HashMap<String, String> properties = new HashMap<String, String>();
+            properties.put(AuthenticationService.AUTHENTICATION_METHOD.getName(), "Basic Authentication");
+            properties.put(AuthenticationService.AUTHORIZED_USER_LIST.getName(), "chyingp:123456,lujiangbin:123");
+            runner.addControllerService("test-basic", service, properties);
+            runner.enableControllerService(service);
+            runner.assertValid();
+            Assert.assertNotNull(service);
+            assertTrue(service instanceof AuthenticationService);
+
+            String authenticationInfo = "Basic Y2h5aW5ncDoxMjM0NTY=";// “chyingp:123456”base64编码
+            assertEquals(true, service.authenticateAuthorizationInfo("GET", authenticationInfo));
+
+            String invalidAuthenticationInfo = "Basic AAAAaW5ncDoxMBBBBBB=";
+            assertEquals(false, service.authenticateAuthorizationInfo("GET", invalidAuthenticationInfo));
         } catch (Exception e) {
             Assert.fail("Should not have thrown a exception " + e.getMessage());
         }
