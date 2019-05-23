@@ -11,6 +11,7 @@ import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.components.PropertyDescriptor;
@@ -48,6 +49,7 @@ import java.util.regex.Pattern;
 
 
 @EventDriven
+@Marks(categories = { "Database/Database" }, createdDate = "2018-07-31")
 @InputRequirement(Requirement.INPUT_ALLOWED)
 @Tags({"store procedure", "call", "sql"})
 @CapabilityDescription("call provided SQL store procedure method. Query result will be converted to JSON."
