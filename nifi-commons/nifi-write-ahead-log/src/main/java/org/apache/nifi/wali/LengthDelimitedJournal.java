@@ -17,6 +17,14 @@
 
 package org.apache.nifi.wali;
 
+import org.apache.nifi.stream.io.ByteCountingInputStream;
+import org.apache.nifi.stream.io.LimitingInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.wali.SerDe;
+import org.wali.SerDeFactory;
+import org.wali.UpdateType;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -37,14 +45,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.nifi.stream.io.ByteCountingInputStream;
-import org.apache.nifi.stream.io.LimitingInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.wali.SerDe;
-import org.wali.SerDeFactory;
-import org.wali.UpdateType;
 
 public class LengthDelimitedJournal<T> implements WriteAheadJournal<T> {
     private static final Logger logger = LoggerFactory.getLogger(LengthDelimitedJournal.class);
@@ -90,6 +90,10 @@ public class LengthDelimitedJournal<T> implements WriteAheadJournal<T> {
         return bufferedOut;
     }
 
+    @Override
+    public synchronized boolean isHealthy() {
+        return !closed && !poisoned;
+    }
 
     @Override
     public synchronized void writeHeader() throws IOException {
@@ -230,11 +234,13 @@ public class LengthDelimitedJournal<T> implements WriteAheadJournal<T> {
         try {
             if (fileOut != null) {
                 fileOut.close();
+                fileOut = null;
             }
 
             closed = true;
         } catch (final IOException innerIOE) {
             t.addSuppressed(innerIOE);
+            logger.error("The journal has been poisoned", t);
         }
     }
 
@@ -266,6 +272,7 @@ public class LengthDelimitedJournal<T> implements WriteAheadJournal<T> {
                 }
 
                 fileOut.close();
+                fileOut = null;
             }
         } catch (final IOException ioe) {
             poison(ioe);
