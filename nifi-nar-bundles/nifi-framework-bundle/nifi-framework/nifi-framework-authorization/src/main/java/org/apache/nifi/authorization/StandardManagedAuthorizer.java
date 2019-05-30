@@ -22,6 +22,7 @@ import org.apache.nifi.authorization.exception.AuthorizerCreationException;
 import org.apache.nifi.authorization.exception.AuthorizerDestructionException;
 import org.apache.nifi.authorization.exception.UninheritableAuthorizationsException;
 import org.apache.nifi.authorization.User;
+import org.apache.nifi.authorization.resource.ResourceType;
 import org.apache.nifi.authorization.user.NiFiUserUtils;
 import org.apache.nifi.authorization.util.MD5Util;
 import org.apache.nifi.authorization.ConfigurableUserGroupProvider;
@@ -91,7 +92,11 @@ public class StandardManagedAuthorizer implements ManagedAuthorizer {
             //if user is admin, gives all access rights.
             return AuthorizationResult.approved();
         }
-        final String resourceIdentifier = request.getResource().getIdentifier();
+        String resourceIdentifier = request.getResource().getIdentifier();
+        //Resolve bug which provenance data not shown,it's from https://issues.apache.org/jira/browse/NIFI-5804
+        if(resourceIdentifier.startsWith(ResourceType.ProvenanceData.getValue())){
+            resourceIdentifier = ResourceType.Provenance.getValue();
+        }
         final AccessPolicy policy = accessPolicyProvider.getAccessPolicy(resourceIdentifier, request.getAction());
         if (policy == null) {
             return AuthorizationResult.resourceNotFound();
