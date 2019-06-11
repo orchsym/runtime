@@ -186,7 +186,7 @@
 
             // update the birdseye
             nfBirdseye.refresh();
-        }).fail(nfErrorHandler.handleAjaxError);
+        }).fail(clearOIDCToken);
     };
 
     /**
@@ -203,6 +203,8 @@
         }).done(function (currentUser) {
             // set the current user
             nfCommon.setCurrentUser(currentUser);
+        }).fail(function(xhr, status, error){
+            clearOIDCToken(xhr, status, error);
         });
     };
     var refreshOIDCToken = function(){
@@ -234,6 +236,7 @@
     var reloadOIDCToken = function(){
         $.ajax({
             type: 'GET',
+            async:false,
             url: config.urls.oidcRefresh
         }).done(function (jwt) {
             var token = nf.Common.getJwtPayload(jwt);
@@ -241,6 +244,44 @@
             nf.Storage.setItem('jwt', jwt, expiration);
         });
     };
+    var clearOIDCToken = function (xhr, status, error) {
+        if(xhr.status === 401 && nf.Storage.hasItem('jwt') && document.cookie.indexOf("oidc-request-rfid=")>-1){
+            reloadOIDCToken();
+        }
+    };
+    var reloadAll = function(options,deferred){
+        var processGroupXhr = reloadProcessGroup(nfCanvas.getGroupId(), options);
+        var statusXhr = nfNgBridge.injector.get('flowStatusCtrl').reloadFlowStatus();
+        var currentUserXhr = loadCurrentUser();
+        var controllerBulletins = $.ajax({
+            type: 'GET',
+            url: config.urls.controllerBulletins,
+            dataType: 'json'
+        }).done(function (response) {
+            nfNgBridge.injector.get('flowStatusCtrl').updateBulletins(response);
+        });
+        var clusterSummary = nfClusterSummary.loadClusterSummary().done(function (response) {
+            var clusterSummary = response.clusterSummary;
+
+            // update the cluster summary
+            nfNgBridge.injector.get('flowStatusCtrl').updateClusterSummary(clusterSummary);
+        });
+
+        // wait for all requests to complete
+        $.when(processGroupXhr, statusXhr, currentUserXhr, controllerBulletins, clusterSummary).done(function (processGroupResult) {
+            // inform Angular app values have changed
+            nfNgBridge.digest();
+
+            // resolve the deferred
+            deferred.resolve(processGroupResult);
+        }).fail(function (xhr, status, error) {
+            if(xhr.status === 401 && nf.Storage.hasItem('jwt') && document.cookie.indexOf("oidc-request-rfid=")>-1){
+                reloadOIDCToken();
+            }else{
+                deferred.reject(xhr, status, error);
+            }
+        });
+    }
     var nfCanvas = {
         CANVAS_OFFSET: 0,
 
@@ -303,7 +344,8 @@
                     // resolve the deferred
                     deferred.resolve(processGroupResult);
                 }).fail(function (xhr, status, error) {
-                    deferred.reject(xhr, status, error);
+                    clearOIDCToken(xhr, status, error);
+                    reloadAll(options, deferred);
                 });
             }).promise();
         },

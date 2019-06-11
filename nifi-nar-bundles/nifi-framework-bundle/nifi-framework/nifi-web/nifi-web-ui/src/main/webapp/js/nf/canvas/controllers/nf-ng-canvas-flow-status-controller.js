@@ -60,10 +60,22 @@
             search: 'Search',
             urls: {
                 search: '../nifi-api/flow/search-results',
+                oidcRefresh: '../nifi-api/access/oidc/refreshToken',
                 status: '../nifi-api/flow/status'
             }
         };
-
+        var reloadOIDCToken = function(){
+            $.ajax({
+                type: 'GET',
+                async:false,
+                url: config.urls.oidcRefresh
+            }).done(function (jwt) {
+                nf.Storage.removeItem('jwt');
+                var token = nf.Common.getJwtPayload(jwt);
+                var expiration = parseInt(token['exp'], 10) * nf.Common.MILLIS_PER_SECOND;
+                nf.Storage.setItem('jwt', jwt, expiration);
+            });
+        };
         function FlowStatusCtrl() {
             this.connectedNodesCount = "-";
             this.activeThreadCount = "-";
@@ -398,7 +410,13 @@
                     if (nfCommon.isDefinedAndNotNull(response.controllerStatus)) {
                         flowStatusCtrl.update(response.controllerStatus);
                     }
-                }).fail(nfErrorHandler.handleAjaxError);
+                }).fail(function (xhr, status, error) {
+                    if(xhr.status === 401 && nf.Storage.hasItem('jwt') && document.cookie.indexOf("oidc-request-rfid=")>-1){
+                        reloadOIDCToken();
+                    }else{
+                        nfErrorHandler.handleAjaxError(xhr, status, error);
+                    }
+                });
             },
 
             /**
