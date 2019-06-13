@@ -16,6 +16,7 @@
  */
 package org.apache.nifi.spring;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.authorization.Authorizer;
 import org.apache.nifi.cluster.coordination.ClusterCoordinator;
 import org.apache.nifi.cluster.protocol.impl.NodeProtocolSenderListener;
@@ -47,8 +48,20 @@ public class StandardFlowServiceFactoryBean implements FactoryBean, ApplicationC
         if (flowService == null) {
             final FlowController flowController = applicationContext.getBean("flowController", FlowController.class);
             final RevisionManager revisionManager = applicationContext.getBean("revisionManager", RevisionManager.class);
-
-            if (properties.isNode()) {
+            
+            boolean isCluster=properties.isNode();
+            String clustersNum = System.getProperty("platform.clusters.num");
+            if (StringUtils.isNotBlank(clustersNum)) { // compatible old
+                try {
+                    int num = Integer.parseInt(clustersNum);
+                    if (num == 0 || num == 1) {
+                        isCluster = false;
+                    }
+                } catch (NumberFormatException e) {
+                    // ignore
+                }
+            }
+            if (isCluster) {
                 final NodeProtocolSenderListener nodeProtocolSenderListener = applicationContext.getBean("nodeProtocolSenderListener", NodeProtocolSenderListener.class);
                 final ClusterCoordinator clusterCoordinator = applicationContext.getBean("clusterCoordinator", ClusterCoordinator.class);
                 flowService = StandardFlowService.createClusteredInstance(
