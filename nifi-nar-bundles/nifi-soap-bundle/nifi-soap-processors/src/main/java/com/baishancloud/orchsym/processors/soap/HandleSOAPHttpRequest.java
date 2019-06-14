@@ -113,7 +113,7 @@ public class HandleSOAPHttpRequest extends HandleHttpRequest {
             .required(true)//
             .addValidator(HandleHttpRequest.PORT.getValidators().get(0))//
             .expressionLanguageSupported(HandleHttpRequest.PORT.getExpressionLanguageScope())//
-            .defaultValue("7001")//$NON-NLS-1$
+            .defaultValue("21001")//$NON-NLS-1$
             .build();
 
     public static final PropertyDescriptor SOAP_PATH_REGEX = new PropertyDescriptor.Builder()//
