@@ -189,7 +189,7 @@ public class SignatureProcessor extends AbstractProcessor {
 
     public static final PropertyDescriptor SECRET = new PropertyDescriptor.Builder()//
             .name("Private Key/SecretKey")//
-            .description("Specifies the private key or secret key(for HMAC). If use rsa sign algorithm, the key is pkcs8 format. Except the MDx, SHA1 and SHA-XXX, others need this one.")//
+            .description("Specifies the private key or secret key(for HMAC) for pkcs8 format. Except the MDx, SHA1 and SHA-XXX, others need this one.")//
             .required(false)//
             .defaultValue("")//
             .addValidator(Validator.VALID)//
@@ -197,8 +197,8 @@ public class SignatureProcessor extends AbstractProcessor {
             .build();
 
     public static final PropertyDescriptor SIGN_ENCODING_ALG = new PropertyDescriptor.Builder()//
-            .name("Sign Encode Algorithm")//
-            .description("Specifies encode algorithm for the signed content ")//
+            .name("Encoding Signature")//
+            .description("Specifies encoding format for the signed content ")//
             .required(true)//
             .allowableValues(SIGN_ENCODE_APACHE_HEX, SIGN_ENCODE_APACHE_BASE64)//
             .defaultValue(SIGN_ENCODE_APACHE_HEX)//
