@@ -88,7 +88,7 @@ public class SiteToSiteProvenanceReportingTask extends AbstractSiteToSiteReporti
         .description("The value to use for the platform field in each provenance event.")
         .required(true)
         .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
-        .defaultValue("nifi")
+        .defaultValue("runtime")
         .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
         .build();
 

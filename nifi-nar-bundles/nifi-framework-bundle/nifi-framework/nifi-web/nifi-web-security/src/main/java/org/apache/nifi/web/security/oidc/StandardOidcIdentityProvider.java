@@ -16,6 +16,28 @@
  */
 package org.apache.nifi.web.security.oidc;
 
+import static com.nimbusds.openid.connect.sdk.claims.UserInfo.EMAIL_CLAIM_NAME;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.nifi.util.FormatUtils;
+import org.apache.nifi.util.HttpRequestUtil;
+import org.apache.nifi.util.NiFiProperties;
+import org.apache.nifi.web.security.jwt.JwtService;
+import org.apache.nifi.web.security.oidc.adfs.OrchsymHTTPRequest;
+import org.apache.nifi.web.security.oidc.adfs.OrchsymTokenRequest;
+import org.apache.nifi.web.security.token.LoginAuthenticationToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.proc.BadJOSEException;
@@ -50,29 +72,8 @@ import com.nimbusds.openid.connect.sdk.claims.IDTokenClaimsSet;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
 import com.nimbusds.openid.connect.sdk.validators.IDTokenValidator;
+
 import net.minidev.json.JSONObject;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.nifi.util.FormatUtils;
-import org.apache.nifi.util.NiFiProperties;
-import org.apache.nifi.web.security.jwt.JwtService;
-import org.apache.nifi.web.security.token.LoginAuthenticationToken;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import static com.nimbusds.openid.connect.sdk.claims.UserInfo.EMAIL_CLAIM_NAME;
-
-import org.apache.nifi.web.security.oidc.adfs.HTTPSRequest;
-import org.apache.nifi.web.security.oidc.adfs.OrchsymHTTPRequest;
-import org.apache.nifi.web.security.oidc.adfs.OrchsymTokenRequest;
 
 /**
  * OidcProvider for managing the OpenId Connect Authorization flow.
@@ -221,7 +222,7 @@ public class StandardOidcIdentityProvider implements OidcIdentityProvider {
     private OIDCProviderMetadata retrieveOidcProviderMetadata(final String discoveryUri) throws IOException, ParseException {
         final URL url = new URL(discoveryUri);
         if(discoveryUri != null && discoveryUri.toLowerCase().startsWith("https")){
-            final String jsonString = HTTPSRequest.getString(url);
+            final String jsonString = HttpRequestUtil.getString(discoveryUri);
             return OIDCProviderMetadata.parse(jsonString);
         }
         final HTTPRequest httpRequest = new HTTPRequest(HTTPRequest.Method.GET, url);

@@ -6,6 +6,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 
+import org.apache.nifi.util.HttpRequestUtil;
+
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 
 public class OrchsymHTTPRequest extends HTTPRequest{
@@ -52,7 +54,7 @@ public class OrchsymHTTPRequest extends HTTPRequest{
         }
         try {
             if("https".equalsIgnoreCase(finalURL.getProtocol())){
-                HTTPSRequest.trustAll();
+                HttpRequestUtil.trustAll();
             }
         } catch (Exception e) {
            //ignore

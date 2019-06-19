@@ -68,7 +68,7 @@ public class SiteToSiteStatusReportingTask extends AbstractSiteToSiteReportingTa
         .description("The value to use for the platform field in each status record.")
         .required(true)
         .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
-        .defaultValue("nifi")
+        .defaultValue("runtime")
         .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
         .build();
 

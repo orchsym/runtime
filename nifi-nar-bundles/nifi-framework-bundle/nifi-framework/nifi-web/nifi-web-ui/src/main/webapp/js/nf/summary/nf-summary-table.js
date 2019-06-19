@@ -2524,7 +2524,7 @@
                 if (dataField) {
                     $(versionSpanSelector).text(dataField);
                 } else {
-                    $(versionSpanSelector).text('(not available)').addClass('unset');
+                    $(versionSpanSelector).text('('+ nf._.msg('nf-summary-table.UnAvailable') + ')').addClass('unset');
                 }
             }
 

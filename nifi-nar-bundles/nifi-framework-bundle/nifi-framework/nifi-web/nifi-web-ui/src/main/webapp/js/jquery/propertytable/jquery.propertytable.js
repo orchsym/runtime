@@ -560,7 +560,7 @@
             var options = [];
             if (propertyDescriptor.required === false) {
                 options.push({
-                    text: 'No value',
+                    text: nf._.msg('jquery-propertytable.NoValueSet'),
                     value: null,
                     optionClass: 'unset'
                 });
@@ -1264,7 +1264,7 @@
             {
                 id: 'property',
                 field: 'displayName',
-                name: 'Property',
+                name: nf._.msg('jquery-propertytable.Property'),
                 sortable: false,
                 resizable: true,
                 rerenderOnResize: true,
@@ -1273,7 +1273,7 @@
             {
                 id: 'value',
                 field: 'value',
-                name: 'Value',
+                name: nf._.msg('jquery-propertytable.Value'),
                 sortable: false,
                 resizable: true,
                 cssClass: 'pointer',
@@ -1672,7 +1672,7 @@
 
                     // build the component
                     var header = $('<div class="properties-header"></div>').appendTo(propertyTableContainer);
-                    $('<div class="required-property-note">' + nf._.msg('jquery-propertytable.RequiredField') + '</div>').appendTo(header);
+                    // $('<div class="required-property-note">' + nf._.msg('jquery-propertytable.RequiredField') + '</div>').appendTo(header);
 
                     // build the table
                     var table = $('<div class="property-table"></div>').appendTo(propertyTableContainer);

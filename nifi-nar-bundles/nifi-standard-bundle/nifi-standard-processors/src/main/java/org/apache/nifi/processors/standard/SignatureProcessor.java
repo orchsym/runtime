@@ -188,7 +188,7 @@ public class SignatureProcessor extends AbstractProcessor {
             .build();
 
     public static final PropertyDescriptor SECRET = new PropertyDescriptor.Builder()//
-            .name("Private Key/SecretKey")//
+            .name("Private Key")//
             .description("Specifies the private key or secret key(for HMAC) for pkcs8 format. Except the MDx, SHA1 and SHA-XXX, others need this one.")//
             .required(false)//
             .defaultValue("")//

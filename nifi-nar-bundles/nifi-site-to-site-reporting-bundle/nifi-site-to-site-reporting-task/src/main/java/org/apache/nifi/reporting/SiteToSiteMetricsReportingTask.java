@@ -74,7 +74,7 @@ public class SiteToSiteMetricsReportingTask extends AbstractSiteToSiteReportingT
             .description("The Application ID to be included in the metrics")
             .required(true)
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
-            .defaultValue("nifi")
+            .defaultValue("runtime")
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
 

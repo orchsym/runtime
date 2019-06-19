@@ -147,8 +147,7 @@ public abstract class ApplicationResource {
         return uri.toString();
     }
 
-    private URI buildResourceUri(final String... path) {
-        final UriBuilder uriBuilder = uriInfo.getBaseUriBuilder();
+    protected URI buildResourceUri(UriBuilder uriBuilder, final String... path) {
         uriBuilder.segment(path);
         URI uri = uriBuilder.build();
         try {
@@ -191,6 +190,11 @@ public abstract class ApplicationResource {
             throw new UriBuilderException(use);
         }
         return uri;
+    }
+
+    private URI buildResourceUri(final String... path) {
+        final UriBuilder uriBuilder = uriInfo.getBaseUriBuilder();
+        return buildResourceUri(uriBuilder, path);
     }
 
     /**

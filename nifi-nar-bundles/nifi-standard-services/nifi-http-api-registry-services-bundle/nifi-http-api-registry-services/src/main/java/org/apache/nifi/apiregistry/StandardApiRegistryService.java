@@ -76,6 +76,7 @@ import com.google.gson.reflect.TypeToken;
 @Marks(createdDate = "2018-04-23")
 @Tags({ "api registry" })
 @CapabilityDescription("This service is for api registry")
+@Deprecated
 public class StandardApiRegistryService extends AbstractControllerService implements ApiRegistryService {
 
     private static final String PROPERTIES_NIFI_WEB_HTTP_HOST = "nifi.web.http.host";

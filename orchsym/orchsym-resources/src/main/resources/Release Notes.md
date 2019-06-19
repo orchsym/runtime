@@ -1,4 +1,34 @@
 ----------------------------
+# Version 2.0_06000
+
+版本：1.7.1-2.0_06000
+
+发布时间：2019-06-19
+
+组件总数：303
+
+## 新功能
+- [ORCHSYM-4078] - 集成平台前端改版
+- [ORCHSYM-4157] - 支持集群模式下登录token共享
+- [ORCHSYM-4273] - 适配管理平台支持多集成平台管理
+
+## 改进
+- [ORCHSYM-4365] - 库日志支持详细错误堆栈
+- [ORCHSYM-4408] - 修改PutDatabaseRecord字段转换默认值
+- [ORCHSYM-4670] - 增强SignatureProcessor组件支持大文件
+- [ORCHSYM-4391] - 完成全部组件或控制器翻译
+
+## 缺陷 
+- [ORCHSYM-4412] - 组件分类不正确
+- [ORCHSYM-4108] - 数据朔源功能失效
+- [ORCHSYM-4375] - 单一nar包无法加载导致无法启动
+- [ORCHSYM-4390] - HandleHttpRequest 请求超时
+- [ORCHSYM-4407] - HandlerHttpRequest 基本认证校验异常
+- [ORCHSYM-4447] - flowfile更新失败
+- [ORCHSYM-4638] - HandleSOAPHTTPRequest组件启动失败
+
+
+----------------------------
 # Version 2.0_05000
 
 版本：1.7.1-2.0_05000
