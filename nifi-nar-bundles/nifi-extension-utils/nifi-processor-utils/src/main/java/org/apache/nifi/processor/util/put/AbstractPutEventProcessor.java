@@ -244,10 +244,11 @@ public abstract class AbstractPutEventProcessor extends AbstractSessionFactoryPr
      * Sub-classes create a ChannelSender given a context.
      *
      * @param context the current context
+     * @param flowFile 
      * @return an implementation of ChannelSender
      * @throws IOException if an error occurs creating the ChannelSender
      */
-    protected abstract ChannelSender createSender(final ProcessContext context) throws IOException;
+    protected abstract ChannelSender createSender(final ProcessContext context, final FlowFile flowFile) throws IOException;
 
     /**
      * Close any senders that haven't been active with in the given threshold
@@ -342,7 +343,7 @@ public abstract class AbstractPutEventProcessor extends AbstractSessionFactoryPr
         if (sender == null) {
             try {
                 getLogger().debug("No available connections, creating a new one...");
-                sender = createSender(context);
+                sender = createSender(context, flowFile);
             } catch (IOException e) {
                 getLogger().error("No available connections, and unable to create a new one, transferring {} to failure",
                         new Object[]{flowFile}, e);

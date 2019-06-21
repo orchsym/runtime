@@ -168,14 +168,15 @@ public class PutTCP extends AbstractPutEventProcessor {
      *
      * @param context
      *            - the current process context.
-     *
+     * @param flowFile
+     *            - the FlowFile being processed in this session.
      * @return ChannelSender object.
      */
     @Override
-    protected ChannelSender createSender(final ProcessContext context) throws IOException {
+    protected ChannelSender createSender(final ProcessContext context, final FlowFile flowfile) throws IOException {
         final String protocol = TCP_VALUE.getValue();
-        final String hostname = context.getProperty(HOSTNAME).evaluateAttributeExpressions().getValue();
-        final int port = context.getProperty(PORT).evaluateAttributeExpressions().asInteger();
+        final String hostname = context.getProperty(HOSTNAME).evaluateAttributeExpressions(flowfile).getValue();
+        final int port = context.getProperty(PORT).evaluateAttributeExpressions(flowfile).asInteger();
         final int timeout = context.getProperty(TIMEOUT).asTimePeriod(TimeUnit.MILLISECONDS).intValue();
         final int bufferSize = context.getProperty(MAX_SOCKET_SEND_BUFFER_SIZE).asDataSize(DataUnit.B).intValue();
         final SSLContextService sslContextService = (SSLContextService) context.getProperty(SSL_CONTEXT_SERVICE).asControllerService();
