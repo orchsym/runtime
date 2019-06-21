@@ -110,9 +110,9 @@ public class PutSplunk extends AbstractPutEventProcessor {
     }
 
     @Override
-    protected ChannelSender createSender(ProcessContext context) throws IOException {
-        final int port = context.getProperty(PORT).evaluateAttributeExpressions().asInteger();
-        final String host = context.getProperty(HOSTNAME).evaluateAttributeExpressions().getValue();
+    protected ChannelSender createSender(ProcessContext context, final FlowFile flowfile) throws IOException {
+        final int port = context.getProperty(PORT).evaluateAttributeExpressions(flowfile).asInteger();
+        final String host = context.getProperty(HOSTNAME).evaluateAttributeExpressions(flowfile).getValue();
         final String protocol = context.getProperty(PROTOCOL).getValue();
         final int timeout = context.getProperty(TIMEOUT).asTimePeriod(TimeUnit.MILLISECONDS).intValue();
         final int maxSendBuffer = context.getProperty(MAX_SOCKET_SEND_BUFFER_SIZE).asDataSize(DataUnit.B).intValue();
