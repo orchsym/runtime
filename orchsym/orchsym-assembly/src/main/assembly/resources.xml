@@ -53,4 +53,21 @@
 			</unpackOptions>
 		</dependencySet>
 	</dependencySets>
+
+	<files><!-- copied from /nifi-assembly/src/main/assembly/common.xml -->
+		<file>
+			<source>../../nifi-assembly/LICENSE</source>
+			<outputDirectory>./</outputDirectory>
+			<destName>LICENSE</destName>
+			<fileMode>0644</fileMode>
+			<filtered>true</filtered>
+		</file>
+		<file>
+			<source>../../nifi-assembly/NOTICE</source>
+			<outputDirectory>./</outputDirectory>
+			<destName>NOTICE</destName>
+			<fileMode>0644</fileMode>
+			<filtered>true</filtered>
+		</file>
+	</files>
 </component>
