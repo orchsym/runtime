@@ -342,38 +342,38 @@ public final class NarUnpacker {
         extensionMapping.merge(jarExtensionMapping);
 
         // look for all documentation related to each component
-        try (final JarFile jarFile = new JarFile(jar)) {
-            for (final String componentName : jarExtensionMapping.getAllExtensionNames().keySet()) {
-                final String entryName = "docs/" + componentName;
-
-                // go through each entry in this jar
-                for (final Enumeration<JarEntry> jarEnumeration = jarFile.entries(); jarEnumeration.hasMoreElements();) {
-                    final JarEntry jarEntry = jarEnumeration.nextElement();
-
-                    // if this entry is documentation for this component
-                    if (jarEntry.getName().startsWith(entryName)) {
-                        final String name = StringUtils.substringAfter(jarEntry.getName(), "docs/");
-                        final String path = coordinate.getGroup() + "/" + coordinate.getId() + "/" + coordinate.getVersion() + "/" + name;
-
-                        // if this is a directory create it
-                        if (jarEntry.isDirectory()) {
-                            final File componentDocsDirectory = new File(docsDirectory, path);
-
-                            // ensure the documentation directory can be created
-                            if (!componentDocsDirectory.exists() && !componentDocsDirectory.mkdirs()) {
-                                logger.warn("Unable to create docs directory " + componentDocsDirectory.getAbsolutePath());
-                                break;
-                            }
-                        } else {
-                            // if this is a file, write to it
-                            final File componentDoc = new File(docsDirectory, path);
-                            makeFile(jarFile.getInputStream(jarEntry), componentDoc);
-                        }
-                    }
-                }
-
-            }
-        }
+        // try (final JarFile jarFile = new JarFile(jar)) {
+        // for (final String componentName : jarExtensionMapping.getAllExtensionNames().keySet()) {
+        // final String entryName = "docs/" + componentName;
+        //
+        // // go through each entry in this jar
+        // for (final Enumeration<JarEntry> jarEnumeration = jarFile.entries(); jarEnumeration.hasMoreElements();) {
+        // final JarEntry jarEntry = jarEnumeration.nextElement();
+        //
+        // // if this entry is documentation for this component
+        // if (jarEntry.getName().startsWith(entryName)) {
+        // final String name = StringUtils.substringAfter(jarEntry.getName(), "docs/");
+        // final String path = coordinate.getGroup() + "/" + coordinate.getId() + "/" + coordinate.getVersion() + "/" + name;
+        //
+        // // if this is a directory create it
+        // if (jarEntry.isDirectory()) {
+        // final File componentDocsDirectory = new File(docsDirectory, path);
+        //
+        // // ensure the documentation directory can be created
+        // if (!componentDocsDirectory.exists() && !componentDocsDirectory.mkdirs()) {
+        // logger.warn("Unable to create docs directory " + componentDocsDirectory.getAbsolutePath());
+        // break;
+        // }
+        // } else {
+        // // if this is a file, write to it
+        // final File componentDoc = new File(docsDirectory, path);
+        // makeFile(jarFile.getInputStream(jarEntry), componentDoc);
+        // }
+        // }
+        // }
+        //
+        // }
+        // }
     }
 
     /*

@@ -567,16 +567,19 @@ public class JettyServer implements NiFiServer {
 
             ServletHolder docs = new ServletHolder("docs", DefaultServlet.class);
             docs.setInitParameter("resourceBase", docsDir.getPath());
+            docs.setInitParameter("dirAllowed", "false");
 
             ServletHolder components = new ServletHolder("components", DefaultServlet.class);
             components.setInitParameter("resourceBase", workingDocsDirectory.getPath());
+            components.setInitParameter("dirAllowed", "false");
 
             ServletHolder restApi = new ServletHolder("rest-api", DefaultServlet.class);
             restApi.setInitParameter("resourceBase", webApiDocsDir.getPath());
-
-            docsContext.addServlet(docs, "/html/*");
-            docsContext.addServlet(components, "/components/*");
-            docsContext.addServlet(restApi, "/rest-api/*");
+            restApi.setInitParameter("dirAllowed", "false");
+            
+            docsContext.addServlet(docs, "/html/*"); //keep it for EL
+            // docsContext.addServlet(components, "/components/*");
+            // docsContext.addServlet(restApi, "/rest-api/*");
 
             docsContext.addServlet(defaultHolder, "/");
 
@@ -877,7 +880,7 @@ public class JettyServer implements NiFiServer {
             ExtensionManager.logClassLoaderMapping();
             MessagesProvider.discoverExtensions(props.getLocale(), bundles);
 
-            DocGenerator.generate(props, extensionMapping);
+            // DocGenerator.generate(props, extensionMapping); //avoid generate the docs
 
             beforeServerStart();
             // start the server

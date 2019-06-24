@@ -17,8 +17,9 @@
     <display-name>nifi-docs</display-name>
     <error-page>
         <error-code>404</error-code>
-        <location>/WEB-INF/jsp/no-documentation-found.jsp</location>
+        <location>/WEB-INF/jsp/404.jsp</location>
     </error-page>
+    <!--  avoid the default docs page
     <servlet>
         <servlet-name>documentation-controller</servlet-name>
         <servlet-class>org.apache.nifi.web.docs.DocumentationController</servlet-class>
@@ -30,4 +31,5 @@
     <welcome-file-list>
         <welcome-file>documentation</welcome-file>
     </welcome-file-list>
+    -->
 </web-app>
