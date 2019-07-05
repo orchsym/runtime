@@ -1112,7 +1112,8 @@ public final class InvokeHTTP extends AbstractProcessor {
                 requestBuilder = requestBuilder.head();
                 break;
             case "DELETE":
-                requestBuilder = requestBuilder.delete();
+                requestBody = getRequestBodyToSend(session, context, requestFlowFile);
+                requestBuilder = requestBuilder.delete(requestBody);
                 break;
             default:
                 requestBuilder = requestBuilder.method(method, null);
