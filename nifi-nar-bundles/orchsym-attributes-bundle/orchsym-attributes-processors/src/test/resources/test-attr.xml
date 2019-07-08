@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Data xmlns="https://www.baishan.com">
+	<name>数聚蜂巢</name>
+	<age>3</age>
+	<site>https://www.baishan.com/tech/orchsym</site>
+	<details>
+		<address>
+			<city>北京</city>
+			<country>中国</country>
+			<street>望京</street>
+			<build floor="5" number="201" />
+		</address>
+		<post>100000</post>
+		<tel>010-12345678</tel>
+		<tags index="1" name="data">Data</tags>
+		<tags index="2" name="integration">Integration</tags>
+		<tags index="3" name="api">API</tags>
+	</details>
+	<links index="1">
+		<name flag="x">白山云</name>
+		<url>http://www.baishan.com</url>
+	</links>
+	<links index="2">
+		<name flag="y">白山云</name>
+		<url>http://www.baishancloud.com</url>
+	</links>
+	<links index="3">
+		<name flag="z">Orchsym</name>
+		<url>https://www.baishan.com/tech/orchsym/</url>
+	</links>
+</Data>

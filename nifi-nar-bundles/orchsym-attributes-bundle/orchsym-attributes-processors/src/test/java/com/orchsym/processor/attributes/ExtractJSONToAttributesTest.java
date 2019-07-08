@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.orchsym.processor.attributes;
 
 import static org.hamcrest.Matchers.*;
@@ -106,8 +122,46 @@ public class ExtractJSONToAttributesTest {
 
         assertThat(attributes, hasEntry("test.id.5", "123"));
         assertThat(attributes, hasEntry("test.name.5", "test"));
-        assertThat(attributes, hasEntry("test.addr.city.5", "BJ"));
-        assertThat(attributes, hasEntry("test.addr.street.5", "WJ"));
+        assertThat(attributes, hasEntry("test.addr.5.city", "BJ"));
+        assertThat(attributes, hasEntry("test.addr.5.street", "WJ"));
+
+        assertThat(attributes.keySet(), hasSize(8));
+    }
+
+    @Test
+    public void test_processAttributes_object_uncontain_prop() {
+        String json = "{"//
+                + "\"id\":123,"//
+                + "\"name\":\"test\","//
+                + "\"addr\":"//
+                + " {"//
+                + "  \"city\":\"BJ\","//
+                + "  \"street\":\"WJ\""//
+                + " }" //
+                + "}";
+
+        final DocumentContext jsonContext = createJsonContext(json);
+
+        Map<String, JsonPath> jsonPaths = new HashMap<>();
+        jsonPaths.put("test.id", JsonPath.compile("$.id"));
+        jsonPaths.put("test.name", JsonPath.compile("$.name"));
+        jsonPaths.put("test.addr", JsonPath.compile("$.addr"));
+
+        processor.containPropName = false;
+
+        Map<String, String> attributes = new HashMap<>();
+        processor.processAttributes(attributes, jsonContext, jsonPaths, -1, null, null);
+        processor.processAttributes(attributes, jsonContext, jsonPaths, 5, null, null);
+
+        assertThat(attributes, hasEntry("test.id", "123"));
+        assertThat(attributes, hasEntry("test.name", "test"));
+        assertThat(attributes, hasEntry("city", "BJ"));
+        assertThat(attributes, hasEntry("street", "WJ"));
+
+        assertThat(attributes, hasEntry("test.id.5", "123"));
+        assertThat(attributes, hasEntry("test.name.5", "test"));
+        assertThat(attributes, hasEntry("5.city", "BJ"));
+        assertThat(attributes, hasEntry("5.street", "WJ"));
 
         assertThat(attributes.keySet(), hasSize(8));
     }
@@ -148,7 +202,6 @@ public class ExtractJSONToAttributesTest {
         if (arr) {
             assertThat(attributes, hasEntry("test.list.0", "BJ"));
             assertThat(attributes, hasEntry("test.list.1", "WJ"));
-
             assertThat(attributes, hasEntry("test.list.5.0", "BJ"));
             assertThat(attributes, hasEntry("test.list.5.1", "WJ"));
 
@@ -208,8 +261,8 @@ public class ExtractJSONToAttributesTest {
 
         assertThat(attributes, hasEntry("test.id.5", "123"));
         assertThat(attributes, hasEntry("test.name.5", "test"));
-        assertThat(attributes, hasEntry("test.addr.city.5", "BJ"));
-        assertThat(attributes, hasEntry("test.addr.street.5", "WJ"));
+        assertThat(attributes, hasEntry("test.addr.5.city", "BJ"));
+        assertThat(attributes, hasEntry("test.addr.5.street", "WJ"));
 
         // not array
         assertThat(attributes, hasEntry("a.id", "101"));
@@ -224,15 +277,15 @@ public class ExtractJSONToAttributesTest {
 
         if (children) {
             assertThat(attributes, hasEntry("test.addr.additions.num", "3"));
-            assertThat(attributes, hasEntry("test.addr.additions.5.num", "3"));
+            assertThat(attributes, hasEntry("test.addr.5.additions.num", "3"));
         }
 
         if (array && children) {
             assertThat(attributes, hasEntry("test.addr.additions.ids.0", "101"));
             assertThat(attributes, hasEntry("test.addr.additions.ids.1", "203"));
 
-            assertThat(attributes, hasEntry("test.addr.additions.5.ids.0", "101"));
-            assertThat(attributes, hasEntry("test.addr.additions.5.ids.1", "203"));
+            assertThat(attributes, hasEntry("test.addr.5.additions.ids.0", "101"));
+            assertThat(attributes, hasEntry("test.addr.5.additions.ids.1", "203"));
 
             assertThat(attributes.keySet(), hasSize(20));
         } else if (array) {
@@ -285,11 +338,11 @@ public class ExtractJSONToAttributesTest {
         assertThat(attributes, hasEntry("test.addr.city", "BJ"));
         assertThat(attributes, hasEntry("test.addr.street", "WJ"));
 
-        assertThat(attributes, hasEntry("test.addr.city.5", "BJ"));
-        assertThat(attributes, hasEntry("test.addr.street.5", "WJ"));
+        assertThat(attributes, hasEntry("test.addr.5.city", "BJ"));
+        assertThat(attributes, hasEntry("test.addr.5.street", "WJ"));
 
         assertThat(attributes, hasEntry("test.addr.additions.num", "3"));
-        assertThat(attributes, hasEntry("test.addr.additions.5.num", "3"));
+        assertThat(attributes, hasEntry("test.addr.5.additions.num", "3"));
 
         assertThat(attributes.keySet(), hasSize(6));
     }
@@ -348,8 +401,8 @@ public class ExtractJSONToAttributesTest {
         assertThat(attributes, hasEntry("test.addr.additions.ids.0", "101"));
         assertThat(attributes, hasEntry("test.addr.additions.ids.1", "203"));
 
-        assertThat(attributes, hasEntry("test.addr.additions.5.ids.0", "101"));
-        assertThat(attributes, hasEntry("test.addr.additions.5.ids.1", "203"));
+        assertThat(attributes, hasEntry("test.addr.5.additions.ids.0", "101"));
+        assertThat(attributes, hasEntry("test.addr.5.additions.ids.1", "203"));
 
         assertThat(attributes.keySet(), hasSize(14));
     }
@@ -388,18 +441,18 @@ public class ExtractJSONToAttributesTest {
         assertThat(attributes, hasEntry("test.addr.city", "BJ"));
         assertThat(attributes, hasEntry("test.addr.street", "WJ"));
 
-        assertThat(attributes, hasEntry("test.id.5", "123"));
-        assertThat(attributes, hasEntry("test.name.5", "test"));
-        assertThat(attributes, hasEntry("test.addr.5.city", "BJ"));
-        assertThat(attributes, hasEntry("test.addr.5.street", "WJ"));
+        assertThat(attributes, hasEntry("test.5.id", "123"));
+        assertThat(attributes, hasEntry("test.5.name", "test"));
+        assertThat(attributes, hasEntry("test.5.addr.city", "BJ"));
+        assertThat(attributes, hasEntry("test.5.addr.street", "WJ"));
 
         assertThat(attributes, hasEntry("test.addr.additions.num", "3"));
-        assertThat(attributes, hasEntry("test.addr.5.additions.num", "3"));
+        assertThat(attributes, hasEntry("test.5.addr.additions.num", "3"));
 
         assertThat(attributes, hasEntry("test.addr.additions.ids.0", "101"));
         assertThat(attributes, hasEntry("test.addr.additions.ids.1", "203"));
-        assertThat(attributes, hasEntry("test.addr.5.additions.ids.0", "101"));
-        assertThat(attributes, hasEntry("test.addr.5.additions.ids.1", "203"));
+        assertThat(attributes, hasEntry("test.5.addr.additions.ids.0", "101"));
+        assertThat(attributes, hasEntry("test.5.addr.additions.ids.1", "203"));
 
         assertThat(attributes.keySet(), hasSize(14));
     }
@@ -440,11 +493,11 @@ public class ExtractJSONToAttributesTest {
 
         assertThat(attributes, hasEntry("test.addr.city", "BJ"));
         assertThat(attributes, hasEntry("test.addr.street", "WJ"));
-        assertThat(attributes, hasEntry("test.addr.5.city", "BJ"));
-        assertThat(attributes, hasEntry("test.addr.5.street", "WJ"));
+        assertThat(attributes, hasEntry("test.5.addr.city", "BJ"));
+        assertThat(attributes, hasEntry("test.5.addr.street", "WJ"));
 
         assertThat(attributes, hasEntry("test.addr.additions.num", "3"));
-        assertThat(attributes, hasEntry("test.addr.5.additions.num", "3"));
+        assertThat(attributes, hasEntry("test.5.addr.additions.num", "3"));
 
         assertThat(attributes.keySet(), hasSize(6));
     }
@@ -484,13 +537,13 @@ public class ExtractJSONToAttributesTest {
 
         assertThat(attributes, hasEntry("test.id", "123"));
         assertThat(attributes, hasEntry("test.name", "test"));
-        assertThat(attributes, hasEntry("test.id.5", "123"));
-        assertThat(attributes, hasEntry("test.name.5", "test"));
+        assertThat(attributes, hasEntry("test.5.id", "123"));
+        assertThat(attributes, hasEntry("test.5.name", "test"));
 
         assertThat(attributes, hasEntry("test.addr.additions.ids.0", "101"));
         assertThat(attributes, hasEntry("test.addr.additions.ids.1", "203"));
-        assertThat(attributes, hasEntry("test.addr.5.additions.ids.0", "101"));
-        assertThat(attributes, hasEntry("test.addr.5.additions.ids.1", "203"));
+        assertThat(attributes, hasEntry("test.5.addr.additions.ids.0", "101"));
+        assertThat(attributes, hasEntry("test.5.addr.additions.ids.1", "203"));
 
         assertThat(attributes.keySet(), hasSize(8));
     }

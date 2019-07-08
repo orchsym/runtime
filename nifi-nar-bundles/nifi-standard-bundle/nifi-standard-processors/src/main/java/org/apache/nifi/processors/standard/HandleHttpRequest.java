@@ -682,7 +682,7 @@ public class HandleHttpRequest extends AbstractProcessor {
                 getLogger().debug("Failed to shutdown following a failed initialization: " + shutdownException);
             }
 
-            throw new ProcessException("Failed to initialize the server", e);
+            throw new ProcessException("Failed to initialize the server. Maybe the listen port is already used, try to change it", e);
         }
 
         HttpRequestContainer container;

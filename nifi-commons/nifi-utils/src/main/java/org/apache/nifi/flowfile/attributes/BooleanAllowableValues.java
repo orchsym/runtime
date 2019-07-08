@@ -42,6 +42,10 @@ public enum BooleanAllowableValues {
         return this.flag.toString();
     }
 
+    public boolean bool() {
+        return flag;
+    }
+
     public static Validator validator() {
         return StandardValidators.BOOLEAN_VALIDATOR;
     }

@@ -1,9 +1,26 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.orchsym.processor.attributes;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,6 +57,11 @@ import org.apache.nifi.processor.io.InputStreamCallback;
 public abstract class AbstractExtractToAttributesProcessor extends AbstractProcessor {
     protected static final String FIELD_SEP = ",";
 
+    protected static final String ATTR_REASON = "reason";
+
+    protected static final BooleanAllowableValues DEFAULT_CASE_SENSITIVE = BooleanAllowableValues.TRUE;
+    protected static final BooleanAllowableValues DEFAULT_CONTAIN_PROP_NAME = BooleanAllowableValues.TRUE;
+
     protected static final PropertyDescriptor RECURSE_CHILDREN = new PropertyDescriptor.Builder()//
             .name("recurse-children")//
             .displayName("Recurse Children")//
@@ -64,7 +86,8 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
     protected static final PropertyDescriptor INCLUDE_FIELDS = new PropertyDescriptor.Builder()//
             .name("include-fields")//
             .displayName("Include Fields")//
-            .description("Include the record fields with seperating via comma '" + FIELD_SEP + "', If don't set this includes, also no excludes, means include all. and support Regex and expression language with flow attributes.")//
+            .description("Include the record fields with seperating via comma '" + FIELD_SEP
+                    + "', If don't set this includes, also no excludes, means include all. and support Regex and expression language with flow attributes.")//
             .required(false)//
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES) //
             .addValidator(Validator.VALID).build();
@@ -83,7 +106,17 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
             .description("Indicates whether to match the fields for Case-sensitive or Case-insensitive.")//
             .required(false)//
             .allowableValues(BooleanAllowableValues.list())//
-            .defaultValue(BooleanAllowableValues.TRUE.value())//
+            .defaultValue(DEFAULT_CASE_SENSITIVE.value())//
+            .addValidator(BooleanAllowableValues.validator())//
+            .build();
+
+    protected static final PropertyDescriptor CONTAIN_DYNAMIC_PROPERTY_NAME = new PropertyDescriptor.Builder()//
+            .name("contain-dynamic-property-name")//
+            .displayName("Contain Dynamic Property Name")//
+            .description("Indicates whether to contain the name of dynamic property for attributes to output. if the value of property is scalar, will always add the property name")//
+            .required(false)//
+            .allowableValues(BooleanAllowableValues.list())//
+            .defaultValue(DEFAULT_CONTAIN_PROP_NAME.value())//
             .addValidator(BooleanAllowableValues.validator())//
             .build();
 
@@ -102,9 +135,8 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
 
     protected volatile boolean recurseChildren;
     protected volatile boolean allowArray;
-    protected volatile boolean fieldsCaseSensitive;
-
-    protected volatile Map<String, String> attrPaths;
+    protected volatile boolean fieldsCaseSensitive = DEFAULT_CASE_SENSITIVE.bool();
+    protected volatile boolean containPropName = DEFAULT_CONTAIN_PROP_NAME.bool();
 
     @Override
     protected void init(final ProcessorInitializationContext context) {
@@ -114,6 +146,7 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
         properties.add(INCLUDE_FIELDS);
         properties.add(EXCLUDE_FIELDS);
         properties.add(FIELDS_CASE_SENSITIVE);
+        properties.add(CONTAIN_DYNAMIC_PROPERTY_NAME);
         this.properties = Collections.unmodifiableList(properties);
 
         final Set<Relationship> relationships = new HashSet<>();
@@ -153,22 +186,19 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
         allowArray = getBoolean(context, ALLOW_ARRAY);
         recurseChildren = getBoolean(context, RECURSE_CHILDREN);
         fieldsCaseSensitive = getBoolean(context, FIELDS_CASE_SENSITIVE);
+        containPropName = getBoolean(context, CONTAIN_DYNAMIC_PROPERTY_NAME);
 
-        attrPaths = new HashMap<>();
+    }
 
-        for (Entry<PropertyDescriptor, String> entry : context.getProperties().entrySet()) {
-            final PropertyDescriptor prop = entry.getKey();
-            if (prop.isDynamic()) {
-                attrPaths.put(prop.getName(), entry.getValue());
-            }
-        }
+    protected String getDefaultAttributesPath() {
+        return null;
     }
 
     protected boolean getBoolean(final ProcessContext context, final PropertyDescriptor descriptor) {
         final PropertyValue property = context.getProperty(descriptor);
         if (property != null) { // existed
             final Boolean allowArr = property.asBoolean();
-            if (allowArr != null && allowArr) { // has value
+            if (allowArr != null) { // has value
                 return allowArr.booleanValue();
             }
         }
@@ -176,11 +206,11 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
     }
 
     protected List<Pattern> getPatternList(final ProcessContext context, final FlowFile flowFile, final PropertyDescriptor descriptor) {
+        List<Pattern> list = new ArrayList<>();
         final PropertyValue property = context.getProperty(descriptor);
         if (property != null) { // existed
             final String value = property.evaluateAttributeExpressions(flowFile).getValue();
             if (StringUtils.isNotBlank(value)) {
-                List<Pattern> list = new ArrayList<>();
                 for (String one : value.split(FIELD_SEP)) {
                     if (StringUtils.isNotBlank(one)) {
                         final Pattern pattern = Pattern.compile(one.trim(), fieldsCaseSensitive ? 0 : Pattern.CASE_INSENSITIVE);
@@ -189,7 +219,7 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
                 }
             }
         }
-        return Collections.emptyList();
+        return list;
     }
 
     @Override
@@ -199,7 +229,21 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
             return;
         }
 
-        if (attrPaths == null || attrPaths.isEmpty()) {
+        final Map<String, String> attrPathSettings = new HashMap<>();
+
+        for (Entry<PropertyDescriptor, String> entry : context.getProperties().entrySet()) {
+            final PropertyDescriptor prop = entry.getKey();
+            if (prop.isDynamic()) {
+                attrPathSettings.put(prop.getName(), entry.getValue());
+            }
+        }
+
+        final String defaultAttributesPath = getDefaultAttributesPath();
+        if (attrPathSettings.isEmpty() && StringUtils.isNotBlank(defaultAttributesPath)) { // if no path to set, will use default
+            attrPathSettings.put("ALL", defaultAttributesPath);
+        }
+
+        if (attrPathSettings == null || attrPathSettings.isEmpty()) {
             getLogger().error("Must set the attributes paths for flowfile {}", new Object[] { flowFile });
             session.transfer(flowFile, REL_FAILURE);
             return;
@@ -209,32 +253,39 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
         final List<Pattern> excludeFields = getPatternList(context, flowFile, EXCLUDE_FIELDS);
 
         final Map<String, String> extractedAttributes = new HashMap<>();
-        retrieveAttributes(context, session, flowFile, extractedAttributes, includeFields, excludeFields);
+        try {
+            retrieveAttributes(context, session, flowFile, extractedAttributes, attrPathSettings, includeFields, excludeFields);
 
-        if (extractedAttributes != null && !extractedAttributes.isEmpty()) {
-            flowFile = session.putAllAttributes(flowFile, extractedAttributes);
+            if (!extractedAttributes.isEmpty()) {
+                flowFile = session.putAllAttributes(flowFile, extractedAttributes);
+
+                session.getProvenanceReporter().modifyAttributes(flowFile);
+            }
+
+            session.transfer(flowFile, REL_SUCCESS);
+        } catch (Exception e) {
+            // have logged, so just transfer to failure
+            flowFile = session.putAttribute(flowFile, ATTR_REASON, e.getMessage());
+            session.transfer(flowFile, REL_FAILURE);
         }
-
-        session.getProvenanceReporter().modifyAttributes(flowFile);
-        session.transfer(flowFile, REL_SUCCESS);
     }
 
-    protected void retrieveAttributes(ProcessContext context, ProcessSession session, FlowFile flowFile, final Map<String, String> attributesFromRecords, final List<Pattern> includeFields,
-            final List<Pattern> excludeFields) {
+    protected void retrieveAttributes(final ProcessContext context, final ProcessSession session, final FlowFile flowFile, final Map<String, String> extractedAttributes,
+            final Map<String, String> attrPathSettings, final List<Pattern> includeFields, final List<Pattern> excludeFields) {
         final ConcurrentHashMap<String, String> attributes = new ConcurrentHashMap<>();
         session.read(flowFile, new InputStreamCallback() {
 
             @Override
             public void process(InputStream rawIn) throws IOException {
-                retrieveAttributes(rawIn, attributes, includeFields, excludeFields);
+                retrieveAttributes(context, session, flowFile, rawIn, attributes, attrPathSettings, includeFields, excludeFields);
             }
 
         });
-
-        attributesFromRecords.putAll(attributes);
+        extractedAttributes.putAll(attributes);
     }
 
-    protected void retrieveAttributes(InputStream rawIn, Map<String, String> attributesFromRecords, final List<Pattern> includeFields, final List<Pattern> excludeFields) throws IOException {
+    protected void retrieveAttributes(ProcessContext context, ProcessSession session, FlowFile flowFile, InputStream rawIn, Map<String, String> extractedAttributes,
+            final Map<String, String> attrPathSettings, final List<Pattern> includeFields, final List<Pattern> excludeFields) throws IOException {
         //
     }
 
@@ -280,7 +331,10 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
 
     protected String getAttributeName(String attrPrefix, String fieldName, int index) {
         StringBuffer name = new StringBuffer();
-        name.append(attrPrefix.trim());
+
+        if (StringUtils.isNoneBlank(attrPrefix)) {
+            name.append(attrPrefix.trim());
+        }
 
         if (fieldName != null) {
             checkDot(name);
@@ -294,7 +348,7 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
     }
 
     private void checkDot(StringBuffer name) {
-        if (name.charAt(name.length() - 1) != '.') {
+        if (name.length() > 0 && name.charAt(name.length() - 1) != '.') {
             name.append('.');
         }
     }
@@ -360,7 +414,10 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
         return !(value instanceof Map) && !(value instanceof List) && !(value instanceof Object[]);
     }
 
-    protected boolean isScalarList(final Object value) {
+    protected boolean isScalarList(Object value) {
+        if (value instanceof Object[]) {
+            value = Arrays.asList((Object[]) value);
+        }
         if (!(value instanceof List)) {
             return false;
         }
@@ -376,5 +433,59 @@ public abstract class AbstractExtractToAttributesProcessor extends AbstractProce
             }
         }
         return allScalar;
+    }
+
+    protected void setResults(Map<String, String> attributes, final String attrName, int index, final List<Pattern> includeFields, final List<Pattern> excludeFields,
+            final Map<String, List<Object>> results, final Map<String, List<Object>> scalarResults, final Map<String, List<Object>> scalarArrResults, final boolean filtered) {
+
+        if (results.isEmpty() && scalarResults.isEmpty() && scalarArrResults.isEmpty() && !filtered) {
+            String prefix = getAttributeName(attrName, null, index); // force setting the name
+            // if not found, set empty
+            setAttributes(attributes, prefix, "", -1, includeFields, excludeFields);
+            return;
+        }
+
+        String prefix = getAttributeName(attrName, null, index);
+
+        //
+        if (scalarResults.size() == 1) {
+            // only one field, but maybe array
+            setAttributes(attributes, prefix, scalarResults.get(scalarResults.keySet().iterator().next()), -1, includeFields, excludeFields);
+        } else if (scalarResults.size() > 1) {
+            setAttributes(attributes, prefix, scalarResults, -1, includeFields, excludeFields);
+        }
+
+        //
+        if (!scalarArrResults.isEmpty()) {
+            for (Entry<String, List<Object>> e : scalarArrResults.entrySet()) {
+                final List<Object> list = e.getValue();
+                if (list.size() == 1) {
+                    setAttributes(attributes, prefix, list.get(0), -1, includeFields, excludeFields);
+                } else if (allowArray) {
+                    for (int i = 0; i < list.size(); i++) {
+                        setAttributes(attributes, prefix, list.get(i), i, includeFields, excludeFields);
+                    }
+                }
+            }
+        }
+
+        //
+        if (!results.isEmpty()) {
+            if (!containPropName) { // need ignore the field name
+                prefix = getAttributeName(null, null, index);
+            }
+
+            for (Entry<String, List<Object>> e : results.entrySet()) {
+                final List<Object> list = e.getValue();
+                if (list.size() == 1) {
+                    setAttributes(attributes, prefix, list.get(0), -1, includeFields, excludeFields);
+                } else {
+                    for (int i = 0; i < list.size(); i++) {
+                        setAttributes(attributes, prefix, list.get(i), i, includeFields, excludeFields);
+                    }
+                }
+            }
+        }
+
     }
 }

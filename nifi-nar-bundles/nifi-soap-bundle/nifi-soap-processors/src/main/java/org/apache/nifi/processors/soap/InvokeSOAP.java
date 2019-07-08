@@ -142,7 +142,6 @@ public class InvokeSOAP extends AbstractProcessor {
     protected static final PropertyDescriptor USER_NAME = new PropertyDescriptor
             .Builder()
             .name("User name")
-            .sensitive(true)
             .description("The username to use in the case of basic Auth")
             .required(false)
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)

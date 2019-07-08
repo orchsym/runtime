@@ -20,6 +20,7 @@ mvn package
 
 1. 如果打包时有JUnit单元测试不通过，导致打包失败，可添加参数跳过测试，但仍旧编译单元测试类`-DskipTests`。
 2. 如果是在Windows下，可能由于编码问题，导致前端js，css压缩出现问题，可添加编码参数`-Dfile.encoding=UTF-8`。
+3. 同样是在Windows下，如果使用的是PowerShell来打包，会出现“.encoding=UTF-8”不能识别错误，则需要加引号，比如加双引号：` -D"file.encoding=UTF-8"`。
 
 ## Headless打包
 

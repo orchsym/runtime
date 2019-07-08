@@ -1,8 +1,27 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.orchsym.processor.attributes;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -14,7 +33,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.nifi.annotation.behavior.DynamicProperty;
 import org.apache.nifi.annotation.behavior.InputRequirement;
+import org.apache.nifi.annotation.behavior.WritesAttribute;
+import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
@@ -23,6 +45,7 @@ import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.ValidationContext;
 import org.apache.nifi.components.ValidationResult;
 import org.apache.nifi.components.Validator;
+import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
@@ -43,7 +66,14 @@ import com.jayway.jsonpath.spi.json.JsonProvider;
 @InputRequirement(InputRequirement.Requirement.INPUT_REQUIRED)
 @Marks(categories = { "Convert & Control/Convert" }, createdDate = "2018-12-12")
 @Tags({ "Extract", "Attribute", "Record", "JSON" })
-@CapabilityDescription("Provide the abblity of extracting the attributes by JSON Path for JSON format contents from the incoming flowfile")
+@CapabilityDescription("Provide the abblity of extracting the attributes by JSON Path for JSON format contents from the incoming flowfile. If don't set the dynamic property to set with JSON path expression, will use the name 'ALL' with JSON Path expression '$' for all by default")
+@DynamicProperty(name = "JSON Path property", //
+        value = "The name of dynamic property with JSON Path expression", //
+        expressionLanguageScope = ExpressionLanguageScope.FLOWFILE_ATTRIBUTES, //
+        description = "set the dynamic property with JSON Path expression")
+@WritesAttributes({ //
+        @WritesAttribute(attribute = AbstractExtractToAttributesProcessor.ATTR_REASON, description = "The error message of extracting failure")//
+})
 public class ExtractJSONToAttributes extends AbstractExtractToAttributesProcessor {
     static final Configuration STRICT_PROVIDER_CONFIGURATION = Configuration.builder().jsonProvider(new JacksonJsonProvider()).build();
     static final JsonProvider JSON_PROVIDER = STRICT_PROVIDER_CONFIGURATION.jsonProvider();
@@ -88,6 +118,11 @@ public class ExtractJSONToAttributes extends AbstractExtractToAttributesProcesso
     }
 
     @Override
+    protected String getDefaultAttributesPath() {
+        return "$";
+    }
+
+    @Override
     public void onPropertyModified(PropertyDescriptor descriptor, String oldValue, String newValue) {
         super.onPropertyModified(descriptor, oldValue, newValue);
         if (descriptor.isDynamic()) {
@@ -110,8 +145,8 @@ public class ExtractJSONToAttributes extends AbstractExtractToAttributesProcesso
 
     @SuppressWarnings("rawtypes")
     @Override
-    protected void retrieveAttributes(ProcessContext context, ProcessSession session, FlowFile flowFile, final Map<String, String> attributesFromRecords, final List<Pattern> includeFields,
-            final List<Pattern> excludeFields) {
+    protected void retrieveAttributes(ProcessContext context, ProcessSession session, FlowFile flowFile, final Map<String, String> attributesFromRecords, final Map<String, String> attrPathSettings,
+            final List<Pattern> includeFields, final List<Pattern> excludeFields) {
         DocumentContext documentContext;
         try {
             final AtomicReference<DocumentContext> contextHolder = new AtomicReference<>(null);
@@ -128,17 +163,15 @@ public class ExtractJSONToAttributes extends AbstractExtractToAttributesProcesso
             documentContext = contextHolder.get();
         } catch (InvalidJsonException e) {
             getLogger().error("FlowFile {} did not have valid JSON content.", new Object[] { flowFile });
-            session.transfer(flowFile, REL_FAILURE);
-            return;
+            throw e;
         }
 
         Map<String, JsonPath> jsonPaths;
         try {
-            jsonPaths = attrPaths.keySet().stream().collect(Collectors.toMap(Function.identity(), n -> JsonPath.compile(attrPaths.get(n))));
+            jsonPaths = attrPathSettings.keySet().stream().collect(Collectors.toMap(Function.identity(), n -> JsonPath.compile(attrPathSettings.get(n))));
         } catch (Exception e) {
             getLogger().error("Invald JSON Path settings");
-            session.transfer(flowFile, REL_FAILURE);
-            return;
+            throw e;
         }
         final Object fullData = documentContext.json();
         if (fullData instanceof List) { // array
@@ -159,6 +192,7 @@ public class ExtractJSONToAttributes extends AbstractExtractToAttributesProcesso
         return JsonPath.using(STRICT_PROVIDER_CONFIGURATION).parse(object);
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     protected void processAttributes(Map<String, String> attributes, DocumentContext jsonContext, Map<String, JsonPath> jsonPaths, int index, final List<Pattern> includeFields,
             final List<Pattern> excludeFields) {
         if (jsonPaths == null || jsonPaths.isEmpty()) {
@@ -167,6 +201,12 @@ public class ExtractJSONToAttributes extends AbstractExtractToAttributesProcesso
         for (Entry<String, JsonPath> entry : jsonPaths.entrySet()) {
             final String jsonPathAttrKey = entry.getKey();
             final JsonPath jsonPath = entry.getValue();
+
+            final Map<String, List<Object>> results = new LinkedHashMap<>();
+            final Map<String, List<Object>> scalarResults = new LinkedHashMap<>();
+            final Map<String, List<Object>> scalarArrResults = new LinkedHashMap<>();
+            boolean filtered = false;
+
             try {
                 final Object value = jsonContext.read(jsonPath);
 
@@ -182,14 +222,36 @@ public class ExtractJSONToAttributes extends AbstractExtractToAttributesProcesso
 
                 // if value is simple or if the array is simple will filter the parent name
                 if (name != null && (isScalar(value) || isScalarList(value)) && ignoreField(name, includeFields, excludeFields)) {
+                    filtered = true;
                     continue;
                 }
 
-                setAttributes(attributes, jsonPathAttrKey, value, index, includeFields, excludeFields);
+                String fieldName = jsonPathAttrKey;
+                if (StringUtils.isNotBlank(name)) {
+                    fieldName = name;
+                }
+                List<Object> valueList = new ArrayList<>();
+                if (value instanceof Object[]) {
+                    valueList = Arrays.asList((Object[]) value);
+                } else if (value instanceof List) {
+                    valueList = (List) value;
+                } else {
+                    valueList = Arrays.asList(value);
+                }
+
+                if (isScalar(value) || isScalarList(valueList) && valueList.size() == 1) {
+                    scalarResults.put(fieldName, valueList);
+                } else if (isScalarList(value)) {
+                    scalarArrResults.put(fieldName, valueList);
+                } else {
+                    results.put(fieldName, valueList);
+                }
+
             } catch (PathNotFoundException e) {
-                final String attrName = getAttributeName(jsonPathAttrKey, null, index);
-                attributes.put(attrName, ""); // set empty by default
+                // ignore
             }
+
+            setResults(attributes, jsonPathAttrKey, index, includeFields, excludeFields, results, scalarResults, scalarArrResults, filtered);
         }
     }
 

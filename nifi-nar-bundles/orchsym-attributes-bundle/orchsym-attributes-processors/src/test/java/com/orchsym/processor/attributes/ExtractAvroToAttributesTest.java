@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.orchsym.processor.attributes;
 
 import static org.hamcrest.Matchers.empty;
@@ -46,6 +62,57 @@ public class ExtractAvroToAttributesTest {
     @AfterEach
     public void after() {
         processor = null;
+    }
+
+    private MapRecord createRecord() {
+        final RecordSchema recordSchema = new SimpleRecordSchema(Arrays.asList(//
+                new RecordField("city", RecordFieldType.STRING.getDataType()), //
+                new RecordField("street", RecordFieldType.STRING.getDataType()), //
+                new RecordField("post", RecordFieldType.INT.getDataType())//
+        ));
+        Map<String, Object> mapValues = new HashMap<>();
+        mapValues.put("city", "BJ");
+        mapValues.put("street", "WJ");
+        mapValues.put("post", 100000);
+
+        return new MapRecord(recordSchema, mapValues);
+    }
+
+    private MapRecord create2LevelRecord() {
+        MapRecord childrenRecord = createRecord();
+        List<RecordField> fields = new ArrayList<>();
+        fields.add(new RecordField("str", RecordFieldType.STRING.getDataType()));
+        fields.add(new RecordField("int", RecordFieldType.INT.getDataType()));
+        fields.add(new RecordField("bool", RecordFieldType.BOOLEAN.getDataType()));
+        fields.add(new RecordField("children", RecordFieldType.RECORD.getRecordDataType(childrenRecord.getSchema()), false));
+        RecordSchema schema = new SimpleRecordSchema(fields);
+
+        Map<String, Object> mapValues = new HashMap<>();
+        mapValues.put("str", "abc");
+        mapValues.put("int", 123);
+        mapValues.put("bool", Boolean.TRUE);
+        mapValues.put("children", childrenRecord);
+
+        MapRecord record = new MapRecord(schema, mapValues);
+        return record;
+    }
+
+    private MapRecord create3LevelRecord() {
+        final MapRecord detailsRecord = create2LevelRecord();
+
+        List<RecordField> fields = new ArrayList<>();
+        fields.add(new RecordField("id", RecordFieldType.INT.getDataType()));
+        fields.add(new RecordField("name", RecordFieldType.STRING.getDataType()));
+        fields.add(new RecordField("details", RecordFieldType.RECORD.getRecordDataType(detailsRecord.getSchema()), false));
+
+        Map<String, Object> mapValues = new HashMap<>();
+        mapValues.put("id", "101");
+        mapValues.put("name", "test");
+        mapValues.put("details", detailsRecord);
+
+        final SimpleRecordSchema recordSchema = new SimpleRecordSchema(fields);
+
+        return new MapRecord(recordSchema, mapValues);
     }
 
     @Test
@@ -135,39 +202,6 @@ public class ExtractAvroToAttributesTest {
             assertThat(attributes, not(hasKey("orchsym.children.street")));
             assertThat(attributes, not(hasKey("orchsym.children.post")));
         }
-    }
-
-    private MapRecord createRecord() {
-        final RecordSchema recordSchema = new SimpleRecordSchema(Arrays.asList(//
-                new RecordField("city", RecordFieldType.STRING.getDataType()), //
-                new RecordField("street", RecordFieldType.STRING.getDataType()), //
-                new RecordField("post", RecordFieldType.INT.getDataType())//
-        ));
-        Map<String, Object> mapValues = new HashMap<>();
-        mapValues.put("city", "BJ");
-        mapValues.put("street", "WJ");
-        mapValues.put("post", 100000);
-
-        return new MapRecord(recordSchema, mapValues);
-    }
-
-    private MapRecord create2LevelRecord() {
-        MapRecord childrenRecord = createRecord();
-        List<RecordField> fields = new ArrayList<>();
-        fields.add(new RecordField("str", RecordFieldType.STRING.getDataType()));
-        fields.add(new RecordField("int", RecordFieldType.INT.getDataType()));
-        fields.add(new RecordField("bool", RecordFieldType.BOOLEAN.getDataType()));
-        fields.add(new RecordField("children", RecordFieldType.RECORD.getRecordDataType(childrenRecord.getSchema()), false));
-        RecordSchema schema = new SimpleRecordSchema(fields);
-
-        Map<String, Object> mapValues = new HashMap<>();
-        mapValues.put("str", "abc");
-        mapValues.put("int", 123);
-        mapValues.put("bool", Boolean.TRUE);
-        mapValues.put("children", childrenRecord);
-
-        MapRecord record = new MapRecord(schema, mapValues);
-        return record;
     }
 
     @Test
@@ -306,27 +340,9 @@ public class ExtractAvroToAttributesTest {
 
         assertThat(attributes.keySet(), hasSize(4));
         assertThat(attributes, hasEntry("my.str.3", "abc"));
-        assertThat(attributes, hasEntry("my.addr.city.3", "BJ"));
-        assertThat(attributes, hasEntry("my.addr.street.3", "WJ"));
-        assertThat(attributes, hasEntry("my.addr.post.3", "100000"));
-    }
-
-    private MapRecord create3LevelRecord() {
-        final MapRecord detailsRecord = create2LevelRecord();
-
-        List<RecordField> fields = new ArrayList<>();
-        fields.add(new RecordField("id", RecordFieldType.INT.getDataType()));
-        fields.add(new RecordField("name", RecordFieldType.STRING.getDataType()));
-        fields.add(new RecordField("details", RecordFieldType.RECORD.getRecordDataType(detailsRecord.getSchema()), false));
-
-        Map<String, Object> mapValues = new HashMap<>();
-        mapValues.put("id", "101");
-        mapValues.put("name", "test");
-        mapValues.put("details", detailsRecord);
-
-        final SimpleRecordSchema recordSchema = new SimpleRecordSchema(fields);
-
-        return new MapRecord(recordSchema, mapValues);
+        assertThat(attributes, hasEntry("my.addr.3.city", "BJ"));
+        assertThat(attributes, hasEntry("my.addr.3.street", "WJ"));
+        assertThat(attributes, hasEntry("my.addr.3.post", "100000"));
     }
 
     @ParameterizedTest(name = "[{index}] with children: {0}")
@@ -357,9 +373,9 @@ public class ExtractAvroToAttributesTest {
         assertThat(attributes, hasEntry("my.details.str", "abc"));
         assertThat(attributes, hasEntry("my.details.int", "123"));
         assertThat(attributes, hasEntry("my.details.bool", "true"));
-        assertThat(attributes, hasEntry("my.details.str.5", "abc"));
-        assertThat(attributes, hasEntry("my.details.int.5", "123"));
-        assertThat(attributes, hasEntry("my.details.bool.5", "true"));
+        assertThat(attributes, hasEntry("my.details.5.str", "abc"));
+        assertThat(attributes, hasEntry("my.details.5.int", "123"));
+        assertThat(attributes, hasEntry("my.details.5.bool", "true"));
 
         if (withChildren) {
             assertThat(attributes.keySet(), hasSize(16));
@@ -367,9 +383,9 @@ public class ExtractAvroToAttributesTest {
             assertThat(attributes, hasEntry("my.details.children.city", "BJ"));
             assertThat(attributes, hasEntry("my.details.children.street", "WJ"));
             assertThat(attributes, hasEntry("my.details.children.post", "100000"));
-            assertThat(attributes, hasEntry("my.details.children.5.city", "BJ"));
-            assertThat(attributes, hasEntry("my.details.children.5.street", "WJ"));
-            assertThat(attributes, hasEntry("my.details.children.5.post", "100000"));
+            assertThat(attributes, hasEntry("my.details.5.children.city", "BJ"));
+            assertThat(attributes, hasEntry("my.details.5.children.street", "WJ"));
+            assertThat(attributes, hasEntry("my.details.5.children.post", "100000"));
         } else {
             assertThat(attributes.keySet(), hasSize(10));
 
@@ -393,24 +409,24 @@ public class ExtractAvroToAttributesTest {
 
         assertThat(attributes, hasEntry("my.id", "101"));
         assertThat(attributes, hasEntry("my.name", "test"));
-        assertThat(attributes, hasEntry("my.id.5", "101"));
-        assertThat(attributes, hasEntry("my.name.5", "test"));
+        assertThat(attributes, hasEntry("my.5.id", "101"));
+        assertThat(attributes, hasEntry("my.5.name", "test"));
 
         assertThat(attributes, hasEntry("my.details.str", "abc"));
         assertThat(attributes, hasEntry("my.details.int", "123"));
         assertThat(attributes, hasEntry("my.details.bool", "true"));
-        assertThat(attributes, hasEntry("my.details.5.str", "abc"));
-        assertThat(attributes, hasEntry("my.details.5.int", "123"));
-        assertThat(attributes, hasEntry("my.details.5.bool", "true"));
+        assertThat(attributes, hasEntry("my.5.details.str", "abc"));
+        assertThat(attributes, hasEntry("my.5.details.int", "123"));
+        assertThat(attributes, hasEntry("my.5.details.bool", "true"));
 
         assertThat(attributes.keySet(), hasSize(16));
 
         assertThat(attributes, hasEntry("my.details.children.city", "BJ"));
         assertThat(attributes, hasEntry("my.details.children.street", "WJ"));
         assertThat(attributes, hasEntry("my.details.children.post", "100000"));
-        assertThat(attributes, hasEntry("my.details.5.children.city", "BJ"));
-        assertThat(attributes, hasEntry("my.details.5.children.street", "WJ"));
-        assertThat(attributes, hasEntry("my.details.5.children.post", "100000"));
+        assertThat(attributes, hasEntry("my.5.details.children.city", "BJ"));
+        assertThat(attributes, hasEntry("my.5.details.children.street", "WJ"));
+        assertThat(attributes, hasEntry("my.5.details.children.post", "100000"));
     }
 
     @Test
@@ -432,20 +448,48 @@ public class ExtractAvroToAttributesTest {
         processor.processAttributes(attributes, avroRecord, recordSchema, recordPaths, -1, null, excludeFields);
         processor.processAttributes(attributes, avroRecord, recordSchema, recordPaths, 5, null, excludeFields);
 
-        assertThat(attributes, hasEntry("my.name", "test"));
-        assertThat(attributes, hasEntry("my.name.5", "test"));
+        doTest_processAttributes_pathToRoot_excludes(attributes, "my.");
+    }
 
-        assertThat(attributes, hasEntry("my.details.str", "abc"));
-        assertThat(attributes, hasEntry("my.details.bool", "true"));
-        assertThat(attributes, hasEntry("my.details.5.str", "abc"));
-        assertThat(attributes, hasEntry("my.details.5.bool", "true"));
+    @Test
+    public void test_processAttributes_pathToRoot_excludes_noAttrName() throws IOException {
+        final MapRecord record = create3LevelRecord();
+        final RecordSchema recordSchema = record.getSchema();
+        final GenericRecord avroRecord = AvroTypeUtil.createAvroRecord(record, AvroTypeUtil.extractAvroSchema(recordSchema));
+
+        Map<String, String> attributes = new HashMap<>();
+
+        Map<String, RecordPath> recordPaths = new HashMap<>();
+        recordPaths.put("my", RecordPath.compile("/"));
+
+        final List<Pattern> excludeFields = new ArrayList<>();
+        excludeFields.add(Pattern.compile("^i.*"));
+        excludeFields.add(Pattern.compile("post"));
+
+        processor.recurseChildren = true;
+        processor.containPropName = false;
+
+        processor.processAttributes(attributes, avroRecord, recordSchema, recordPaths, -1, null, excludeFields);
+        processor.processAttributes(attributes, avroRecord, recordSchema, recordPaths, 5, null, excludeFields);
+
+        doTest_processAttributes_pathToRoot_excludes(attributes, "");
+    }
+
+    private void doTest_processAttributes_pathToRoot_excludes(Map<String, String> attributes, String prefix) {
+        assertThat(attributes, hasEntry(prefix + "name", "test"));
+        assertThat(attributes, hasEntry(prefix + "5.name", "test"));
+
+        assertThat(attributes, hasEntry(prefix + "details.str", "abc"));
+        assertThat(attributes, hasEntry(prefix + "details.bool", "true"));
+        assertThat(attributes, hasEntry(prefix + "5.details.str", "abc"));
+        assertThat(attributes, hasEntry(prefix + "5.details.bool", "true"));
 
         assertThat(attributes.keySet(), hasSize(10));
 
-        assertThat(attributes, hasEntry("my.details.children.city", "BJ"));
-        assertThat(attributes, hasEntry("my.details.children.street", "WJ"));
-        assertThat(attributes, hasEntry("my.details.5.children.city", "BJ"));
-        assertThat(attributes, hasEntry("my.details.5.children.street", "WJ"));
+        assertThat(attributes, hasEntry(prefix + "details.children.city", "BJ"));
+        assertThat(attributes, hasEntry(prefix + "details.children.street", "WJ"));
+        assertThat(attributes, hasEntry(prefix + "5.details.children.city", "BJ"));
+        assertThat(attributes, hasEntry(prefix + "5.details.children.street", "WJ"));
     }
 
     @Test
@@ -469,17 +513,17 @@ public class ExtractAvroToAttributesTest {
         processor.processAttributes(attributes, avroRecord, recordSchema, recordPaths, 5, includeFields, null);
 
         assertThat(attributes, hasEntry("my.id", "101"));
-        assertThat(attributes, hasEntry("my.id.5", "101"));
+        assertThat(attributes, hasEntry("my.5.id", "101"));
 
         assertThat(attributes, hasEntry("my.details.int", "123"));
-        assertThat(attributes, hasEntry("my.details.5.int", "123"));
+        assertThat(attributes, hasEntry("my.5.details.int", "123"));
 
         assertThat(attributes.keySet(), hasSize(8));
 
         assertThat(attributes, hasEntry("my.details.children.city", "BJ"));
         assertThat(attributes, hasEntry("my.details.children.street", "WJ"));
-        assertThat(attributes, hasEntry("my.details.5.children.city", "BJ"));
-        assertThat(attributes, hasEntry("my.details.5.children.street", "WJ"));
+        assertThat(attributes, hasEntry("my.5.details.children.city", "BJ"));
+        assertThat(attributes, hasEntry("my.5.details.children.street", "WJ"));
     }
 
     @Test
@@ -507,14 +551,50 @@ public class ExtractAvroToAttributesTest {
         assertThat(attributes, hasEntry("my.id.5", "101"));
 
         assertThat(attributes, hasEntry("my.details.int", "123"));
-        assertThat(attributes, hasEntry("my.details.int.5", "123"));
+        assertThat(attributes, hasEntry("my.details.5.int", "123"));
 
         assertThat(attributes.keySet(), hasSize(8));
 
         assertThat(attributes, hasEntry("my.details.children.city", "BJ"));
         assertThat(attributes, hasEntry("my.details.children.street", "WJ"));
-        assertThat(attributes, hasEntry("my.details.children.5.city", "BJ"));
-        assertThat(attributes, hasEntry("my.details.children.5.street", "WJ"));
+        assertThat(attributes, hasEntry("my.details.5.children.city", "BJ"));
+        assertThat(attributes, hasEntry("my.details.5.children.street", "WJ"));
+    }
+
+    @Test
+    public void test_processAttributes_includes_noAttrName() throws IOException {
+        final MapRecord record = create3LevelRecord();
+        final RecordSchema recordSchema = record.getSchema();
+        final GenericRecord avroRecord = AvroTypeUtil.createAvroRecord(record, AvroTypeUtil.extractAvroSchema(recordSchema));
+
+        Map<String, String> attributes = new HashMap<>();
+
+        Map<String, RecordPath> recordPaths = new HashMap<>();
+        recordPaths.put("my.id", RecordPath.compile("/id"));
+        recordPaths.put("my.details", RecordPath.compile("/details"));
+
+        final List<Pattern> includeFields = new ArrayList<>();
+        includeFields.add(Pattern.compile("^i.*"));
+        includeFields.add(Pattern.compile("city"));
+        includeFields.add(Pattern.compile("street"));
+
+        processor.recurseChildren = true;
+        processor.containPropName = false;
+        processor.processAttributes(attributes, avroRecord, recordSchema, recordPaths, -1, includeFields, null);
+        processor.processAttributes(attributes, avroRecord, recordSchema, recordPaths, 5, includeFields, null);
+
+        assertThat(attributes, hasEntry("my.id", "101"));
+        assertThat(attributes, hasEntry("my.id.5", "101"));
+
+        assertThat(attributes, hasEntry("int", "123"));
+        assertThat(attributes, hasEntry("5.int", "123"));
+
+        assertThat(attributes.keySet(), hasSize(8));
+
+        assertThat(attributes, hasEntry("children.city", "BJ"));
+        assertThat(attributes, hasEntry("children.street", "WJ"));
+        assertThat(attributes, hasEntry("5.children.city", "BJ"));
+        assertThat(attributes, hasEntry("5.children.street", "WJ"));
     }
 
     @Test
@@ -540,8 +620,8 @@ public class ExtractAvroToAttributesTest {
 
         assertThat(attributes, hasEntry("my.details.str", "abc"));
         assertThat(attributes, hasEntry("my.details.bool", "true"));
-        assertThat(attributes, hasEntry("my.details.str.5", "abc"));
-        assertThat(attributes, hasEntry("my.details.bool.5", "true"));
+        assertThat(attributes, hasEntry("my.details.5.str", "abc"));
+        assertThat(attributes, hasEntry("my.details.5.bool", "true"));
 
         assertThat(attributes.keySet(), hasSize(6));
 
@@ -550,7 +630,7 @@ public class ExtractAvroToAttributesTest {
         assertThat(attributes, hasEntry("my.details.children.post", "100000"));
         // assertThat(attributes, hasEntry("my.details.5.children.city", "BJ"));
         // assertThat(attributes, hasEntry("my.details.5.children.street", "WJ"));
-        assertThat(attributes, hasEntry("my.details.children.5.post", "100000"));
+        assertThat(attributes, hasEntry("my.details.5.children.post", "100000"));
     }
 
     @Test
