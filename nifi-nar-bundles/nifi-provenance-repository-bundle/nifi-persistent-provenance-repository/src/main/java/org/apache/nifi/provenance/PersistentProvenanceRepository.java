@@ -424,7 +424,11 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
         }
 
         for (final Path path : paths) {
-            try (RecordReader reader = RecordReaders.newRecordReader(path.toFile(), getAllLogFiles(), maxAttributeChars)) {
+            final File file = path.toFile();
+            if (!file.exists()) {
+                continue;
+            }
+            try (RecordReader reader = RecordReaders.newRecordReader(file, getAllLogFiles(), maxAttributeChars)) {
                 // if this is the first record, try to find out the block index and jump directly to
                 // the block index. This avoids having to read through a lot of data that we don't care about
                 // just to get to the first record that we want.
@@ -850,11 +854,10 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
     private List<File> getLogFiles() {
         final List<File> files = new ArrayList<>();
         for (final Path path : idToPathMap.get().values()) {
-            files.add(path.toFile());
-        }
-
-        if (files.isEmpty()) {
-            return files;
+            final File file = path.toFile();
+            if (file.exists()) {
+                files.add(file);
+            }
         }
 
         return files;
@@ -903,11 +906,10 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
         final List<File> toPurge = new ArrayList<>();
         final long timeCutoff = System.currentTimeMillis() - configuration.getMaxRecordLife(TimeUnit.MILLISECONDS);
 
-        final List<File> sortedByBasename = getLogFiles();
-        long bytesUsed = getSize(sortedByBasename, timeCutoff);
+        final List<File> logFiles = getLogFiles();
+        long bytesUsed = getSize(logFiles, timeCutoff);
 
-        for (final Path path : idToPathMap.get().values()) {
-            final File file = path.toFile();
+        for (final File file: logFiles) {
             final long lastModified = file.lastModified();
             if (lastModified > 0L && lastModified < timeCutoff) {
                 toPurge.add(file);
@@ -954,9 +956,9 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
 
         // If we have too much data (at least 90% of our max capacity), start aging it off
         if (bytesUsed > configuration.getMaxStorageCapacity() * PURGE_OLD_EVENTS_HIGH_WATER) {
-            Collections.sort(sortedByBasename, sortByBasenameComparator);
+            Collections.sort(logFiles, sortByBasenameComparator);
 
-            for (final File file : sortedByBasename) {
+            for (final File file : logFiles) {
                 toPurge.add(file);
                 bytesUsed -= file.length();
                 if (bytesUsed < configuration.getMaxStorageCapacity() * PURGE_OLD_EVENTS_LOW_WATER) {
@@ -977,6 +979,10 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
         final Set<String> removed = new LinkedHashSet<>();
         for (File file : uniqueFilesToPurge) {
             final String baseName = LuceneUtil.substringBefore(file.getName(), ".");
+            if (!file.exists()) {
+                removed.add(baseName);
+                continue;
+            }
             ExpirationAction currentAction = null;
             try {
                 for (final ExpirationAction action : expirationActions) {
@@ -1018,7 +1024,12 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
             final Iterator<Map.Entry<Long, Path>> itr = newPathMap.entrySet().iterator();
             while (itr.hasNext()) {
                 final Map.Entry<Long, Path> entry = itr.next();
-                final String filename = entry.getValue().toFile().getName();
+                final File file = entry.getValue().toFile();
+                if(!file.exists()) {
+                    itr.remove();
+                    continue;
+                }
+                final String filename = file.getName();
                 final String baseName = LuceneUtil.substringBefore(filename, ".");
 
                 if (removed.contains(baseName)) {
@@ -1104,6 +1115,9 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
         }
 
         for (final File logFile : logFiles) {
+            if (!logFile.exists()) {
+                continue;
+            }
             try (final RecordReader reader = RecordReaders.newRecordReader(logFile, null, Integer.MAX_VALUE)) {
                 final StandardProvenanceEventRecord event = reader.nextRecord();
                 if (event != null) {
@@ -2453,7 +2467,10 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
 
         final List<File> files = new ArrayList<>(paths.size());
         for (final Path path : paths) {
-            files.add(path.toFile());
+            final File file = path.toFile();
+            if (file.exists()) {
+                files.add(file);
+            }
         }
         return files;
     }
@@ -2478,7 +2495,10 @@ public class PersistentProvenanceRepository implements ProvenanceRepository {
 
     public Collection<Path> getAllLogFiles() {
         final SortedMap<Long, Path> map = idToPathMap.get();
-        return map == null ? new ArrayList<>() : map.values();
+        if (null != map) {
+            return map.values().stream().filter(p -> p.toFile().exists()).collect(Collectors.toList());
+        }
+        return new ArrayList<>();
     }
 
     private static class PathMapComparator implements Comparator<Long> {
