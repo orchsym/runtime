@@ -43,11 +43,11 @@
     <appender name="CLUSTER_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${org.apache.nifi.bootstrap.config.log.dir}/orchsym-cluster.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${org.apache.nifi.bootstrap.config.log.dir}/orchsym-cluster_%d.%i.log</fileNamePattern>
-            <maxFileSize>100MB</maxFileSize>
-            <!-- keep 7 log files worth of history -->
-            <maxHistory>7</maxHistory>
-            <totalSizeCap>1GB</totalSizeCap>
+            <fileNamePattern>${org.apache.nifi.bootstrap.config.log.dir}/orchsym-cluster_%d{yyyy-MM-dd_HH}.%i.log</fileNamePattern>
+			<!-- each file should be at most 100MB, keep 7 (168 hours) days worth of history, but at most 1GB -->
+			<maxFileSize>100MB</maxFileSize>    
+			<maxHistory>168</maxHistory>
+			<totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
         <immediateFlush>true</immediateFlush>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
@@ -58,11 +58,11 @@
     <appender name="REPOSITORY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${org.apache.nifi.bootstrap.config.log.dir}/orchsym-repository.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${org.apache.nifi.bootstrap.config.log.dir}/orchsym-repository_%d.%i.log</fileNamePattern>
-            <maxFileSize>100MB</maxFileSize>
-            <!-- keep 7 log files worth of history -->
-            <maxHistory>7</maxHistory>
-            <totalSizeCap>1GB</totalSizeCap>
+            <fileNamePattern>${org.apache.nifi.bootstrap.config.log.dir}/orchsym-repository_%d{yyyy-MM-dd_HH}.%i.log</fileNamePattern>
+			<!-- each file should be at most 100MB, keep 7 (168 hours) days worth of history, but at most 1GB -->
+			<maxFileSize>100MB</maxFileSize>    
+			<maxHistory>168</maxHistory>
+			<totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
         <immediateFlush>true</immediateFlush>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
@@ -203,6 +203,9 @@
     </logger>
 
     <logger name="org.apache.nifi.controller.cluster.ClusterProtocolHeartbeater" level="INFO" additivity="false">
+        <appender-ref ref="CLUSTER_FILE" />
+    </logger>
+    <logger name="org.apache.nifi.cluster.protocol.impl.SocketProtocolListener" level="INFO" additivity="false">
         <appender-ref ref="CLUSTER_FILE" />
     </logger>
 
