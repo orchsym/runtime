@@ -16,15 +16,16 @@
  */
 package org.apache.nifi.web.api;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import javax.net.ssl.SSLContext;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.HttpMethod;
@@ -33,8 +34,14 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
 
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLContexts;
+import org.apache.http.conn.ssl.TrustStrategy;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.nifi.registry.api.APIServicesManager;
 import org.apache.nifi.registry.api.APISpec;
 import org.apache.nifi.registry.api.ApiInfo;
@@ -43,7 +50,7 @@ import org.apache.nifi.registry.api.ParamSpec;
 import org.apache.nifi.registry.api.PathSpec;
 import org.apache.nifi.registry.api.PropertySpec;
 import org.apache.nifi.registry.api.RespSpec;
-import org.apache.nifi.util.HttpRequestUtil;
+import org.apache.nifi.util.NiFiProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +58,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 import io.swagger.annotations.Api;
@@ -66,6 +72,11 @@ import io.swagger.annotations.ApiResponses;
 @Api(value = APIServiceResource.PATH, //
         description = "Endpoint  for retrieving api informaitions")
 public class APIServiceResource extends ApplicationResource {
+
+    private static final String PROPERTIES_NIFI_WEB_HTTP_HOST = "nifi.web.http.host";
+    private static final String PROPERTIES_NIFI_WEB_HTTP_PORT = "nifi.web.http.port";
+    private static final String PROPERTIES_NIFI_WEB_HTTPS_HOST = "nifi.web.https.host";
+    private static final String PROPERTIES_NIFI_WEB_HTTPS_PORT = "nifi.web.https.port";
     public static final String PATH = "/apis";
 
     private static final Logger logger = LoggerFactory.getLogger(APIServiceResource.class);
@@ -82,7 +93,8 @@ public class APIServiceResource extends ApplicationResource {
             @ApiResponse(code = 409, message = StatsResource.CODE_MESSAGE_409) //
     })
     public Response getApiInformations(//
-            @QueryParam("groupid") String groupid) throws InterruptedException {
+            @QueryParam("groupid") String groupid
+    ) throws InterruptedException {
 
         if (isReplicateRequest()) {
             return replicate(HttpMethod.GET);
@@ -105,7 +117,7 @@ public class APIServiceResource extends ApplicationResource {
                 }
             }
         }
-        // generate the response
+        //generate the response
         HashMap<String, ArrayList<ApiInfo>> apis = new HashMap<>();
         apis.put("apis", collectApis);
         Gson gson = new Gson();
@@ -125,54 +137,69 @@ public class APIServiceResource extends ApplicationResource {
             @ApiResponse(code = 409, message = StatsResource.CODE_MESSAGE_409) //
     })
     public Response getApiSwaggerInformations(//
-            @QueryParam("id") String processorId) {
+            @QueryParam("id") String id
+    ) throws InterruptedException {
 
         if (isReplicateRequest()) {
             return replicate(HttpMethod.GET);
         }
-        if (processorId != null) {
-
-            String body;
-            try {
-                String url = getHandleHttpRequestUiUrl(processorId);
-                body = HttpRequestUtil.getString(url);
-            } catch (IOException e) {
-                return buildException(e);
-            }
-
-            try {
-                JsonObject infoObject = new JsonParser().parse(body).getAsJsonObject();
-
+        String swaggerInfo = "";
+        try {
+            if (id != null) {
                 final List<ApiInfo> apiInfoList = APIServicesManager.getInstance().getInfos();
-                String swaggerInfo = getSwaggerSpec(apiInfoList, infoObject, processorId);
-
-                return Response.ok(swaggerInfo).build();
-            } catch (JsonSyntaxException e) { // invalid json
-                final String message = "Can't parse the value: \n" + body;
-                final Exception e2 = new Exception(message, e);
-                logger.error(e2.getMessage(), e2);
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(message).build();
+                swaggerInfo = getSwaggerinfo(apiInfoList, id);
             }
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.toString()).build();
+
         }
-        return Response.noContent().build();
+        return Response.ok(swaggerInfo).build();
     }
 
-    private Response buildException(Exception e) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        if (e.getCause() != null) {
-            e.getCause().printStackTrace(pw);
-        } else {
-            e.printStackTrace(pw);
-        }
+     private String getSwaggerinfo(final List<ApiInfo> apiInfoList, String processorId) throws Exception {
 
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(sw.toString()).build();
+        String url = getPropertyUrl(processorId);
+        String swaggerInfo = null;
+        CloseableHttpClient httpClient = null;
+        CloseableHttpResponse httpResponse = null;
+        HttpGet httpGet = new HttpGet(url);
+        try {
+            if (!url.contains("https://")) {
+                httpClient = HttpClients.createDefault();
+            } else {
+                SSLContext sslContext = SSLContexts.custom().loadTrustMaterial(null, new TrustStrategy() {
+                    @Override
+                    public boolean isTrusted(final X509Certificate[] chain, final String authType) {
+                        return true;
+                    }
+                }).useTLS().build();
+                httpClient = HttpClients.custom().setSSLContext(sslContext).setSSLHostnameVerifier(new NoopHostnameVerifier()).build();
+            }
+
+            httpResponse = httpClient.execute(httpGet);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(httpResponse.getEntity().getContent()));
+            String inputLine;
+            StringBuffer response = new StringBuffer();
+            while ((inputLine = reader.readLine()) != null) {
+                response.append(inputLine);
+            }
+            reader.close();
+            swaggerInfo = getSwaggerSpec(apiInfoList, response.toString(), processorId);
+        } catch (Exception except) {
+            logger.error("get processor's property failed ", except);
+            throw new Exception("get processor's property failed ", except);
+        } finally {
+            httpClient.close();
+            httpResponse.close();
+        }
+        return swaggerInfo;
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private String getSwaggerSpec(final List<ApiInfo> apiInfoList, JsonObject infoObject, String apiID) {
+    private String getSwaggerSpec(final List<ApiInfo> apiInfoList, String info, String apiID) {
 
         Gson gson = new Gson();
+        JsonObject infoObject = new JsonParser().parse(info).getAsJsonObject();
 
         String spec = null;
         APISpec apiSpec = new APISpec();
@@ -350,13 +377,39 @@ public class APIServiceResource extends ApplicationResource {
         return spec;
     }
 
-    private String getHandleHttpRequestUiUrl(String processorID) {
-        final UriBuilder uriBuilder = this.uriInfo.getBaseUriBuilder();
+     private String getPropertyUrl(String processorID) {
 
+        String host;
+        String port;
+        String scheme;
         String version = APIServicesManager.getInstance().getClass().getPackage().getImplementationVersion(); // get package version
-        uriBuilder.replacePath("/nifi-handle-http-request-ui-" + version + "/");
+        final NiFiProperties properties = NiFiProperties.createBasicNiFiProperties(null, null);
+        String httpHost = properties.getProperty(PROPERTIES_NIFI_WEB_HTTP_HOST);
+        String httpPort = properties.getProperty(PROPERTIES_NIFI_WEB_HTTP_PORT);
+        String httpsHost = properties.getProperty(PROPERTIES_NIFI_WEB_HTTPS_HOST);
+        String httpsPort = properties.getProperty(PROPERTIES_NIFI_WEB_HTTPS_PORT);
 
-        return buildResourceUri(uriBuilder, "api", "property", "info").toString() + "?processorId=" + processorID;
+        if (!httpPort.trim().equals("")) {
+            // http
+            scheme = "http";
+            port = httpPort;
+            if (httpHost.trim().equals("")) {
+                host = "127.0.0.1";
+            } else {
+                host = httpHost;
+            }
+        } else {
+            // https
+            scheme = "https";
+            port = httpsPort;
+            if (httpsHost.trim().equals("")) {
+                host = "127.0.0.1";
+            } else {
+                host = httpsHost;
+            }
+        }
+        String url = scheme + "://" + host + ":" + port + "/nifi-handle-http-request-ui-" + version + "/api/property/info?processorId=" + processorID;
+        return url;
     }
 
     private String getApiScheme(final List<ApiInfo> apiInfoList, String id) {
