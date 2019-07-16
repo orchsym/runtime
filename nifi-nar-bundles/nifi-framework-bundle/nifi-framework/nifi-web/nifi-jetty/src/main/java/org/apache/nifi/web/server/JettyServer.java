@@ -23,11 +23,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.NiFiServer;
 import org.apache.nifi.bundle.Bundle;
 import org.apache.nifi.bundle.BundleDetails;
-import org.apache.nifi.components.ComponentsContext;
 import org.apache.nifi.controller.UninheritableFlowException;
 import org.apache.nifi.controller.serialization.FlowSerializationException;
 import org.apache.nifi.controller.serialization.FlowSynchronizationException;
-import org.apache.nifi.documentation.DocGenerator;
 import org.apache.nifi.lifecycle.LifeCycleStartException;
 import org.apache.nifi.nar.ExtensionManager;
 import org.apache.nifi.nar.ExtensionMapping;
@@ -122,7 +120,7 @@ public class JettyServer implements NiFiServer {
     };
 
     private final Server server;
-    private final NiFiProperties props;
+    protected final NiFiProperties props;
 
     private Bundle systemBundle;
     private Set<Bundle> bundles;
@@ -880,8 +878,6 @@ public class JettyServer implements NiFiServer {
             ExtensionManager.logClassLoaderMapping();
             MessagesProvider.discoverExtensions(props.getLocale(), bundles);
 
-            // DocGenerator.generate(props, extensionMapping); //avoid generate the docs
-
             beforeServerStart();
             // start the server
             server.start();
@@ -1001,11 +997,7 @@ public class JettyServer implements NiFiServer {
     }
 
     protected void beforeServerStart() {
-        final String previewList = props.getProperty("orchsym.components.preview.list");
-        if (null != previewList && !previewList.isEmpty()) {
-            System.setProperty(ComponentsContext.CONF_LIST, previewList);
-        }
-        System.setProperty(ComponentsContext.CONF_ENABLED, Boolean.valueOf(props.getProperty("orchsym.components.preview.enabled")).toString());
+        //
     }
 
     private void dumpUrls() throws SocketException {

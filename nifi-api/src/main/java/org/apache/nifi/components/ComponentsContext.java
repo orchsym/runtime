@@ -27,26 +27,18 @@ import java.util.stream.Collectors;
 
 public final class ComponentsContext {
     public static final String CONF_LIST = "components.preview.conf.list";
+    public static final String PROP_LIST = "components.preview.list";
+
     public static final String CONF_ENABLED = "components.preview.enabled";
+    public static final String PROP_UPDATED = "components.preview.updated";
 
-    private static final String PROP_LIST = "components.preview.list";
-    private static final String PROP_UPDATED = "components.preview.updated";
-
-    private static final String COMP_SEP = ",";
+    public static final String COMP_SEP = ",";
 
     public static final Function<String, String> FUN_TYPE_NAME = type -> type.lastIndexOf('.') > 0 ? type.substring(type.lastIndexOf('.') + 1) : type;
     public static final Function<String, List<String>> FUN_COMP_LIST = str -> (null == str || str.trim().isEmpty()) ? Collections.emptyList()
             : new ArrayList<>(Arrays.asList(str.split(COMP_SEP)).stream().filter(c -> c != null && c.trim().length() > 0).map(c -> c.trim()).collect(Collectors.toSet()));
 
     private static List<String> previewComponents;
-
-    public static void setPreviewComponents(List<String> list) {
-        if (null == list || list.isEmpty()) {
-            System.getProperties().remove(PROP_LIST);
-        } else {
-            System.setProperty(PROP_LIST, String.join(COMP_SEP, list));
-        }
-    }
 
     private static List<String> getPreviewList() {
         final List<String> propList = FUN_COMP_LIST.apply(System.getProperty(PROP_LIST, ""));
@@ -56,7 +48,7 @@ public final class ComponentsContext {
         return Collections.unmodifiableList(new ArrayList<>(compsSet));
     }
 
-    public static List<String> getPreviewComponents() {
+    private static List<String> getPreviewComponents() {
         if (null == previewComponents || previewComponents.isEmpty()) {
             synchronized (ComponentsContext.class) {
                 if (null == previewComponents || previewComponents.isEmpty()) {
@@ -76,16 +68,12 @@ public final class ComponentsContext {
         return previewComponents;
     }
 
-    public static void setPriviewUpdated(boolean updated) {
+    private static void setPriviewUpdated(boolean updated) {
         System.setProperty(PROP_UPDATED, Boolean.toString(updated));
     }
 
     public static boolean isPreviewUpdated() {
         return Boolean.getBoolean(PROP_UPDATED);
-    }
-
-    public static void setPreviewEnabled(boolean enabled) {
-        System.setProperty(CONF_ENABLED, Boolean.toString(enabled));
     }
 
     public static boolean isPreviewEnabled() {
