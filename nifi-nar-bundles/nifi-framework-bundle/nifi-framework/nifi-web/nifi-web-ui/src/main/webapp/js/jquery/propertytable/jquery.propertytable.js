@@ -985,7 +985,7 @@
                     '<div id="new-inline-controller-service-dialog" class="hidden dialog medium-dialog cancellable">' +
                         '<div class="dialog-content">' +
                             '<div>' +
-                                '<div class="setting-name">'+nf._.msg('jquery-propertytable.RequiresControllerServic')+'</div>' +
+                                '<div class="setting-name">'+nf._.msg('jquery-propertytable.RequiresControllerService')+'</div>' +
                                 '<div class="setting-field">' +
                                     '<div class="new-inline-controller-service-requirement"></div>' +
                                 '</div>' +
