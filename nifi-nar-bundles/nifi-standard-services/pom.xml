@@ -48,6 +48,5 @@
         <module>nifi-proxy-configuration-api</module>
         <module>nifi-proxy-configuration-bundle</module>
         <module>nifi-authentication-service-api</module>
-        <module>nifi-authentication-service-bundle</module>
     </modules>
 </project>
