@@ -76,8 +76,9 @@
     }).done(function(response) {
         $(response).find('div.function').each(function() {
             var elFunction = $(this);
-            
-            var name = elFunction.find('h3').text();
+
+            var funName = elFunction.find('h3').text()//处理掉前端携带序号问题
+            var name = funName.slice(funName.indexOf(" ") + 1);
             var description = elFunction.find('span.description').text();
             var returnType = elFunction.find('span.returnType').text();
             
