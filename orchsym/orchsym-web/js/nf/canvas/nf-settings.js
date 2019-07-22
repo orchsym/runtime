@@ -1086,7 +1086,7 @@
                 sortable: true,
                 resizable: true
             },
-            /** 
+            /**
             {
                 id: 'bundle',
                 name: 'Bundle',
@@ -1284,10 +1284,10 @@
 
             if (nfCommon.canModifyController()) {
                 // edit registry
-                markup += '<div title="'+nf._msg('nf-settings.Edit')+'" class="pointer edit-registry fa fa-pencil" style="margin-top: 2px; margin-right: 3px;" ></div>';
+                markup += '<div title="'+nf._.msg('nf-settings.Edit')+'" class="pointer edit-registry fa fa-pencil" style="margin-top: 2px; margin-right: 3px;" ></div>';
 
                 // remove registry
-                markup += '<div title="'+nf._msg('nf-settings.Remove')+'" class="pointer remove-registry fa fa-trash" style="margin-top: 2px; margin-right: 3px;" ></div>';
+                markup += '<div title="'+nf._.msg('nf-settings.Remove')+'" class="pointer remove-registry fa fa-trash" style="margin-top: 2px; margin-right: 3px;" ></div>';
             }
 
             return markup;
