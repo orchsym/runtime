@@ -272,4 +272,16 @@ public class RestBasedFlowRegistry implements FlowRegistry {
         final FlowClient flowClient = getRegistryClient().getFlowClient();
         return flowClient.get(bucketId, flowId);
     }
+
+    @Override
+    public boolean isAvailable() {
+         try {
+            getRegistryClient().getUserClient().getAccessStatus();
+            return true; // can access
+        } catch (NiFiRegistryException | IOException e) {
+            // 
+        }
+        
+        return false;
+    }
 }

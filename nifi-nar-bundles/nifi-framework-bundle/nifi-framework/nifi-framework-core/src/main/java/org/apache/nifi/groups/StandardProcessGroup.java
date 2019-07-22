@@ -3300,6 +3300,11 @@ public final class StandardProcessGroup implements ProcessGroup, ProcessTags, Pr
             return;
         }
 
+        if(!flowRegistry.isAvailable()) {
+            versionControlFields.setSyncFailureExplanation("Can't connect to registry server");
+            return;
+        }
+
         final VersionedProcessGroup snapshot = vci.getFlowSnapshot();
         if (snapshot == null) {
             // We have not yet obtained the snapshot from the Flow Registry, so we need to request the snapshot of our local version of the flow from the Flow Registry.

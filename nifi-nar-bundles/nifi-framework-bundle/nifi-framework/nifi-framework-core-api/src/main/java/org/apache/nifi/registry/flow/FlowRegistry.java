@@ -213,4 +213,11 @@ public interface FlowRegistry {
      * @throws NiFiRegistryException if unable to find a flow with the given bucket ID and flow ID
      */
     VersionedFlow getVersionedFlow(String bucketId, String flowId) throws IOException, NiFiRegistryException;
+    
+    /**
+     * Check the registry server is available or not
+     * 
+     * @return
+     */
+    boolean isAvailable();
 }
