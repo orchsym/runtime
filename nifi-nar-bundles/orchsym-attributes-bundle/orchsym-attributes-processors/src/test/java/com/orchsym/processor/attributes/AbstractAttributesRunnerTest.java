@@ -19,17 +19,12 @@ package com.orchsym.processor.attributes;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
+import org.apache.nifi.util.TestRunners;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -39,26 +34,12 @@ import org.junit.Test;
  *
  */
 public abstract class AbstractAttributesRunnerTest {
-    protected static final String TEST_RES = "src/test/resources";
-
     protected TestRunner runner;
 
     protected static String testDataContent;
 
     public static String loadContents(String dataFileName) throws IOException {
-        final File dataJsonFile = new File(TEST_RES, dataFileName);
-        if (!dataJsonFile.exists()) {
-            throw new FileNotFoundException(dataJsonFile.getAbsolutePath());
-        }
-        StringWriter sw = new StringWriter();
-        char[] buffer = new char[2048];
-        try (InputStreamReader input = new InputStreamReader(new FileInputStream(dataJsonFile), StandardCharsets.UTF_8)) {
-            int n = 0;
-            while (-1 != (n = input.read(buffer))) {
-                sw.write(buffer, 0, n);
-            }
-        }
-        return sw.toString();
+        return TestRunners.loadContents(dataFileName);
     }
 
     @AfterClass

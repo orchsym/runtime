@@ -16,6 +16,14 @@
  */
 package org.apache.nifi.util;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+
 import org.apache.nifi.processor.Processor;
 
 public class TestRunners {
@@ -33,4 +41,21 @@ public class TestRunners {
         }
     }
 
+    protected static final String TEST_RES = "src/test/resources";
+
+    public static String loadContents(String dataFileName) throws IOException {
+        final File dataJsonFile = new File(TEST_RES, dataFileName);
+        if (!dataJsonFile.exists()) {
+            throw new FileNotFoundException(dataJsonFile.getAbsolutePath());
+        }
+        StringWriter sw = new StringWriter();
+        char[] buffer = new char[2048];
+        try (InputStreamReader input = new InputStreamReader(new FileInputStream(dataJsonFile), StandardCharsets.UTF_8)) {
+            int n = 0;
+            while (-1 != (n = input.read(buffer))) {
+                sw.write(buffer, 0, n);
+            }
+        }
+        return sw.toString();
+    }
 }

@@ -1,0 +1,24 @@
+{
+  "name": "baishancloud",
+  "url": "https://orchsym-studio.baishancloud.com",
+  "isNonProfit": true,
+  "address": {
+    "street": "贵安新区",
+    "city": "贵州贵阳",
+    "country": "中国"
+  },
+  "links": [
+    {
+      "name": "Google",
+      "url": "http://www.google.com"
+    },
+    {
+      "name": "Baidu",
+      "url": "http://www.baidu.com"
+    },
+    {
+      "name": "SoSo",
+      "url": "http://www.SoSo.com"
+    }
+  ]
+}

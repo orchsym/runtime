@@ -1,0 +1,84 @@
+{
+  "name": "demo",
+  "type": "record",
+  "namespace": "com.orchsym.avro",
+  "fields": [
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "site",
+      "type": "string"
+    },
+    {
+      "name": "age",
+      "type": "int"
+    },
+    {
+      "name": "details",
+      "type": {
+        "name": "details",
+        "type": "record",
+        "fields": [
+          {
+            "name": "address",
+            "type": {
+              "name": "address",
+              "type": "record",
+              "fields": [
+                {
+                  "name": "street",
+                  "type": "string"
+                },
+                {
+                  "name": "city",
+                  "type": "string"
+                },
+                {
+                  "name": "country",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
+            "name": "post",
+            "type": "int"
+          },
+          {
+            "name": "tel",
+            "type": "string"
+          },
+          {
+            "name": "tags",
+            "type": {
+              "type": "array",
+              "items": "string"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "links",
+      "type": {
+        "type": "array",
+        "items": {
+          "name": "links_record",
+          "type": "record",
+          "fields": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "url",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -99,6 +99,7 @@
         <module>nifi-store-procedure-bundle</module>
         <module>orchsym-attributes-bundle</module>
         <module>orchsym-json-xml-bundle</module>
+        <module>orchsym-filter-bundle</module>
     </modules>
     <build>
         <plugins>
