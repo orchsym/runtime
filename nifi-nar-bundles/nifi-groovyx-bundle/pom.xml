@@ -29,7 +29,7 @@
         <module>nifi-groovyx-processors</module>
         <module>nifi-groovyx-nar</module>
     </modules>
-	
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -40,9 +40,9 @@
             <dependency>
                 <groupId>org.codehaus.groovy</groupId>
                 <artifactId>groovy-all</artifactId>
-                <version>2.5.5</version>
+                <version>${nifi.groovy.version}</version>
                 <type>pom</type>
-                <scope>compile</scope>
+                <scope>provided</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

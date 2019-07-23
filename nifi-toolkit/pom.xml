@@ -33,12 +33,14 @@
         <module>nifi-toolkit-flowanalyzer</module>
         <module>nifi-toolkit-cli</module>
     </modules>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>org.codehaus.groovy</groupId>
                 <artifactId>groovy-all</artifactId>
-                <version>2.4.13</version>
+                <version>${nifi.groovy.version}</version>
+                <type>pom</type>
                 <scope>compile</scope>
                 <exclusions>
                     <exclusion>
