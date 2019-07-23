@@ -32,6 +32,19 @@
 - [ORCHSYM-4878] - SAP RFC有table输出时报错
 - [ORCHSYM-4912] - EL表达式在属性设置中提示值带序号
 
+----------------------------
+# Version 2.0_06001
+
+版本：1.7.1-2.0_06001
+
+发布时间：2019-07-09
+
+组件总数：303
+
+
+## 缺陷 
+- [ORCHSYM-4852] - API服务后台swagger请求失败
+
 
 ----------------------------
 # Version 2.0_06000
@@ -61,7 +74,6 @@
 - [ORCHSYM-4407] - HandlerHttpRequest 基本认证校验异常
 - [ORCHSYM-4447] - flowfile更新失败
 - [ORCHSYM-4638] - HandleSOAPHTTPRequest组件启动失败
-
 
 ----------------------------
 # Version 2.0_05000
