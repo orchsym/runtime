@@ -1,3 +1,38 @@
+
+----------------------------
+# Version 2.0_07000
+
+版本：1.7.1-2.0_07000
+
+发布时间：2019-07-23
+
+组件总数：313
+
+## 新功能
+- [ORCHSYM-4165] - [组件]开发SortRecord数据流排序组件
+- [ORCHSYM-4168] - [组件]开发FilterField字段过滤组件
+- [ORCHSYM-4704] - [组件]增加Excel文件读取组件
+- [ORCHSYM-4812] - [组件]开发支持LDAP组件
+- [ORCHSYM-4188] - 支持flow版本管理
+- [ORCHSYM-4273] - 适配管理平台支持多集成平台管理
+
+## 改进
+- [ORCHSYM-4265] - PutTCP、PutUDP、PutSplunk 参数支持属性变量
+- [ORCHSYM-4739] - 增强提取属性组件功能
+- [ORCHSYM-4818] - InvokeHTTP的DELETE不支持接收Body
+- [ORCHSYM-4936] - 编排支持ADFS 3.0登录
+
+## 缺陷 
+- [ORCHSYM-4661] - 文档目录遍历问题
+- [ORCHSYM-4688] - 升级Groovy解决编码问题
+- [ORCHSYM-4785] - 编排平台日志轮滚时,maxHistory 和 totalSizeCap失效
+- [ORCHSYM-4816] - Log4j安全漏洞修复
+- [ORCHSYM-4835] - repository库更新或读取出错
+- [ORCHSYM-4852] - API服务后台swagger请求失败
+- [ORCHSYM-4878] - SAP RFC有table输出时报错
+- [ORCHSYM-4912] - EL表达式在属性设置中提示值带序号
+
+
 ----------------------------
 # Version 2.0_06000
 
