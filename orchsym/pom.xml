@@ -31,7 +31,7 @@
 	<properties>
 		<nifi.version>${project.version}</nifi.version>
 		<!-- when release new version, need change it -->
-		<orchsym.product.version>2.0_07000-SNAPSHOT</orchsym.product.version>
+		<orchsym.product.version>2.0_08000-SNAPSHOT</orchsym.product.version>
 	</properties>
 
 	<modules>
