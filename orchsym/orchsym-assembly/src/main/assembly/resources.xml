@@ -36,8 +36,8 @@
 		<dependencySet>
 			<scope>runtime</scope>
 			<outputDirectory>./</outputDirectory>
-			<directoryMode>0770</directoryMode>
-			<fileMode>0770</fileMode>
+			<directoryMode>0775</directoryMode>
+			<fileMode>0775</fileMode>
 			<useProjectArtifact>false</useProjectArtifact>
 			<useTransitiveFiltering>true</useTransitiveFiltering>
 			<useTransitiveDependencies>true</useTransitiveDependencies>
