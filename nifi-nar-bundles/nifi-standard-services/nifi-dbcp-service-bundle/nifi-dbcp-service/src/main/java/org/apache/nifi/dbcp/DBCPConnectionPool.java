@@ -227,23 +227,15 @@ public class DBCPConnectionPool extends AbstractControllerService implements DBC
     protected ClassLoader getDriverClassLoader(String locationString, String drvName) throws InitializationException {
         if (locationString != null && locationString.length() > 0) {
             try {
+                // Just return our ClassLoader and not register Drivers to DriverManager.
+                // BasicDataSource will use our ClassLoader to create database connections
+
                 // Split and trim the entries
-                final ClassLoader classLoader = ClassLoaderUtils.getCustomClassLoader(
+                return ClassLoaderUtils.getCustomClassLoader(
                         locationString,
                         this.getClass().getClassLoader(),
                         (dir, name) -> name != null && name.endsWith(".jar")
                 );
-
-                // Workaround which allows to use URLClassLoader for JDBC driver loading.
-                // (Because the DriverManager will refuse to use a driver not loaded by the system ClassLoader.)
-                final Class<?> clazz = Class.forName(drvName, true, classLoader);
-                if (clazz == null) {
-                    throw new InitializationException("Can't load Database Driver " + drvName);
-                }
-                final Driver driver = (Driver) clazz.newInstance();
-                DriverManager.registerDriver(new DriverShim(driver));
-
-                return classLoader;
             } catch (final MalformedURLException e) {
                 throw new InitializationException("Invalid Database Driver Jar Url", e);
             } catch (final Exception e) {
