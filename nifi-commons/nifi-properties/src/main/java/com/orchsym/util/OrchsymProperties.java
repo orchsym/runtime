@@ -22,7 +22,10 @@ public class OrchsymProperties {
     public static final String APP = "orchsym.app";
 
     public static File getConfDir() {
-        final String propPath = System.getProperty(PROPERTIES_FILE_PATH);
+        String configFilename = System.getProperty("org.apache.nifi.bootstrap.config.file"); // same as RunOrchsymRuntime.getDefaultBootstrapConfFile
+
+        final String propPath = System.getProperty(PROPERTIES_FILE_PATH, configFilename);
+
         final File defaultConfFile = new File(CONF_DIR);
 
         File confFile = defaultConfFile;
@@ -35,4 +38,5 @@ public class OrchsymProperties {
 
         return defaultConfFile;
     }
+
 }

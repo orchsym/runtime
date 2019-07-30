@@ -5,7 +5,7 @@ import java.io.File;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
-import com.orchsym.util.BrandingProperties;
+import com.orchsym.branding.BrandingExtension;
 
 /**
  * @author GU Guoqiang
@@ -15,13 +15,11 @@ import com.orchsym.util.BrandingProperties;
 public class WebResourcesSyncContextListener implements ServletContextListener {
     private static final String IMG_FOLDER = "images";
 
-    private final BrandingProperties brandingProp = new BrandingProperties();
-
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         final File webImagesFolder = getImageFolder(sce);
 
-        brandingProp.syncWebImages(webImagesFolder);
+        BrandingExtension.get().syncWebImages(webImagesFolder);
 
     }
 

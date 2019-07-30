@@ -46,7 +46,8 @@ import org.apache.nifi.bootstrap.util.OSUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.orchsym.util.BrandingProperties;
+import com.orchsym.branding.BrandingExtension;
+import com.orchsym.branding.BrandingService;
 import com.orchsym.util.OrchsymProperties;
 
 /**
@@ -56,7 +57,7 @@ import com.orchsym.util.OrchsymProperties;
  */
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class RunOrchsymRuntime extends RunNiFi {
-    public static String RUNTIME_NAME = BrandingProperties.DEFAULT_RUNTIME_NAME;
+    public static String RUNTIME_NAME = BrandingExtension.get().getProductName();
 
     private final FilenameFilter jarFilter = new FilenameFilter() {
         @Override
@@ -69,7 +70,6 @@ public class RunOrchsymRuntime extends RunNiFi {
 
     public RunOrchsymRuntime() throws IOException {
         super(configFile);
-        setRuntimeName(configFile);
 
         this.cmdLogger = LoggerFactory.getLogger("com.orchsym.bootstrap.Command");
         this.defaultLogger = LoggerFactory.getLogger(RunOrchsymRuntime.class);
@@ -83,16 +83,6 @@ public class RunOrchsymRuntime extends RunNiFi {
             }
         });
         this.serviceManager = loadServices();
-    }
-
-    /**
-     * 
-     * must be same as BrandingProperties for keys and default values.
-     */
-    private static void setRuntimeName(File bootstrapConfigFile) {
-        final File configFolder = bootstrapConfigFile.getAbsoluteFile().getParentFile();
-        BrandingProperties brandingProp = new BrandingProperties(configFolder);
-        RUNTIME_NAME = brandingProp.getRuntimeName();
     }
 
     public void setAutoRestartNiFi(final boolean restart) {
@@ -456,7 +446,7 @@ public class RunOrchsymRuntime extends RunNiFi {
         cmd.addAll(javaAdditionalArgs);
         addProperty(cmd, OrchsymProperties.PROPERTIES_FILE_PATH, nifiPropsFilename);
         addProperty(cmd, OrchsymProperties.BOOTSTRAP_LISTEN_PORT, listenPort);
-        addProperty(cmd, OrchsymProperties.APP, BrandingProperties.DEFAULT_SHORT_RUNTIME_NAME);
+        addProperty(cmd, OrchsymProperties.APP, BrandingService.DEFAULT_SHORT_RUNTIME_NAME);
         addProperty(cmd, OrchsymProperties.NIFI_BOOTSTRAP_LOG_DIR, nifiLogDir); // because logback still use it
         addProperty(cmd, OrchsymProperties.BOOTSTRAP_LOG_DIR, nifiLogDir);
         addProperty(cmd, NativeLibrariesLoader.KEY_LIB_PATH, libraryPaths);

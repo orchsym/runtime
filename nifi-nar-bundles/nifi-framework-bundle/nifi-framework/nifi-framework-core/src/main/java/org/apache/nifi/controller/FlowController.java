@@ -16,7 +16,6 @@
  */
 package org.apache.nifi.controller;
 
-import com.orchsym.util.BrandingProperties;
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.action.Action;
@@ -235,6 +234,8 @@ import org.apache.nifi.web.api.dto.status.StatusHistoryDTO;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.orchsym.branding.BrandingExtension;
 
 import javax.net.ssl.SSLContext;
 import java.io.ByteArrayInputStream;
@@ -572,8 +573,7 @@ public class FlowController implements EventAccess, ControllerServiceProvider, R
 
         final ProcessGroup rootGroup = new StandardProcessGroup(ComponentIdGenerator.generateId().toString(), this, processScheduler,
             nifiProperties, encryptor, this, new MutableVariableRegistry(this.variableRegistry));
-        final BrandingProperties brandingProp = new BrandingProperties();
-        rootGroup.setName(brandingProp.getRootGroupName());
+        rootGroup.setName(BrandingExtension.get().getRootGroupName());
         setRootGroup(rootGroup);
         instanceId = ComponentIdGenerator.generateId().toString();
 

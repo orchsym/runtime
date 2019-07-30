@@ -8,7 +8,7 @@ import org.apache.nifi.util.NiFiProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.orchsym.util.BrandingProperties;
+import com.orchsym.branding.BrandingExtension;
 import com.orchsym.util.OrchsymProperties;
 
 /**
@@ -42,8 +42,7 @@ public class OrchsymRuntime extends NiFi {
         try {
             setCompatibleProperties();
 
-            BrandingProperties brandingProp = new BrandingProperties();
-            final String runtimeName = brandingProp.getRuntimeName();
+            final String runtimeName = BrandingExtension.get().getRuntimeName();
             LOGGER.info("Launching " + runtimeName + "...");
 
             NiFiProperties properties = convertArgumentsToValidatedNiFiProperties(args);

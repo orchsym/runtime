@@ -1,137 +1,81 @@
-<!--
-  Licensed to the Apache Software Foundation (ASF) under one or more
-  contributor license agreements.  See the NOTICE file distributed with
-  this work for additional information regarding copyright ownership.
-  The ASF licenses this file to You under the Apache License, Version 2.0
-  (the "License"); you may not use this file except in compliance with
-  the License.  You may obtain a copy of the License at
-      http://www.apache.org/licenses/LICENSE-2.0
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
--->
-[<img src="https://nifi.apache.org/assets/images/apache-nifi-logo.svg" width="300" height="126" alt="Apache NiFi"/>][nifi]
+# Orchsym Studio
 
-[![Build Status](https://travis-ci.org/apache/nifi.svg?branch=master)](https://travis-ci.org/apache/nifi)
-[![Docker pulls](https://img.shields.io/docker/pulls/apache/nifi.svg)](https://hub.docker.com/r/apache/nifi/)
-[![Version](https://img.shields.io/maven-central/v/org.apache.nifi/nifi-utils.svg)](https://nifi.apache.org/download.html)
-[![HipChat](https://img.shields.io/badge/chat-on%20HipChat-brightgreen.svg)](https://www.hipchat.com/gzh2m5YML)
+## 简介
 
-[Apache NiFi](https://nifi.apache.org/) is an easy to use, powerful, and
-reliable system to process and distribute data.
+Orchsym Studio， 即数聚蜂巢集成编排平台，基于Apache NiFi项目进行了定制开发。
 
-## Table of Contents
+该平台是易用使用、强大且易于扩展的数据处理和分发平台。
 
-- [Features](#features)
-- [Requirements](#requirements)
-- [Getting Started](#getting-started)
-- [Getting Help](#getting-help)
-- [Documentation](#documentation)
-- [License](#license)
-- [Export Control](#export-control)
 
-## Features
+## 要求
 
-Apache NiFi was made for dataflow. It supports highly configurable directed graphs of data routing, transformation, and system mediation logic. Some of its key features include:
+- JDK 1.8 (暂可能不支持高版本，比如JDK 12)
+- Apache Maven 3.5+
 
-- Web-based user interface
-  - Seamless experience for design, control, and monitoring
-  - Multi-tenant user experience
-- Highly configurable
-  - Loss tolerant vs guaranteed delivery
-  - Low latency vs high throughput
-  - Dynamic prioritization
-  - Flows can be modified at runtime
-  - Back pressure
-  - Scales up to leverage full machine capability
-  - Scales out with zero-master clustering model
-- Data Provenance
-  - Track dataflow from beginning to end
-- Designed for extension
-  - Build your own processors and more
-  - Enables rapid development and effective testing
-- Secure
-  - SSL, SSH, HTTPS, encrypted content, etc...
-  - Pluggable fine-grained role-based authentication/authorization
-  - Multiple teams can manage and share specific portions of the flow
 
-## Requirements
-* JDK 1.8 or newer
-* Apache Maven 3.1.0 or newer
-* Git Client (used during build process by 'bower' plugin)
+## 打包
 
-## Getting Started
+不再使用原始nifi-assembly中的打包功能。将采用单独的定制打包。
 
-- Read through the [quickstart guide for development](http://nifi.apache.org/quickstart.html).
-  It will include information on getting a local copy of the source, give pointers on issue
-  tracking, and provide some warnings about common problems with development environments.
-- For a more comprehensive guide to development and information about contributing to the project
-  read through the [NiFi Developer's Guide](http://nifi.apache.org/developer-guide.html).
+在当前库的根目录中执行：
 
-To build:
-- Execute `mvn clean install` or for parallel build execute `mvn -T 2.0C clean install`. On a
-  modest development laptop that is a couple of years old, the latter build takes a bit under ten
-  minutes. After a large amount of output you should eventually see a success message.
+```
+mvn package
+```
 
-        laptop:nifi myuser$ mvn -T 2.0C clean install
-        [INFO] Scanning for projects...
-        [INFO] Inspecting build with total of 115 modules...
-            ...tens of thousands of lines elided...
-        [INFO] ------------------------------------------------------------------------
-        [INFO] BUILD SUCCESS
-        [INFO] ------------------------------------------------------------------------
-        [INFO] Total time: 09:24 min (Wall Clock)
-        [INFO] Finished at: 2015-04-30T00:30:36-05:00
-        [INFO] Final Memory: 173M/1359M
-        [INFO] ------------------------------------------------------------------------
+打包后的zip或tar.gz产品包位于orchsym-assembly目录的target子目录下。
 
-To deploy:
-- Change directory to 'nifi-assembly'. In the target directory, there should be a build of nifi.
 
-        laptop:nifi myuser$ cd nifi-assembly
-        laptop:nifi-assembly myuser$ ls -lhd target/nifi*
-        drwxr-xr-x  3 myuser  mygroup   102B Apr 30 00:29 target/nifi-1.0.0-SNAPSHOT-bin
-        -rw-r--r--  1 myuser  mygroup   144M Apr 30 00:30 target/nifi-1.0.0-SNAPSHOT-bin.tar.gz
-        -rw-r--r--  1 myuser  mygroup   144M Apr 30 00:30 target/nifi-1.0.0-SNAPSHOT-bin.zip
+## 运行
 
-- For testing ongoing development you could use the already unpacked build present in the directory
-  named "nifi-*version*-bin", where *version* is the current project version. To deploy in another
-  location make use of either the tarball or zipfile and unpack them wherever you like. The
-  distribution will be within a common parent directory named for the version.
+将zip 或 tar.gz 解压到指定目录，比如 `/opt/orchsym`。
 
-        laptop:nifi-assembly myuser$ mkdir ~/example-nifi-deploy
-        laptop:nifi-assembly myuser$ tar xzf target/nifi-*-bin.tar.gz -C ~/example-nifi-deploy
-        laptop:nifi-assembly myuser$ ls -lh ~/example-nifi-deploy/
-        total 0
-        drwxr-xr-x  10 myuser  mygroup   340B Apr 30 01:06 nifi-1.0.0-SNAPSHOT
+进入解压产品的bin目录执行：
 
-To run NiFi:
-- Change directory to the location where you installed NiFi and run it.
+```
+./orchsym.sh start
+```
 
-        laptop:~ myuser$ cd ~/example-nifi-deploy/nifi-*
-        laptop:nifi-1.0.0-SNAPSHOT myuser$ ./bin/nifi.sh start
+或 Win下：
 
-- Direct your browser to http://localhost:8080/nifi/ and you should see a screen like this screenshot:
-  ![image of a NiFi dataflow canvas](nifi-docs/src/main/asciidoc/images/nifi_first_launch_screenshot.png?raw=true)
+```
+run-orchsym.bat
+```
 
-- For help building your first data flow see the [NiFi User Guide](http://nifi.apache.org/docs/nifi-docs/html/user-guide.html)
+### 查看状态
 
-- If you are testing ongoing development, you will likely want to stop your instance.
+```
+./orchsym.sh status
+```
 
-        laptop:~ myuser$ cd ~/example-nifi-deploy/nifi-*
-        laptop:nifi-1.0.0-SNAPSHOT myuser$ ./bin/nifi.sh stop
+或 Win下：
 
-## Getting Help
-If you have questions, you can reach out to our mailing list: dev@nifi.apache.org
-([archive](http://mail-archives.apache.org/mod_mbox/nifi-dev)).
-For more interactive conversations and chat, we're also often available in IRC: #nifi on
-[irc.freenode.net](http://webchat.freenode.net/?channels=#nifi) and in #NiFi on [ASF HipChat](https://www.hipchat.com/gzh2m5YML). 
+```
+status-orchsym.bat
+```
 
-## Documentation
+### 访问
 
-See http://nifi.apache.org/ for the latest documentation.
+第一次启动可能稍慢，需要解压部分组件包，耐心等待片刻后。
+
+可通过该URL访问： 
+
+ http://localhost:8080/runtime
+
+由于没有修改任何配置，默认端口为`8080`， 如果有冲突， 可修改conf目录下 `orchsym.properties` 文件:
+
+```
+orchsym.web.http.port=8080
+```
+
+
+### 问题
+
+1. 如果打包时有JUnit单元测试不通过，导致打包失败，可添加参数跳过测试，但仍旧编译单元测试类`-DskipTests`。
+2. 如果是在Windows下，可能由于编码问题，导致前端js，css压缩出现问题，可添加编码参数`-Dfile.encoding=UTF-8`。
+3. 同样是在Windows下，如果使用的是PowerShell来打包，会出现“.encoding=UTF-8”不能识别错误，则需要加引号，比如加双引号：` -D"file.encoding=UTF-8"`。
+
+
 
 ## License
 
@@ -150,35 +94,4 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-## Export Control
 
-This distribution includes cryptographic software. The country in which you
-currently reside may have restrictions on the import, possession, use, and/or
-re-export to another country, of encryption software. BEFORE using any
-encryption software, please check your country's laws, regulations and
-policies concerning the import, possession, or use, and re-export of encryption
-software, to see if this is permitted. See <http://www.wassenaar.org/> for more
-information.
-
-The U.S. Government Department of Commerce, Bureau of Industry and Security
-(BIS), has classified this software as Export Commodity Control Number (ECCN)
-5D002.C.1, which includes information security software using or performing
-cryptographic functions with asymmetric algorithms. The form and manner of this
-Apache Software Foundation distribution makes it eligible for export under the
-License Exception ENC Technology Software Unrestricted (TSU) exception (see the
-BIS Export Administration Regulations, Section 740.13) for both object code and
-source code.
-
-The following provides more details on the included cryptographic software:
-
-Apache NiFi uses BouncyCastle, Jasypt, JCraft Inc., and the built-in
-java cryptography libraries for SSL, SSH, and the protection
-of sensitive configuration parameters. See
-http://bouncycastle.org/about.html
-http://www.jasypt.org/faq.html
-http://jcraft.com/c-info.html
-http://www.oracle.com/us/products/export/export-regulations-345813.html
-for more details on each of these libraries cryptography features.
-
-[nifi]: https://nifi.apache.org/
-[logo]: https://nifi.apache.org/assets/images/apache-nifi-logo.svg

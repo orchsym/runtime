@@ -87,11 +87,10 @@ import io.swagger.annotations.ApiResponses;
  */
 @Path(StatsResource.PATH)
 @Api(value = StatsResource.PATH, description = "Endpoint for accessing the statistics of flows and components.")
-public class StatsResource extends ApplicationResource implements ICodeMessages{
+public class StatsResource extends ApplicationResource implements ICodeMessages {
     public static final String PATH = "/stats";
 
     private static final Logger logger = LoggerFactory.getLogger(StatsResource.class);
-
 
     private NiFiServiceFacade serviceFacade;
     private FlowController flowController;
@@ -549,10 +548,14 @@ public class StatsResource extends ApplicationResource implements ICodeMessages{
                 }
             }
         }
+        
+        final List<ProcessorEntity> validComponentsList = processors.stream() //
+                .filter(p -> p.getComponent() != null && p.getComponent().getType() != null)//
+                .collect(Collectors.toList());
 
         List<ProcessorCounterDTO> processorCounterList = new ArrayList<>();
-        processors.stream() //
-                .filter(p -> p.getComponent() != null && p.getComponent().getType() != null)//
+
+        validComponentsList.stream() //
                 .collect(Collectors.groupingBy(e -> e.getComponent().getType(), Collectors.counting())).entrySet() //
                 .forEach(entry -> {
                     ProcessorCounterDTO processorCounterDTO = new ProcessorCounterDTO();
@@ -560,7 +563,7 @@ public class StatsResource extends ApplicationResource implements ICodeMessages{
                     processorCounterDTO.setName(compName);
                     processorCounterDTO.setCount(entry.getValue());
 
-                    List<ProcessorDTO> details = processors.stream() //
+                    List<ProcessorDTO> details = validComponentsList.stream() //
                             .filter(e -> e.getComponent().getType().equals(entry.getKey())) //
                             .map(e -> e.getComponent())//
                             .collect(Collectors.toList());

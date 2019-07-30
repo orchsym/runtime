@@ -16,7 +16,6 @@
  */
 package org.apache.nifi.web.api;
 
-import com.orchsym.util.BrandingProperties;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -114,6 +113,9 @@ import org.apache.nifi.web.api.request.DateTimeParameter;
 import org.apache.nifi.web.api.request.IntegerParameter;
 import org.apache.nifi.web.api.request.LongParameter;
 import org.apache.nifi.web.util.OrchsymVersionHelper;
+
+import com.orchsym.branding.BrandingExtension;
+import com.orchsym.branding.BrandingService;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -1105,11 +1107,11 @@ public class FlowResource extends ApplicationResource {
         // create the about dto
         final AboutDTO aboutDTO = new AboutDTO();
 
-        final BrandingProperties brandingProp = new BrandingProperties();
-        final String productName = brandingProp.getProductName();
+        final BrandingService brandingService = BrandingExtension.get();
+        final String productName = brandingService.getProductName();
         aboutDTO.setTitle(productName);
         aboutDTO.setProductName(productName);
-        aboutDTO.setSupportEmail(brandingProp.getSupportEmail());
+        aboutDTO.setSupportEmail(brandingService.getSupportEmail());
         aboutDTO.setUri(generateResourceUri());
         aboutDTO.setTimezone(new Date());
 
