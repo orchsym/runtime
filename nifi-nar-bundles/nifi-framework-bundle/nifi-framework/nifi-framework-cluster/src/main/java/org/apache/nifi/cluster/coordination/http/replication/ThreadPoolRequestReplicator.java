@@ -172,13 +172,13 @@ public class ThreadPoolRequestReplicator implements RequestReplicator {
         // If the request is mutable, ensure that all nodes are connected.
         if (mutable) {
             final List<NodeIdentifier> disconnected = stateMap.get(NodeConnectionState.DISCONNECTED);
-//            if (disconnected != null && !disconnected.isEmpty()) {
-//                if (disconnected.size() == 1) {
-//                    throw new DisconnectedNodeMutableRequestException("Node " + disconnected.iterator().next() + " is currently disconnected");
-//                } else {
-//                    throw new DisconnectedNodeMutableRequestException(disconnected.size() + " Nodes are currently disconnected");
-//                }
-//            }
+            if (disconnected != null && !disconnected.isEmpty()) {
+                if (disconnected.size() == 1) {
+                    throw new DisconnectedNodeMutableRequestException("Node " + disconnected.iterator().next() + " is currently disconnected");
+                } else {
+                    throw new DisconnectedNodeMutableRequestException(disconnected.size() + " Nodes are currently disconnected");
+                }
+            }
 
             final List<NodeIdentifier> disconnecting = stateMap.get(NodeConnectionState.DISCONNECTING);
             if (disconnecting != null && !disconnecting.isEmpty()) {
@@ -668,9 +668,9 @@ public class ThreadPoolRequestReplicator implements RequestReplicator {
         // check that the request can be applied
         if (mutableRequest) {
             final Map<NodeConnectionState, List<NodeIdentifier>> connectionStates = clusterCoordinator.getConnectionStates();
-//            if (connectionStates.containsKey(NodeConnectionState.DISCONNECTED) || connectionStates.containsKey(NodeConnectionState.DISCONNECTING)) {
-//                throw new DisconnectedNodeMutableRequestException("Received a mutable request [" + httpMethod + " " + uriPath + "] while a node is disconnected from the cluster");
-//            }
+            if (connectionStates.containsKey(NodeConnectionState.DISCONNECTED) || connectionStates.containsKey(NodeConnectionState.DISCONNECTING)) {
+                throw new DisconnectedNodeMutableRequestException("Received a mutable request [" + httpMethod + " " + uriPath + "] while a node is disconnected from the cluster");
+            }
 
             if (connectionStates.containsKey(NodeConnectionState.CONNECTING)) {
                 // if any node is connecting and a request can change the flow, then we throw an exception
