@@ -229,12 +229,12 @@ public class NodeIdentifier {
         if (this.apiPort != other.apiPort) {
             return false;
         }
-        if ((this.socketAddress == null) ? (other.socketAddress != null) : !this.socketAddress.equals(other.socketAddress)) {
-            return false;
-        }
-        if (this.socketPort != other.socketPort) {
-            return false;
-        }
+//        if ((this.socketAddress == null) ? (other.socketAddress != null) : !this.socketAddress.equals(other.socketAddress)) {
+//            return false;
+//        }
+//        if (this.socketPort != other.socketPort) {
+//            return false;
+//        }
 
         return true;
     }
