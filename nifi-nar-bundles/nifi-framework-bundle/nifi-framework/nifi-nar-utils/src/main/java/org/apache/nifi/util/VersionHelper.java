@@ -1,4 +1,4 @@
-package org.apache.nifi.web.util;
+package org.apache.nifi.util;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -12,8 +12,8 @@ import org.apache.nifi.nar.NarClassLoaders;
  * @author GU Guoqiang
  *
  */
-public class OrchsymVersionHelper {
-    public static final OrchsymVersionHelper INSTANCE = new OrchsymVersionHelper();
+public class VersionHelper {
+    public static final VersionHelper INSTANCE = new VersionHelper();
     private final static String SNAPSHOT = "SNAPSHOT";
     private final static String MASTER = "master";
 
@@ -24,7 +24,7 @@ public class OrchsymVersionHelper {
     private String buildBranch;
     private String buildTimestamp;
 
-    private OrchsymVersionHelper() {
+    private VersionHelper() {
         nifiVersion = "2.2.0"; // default is fix one
 
         // nifi

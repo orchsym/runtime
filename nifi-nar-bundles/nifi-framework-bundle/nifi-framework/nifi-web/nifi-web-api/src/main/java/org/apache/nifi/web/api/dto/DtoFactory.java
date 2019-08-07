@@ -217,7 +217,7 @@ import org.apache.nifi.web.api.entity.TenantEntity;
 import org.apache.nifi.web.api.entity.VariableEntity;
 import org.apache.nifi.web.controller.ControllerFacade;
 import org.apache.nifi.web.revision.RevisionManager;
-import org.apache.nifi.web.util.OrchsymVersionHelper;
+import org.apache.nifi.util.VersionHelper;
 
 import javax.ws.rs.WebApplicationException;
 import java.text.Collator;
@@ -3206,13 +3206,13 @@ public final class DtoFactory {
         dto.setOsArchitecture(System.getProperty("os.arch"));
 
 
-        dto.setNiFiVersion(OrchsymVersionHelper.INSTANCE.getOrchsymVersion()); //for system details
+        dto.setNiFiVersion(VersionHelper.INSTANCE.getOrchsymVersion()); //for system details
 
         // Get build info
-        dto.setBuildTag(OrchsymVersionHelper.INSTANCE.getBuildTag());
-        dto.setBuildRevision(OrchsymVersionHelper.INSTANCE.getBuildRevision());
-        dto.setBuildBranch(OrchsymVersionHelper.INSTANCE.getBuildBranch());
-        dto.setBuildTimestamp(OrchsymVersionHelper.INSTANCE.getBuildTimestampDate());
+        dto.setBuildTag(VersionHelper.INSTANCE.getBuildTag());
+        dto.setBuildRevision(VersionHelper.INSTANCE.getBuildRevision());
+        dto.setBuildBranch(VersionHelper.INSTANCE.getBuildBranch());
+        dto.setBuildTimestamp(VersionHelper.INSTANCE.getBuildTimestampDate());
 
         return dto;
     }

@@ -219,6 +219,11 @@
             <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-authorizer</artifactId>
         </dependency>
+        <dependency>
+         	<groupId>com.orchsym</groupId>
+            <artifactId>orchsym-udc-manager</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

@@ -36,6 +36,7 @@
 
 	<modules>
 		<module>orchsym-ver</module>
+		<module>orchsym-udc</module>
 		<module>orchsym-resources</module>
 		<module>orchsym-nars</module>
 		<module>orchsym-assembly</module>

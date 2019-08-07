@@ -127,11 +127,11 @@ public abstract class ApplicationResource {
     @Autowired(required=false)
     protected NiFiProperties properties;
     @Autowired(required=false)
-    private RequestReplicator requestReplicator;
+    protected RequestReplicator requestReplicator;
     @Autowired(required=false)
-    private ClusterCoordinator clusterCoordinator;
+    protected ClusterCoordinator clusterCoordinator;
     @Autowired(required=false)
-    private FlowController flowController;
+    protected FlowController flowController;
 
     private static final int MAX_CACHE_SOFT_LIMIT = 500;
     private final Cache<CacheKey, Request<? extends Entity>> twoPhaseCommitCache = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();

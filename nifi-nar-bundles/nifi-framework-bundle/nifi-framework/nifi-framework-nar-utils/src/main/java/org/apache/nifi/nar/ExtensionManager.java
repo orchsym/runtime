@@ -131,6 +131,8 @@ public class ExtensionManager {
         if (currentContextClassLoader != null) {
             Thread.currentThread().setContextClassLoader(currentContextClassLoader);
         }
+
+        org.apache.nifi.bundle.BundleExtensionDiscover.set(bundleCoordinateBundleLookup, classLoaderBundleLookup);
     }
 
     /**

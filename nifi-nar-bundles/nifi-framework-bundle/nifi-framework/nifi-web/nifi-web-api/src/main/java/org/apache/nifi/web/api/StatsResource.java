@@ -43,7 +43,6 @@ import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.annotation.documentation.Marks;
-import org.apache.nifi.controller.FlowController;
 import org.apache.nifi.groups.ProcessGroup;
 import org.apache.nifi.nar.i18n.LanguageHelper;
 import org.apache.nifi.nar.i18n.MessagesProvider;
@@ -93,7 +92,6 @@ public class StatsResource extends ApplicationResource implements ICodeMessages 
     private static final Logger logger = LoggerFactory.getLogger(StatsResource.class);
 
     private NiFiServiceFacade serviceFacade;
-    private FlowController flowController;
 
     public StatsResource() {
         super();
@@ -101,11 +99,6 @@ public class StatsResource extends ApplicationResource implements ICodeMessages 
 
     public void setServiceFacade(NiFiServiceFacade serviceFacade) {
         this.serviceFacade = serviceFacade;
-    }
-
-    public void setFlowController(FlowController flowController) {
-        super.setFlowController(flowController);
-        this.flowController = flowController;
     }
 
     /**
@@ -548,7 +541,7 @@ public class StatsResource extends ApplicationResource implements ICodeMessages 
                 }
             }
         }
-        
+
         final List<ProcessorEntity> validComponentsList = processors.stream() //
                 .filter(p -> p.getComponent() != null && p.getComponent().getType() != null)//
                 .collect(Collectors.toList());

@@ -112,7 +112,7 @@ import org.apache.nifi.web.api.request.BulletinBoardPatternParameter;
 import org.apache.nifi.web.api.request.DateTimeParameter;
 import org.apache.nifi.web.api.request.IntegerParameter;
 import org.apache.nifi.web.api.request.LongParameter;
-import org.apache.nifi.web.util.OrchsymVersionHelper;
+import org.apache.nifi.util.VersionHelper;
 
 import com.orchsym.branding.BrandingExtension;
 import com.orchsym.branding.BrandingService;
@@ -1119,13 +1119,13 @@ public class FlowResource extends ApplicationResource {
         final NiFiProperties properties = getProperties();
         aboutDTO.setContentViewerUrl(properties.getProperty(NiFiProperties.CONTENT_VIEWER_URL));
 
-        aboutDTO.setVersion(OrchsymVersionHelper.INSTANCE.getNifiVersion());
+        aboutDTO.setVersion(VersionHelper.INSTANCE.getNifiVersion());
 
         // Get build info
-        aboutDTO.setBuildTag(OrchsymVersionHelper.INSTANCE.getBuildTag());
-        aboutDTO.setBuildRevision(OrchsymVersionHelper.INSTANCE.getBuildRevision());
-        aboutDTO.setBuildBranch(OrchsymVersionHelper.INSTANCE.getBuildBranch());
-        final Date buildTimestampDate = OrchsymVersionHelper.INSTANCE.getBuildTimestampDate();
+        aboutDTO.setBuildTag(VersionHelper.INSTANCE.getBuildTag());
+        aboutDTO.setBuildRevision(VersionHelper.INSTANCE.getBuildRevision());
+        aboutDTO.setBuildBranch(VersionHelper.INSTANCE.getBuildBranch());
+        final Date buildTimestampDate = VersionHelper.INSTANCE.getBuildTimestampDate();
         aboutDTO.setBuildTimestamp(buildTimestampDate);
         
         if (buildTimestampDate != null) {
@@ -1136,7 +1136,7 @@ public class FlowResource extends ApplicationResource {
             aboutDTO.setBuildDate(localDate);
         }
 
-        aboutDTO.setProductVersion(OrchsymVersionHelper.INSTANCE.getOrchsymVersion());
+        aboutDTO.setProductVersion(VersionHelper.INSTANCE.getOrchsymVersion());
 
         aboutDTO.setLocale(properties.getLocale()); // default locale
 

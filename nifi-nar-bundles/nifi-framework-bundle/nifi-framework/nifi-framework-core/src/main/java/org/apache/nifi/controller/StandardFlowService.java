@@ -304,6 +304,7 @@ public class StandardFlowService implements FlowService, ProtocolHandler {
                 senderListener.start();
             }
 
+            startUDC();
         } catch (final IOException ioe) {
             try {
                 stop(/* force */true);
@@ -314,6 +315,19 @@ public class StandardFlowService implements FlowService, ProtocolHandler {
         } finally {
             writeLock.unlock();
         }
+    }
+
+    private void startUDC() {
+        final com.orchsym.udc.manager.UsageDataManager usageDataManager = com.orchsym.udc.manager.UsageDataManager.get();
+        final long delay = FormatUtils.getTimeDuration(usageDataManager.getAutoRefreshInterval(), TimeUnit.MINUTES);
+
+        java.util.concurrent.Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
+            try {
+                usageDataManager.saveToRepository();
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+            }
+        }, 0, delay, TimeUnit.MINUTES);
     }
 
     @Override
