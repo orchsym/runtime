@@ -204,10 +204,10 @@ public class NodeIdentifier {
             return false;
         }
         final NodeIdentifier other = (NodeIdentifier) obj;
-        if ((this.id == null) ? (other.id != null) : !this.id.equals(other.id)) {
-            return false;
-        }
-        return true;
+//        if ((this.id == null) ? (other.id != null) : !this.id.equals(other.id)) {
+//            return false;
+//        }
+        return logicallyEquals(other);
     }
 
     /**
@@ -229,21 +229,27 @@ public class NodeIdentifier {
         if (this.apiPort != other.apiPort) {
             return false;
         }
-//        if ((this.socketAddress == null) ? (other.socketAddress != null) : !this.socketAddress.equals(other.socketAddress)) {
-//            return false;
-//        }
-//        if (this.socketPort != other.socketPort) {
-//            return false;
-//        }
+        if ((this.socketAddress == null) ? (other.socketAddress != null) : !this.socketAddress.equals(other.socketAddress)) {
+            return false;
+        }
+        if (this.socketPort != other.socketPort) {
+            return false;
+        }
 
         return true;
     }
 
+//    @Override
+//    public int hashCode() {
+//        int hash = 7;
+//        hash = 31 * hash + (this.id != null ? this.id.hashCode() : 0);
+//        return hash;
+//    }
+
     @Override
     public int hashCode() {
-        int hash = 7;
-        hash = 31 * hash + (this.id != null ? this.id.hashCode() : 0);
-        return hash;
+        String hashFlag = this.apiAddress + ":" + this.apiPort + ":" + this.socketAddress + ":" + this.socketPort;
+        return hashFlag.hashCode();
     }
 
     @Override
