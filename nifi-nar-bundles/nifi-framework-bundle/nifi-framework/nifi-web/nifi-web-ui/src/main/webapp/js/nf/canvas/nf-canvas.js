@@ -100,6 +100,7 @@
             kerberos: '../nifi-api/access/kerberos',
             oidc: '../nifi-api/access/oidc/exchange',
             oidcRefresh: '../nifi-api/access/oidc/refreshToken',
+            oidcExternalRefresh: '../orchsym-api/access/oidc/refreshToken',
             revision: '../nifi-api/flow/revision',
             banners: '../nifi-api/flow/banners'
         }
@@ -211,11 +212,7 @@
         try {
             var oldJwt= nf.Storage.getItem('jwt');
             if(oldJwt == null){
-                if(document.cookie.indexOf("oidc-request-rfid=")>-1){
-                    reloadOIDCToken();
-//                    console.log("Refresh jwt from rfid!");
-                }
-//                console.log("Old jwt is lost");
+                reloadOIDCTokenAll();
                 return;
             }
             var oldToken = nf.Common.getJwtPayload(oldJwt);
@@ -225,7 +222,7 @@
             var interval = 30;
             var refresh_left_time = interval *1000*1.5;
             if(activeTime <= refresh_left_time ){
-                reloadOIDCToken();
+                reloadOIDCTokenAll();
             }else{
 //                console.log("Time is not up for refresh oidc token!");
             }
@@ -233,6 +230,16 @@
             console.log("Throw exception when refresh oidc token");
         }
     };
+    var reloadOIDCTokenAll = function(){
+        if(document.cookie.indexOf("oidc-request-rfid")>-1){
+            reloadOIDCToken();
+        } else if(document.cookie.indexOf("oidc-ext-rfid")>-1){
+            reloadExtOIDCToken();
+        }else{
+            console.log("Cookie 'oidc-request-rfid' not found!");
+            console.log("Cookie 'oidc-ext-rfid' not found!");
+        }
+    }
     var reloadOIDCToken = function(){
         $.ajax({
             type: 'GET',
@@ -241,12 +248,27 @@
         }).done(function (jwt) {
             var token = nf.Common.getJwtPayload(jwt);
             var expiration = parseInt(token['exp'], 10) * nf.Common.MILLIS_PER_SECOND;
-            nf.Storage.setItem('jwt', jwt, expiration);
+            if(jwt != null && jwt != ""){
+                nf.Storage.setItem('jwt', jwt, expiration);
+            }
+        });
+    };
+    var reloadExtOIDCToken = function(){
+        $.ajax({
+            type: 'GET',
+            async:false,
+            url: config.urls.oidcExternalRefresh
+        }).done(function (jwt) {
+            var token = nf.Common.getJwtPayload(jwt);
+            var expiration = parseInt(token['exp'], 10) * nf.Common.MILLIS_PER_SECOND;
+            if(jwt != null && jwt != ""){
+                nf.Storage.setItem('jwt', jwt, expiration);
+            }
         });
     };
     var clearOIDCToken = function (xhr, status, error) {
-        if(xhr.status === 401 && nf.Storage.hasItem('jwt') && document.cookie.indexOf("oidc-request-rfid=")>-1){
-            reloadOIDCToken();
+        if(xhr.status === 401 && nf.Storage.hasItem('jwt')){
+            reloadOIDCTokenAll();
         }
     };
     var reloadAll = function(options,deferred){
@@ -275,8 +297,8 @@
             // resolve the deferred
             deferred.resolve(processGroupResult);
         }).fail(function (xhr, status, error) {
-            if(xhr.status === 401 && nf.Storage.hasItem('jwt') && document.cookie.indexOf("oidc-request-rfid=")>-1){
-                reloadOIDCToken();
+            if(xhr.status === 401 && nf.Storage.hasItem('jwt')){
+                reloadOIDCTokenAll();
             }else{
                 deferred.reject(xhr, status, error);
             }

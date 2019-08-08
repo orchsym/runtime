@@ -24,6 +24,9 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.nifi.util.StringUtils;
+
 import java.io.IOException;
 
 /**
@@ -42,6 +45,7 @@ public class LogoutFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
         final boolean supportsOidc = Boolean.parseBoolean(servletContext.getInitParameter("oidc-supported"));
         final boolean supportsKnoxSso = Boolean.parseBoolean(servletContext.getInitParameter("knox-supported"));
+        boolean externalSSO = !StringUtils.isBlank(org.apache.nifi.util.NiFiProperties.createBasicNiFiProperties(null, null).getProperty("orchsym.external.sso.authorize.url"));
 
         if (supportsOidc) {
             final ServletContext apiContext = servletContext.getContext("/nifi-api");
@@ -49,6 +53,9 @@ public class LogoutFilter implements Filter {
         } else if (supportsKnoxSso) {
             final ServletContext apiContext = servletContext.getContext("/nifi-api");
             apiContext.getRequestDispatcher("/access/knox/logout").forward(request, response);
+        } else if (externalSSO) {
+            final ServletContext apiContext = servletContext.getContext("/orchsym-api");
+            apiContext.getRequestDispatcher("/access/oidc/logout").forward(request, response);
         } else {
             ((HttpServletResponse) response).sendRedirect("../login");
         }

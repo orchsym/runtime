@@ -25,6 +25,8 @@ import com.nimbusds.oauth2.sdk.token.RefreshToken;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponse;
 import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
 
+import org.apache.nifi.util.StringUtils;
+import org.apache.nifi.web.security.oidc.cache.OidcCache;
 import org.apache.nifi.web.security.util.CacheKey;
 
 import java.io.IOException;
@@ -71,8 +73,8 @@ public class OidcService {
         }
 
         this.identityProvider = identityProvider;
-        this.stateLookupForPendingRequests = CacheBuilder.newBuilder().expireAfterWrite(duration, units).build();
-        this.jwtLookupForCompletedRequests = CacheBuilder.newBuilder().expireAfterWrite(duration, units).build();
+        this.stateLookupForPendingRequests = OidcCache.getStateLookupForPendingRequests(duration, units);//CacheBuilder.newBuilder().expireAfterWrite(duration, units).build();
+        this.jwtLookupForCompletedRequests = OidcCache.getJwtLookupForCompletedRequests(duration, units);//CacheBuilder.newBuilder().expireAfterWrite(duration, units).build();
     }
 
     /**
@@ -81,7 +83,8 @@ public class OidcService {
      * @return whether OpenId Connect is enabled
      */
     public boolean isOidcEnabled() {
-        return identityProvider.isOidcEnabled();
+        boolean externalSSO = !StringUtils.isBlank(org.apache.nifi.util.NiFiProperties.createBasicNiFiProperties(null, null).getProperty("orchsym.external.sso.authorize.url"));
+        return identityProvider.isOidcEnabled() || externalSSO;
     }
 
     /**
