@@ -22,15 +22,16 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import org.apache.nifi.bundle.BundleExtensionDiscover;
@@ -67,10 +68,16 @@ public class UsageDataManager {
     private static final String KEY_REPO_REFRESH = "orchsym.usage.repository.autorefresh.interval";
     private static final String DEFAULT_REFRESH = "12 hours";
 
-    private static final String KEY_REPO_FILE_PATTERN = "orchsym.usage.repository.file.pattern";
+    // orchsym_2019-08-06.ud
     private static final String FILE_PREFIX = "orchsym_";
     private static final String FILE_EXT = ".ud";
-    private static final String DEFAULT_FILE_PATTERN = "yyyy-MM-dd"; // orchsym_2019-08-06.ud
+    final DateTimeFormatter datetimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    enum Freq {
+        daily, weekly, monthly, yearly;
+    }
+
+    private static final String KEY_REPO_FILE_FREQ = "orchsym.usage.repository.file.frequency";
 
     private List<CollectorService> servicesList = new ArrayList<>();
     private final NiFiProperties properties;
@@ -106,8 +113,15 @@ public class UsageDataManager {
         return properties.getProperty(KEY_REPO_REFRESH, DEFAULT_REFRESH);
     }
 
-    private String getFilePattern() {
-        return properties.getProperty(KEY_REPO_FILE_PATTERN, DEFAULT_FILE_PATTERN);
+    private Freq getFileFrequency() {
+        String property = properties.getProperty(KEY_REPO_FILE_FREQ);
+        if (null != null)
+            for (Freq f : Freq.values()) {
+                if (f.toString().equalsIgnoreCase(property)) {
+                    return f;
+                }
+            }
+        return Freq.monthly;
     }
 
     /**
@@ -137,7 +151,49 @@ public class UsageDataManager {
     }
 
     public List<String> getDateOfCollectorFiles() {
-        return getCollectorFiles().stream().map(f -> f.getName()).map(n -> n.substring(FILE_PREFIX.length(), n.lastIndexOf(FILE_EXT))).collect(Collectors.toList());
+        return getCollectorFiles().stream().map(f -> f.getName()).map(n -> n.substring(FILE_PREFIX.length(), n.lastIndexOf(FILE_EXT))).sorted().collect(Collectors.toList());
+    }
+
+    private void purgeOtherMonth() {
+        final Freq fileFrequency = getFileFrequency();
+        if (fileFrequency == Freq.daily) { // because the file is daily, so no need to do
+            return;
+        }
+
+        final List<String> dateList = getDateOfCollectorFiles();
+        final LocalDate now = LocalDate.now();
+        Map<LocalDate, List<LocalDate>> group = filterDateAndGroup(dateList, now, fileFrequency);
+
+        // keep the last one for group
+        final File folder = getUsageRepositoryPath().toFile();
+        File file = null;
+        for (Entry<LocalDate, List<LocalDate>> entry : group.entrySet()) {
+            List<LocalDate> list = entry.getValue();
+            for (int i = 0; i < list.size() - 1; i++) { // except the last one
+                file = new File(folder, FILE_PREFIX + list.get(i).format(datetimeFormatter) + FILE_EXT);
+                if (file.exists()) {
+                    file.delete();
+                }
+            }
+        }
+    }
+
+    static Map<LocalDate, List<LocalDate>> filterDateAndGroup(final List<String> dateList, final LocalDate current, final Freq fileFrequency) {
+        return dateList.stream()//
+                .map(s -> LocalDate.parse(s)) // convert to date
+                .filter(d -> !d.withDayOfMonth(1).equals(current.withDayOfMonth(1))) // except current month files
+                .collect(Collectors.groupingBy(d -> {
+                    switch (fileFrequency) {
+                    case weekly:
+                        return d.with(ChronoField.DAY_OF_WEEK, 1);
+                    case monthly:
+                        return d.withDayOfMonth(1);
+                    case yearly:
+                        return d.withDayOfYear(1);
+                    default:
+                    }
+                    return d;
+                }));
     }
 
     public void saveToRepository() throws IOException {
@@ -155,11 +211,13 @@ public class UsageDataManager {
         } else {
             result.put(FIELD_TIMESTAMP, datetime.toString());
         }
-        final DateTimeFormatter datetimeFormatter = DateTimeFormatter.ofPattern(getFilePattern());
+
         final String fileFormat = datetime.format(datetimeFormatter);
         File file = new File(folder, FILE_PREFIX + fileFormat + FILE_EXT);
         try (FileWriter fw = new FileWriter(file)) {
             result.writeJSONString(fw);
         }
+
+        purgeOtherMonth();
     }
 }

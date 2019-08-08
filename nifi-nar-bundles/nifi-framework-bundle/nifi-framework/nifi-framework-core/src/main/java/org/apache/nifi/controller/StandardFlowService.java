@@ -327,7 +327,7 @@ public class StandardFlowService implements FlowService, ProtocolHandler {
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
             }
-        }, 0, delay, TimeUnit.MINUTES);
+        }, 30, delay, TimeUnit.MINUTES);
     }
 
     @Override
