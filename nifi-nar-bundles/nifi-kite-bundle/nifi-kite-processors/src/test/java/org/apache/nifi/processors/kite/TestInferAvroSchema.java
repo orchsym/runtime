@@ -313,6 +313,33 @@ public class TestInferAvroSchema {
         data.assertAttributeEquals(CoreAttributes.MIME_TYPE.key(), "application/json");
     }
 
+    @Test
+    public void inferAvroSchemaFromCSVFileNoDoc() throws Exception {
+
+        runner.assertValid();
+
+        // Read in the header
+        StringWriter writer = new StringWriter();
+        IOUtils.copy((Files.newInputStream(Paths.get("src/test/resources/ShapesHeader.csv"), StandardOpenOption.READ)), writer, "UTF-8");
+        runner.setProperty(InferAvroSchema.CSV_HEADER_DEFINITION, writer.toString());
+        runner.setProperty(InferAvroSchema.GET_CSV_HEADER_DEFINITION_FROM_INPUT, "false");
+        runner.setProperty(InferAvroSchema.GENERATE_DOC_ATTRIBUTE, "false");
+
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put(CoreAttributes.MIME_TYPE.key(), "text/csv");
+        runner.enqueue(new File("src/test/resources/Shapes_NoHeader.csv").toPath(), attributes);
+
+        runner.run();
+        runner.assertTransferCount(InferAvroSchema.REL_UNSUPPORTED_CONTENT, 0);
+        runner.assertTransferCount(InferAvroSchema.REL_FAILURE, 0);
+        runner.assertTransferCount(InferAvroSchema.REL_ORIGINAL, 1);
+        runner.assertTransferCount(InferAvroSchema.REL_SUCCESS, 1);
+
+        MockFlowFile data = runner.getFlowFilesForRelationship(InferAvroSchema.REL_SUCCESS).get(0);
+        data.assertContentEquals(unix2PlatformSpecificLineEndings(new File("src/test/resources/Shapes_header_no_doc.csv.avro")));
+        data.assertAttributeEquals(CoreAttributes.MIME_TYPE.key(), "application/avro-binary");
+    }
+
 
     static byte[] unix2PlatformSpecificLineEndings(final File file) throws IOException {
         try (final BufferedInputStream in = new BufferedInputStream(new FileInputStream(file)); final ByteArrayOutputStream out = new ByteArrayOutputStream()) {

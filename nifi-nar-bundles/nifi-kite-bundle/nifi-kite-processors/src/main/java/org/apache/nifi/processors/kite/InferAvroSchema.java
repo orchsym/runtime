@@ -34,6 +34,7 @@ import org.apache.nifi.components.ValidationResult;
 import org.apache.nifi.components.Validator;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
+import org.apache.nifi.flowfile.attributes.BooleanAllowableValues;
 import org.apache.nifi.flowfile.attributes.CoreAttributes;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
@@ -114,6 +115,7 @@ public class InferAvroSchema
     public static final String AVRO_MIME_TYPE = "application/avro-binary";
     public static final String AVRO_FILE_EXTENSION = ".avro";
     public static final Pattern AVRO_RECORD_NAME_PATTERN = Pattern.compile("[A-Za-z_]+[A-Za-z0-9_.]*[^.]");
+    private static final String DOC = "doc";
 
     public static final PropertyDescriptor SCHEMA_DESTINATION = new PropertyDescriptor.Builder()
             .name("Schema Output Destination")
@@ -230,6 +232,15 @@ public class InferAvroSchema
             .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
             .build();
 
+    public static final PropertyDescriptor GENERATE_DOC_ATTRIBUTE = new PropertyDescriptor.Builder()
+            .name("Generate doc Attribute")
+            .description("If true the Avro output will contain doc attribute which is optional.")
+            .required(false)
+            .defaultValue(BooleanAllowableValues.TRUE.value())
+            .allowableValues(BooleanAllowableValues.list())
+            .addValidator(BooleanAllowableValues.validator())
+            .build();
+
     public static final PropertyDescriptor NUM_RECORDS_TO_ANALYZE = new PropertyDescriptor.Builder()
             .name("Number Of Records To Analyze")
             .description("This property only applies to JSON content type. The number of JSON records that should be" +
@@ -269,6 +280,7 @@ public class InferAvroSchema
         properties.add(ESCAPE_STRING);
         properties.add(QUOTE_STRING);
         properties.add(PRETTY_AVRO_OUTPUT);
+        properties.add(GENERATE_DOC_ATTRIBUTE);
         properties.add(RECORD_NAME);
         properties.add(NUM_RECORDS_TO_ANALYZE);
         properties.add(CHARSET);
@@ -412,13 +424,17 @@ public class InferAvroSchema
         session.read(inputFlowFile, new InputStreamCallback() {
             @Override
             public void process(InputStream in) throws IOException {
-                avroSchema.set(CSVUtil
-                        .inferSchema(
-                                context.getProperty(RECORD_NAME).evaluateAttributeExpressions(inputFlowFile).getValue(), in, props)
-                        .toString(context.getProperty(PRETTY_AVRO_OUTPUT).asBoolean()));
+                Schema schema = CSVUtil.inferSchema(context.getProperty(RECORD_NAME).evaluateAttributeExpressions(inputFlowFile).getValue(), in, props);
+                String schemaStr = schema.toString(context.getProperty(PRETTY_AVRO_OUTPUT).asBoolean());
+                if (context.getProperty(GENERATE_DOC_ATTRIBUTE).asBoolean()) {
+                    avroSchema.set(schemaStr);
+
+                } else {
+                    avroSchema.set(org.apache.nifi.processors.kite.JsonUtil.removeKey(schemaStr, DOC, context.getProperty(PRETTY_AVRO_OUTPUT).asBoolean()));
+                }
+
             }
         });
-
         return avroSchema.get();
     }
 
@@ -440,11 +456,14 @@ public class InferAvroSchema
         session.read(inputFlowFile, new InputStreamCallback() {
             @Override
             public void process(InputStream in) throws IOException {
-                Schema as = JsonUtil.inferSchema(
-                        in, context.getProperty(RECORD_NAME).evaluateAttributeExpressions(inputFlowFile).getValue(),
+                Schema schema = JsonUtil.inferSchema(in, context.getProperty(RECORD_NAME).evaluateAttributeExpressions(inputFlowFile).getValue(),
                         context.getProperty(NUM_RECORDS_TO_ANALYZE).evaluateAttributeExpressions(inputFlowFile).asInteger());
-                avroSchema.set(as.toString(context.getProperty(PRETTY_AVRO_OUTPUT).asBoolean()));
-
+                String schemaStr = schema.toString(context.getProperty(PRETTY_AVRO_OUTPUT).asBoolean());
+                if (context.getProperty(GENERATE_DOC_ATTRIBUTE).asBoolean()) {
+                    avroSchema.set(schemaStr);
+                } else {
+                    avroSchema.set(org.apache.nifi.processors.kite.JsonUtil.removeKey(schemaStr, DOC, context.getProperty(GENERATE_DOC_ATTRIBUTE).asBoolean()));
+                }
             }
         });
 
