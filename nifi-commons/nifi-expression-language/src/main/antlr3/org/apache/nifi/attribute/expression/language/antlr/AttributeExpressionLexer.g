@@ -138,6 +138,14 @@ UNESCAPE_HTML4 : 'unescapeHtml4';
 BASE64_ENCODE : 'base64Encode';
 BASE64_DECODE : 'base64Decode';
 GET_STATE_VALUE: 'getStateValue';
+TO_BIGDECIMAL : 'toBigDecimal'; //Add BigDecimal 
+TO_PERCENT : 'toPercent';
+BIGDECIMAL_ABS : 'abs';
+BIGDECIMAL_NEGATE : 'negate';
+BIGDECIMAL_FLOATVALUE : 'floatValue';
+BIGDECIMAL_INTVALUE : 'intValue';
+BIGDECIMAL_LONGVALUE : 'longValue';
+BIGDECIMAL_SHORTVALUE : 'shortValue';
 
 // 1 arg functions
 SUBSTRING_AFTER	: 'substringAfter';
@@ -192,7 +200,7 @@ MOD : 'mod';
 PLUS : 'plus';
 MINUS : 'minus';
 MULTIPLY : 'multiply';
-DIVIDE : 'divide';
+// DIVIDE : 'divide';
 MATH : 'math';
 FROM_RADIX : 'fromRadix';
 TO_RADIX : 'toRadix';
@@ -201,6 +209,14 @@ AND : 'and';
 JOIN : 'join';
 TO_LITERAL : 'literal';
 JSON_PATH : 'jsonPath';
+BIGDECIMAL_COMPARETO : 'compareTo';
+BIGDECIMAL_MIN : 'min';
+BIGDECIMAL_MAX : 'max';
+BIGDECIMAL_MOVELEFT : 'moveLeft';
+BIGDECIMAL_MOVERIGHT : 'moveRight';
+BIGDECIMAL_POW : 'pow';
+BIGDECIMAL_POWOFTEN : 'powOfTen';
+
 
 // 2 arg functions
 SUBSTRING	: 'substring';
@@ -208,6 +224,10 @@ REPLACE	: 'replace';
 REPLACE_FIRST	: 'replaceFirst';
 REPLACE_ALL : 'replaceAll';
 IF_ELSE : 'ifElse';
+
+// 1-3 arg functions
+BIGDECIMAL_SETSCALE : 'setScale';
+DIVIDE : 'divide';
 
 // 4 arg functions
 GET_DELIMITED_FIELD	: 'getDelimitedField';

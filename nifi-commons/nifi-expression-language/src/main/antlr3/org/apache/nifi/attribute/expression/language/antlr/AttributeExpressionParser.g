@@ -92,21 +92,27 @@ multiArgBool : (IN) LPAREN! anyArg (COMMA! anyArg)* RPAREN!;
 
 
 // functions that return Numbers (whole or decimal)
-zeroArgNum	: (LENGTH | TO_NUMBER | TO_DECIMAL | COUNT) LPAREN! RPAREN!;
+zeroArgNum	: (LENGTH | TO_NUMBER | TO_DECIMAL | COUNT ) LPAREN! RPAREN!;  
 oneArgNum	: ((INDEX_OF | LAST_INDEX_OF) LPAREN! anyArg RPAREN!) |
-			  ((MOD | PLUS | MINUS | MULTIPLY | DIVIDE) LPAREN! anyArg RPAREN!) |
+			  ((MOD | PLUS | MINUS | MULTIPLY ) LPAREN! anyArg RPAREN!) |
 			  ((ADD_YEARS | ADD_MONTHS | ADD_WEEKS | ADD_DAYS | ADD_HOURS | ADD_MINS | ADD_SECS) LPAREN! anyArg RPAREN!);
-oneOrTwoArgNum : MATH LPAREN! anyArg (COMMA! anyArg)? RPAREN!;
+mulitArgNum :(DIVIDE) LPAREN! anyArg (COMMA! anyArg)* RPAREN!;
 zeroOrOneOrTwoArgNum : TO_DATE LPAREN! anyArg? (COMMA! anyArg)? RPAREN! |
 					   (GET_YEAR | GET_MONTH | GET_DAY_OF_YEAR | GET_DAY_OF_MONTH | GET_DAY_OF_WEEK | GET_DAY_OF_WEEK_IN_MONTH | GET_WEEK_OF_MONTH | GET_WEEK_OF_YEAR | GET_HOUR | GET_HOUR_OF_DAY | GET_MINUTE | GET_SECOND | GET_MILLISECOND | GET_DATE_FOR_WEEK | GET_QUARTER) LPAREN! anyArg? (COMMA! anyArg)? RPAREN!;
 
+// functions that return BigDecimal
+zeroArgBigDecimal	: (TO_BIGDECIMAL | TO_PERCENT | BIGDECIMAL_ABS | BIGDECIMAL_NEGATE | BIGDECIMAL_FLOATVALUE | BIGDECIMAL_INTVALUE | BIGDECIMAL_LONGVALUE | BIGDECIMAL_SHORTVALUE) LPAREN! RPAREN!; 
+oneOrTwoArgBigDecimal	: (BIGDECIMAL_COMPARETO  | BIGDECIMAL_MIN | BIGDECIMAL_MAX | BIGDECIMAL_MOVELEFT | BIGDECIMAL_MOVERIGHT | BIGDECIMAL_POW | BIGDECIMAL_POWOFTEN)  LPAREN! anyArg? (COMMA! anyArg)? RPAREN!;
+multiArgBigDecimal : (BIGDECIMAL_SETSCALE) LPAREN! anyArg (COMMA! anyArg)* RPAREN!;
+
 stringFunctionRef : zeroArgString | oneArgString | twoArgString | fiveArgString;
 booleanFunctionRef : zeroArgBool | oneArgBool | multiArgBool;
-numberFunctionRef : zeroArgNum | oneArgNum | oneOrTwoArgNum | zeroOrOneOrTwoArgNum;
+numberFunctionRef : zeroArgNum | oneArgNum | mulitArgNum | zeroOrOneOrTwoArgNum;
+bigDecimalFunctionRef : zeroArgBigDecimal | oneOrTwoArgBigDecimal | multiArgBigDecimal;
 
 anyArg : WHOLE_NUMBER | DECIMAL | numberFunctionRef | STRING_LITERAL | zeroArgString | oneArgString | twoArgString | fiveArgString | booleanLiteral | zeroArgBool | oneArgBool | multiArgBool | expression;
 stringArg : STRING_LITERAL | zeroArgString | oneArgString | twoArgString | expression;
-functionRef : stringFunctionRef | booleanFunctionRef | numberFunctionRef;
+functionRef : stringFunctionRef | booleanFunctionRef | numberFunctionRef | bigDecimalFunctionRef;
 
 
 
