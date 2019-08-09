@@ -42,6 +42,7 @@ import org.apache.nifi.bundle.BundleCoordinate;
 import org.apache.nifi.cluster.manager.NodeResponse;
 import org.apache.nifi.components.ConfigurableComponent;
 import org.apache.nifi.connectable.ConnectableType;
+import org.apache.nifi.controller.FlowController;
 import org.apache.nifi.controller.ScheduledState;
 import org.apache.nifi.controller.serialization.FlowEncodingVersion;
 import org.apache.nifi.controller.service.ControllerServiceState;
@@ -109,6 +110,7 @@ import org.apache.nifi.web.api.request.ClientIdParameter;
 import org.apache.nifi.web.api.request.LongParameter;
 import org.apache.nifi.web.security.token.NiFiAuthenticationToken;
 import org.apache.nifi.web.util.Pause;
+import org.apache.nifi.web.util.PositionCalcUtil;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1639,7 +1641,7 @@ public class ProcessGroupResource extends ApplicationResource {
                     value = "The process group id.",
                     required = true
             )
-            @PathParam("id") final String groupId,
+            @PathParam("id") final String parentGroupId,
             @ApiParam(
                     value = "The process group configuration details.",
                     required = true
@@ -1662,8 +1664,18 @@ public class ProcessGroupResource extends ApplicationResource {
             if (proposedPosition.getX() == null || proposedPosition.getY() == null) {
                 throw new IllegalArgumentException("The x and y coordinate of the proposed position must be specified.");
             }
+        } else { // if not set the position, find new one
+            final PositionDTO availablePosition = PositionCalcUtil.newAvailablePosition(serviceFacade);
+            requestProcessGroupEntity.getComponent().setPosition(availablePosition);
         }
 
+        String theParentGroupId = parentGroupId;
+        if (FlowController.ROOT_GROUP_ID_ALIAS.equals(parentGroupId)) {
+            final ProcessGroupEntity root = serviceFacade.getProcessGroup(FlowController.ROOT_GROUP_ID_ALIAS);
+            theParentGroupId = root.getId(); // use the real id directly
+        }
+        final String groupId = theParentGroupId;
+        
         // if the group name isn't specified, ensure the group is being imported from version control
         if (StringUtils.isBlank(requestProcessGroupEntity.getComponent().getName()) && requestProcessGroupEntity.getComponent().getVersionControlInformation() == null) {
             throw new IllegalArgumentException("The group name is required when the group is not imported from version control.");
