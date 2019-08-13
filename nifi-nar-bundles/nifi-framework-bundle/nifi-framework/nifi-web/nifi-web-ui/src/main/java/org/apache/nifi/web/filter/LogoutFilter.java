@@ -47,7 +47,7 @@ public class LogoutFilter implements Filter {
         final boolean supportsKnoxSso = Boolean.parseBoolean(servletContext.getInitParameter("knox-supported"));
         boolean externalSSO = !StringUtils.isBlank(org.apache.nifi.util.NiFiProperties.createBasicNiFiProperties(null, null).getProperty("orchsym.external.sso.authorize.url"));
 
-        if (supportsOidc) {
+        if (supportsOidc && !externalSSO) {
             final ServletContext apiContext = servletContext.getContext("/nifi-api");
             apiContext.getRequestDispatcher("/access/oidc/logout").forward(request, response);
         } else if (supportsKnoxSso) {
