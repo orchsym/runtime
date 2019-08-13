@@ -3,6 +3,8 @@ package com.baishancloud.orchsym.processors;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.baishancloud.orchsym.processors.sqlSchema.JsonSchema;
+import com.baishancloud.orchsym.processors.sqlSchema.csvSchema;
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.file.DataFileWriter;
@@ -17,6 +19,11 @@ import org.apache.avro.io.Encoder;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.io.JsonEncoder;
 import org.apache.avro.specific.SpecificDatumReader;
+import org.apache.calcite.config.CalciteConnectionProperty;
+import org.apache.calcite.config.Lex;
+import org.apache.calcite.jdbc.CalciteConnection;
+import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.util.ConversionUtil;
 import org.apache.commons.io.IOUtils;
 import org.kitesdk.data.spi.JsonUtil;
 
@@ -26,12 +33,22 @@ import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Utils {
+    private static Statement statement;
+    private static Connection connection;
+    private static CalciteConnection calciteConnection;
+    private static SchemaPlus rootSchema;
     private Utils() {
     }
 
@@ -39,80 +56,14 @@ public class Utils {
     public static List<String> parseCommaDelimitedStr(String commaDelimitedStr) {
         return Arrays.asList(commaDelimitedStr.split("\\s*,\\s*"));
     }
-
-    public static byte[] jsonToAvro(String json, String schemaStr) throws IOException {
-        InputStream input = null;
-        DataFileWriter<GenericRecord> writer = null;
-        Encoder encoder = null;
-        ByteArrayOutputStream output = null;
-        try {
-            Schema schema = new Schema.Parser().parse(schemaStr);
-            DatumReader<GenericRecord> reader = new GenericDatumReader<GenericRecord>(schema);
-            input = new ByteArrayInputStream(json.getBytes());
-            output = new ByteArrayOutputStream();
-            DataInputStream din = new DataInputStream(input);
-            writer = new DataFileWriter<GenericRecord>(new GenericDatumWriter<GenericRecord>());
-            writer.create(schema, output);
-            Decoder decoder = DecoderFactory.get().jsonDecoder(schema, din);
-            GenericRecord datum;
-            while (true) {
-                try {
-                    datum = reader.read(null, decoder);
-                } catch (EOFException eofe) {
-                    break;
-                }
-                writer.append(datum);
-            }
-            writer.flush();
-            return output.toByteArray();
-        }finally {
-            try { input.close(); }catch (Exception e) { }
-        }
-    }
-
-    public static String avroToJson(byte[] avro) throws IOException {
-        boolean pretty = false;
-        GenericDatumReader<GenericRecord> reader = null;
-        JsonEncoder encoder = null;
-        ByteArrayOutputStream output = null;
-        try {
-            reader = new GenericDatumReader<GenericRecord>();
-            InputStream input = new ByteArrayInputStream(avro);
-            DataFileStream<GenericRecord> streamReader = new DataFileStream<GenericRecord>(input, reader);
-            output = new ByteArrayOutputStream();
-            Schema schema = streamReader.getSchema();
-            DatumWriter<GenericRecord> writer = new GenericDatumWriter<GenericRecord>(schema);
-            encoder = EncoderFactory.get().jsonEncoder(schema, output, pretty);
-            for (GenericRecord datum : streamReader) {
-                writer.write(datum, encoder);
-            }
-            encoder.flush();
-            output.flush();
-            return new String(output.toByteArray());
-        } finally {
-            try { if (output != null) output.close(); } catch (Exception e) { }
-        }
-    }
-
     //获取Avro schema
-    public static String inferAvroSchemaFromAvro(InputStream inputStream) throws IOException {
+    private static String inferAvroSchemaFromAvro(InputStream inputStream) throws IOException {
         DatumReader<GenericRecord> datumReader = new SpecificDatumReader<GenericRecord>();
         DataFileStream<GenericRecord> fileReader = new DataFileStream<GenericRecord>(inputStream, datumReader);
         Schema schema = fileReader.getSchema();
         fileReader.close();
         return schema.toString();
     }
-    //获取json对应的AvroSchema
-    public static String inferAvroSchemaFromJSON(String json) {
-        InputStream in = new ByteArrayInputStream(json.getBytes());
-        final AtomicReference<String> avroSchema = new AtomicReference<>();
-        Schema as = JsonUtil.inferSchema(
-                in, "orchsym_schema",
-                10);
-        avroSchema.set(as.toString(true));//格式和输出schema
-        return avroSchema.get();
-    }
-
     public static String jsonIncludeAndExclude(InputStream inRow, List<String> include, List<String> exclude) throws IOException {
         String jspath = IOUtils.toString(inRow, "UTF-8");
         List<String> includeList = JsonRemoveUtils.getKeysByJSON(jspath,include);
@@ -242,9 +193,171 @@ public class Utils {
         }
 
     }
-    public static boolean isJsonArray(String data){
+    private static boolean isJsonArray(String data){
         return data.startsWith(Constant.JSON_ARRAY_START) && data.endsWith(Constant.JSON_ARRAY_END);
     }
 
+    public static byte[] filterRecord(InputStream inRow,String dataType,String sql) throws IOException, SQLException, ClassNotFoundException {
+        if (dataType.contains(Constant.CONTENT_TYPE_JSON)){
+            return JsonSQL(IOUtils.toString(inRow),sql).getBytes();
+        }else if (dataType.contains(Constant.CONTENT_TYPE_TXT)){
+            return CsvSQL(inRow,sql).getBytes();
+        }else{
+            return avroSQL(inRow,sql).getBytes();
+        }
+    }
 
+    private static void init() throws ClassNotFoundException, SQLException{
+        Class.forName("org.apache.calcite.jdbc.Driver");
+        //修改默认编码格式为UTF16,避免中文数据查询不到
+        System.setProperty("calcite.default.charset", ConversionUtil.NATIVE_UTF16_CHARSET_NAME);
+        Properties properties = new Properties();
+        properties.put(CalciteConnectionProperty.LEX.camelName(), Lex.MYSQL_ANSI.name());
+        connection = DriverManager.getConnection("jdbc:calcite:",properties);
+        calciteConnection = connection.unwrap(CalciteConnection.class);
+        calciteConnection.setSchema(Constant.DATABASE_NAME);// 设置默认Schema,避免每次sql都要指定database
+        rootSchema = calciteConnection.getRootSchema();
+        rootSchema.setCacheEnabled(false);
+        statement = connection.createStatement();
+    }
+    private static byte[] jsonToAvro(String json, String schemaStr) throws IOException {
+        InputStream input = null;
+        DataFileWriter<GenericRecord> writer = null;
+        ByteArrayOutputStream output = null;
+        try {
+            Schema schema = new Schema.Parser().parse(schemaStr);
+            DatumReader<GenericRecord> reader = new GenericDatumReader<GenericRecord>(schema);
+            input = new ByteArrayInputStream(json.getBytes());
+            output = new ByteArrayOutputStream();
+            DataInputStream din = new DataInputStream(input);
+            writer = new DataFileWriter<GenericRecord>(new GenericDatumWriter<GenericRecord>());
+            writer.create(schema, output);
+            Decoder decoder = DecoderFactory.get().jsonDecoder(schema, din);
+            GenericRecord datum;
+            while (true) {
+                try {
+                    datum = reader.read(null, decoder);
+                } catch (EOFException eofe) {
+                    break;
+                }
+                writer.append(datum);
+            }
+            writer.flush();
+            return output.toByteArray();
+        }finally {
+            try {
+                input.close();
+            }catch (Exception e) {
+                throw new IOException(e);
+            }
+        }
+    }
+
+    public static String avroToJson(byte[] avro) throws IOException {
+        GenericDatumReader<GenericRecord> reader = null;
+        JsonEncoder encoder = null;
+        ByteArrayOutputStream output = null;
+        try {
+            reader = new GenericDatumReader<GenericRecord>();
+            InputStream input = new ByteArrayInputStream(avro);
+            DataFileStream<GenericRecord> streamReader = new DataFileStream<GenericRecord>(input, reader);
+            output = new ByteArrayOutputStream();
+            Schema schema = streamReader.getSchema();
+            DatumWriter<GenericRecord> writer = new GenericDatumWriter<GenericRecord>(schema);
+            encoder = EncoderFactory.get().jsonEncoder(schema, output, false);
+            for (GenericRecord datum : streamReader) {
+                writer.write(datum, encoder);
+            }
+            encoder.flush();
+            output.flush();
+            return new String(output.toByteArray());
+        } finally {
+            try {
+                if (output != null)
+                {
+                    output.close();
+                }
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
+        }
+    }
+    //获取json对应的AvroSchema
+    private static String inferAvroSchemaFromJSON(String json) {
+        InputStream in = new ByteArrayInputStream(json.getBytes());
+        final AtomicReference<String> avroSchema = new AtomicReference<>();
+        Schema as = JsonUtil.inferSchema(
+                in, "orchsym_schema",
+                10);
+        //格式化输出schema
+        avroSchema.set(as.toString(true));
+        return avroSchema.get();
+    }
+    //json sql
+    private static String JsonSQL(String json,String sql) throws ClassNotFoundException, SQLException {
+        init();
+        rootSchema.add(Constant.DATABASE_NAME, new JsonSchema(Constant.TABLE_NAME, json));
+        ResultSet resultSet = statement.executeQuery(sql);
+        JSONArray array = new JSONArray();
+        while (resultSet.next()) {
+            JSONObject jo = new JSONObject();
+            int n = resultSet.getMetaData().getColumnCount();
+            for (int i = 1; i <= n; i++) {
+                jo.put(resultSet.getMetaData().getColumnName(i), resultSet.getObject(i));
+            }
+            array.add(jo);
+        }
+        resultSet.close();
+        statement.close();
+        connection.close();
+        return array.isEmpty()?Constant.STRING_EMPTY:array.toJSONString();
+    }
+    private static String CsvSQL(InputStream csv,String sql) throws SQLException, ClassNotFoundException {
+        init();
+        rootSchema.add(Constant.DATABASE_NAME, new csvSchema(Constant.TABLE_NAME, csv));
+        ResultSet resultSet = statement.executeQuery(sql);
+        int n = resultSet.getMetaData().getColumnCount();
+        StringBuilder result =new StringBuilder();
+        StringBuilder heard = new StringBuilder();
+        //表头
+        for (int i = 1; i <= n; i++) {
+            if (i==n){
+                heard.append(resultSet.getMetaData().getColumnLabel(i));
+            }else {
+                heard.append(resultSet.getMetaData().getColumnLabel(i)+Constant.SIGN_COMMA);
+            }
+        }
+        result.append(heard);
+        result.append("\n");
+        //表内容
+        while (resultSet.next()) {
+            StringBuilder table = new StringBuilder();
+            for (int i = 1; i <= n; i++) {
+                if (i==n){
+                    table.append(resultSet.getObject(i));
+                }else {
+                    table.append(resultSet.getObject(i)+Constant.SIGN_COMMA);
+                }
+            }
+            result.append(table);
+            result.append("\n");
+        }
+        resultSet.close();
+        statement.close();
+        connection.close();
+        return result.toString();
+    }
+    private static String avroSQL(InputStream avro,String sql) throws IOException, SQLException, ClassNotFoundException {
+        String json = avroToJson(IOUtils.toByteArray(avro));
+        String query = JsonSQL(json,sql);
+        //排除查不到数据时返回“[]”的情况
+        if (query.length()>2){
+            query = query.substring(1,query.length()-1);
+            String schema = inferAvroSchemaFromJSON(query);
+            return IOUtils.toString(jsonToAvro(query,schema));
+        }else {
+            return Constant.STRING_EMPTY;
+        }
+
+    }
 }

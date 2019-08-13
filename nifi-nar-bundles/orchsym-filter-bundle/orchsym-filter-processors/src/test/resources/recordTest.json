@@ -1,0 +1,26 @@
+[
+  {
+    "name":"张三",
+    "age":"22",
+    "city":"GZ",
+    "isChina":true
+  },
+  {
+    "name":"李四",
+    "age":"23",
+    "city":"BJ",
+    "isChina":true
+  },
+  {
+    "name":"Linda",
+    "age":"20",
+    "city":"New York",
+    "isChina":false
+  },
+  {
+    "name":"Tom",
+    "age":"22",
+    "city":"London",
+    "isChina":false
+  }
+]

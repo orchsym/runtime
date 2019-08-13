@@ -42,6 +42,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.specific.SpecificDatumReader;
+import org.apache.commons.io.IOUtils;
 import org.apache.nifi.util.TestRunners;
 import org.junit.Assert;
 import org.junit.Before;
@@ -73,7 +74,7 @@ public class FilterFieldTest {
         Record testDataRecord = (Record) JsonUtil.convertToAvro(model, jsonNode, dataAvroSchema);
 
         dataRecordBytes = bytesFor(Arrays.asList(testDataRecord));
-
+        System.out.println(IOUtils.toString(dataRecordBytes));
     }
 
     @SuppressWarnings({ "unchecked", "resource" })
@@ -116,7 +117,7 @@ public class FilterFieldTest {
 
     }
 
-    // @Test //seems can't work for change schema
+     //@Test //seems can't work for change schema
     public void testProcessor() throws IOException, ParseException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         processsAvro(new ByteArrayInputStream(dataRecordBytes), baos, Arrays.asList("age", "details/tel", "details/tags"), Collections.emptyList());

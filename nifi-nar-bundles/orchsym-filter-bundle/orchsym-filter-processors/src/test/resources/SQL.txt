@@ -1,0 +1,14 @@
+[
+{
+"field": "name",
+"function": "length",
+"opertator": "=",
+"value": "2"
+},
+{
+"field": "age",
+"function": "",
+"opertator": "<",
+"value": "23"
+}
+]
