@@ -1,10 +1,9 @@
 package org.apache.nifi.attribute.expression.language.evaluation.functions.bigdecimal;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
+import java.math.RoundingMode;
 import java.util.Map;
 
-import org.apache.nifi.attribute.expression.language.evaluation.BigDecimalQueryResult;
 import org.apache.nifi.attribute.expression.language.evaluation.Evaluator;
 import org.apache.nifi.attribute.expression.language.evaluation.QueryResult;
 import org.apache.nifi.attribute.expression.language.evaluation.StringEvaluator;
@@ -29,8 +28,11 @@ public class ToPercentBigDecimalEvaluator extends StringEvaluator {
             return new StringQueryResult(null);
         }
         BigDecimal subject = new BigDecimal(value.toString());
-        BigDecimal hundr = new BigDecimal(100); 
-        return new StringQueryResult(subject.multiply(hundr).toString()+"%");
+        BigDecimal hundr = new BigDecimal(100);
+
+        BigDecimal percent = subject.multiply(hundr);
+        percent = percent.setScale(subject.scale() - 2, RoundingMode.DOWN); // 00 in end, cut it
+        return new StringQueryResult(percent.toString() + "%");
     }
 
     @Override

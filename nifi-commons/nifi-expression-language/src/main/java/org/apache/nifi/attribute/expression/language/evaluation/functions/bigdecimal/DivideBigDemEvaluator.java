@@ -63,7 +63,7 @@ public class DivideBigDemEvaluator extends BigDecimalEvaluator {
             return new BigDecimalQueryResult(null);
         }
 
-        RoundingMode roundMode = null;
+        RoundingMode roundMode = RoundingMode.HALF_UP;
         if (null != round) {
             final String roundStr = round.evaluate(attributes).getValue();
             for (RoundingMode rm : RoundingMode.values()) {

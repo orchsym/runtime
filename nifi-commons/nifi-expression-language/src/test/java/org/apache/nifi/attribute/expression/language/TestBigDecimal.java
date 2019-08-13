@@ -75,7 +75,7 @@ public class TestBigDecimal {
 
         // scale
         result = Query.evaluateExpressions("${literal('3.14'):toBigDecimal():divide(2.0, 1)}", valueLookup, null);
-        assertEquals("1.57", result);
+        assertEquals("1.6", result);
 
         // invalid var
         result = Query.evaluateExpressions("${'3.14':toBigDecimal():divide(2.0, 1)}", valueLookup, null);
@@ -133,6 +133,59 @@ public class TestBigDecimal {
 
         result = Query.evaluateExpressions("${pi:toBigDecimal():" + func + "(\"" + expected2 + "\")}", valueLookup, null);
         assertEquals(expected2, result);
+    }
+
+    @Test
+    public void testBigDecimal_percent() {
+        // 百分比后，由于乘以100，小数点后精度应该减少2位
+        String result = Query.evaluateExpressions("${literal('0.3141592653589793'):toBigDecimal():setScale(5,'UP'):toPercent()}", valueLookup, null);
+        // assertEquals("31.41600%", result);
+        assertEquals("31.416%", result);
+
+        result = Query.evaluateExpressions("${literal('0.3141592653589793'):toBigDecimal():setScale(5,'DOWN'):toPercent()}", valueLookup, null);
+        // assertEquals("31.41500%", result);
+        assertEquals("31.415%", result);
+
+        // 四舍五入
+        result = Query.evaluateExpressions("${literal('0.3141592653589793'):toBigDecimal():setScale(4,'HALF_UP'):toPercent()}", valueLookup, null);
+        // assertEquals("31.4200%", result);
+        assertEquals("31.42%", result);
+
+        result = Query.evaluateExpressions("${literal('0.3141592653589793'):toBigDecimal():toPercent()}", valueLookup, null);
+        // assertEquals("31.4159265358979300%", result);
+        assertEquals("31.41592653589793%", result);
+    }
+
+    @Test
+    public void testBigDecimal_floatValue() {
+        String result = Query.evaluateExpressions("${literal('0.3141592653589793'):toBigDecimal():floatValue()}", valueLookup, null);
+        assertEquals("0.31415927", result);
+    }
+
+    @Test
+    public void testBigDecimal_equals() {
+        String result = Query.evaluateExpressions("${literal('0.14159265358979358'):toBigDecimal():equals(3.14159265358979358)}", valueLookup, null);
+        assertEquals("false", result);
+
+        result = Query.evaluateExpressions("${literal('0.14159265358979358'):toBigDecimal():equals('3.14159265358979358')}", valueLookup, null);
+        assertEquals("false", result);
+
+        result = Query.evaluateExpressions("${literal('0.14159265358979358'):toBigDecimal():equals(${literal('3.14159265358979358'):toBigDecimal()})}", valueLookup, null);
+        assertEquals("false", result);
+
+        // 丢失精度
+        result = Query.evaluateExpressions("${literal('3.14159265358979358'):toBigDecimal():equals(3.14159265358979358)}", valueLookup, null);
+        assertEquals("false", result);
+
+        // 精度未丢失
+        result = Query.evaluateExpressions("${literal('3.1415926'):toBigDecimal():equals(3.1415926)}", valueLookup, null);
+        assertEquals("true", result);
+
+        result = Query.evaluateExpressions("${literal('3.14159265358979358'):toBigDecimal():equals('3.14159265358979358')}", valueLookup, null);
+        assertEquals("true", result);
+
+        result = Query.evaluateExpressions("${literal('3.14159265358979358'):toBigDecimal():equals(${literal('3.14159265358979358'):toBigDecimal()})}", valueLookup, null);
+        assertEquals("true", result);
     }
 
     @Test
@@ -234,7 +287,7 @@ public class TestBigDecimal {
         assertEquals(ret, "0.000004");
 
         ret = Query.evaluateExpressions("${number:toBigDecimal():moveLeft(2):setScale(5,${round}):toPercent()}", attributes, null);
-        assertEquals(ret, "3.14200%");
+        assertEquals(ret, "3.142%");
 
         ret = Query.evaluateExpressions("${number:toBigDecimal():moveLeft(3):lt(${number1})}", attributes, null);
         assertEquals(ret, "true");
