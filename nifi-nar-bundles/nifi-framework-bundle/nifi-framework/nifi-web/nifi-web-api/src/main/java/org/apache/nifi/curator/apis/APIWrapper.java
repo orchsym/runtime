@@ -14,29 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.nifi.web;
+package org.apache.nifi.curator.apis;
 
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.ImportResource;
+import org.apache.nifi.apis.ApisNotifyService;
+import org.apache.nifi.registry.api.APIServicesManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
+ * @apiNote API包装类，用于初始化APIServiceManager的成员变量
+ * @author liuxun
  *
  */
-@Configuration
-@Import({NiFiWebApiSecurityConfiguration.class})
-@ImportResource({"classpath:nifi-context.xml",
-    "classpath:nifi-administration-context.xml",
-    "classpath:nifi-authorizer-context.xml",
-    "classpath:nifi-cluster-manager-context.xml",
-    "classpath:nifi-cluster-protocol-context.xml",
-    "classpath:nifi-curator-context.xml",
-    "classpath:nifi-web-security-context.xml",
-    "classpath:nifi-web-api-context.xml"})
-public class NiFiWebApiConfiguration {
+public class APIWrapper {
+    private ApisNotifyService apisNotifyService;
+    private static final Logger logger = LoggerFactory.getLogger(APIWrapper.class);
 
-    public NiFiWebApiConfiguration() {
-        super();
+    public void setApisNotifyService(ApisNotifyService apisNotifyService) {
+        this.apisNotifyService = apisNotifyService;
+        APIServicesManager.getInstance().setNotifyService(apisNotifyService);
+        logger.debug("+++++++初始化APIServiceManager成员变量ApisNotifyService成功 +++++++");
     }
-
 }

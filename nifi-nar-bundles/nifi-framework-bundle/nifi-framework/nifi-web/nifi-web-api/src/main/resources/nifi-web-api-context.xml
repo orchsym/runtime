@@ -190,6 +190,7 @@
         <property name="leaderElectionManager" ref="leaderElectionManager" />
         <property name="flowRegistryClient" ref="flowRegistryClient" />
         <property name="registryDAO" ref="flowRegistryDAO" />
+        <property name="appStateNotifyService" ref="appStateNotifyService" />
     </bean>
     
     <!-- component ui extension configuration context -->

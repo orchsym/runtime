@@ -24,6 +24,7 @@ import org.apache.nifi.action.FlowChangeAction;
 import org.apache.nifi.action.Operation;
 import org.apache.nifi.action.details.FlowChangePurgeDetails;
 import org.apache.nifi.admin.service.AuditService;
+import org.apache.nifi.curator.apps.AppStateNotifyService;
 import org.apache.nifi.authorization.AccessDeniedException;
 import org.apache.nifi.authorization.AccessPolicy;
 import org.apache.nifi.authorization.AuthorizableLookup;
@@ -360,6 +361,8 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
     private Authorizer authorizer;
 
     private AuthorizableLookup authorizableLookup;
+
+    private AppStateNotifyService appStateNotifyService;
 
     // -----------------------------------------
     // Synchronization methods
@@ -1011,6 +1014,10 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
                     }
                 });
 
+        if (appStateNotifyService != null){
+            appStateNotifyService.notifyState(processGroupId);
+        }
+
         return updatedComponent.getComponent();
     }
 
@@ -1041,7 +1048,9 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
                         return new StandardRevisionUpdate<>(entity, null, new HashSet<>(updatedRevisions.values()));
                     }
                 });
-
+        if (appStateNotifyService != null){
+            appStateNotifyService.notifyState(processGroupId);
+        }
         return updatedComponent.getComponent();
     }
 
@@ -4820,5 +4829,9 @@ public class StandardNiFiServiceFacade implements NiFiServiceFacade {
 
     public void setFlowRegistryClient(FlowRegistryClient flowRegistryClient) {
         this.flowRegistryClient = flowRegistryClient;
+    }
+
+    public void setAppStateNotifyService(AppStateNotifyService appStateNotifyService) {
+        this.appStateNotifyService = appStateNotifyService;
     }
 }

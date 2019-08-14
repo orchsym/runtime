@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+      http://www.apache.org/licenses/LICENSE-2.0
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<beans default-lazy-init="true"
+       xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+    http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd
+    http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
+    http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.1.xsd">
+
+    <bean id="curatorClient" class="org.apache.nifi.curator.CuratorFactory" init-method="initCurator" destroy-method="destoryCurator">
+        <property name="niFiProperties" ref="nifiProperties" />
+    </bean>
+
+    <bean id="clusterInfoNotify" class="org.apache.nifi.curator.ClusterInfoNotify" init-method="startListen" lazy-init="false" >
+        <property name="curatorFactory" ref="curatorClient" />
+        <property name="flowController" ref="flowController" />
+        <property name="properties" ref="nifiProperties" />
+        <property name="serviceFacade" ref="serviceFacade" />
+        <property name="leaderElectionManager" ref="leaderElectionManager" />
+    </bean>
+
+    <bean id="notifyService" class="org.apache.nifi.curator.apis.ApisNotifyServiceImpl">
+        <property name="leaderElectionManager" ref="leaderElectionManager" />
+        <property name="curatorFactory" ref="curatorClient" />
+        <property name="flowController" ref="flowController" />
+        <property name="properties" ref="nifiProperties" />
+    </bean>
+
+    <bean id="apiServicesManager" class="org.apache.nifi.registry.api.APIServicesManager" >
+        <property name="notifyService" ref="notifyService" />
+    </bean>
+
+    <bean id="apiWrapper" class="org.apache.nifi.curator.apis.APIWrapper" lazy-init="false">
+        <property name="apisNotifyService" ref="notifyService" />
+    </bean>
+
+    <bean id="appStateNotifyService" class="org.apache.nifi.curator.apps.AppStateNotifyServiceImpl" lazy-init="false" >
+        <property name="leaderElectionManager" ref="leaderElectionManager" />
+        <property name="curatorFactory" ref="curatorClient" />
+        <property name="flowController" ref="flowController" />
+        <property name="properties" ref="nifiProperties" />
+        <property name="serviceFacade" ref="serviceFacade" />
+    </bean>
+
+</beans>

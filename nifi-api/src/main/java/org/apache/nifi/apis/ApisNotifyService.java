@@ -14,29 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.nifi.web;
+package org.apache.nifi.apis;
 
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.ImportResource;
+import org.apache.nifi.registry.api.ApiInfo;
 
 /**
- *
+ * @author liuxun
+ * @apiNote 封装通知操作的接口 API，供web-api去实现
  */
-@Configuration
-@Import({NiFiWebApiSecurityConfiguration.class})
-@ImportResource({"classpath:nifi-context.xml",
-    "classpath:nifi-administration-context.xml",
-    "classpath:nifi-authorizer-context.xml",
-    "classpath:nifi-cluster-manager-context.xml",
-    "classpath:nifi-cluster-protocol-context.xml",
-    "classpath:nifi-curator-context.xml",
-    "classpath:nifi-web-security-context.xml",
-    "classpath:nifi-web-api-context.xml"})
-public class NiFiWebApiConfiguration {
+public  interface ApisNotifyService {
+    void register(ApiInfo apiInfo);
 
-    public NiFiWebApiConfiguration() {
-        super();
-    }
+    void unregister(String apiId);
 
+    void update(ApiInfo apiInfo);
 }

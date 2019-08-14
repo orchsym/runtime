@@ -14,29 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.nifi.web;
-
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.ImportResource;
+package org.apache.nifi.curator.apps;
 
 /**
- *
+ * @author liuxun
  */
-@Configuration
-@Import({NiFiWebApiSecurityConfiguration.class})
-@ImportResource({"classpath:nifi-context.xml",
-    "classpath:nifi-administration-context.xml",
-    "classpath:nifi-authorizer-context.xml",
-    "classpath:nifi-cluster-manager-context.xml",
-    "classpath:nifi-cluster-protocol-context.xml",
-    "classpath:nifi-curator-context.xml",
-    "classpath:nifi-web-security-context.xml",
-    "classpath:nifi-web-api-context.xml"})
-public class NiFiWebApiConfiguration {
+public interface AppStateNotifyService {
 
-    public NiFiWebApiConfiguration() {
-        super();
-    }
-
+    /**
+     * 推送APP启动/停止的通知
+     * @param groupId processGroup的ID，即APP的ID
+     */
+    void notifyState(String groupId);
 }
