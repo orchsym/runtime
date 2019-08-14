@@ -138,10 +138,14 @@ public class TestBigDecimal {
     @Test
     public void testBigDecimal_percent() {
         // 百分比后，由于乘以100，小数点后精度应该减少2位
-        String result = Query.evaluateExpressions("${literal('0.3141592653589793'):toBigDecimal():setScale(5,'UP'):toPercent()}", valueLookup, null);
+        String result = Query.evaluateExpressions("${literal('0.3141592653589793'):toBigDecimal():setScale(5):toPercent()}", valueLookup, null);
         // assertEquals("31.41600%", result);
         assertEquals("31.416%", result);
 
+        result = Query.evaluateExpressions("${literal('0.3141592653589793'):toBigDecimal():setScale(5,'UP'):toPercent()}", valueLookup, null);
+        // assertEquals("31.41600%", result);
+        assertEquals("31.416%", result);
+        
         result = Query.evaluateExpressions("${literal('0.3141592653589793'):toBigDecimal():setScale(5,'DOWN'):toPercent()}", valueLookup, null);
         // assertEquals("31.41500%", result);
         assertEquals("31.415%", result);
