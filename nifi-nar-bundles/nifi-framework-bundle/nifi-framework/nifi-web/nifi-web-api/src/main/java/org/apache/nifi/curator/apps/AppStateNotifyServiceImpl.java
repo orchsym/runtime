@@ -55,7 +55,9 @@ public class AppStateNotifyServiceImpl implements AppStateNotifyService {
         if (groupId == null) {
             return;
         }
-        verifyAndWait();
+        if(!verifyAndWait()){
+            return;
+        }
         final ProcessGroupDTO groupDTO = serviceFacade.getProcessGroup(groupId).getComponent();
         if (groupDTO == null) {
             return;
@@ -63,6 +65,10 @@ public class AppStateNotifyServiceImpl implements AppStateNotifyService {
         String appJsonStr = JSON.toJSONString(groupDTO);
         ZooKeeperClientConfig zkConfig = ZooKeeperClientConfig.createConfig(properties);
         final CuratorFramework cf = getCuratorFramework();
+        if (cf == null){
+            logger.debug("++++++ please attempt to check ZooKeeper ++++++");
+            return;
+        }
         final String appPath = PathConfig.getAppPath(zkConfig.getRootPath(), groupId);
         if (!isAppPathExists(appPath, cf)) {
             // 创建并设置数据
@@ -99,14 +105,14 @@ public class AppStateNotifyServiceImpl implements AppStateNotifyService {
     /**
      * @apiNote 判断是否需要 以及等待初始化执行API通知
      */
-    private void verifyAndWait() {
+    private boolean verifyAndWait() {
         if (!properties.isNode()) {
-            return;
+            return false;
         }
 
         if (!flowController.isClustered()) {
             logger.debug("++++++current node is disconnected status, cant notify app info+++++");
-            return;
+            return false;
         }
 
         while (!(isElected() && flowController.isInitialized())) {
@@ -120,8 +126,9 @@ public class AppStateNotifyServiceImpl implements AppStateNotifyService {
 
         if (!flowController.isPrimary()) {
             logger.debug("++++++current node is not primary for notify app info +++++++");
-            return;
+            return false;
         }
+        return true;
     }
 
     /**
@@ -129,14 +136,7 @@ public class AppStateNotifyServiceImpl implements AppStateNotifyService {
      * @apiNote 获取有效的curator客户端
      */
     private CuratorFramework getCuratorFramework() {
-        while (curatorFactory.getCuratorFramework() == null) {
-            logger.error("++++ getCuratorFramework 失败, 重新获取中......");
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-            }
-        }
-        return curatorFactory.getCuratorFramework();
+        return curatorFactory.getCuratorFramework(30);
     }
 
     /**

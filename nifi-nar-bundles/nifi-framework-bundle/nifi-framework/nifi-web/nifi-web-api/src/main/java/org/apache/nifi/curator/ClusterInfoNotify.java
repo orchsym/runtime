@@ -62,17 +62,9 @@ public class ClusterInfoNotify {
         if (!properties.isNode()) {
             return;
         }
-        CuratorFramework curatorFramework = curatorFactory.getCuratorFramework();
+        CuratorFramework curatorFramework = curatorFactory.getCuratorFramework(30);
         if (curatorFramework == null) {
-            do {
-                logger.error("++++ 集群信息通知连接获得curatorFramework 失败, 重新获取中......");
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    logger.error("e.message={}\n e.stack={}", e.getMessage(),e.getStackTrace());
-                }
-                curatorFramework = curatorFactory.getCuratorFramework();
-            } while (curatorFramework != null);
+            logger.debug("++++++ please attempt to check ZooKeeper ++++++");
         }
 
         final ZooKeeperClientConfig zkConfig = ZooKeeperClientConfig.createConfig(properties);
@@ -100,6 +92,10 @@ public class ClusterInfoNotify {
      * @apiNote 对集群信息改变的通知进行处理
      */
     private void handleClusterChangeInfo(CuratorFramework curatorFramework,ZooKeeperClientConfig zkConfig) {
+        if (!flowController.isClustered()) {
+            logger.debug("++++++current node is disconnected status, cant notify cluster info+++++");
+            return;
+        }
         if (!flowController.isInitialized()) {
             logger.warn("+++++ flow controller not inited waiting ....");
             do {

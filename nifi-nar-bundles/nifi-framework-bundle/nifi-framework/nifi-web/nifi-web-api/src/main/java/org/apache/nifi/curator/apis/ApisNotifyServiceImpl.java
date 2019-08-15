@@ -85,11 +85,19 @@ public class ApisNotifyServiceImpl implements ApisNotifyService {
      * @apiNote 抽取统一的处理代码块
      */
     private void handleNotify(ApiInfo apiInfo, String apiId, Method method) {
-        verifyAndWait();
         if (apiId == null) {
             return;
         }
+
+        if(!verifyAndWait()){
+            return;
+        }
+
         final CuratorFramework cf = getCuratorFramework();
+        if (cf == null){
+            logger.debug("++++++ please attempt to check ZooKeeper ++++++");
+            return;
+        }
         final String apiPath = getAPINotifyPath(apiId);
         String apiInfoJsonStr = null;
         if (apiInfo != null) {
@@ -148,27 +156,21 @@ public class ApisNotifyServiceImpl implements ApisNotifyService {
      * @apiNote 获取有效的curator客户端
      */
     private CuratorFramework getCuratorFramework() {
-        while (curatorFactory.getCuratorFramework() == null) {
-            logger.error("++++ 集群信息通知连接获得curatorFramework 失败, 重新获取中......");
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-            }
-        }
-        return curatorFactory.getCuratorFramework();
+        return curatorFactory.getCuratorFramework(30);
     }
 
     /**
      * @apiNote 判断是否需要 以及等待初始化执行API通知
      */
-    private void verifyAndWait() {
+    private boolean verifyAndWait() {
+
         if (!properties.isNode()) {
-            return;
+            return false;
         }
 
         if (!flowController.isClustered()) {
-            logger.debug("++++++current node is disconnected status, cant notify api info");
-            return;
+            logger.debug("++++++current node is disconnected status, cant notify api info+++++");
+            return false;
         }
 
         while (!(isElected() && flowController.isInitialized())) {
@@ -182,8 +184,9 @@ public class ApisNotifyServiceImpl implements ApisNotifyService {
 
         if (!flowController.isPrimary()) {
             logger.debug("++++++current node is not primary for notify api +++++++");
-            return;
+            return false;
         }
+        return true;
     }
 
     /**
