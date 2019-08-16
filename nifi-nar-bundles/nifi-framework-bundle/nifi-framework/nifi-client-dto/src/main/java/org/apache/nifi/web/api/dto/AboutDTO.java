@@ -49,6 +49,7 @@ public class AboutDTO {
     private Locale locale;
     private String productVersion;
     private String productName;
+    private String productEdtion;
     private LocalDate buildDate;
     
     private String supportEmail;
@@ -210,6 +211,17 @@ public class AboutDTO {
 
     public void setProductName(String productName) {
         this.productName = productName;
+    }
+
+    @ApiModelProperty(
+            value = "Product Edtion"
+    )
+    public String getProductEdtion() {
+        return productEdtion;
+    }
+
+    public void setProductEdtion(String productEdtion) {
+        this.productEdtion = productEdtion;
     }
 
     @XmlJavaTypeAdapter(LocalDateAdapter.class)

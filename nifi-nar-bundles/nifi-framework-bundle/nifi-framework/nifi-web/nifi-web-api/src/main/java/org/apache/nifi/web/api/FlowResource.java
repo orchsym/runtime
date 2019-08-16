@@ -1111,6 +1111,7 @@ public class FlowResource extends ApplicationResource {
         final String productName = brandingService.getProductName();
         aboutDTO.setTitle(productName);
         aboutDTO.setProductName(productName);
+        aboutDTO.setProductEdtion(brandingService.getEdition());
         aboutDTO.setSupportEmail(brandingService.getSupportEmail());
         aboutDTO.setUri(generateResourceUri());
         aboutDTO.setTimezone(new Date());

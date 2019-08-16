@@ -444,7 +444,7 @@
                 this.about.init();
             },
             getProjectVersion: function () {
-                return nf._.msg('nf-canvas-global-menu-controller.version') + ': ' + window.productVersion;
+                return nf._.msg('nf-canvas-global-menu-controller.version') + ': ' + window.productVersion+ ' ' +window.productEdtion;
             },
             getBuildDate: function () {
                 return nf._.msg('nf-canvas-global-menu-controller.updateTime') + ': ' +  window.buildDate;

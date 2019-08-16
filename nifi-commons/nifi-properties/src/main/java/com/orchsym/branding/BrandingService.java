@@ -22,6 +22,7 @@ public interface BrandingService {
     String DEFAULT_RUNTIME_NAME = "Orchsym Runtime";
     String DEFAULT_SHORT_RUNTIME_NAME = "Runtime";
     String DEFAULT_PRODUCT_NAME = "Orchsym Studio";
+    String DEFAULT_PRODUCT_EDITION = "CE";
     String DEFAULT_SUPPORT_EMAIL = "orchsym-support@baishancloud.com";
 
     default String getRuntimeName() {
@@ -38,6 +39,10 @@ public interface BrandingService {
 
     default String getSupportEmail() {
         return DEFAULT_SUPPORT_EMAIL;
+    }
+
+    default String getEdition() {
+        return DEFAULT_PRODUCT_EDITION;
     }
 
     default void syncWebImages(File webImagesFolder) {

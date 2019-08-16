@@ -18,6 +18,7 @@
 window.locale = "";
 window.defaultLocale = "";
 window.productVersion = "";
+window.productEdtion = "";
 window.buildDate = "";
 window.supportEmail = "";
 var configurationUrl = "../nifi-api/flow/about";
@@ -32,6 +33,7 @@ $.ajax({
 			defaultLocale = res.about.locale.substring(0, 2)
 					.toLocaleLowerCase()
 			productVersion = res.about.productVersion
+			productEdtion = res.about.productEdtion
 			buildDate = res.about.buildDate
 			supportEmail = res.about.supportEmail
 		} catch (e) {
