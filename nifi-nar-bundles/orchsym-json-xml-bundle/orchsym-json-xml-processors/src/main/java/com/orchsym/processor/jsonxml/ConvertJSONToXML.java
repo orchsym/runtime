@@ -1,46 +1,28 @@
 package com.orchsym.processor.jsonxml;
 
+import com.jayway.jsonpath.JsonPath;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.Validator;
-import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
-import org.apache.nifi.flowfile.attributes.BooleanAllowableValues;
-import org.apache.nifi.processor.AbstractProcessor;
-import org.apache.nifi.processor.ProcessContext;
-import org.apache.nifi.processor.ProcessSession;
-import org.apache.nifi.processor.ProcessorInitializationContext;
-import org.apache.nifi.processor.Relationship;
+import org.apache.nifi.flowfile.attributes.CoreAttributes;
+import org.apache.nifi.processor.*;
 import org.apache.nifi.processor.exception.ProcessException;
-import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.util.StopWatch;
-import org.apache.nifi.annotation.lifecycle.OnScheduled;
-import org.apache.nifi.flowfile.attributes.CoreAttributes;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-
-import java.io.BufferedOutputStream;
-import java.io.OutputStream;
-import java.io.InputStream;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.HashSet;
-import java.util.Collections;
-
+import org.json.JSONArray;
 import org.json.JSONObject;
-import com.jayway.jsonpath.JsonPath;
-import net.minidev.json.JSONArray;
+import org.json.JSONTokener;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Lu JB
@@ -174,77 +156,70 @@ public class ConvertJSONToXML extends AbstractProcessor {
             return;
         }
 
-        String content = null;
-
         try (final InputStream inputStream = session.read(flowFile)) {
-            content = IOUtils.toString(inputStream, StandardCharsets.UTF_8.name());
-        } catch (Exception e) {
-            getLogger().error("Failed to read the flowfile {}", new Object[] { flowFile });
-            session.transfer(flowFile, REL_FAILURE);
-            return;
-        }
-        final String xmlContent = convertJsonToXMLStr(content, jsonPathExpression, attributeMark, nameSpace, contentKeyName, encoding, elementName);
-        try {
+            final byte[] xmlBytes = convertJsonToXMLBytes(inputStream, jsonPathExpression, attributeMark, nameSpace, contentKeyName, encoding, elementName);
             final StopWatch stopWatch = new StopWatch(true);
-            FlowFile successFlow = null;
+            FlowFile successFlow;
             if (destinationContent) {
                 FlowFile contFlowfile = session.create(flowFile);
                 contFlowfile = session.write(contFlowfile, (in, out) -> {
                     try (OutputStream outputStream = new BufferedOutputStream(out)) {
-                        outputStream.write(xmlContent.getBytes("UTF-8"));
+                        outputStream.write(xmlBytes);
                     }
                 });
                 contFlowfile = session.putAttribute(contFlowfile, CoreAttributes.MIME_TYPE.key(), APPLICATION_XML);
                 session.remove(flowFile);
                 successFlow = contFlowfile;
+                session.getProvenanceReporter().modifyContent(successFlow, stopWatch.getElapsed(TimeUnit.MILLISECONDS));
             } else {
-                successFlow = session.putAttribute(flowFile, XML_ATTRIBUTE_NAME, xmlContent);
+                successFlow = session.putAttribute(flowFile, XML_ATTRIBUTE_NAME, new String(xmlBytes, StandardCharsets.UTF_8));
+                session.getProvenanceReporter().modifyAttributes(successFlow, "Add Attribute: " + XML_ATTRIBUTE_NAME);
             }
-            session.getProvenanceReporter().modifyContent(successFlow, stopWatch.getElapsed(TimeUnit.MILLISECONDS));
             session.transfer(successFlow, REL_SUCCESS);
-
         } catch (Exception e) {
             getLogger().error(e.getMessage());
             session.transfer(flowFile, REL_FAILURE);
         }
     }
 
-    protected String convertJsonToXMLStr(String jsonStr, String jsonPathExpression, String attributeMark, String nameSpace, String contentKeyName, String encoding, String elementName) {
+    protected byte[] convertJsonToXMLBytes(InputStream jsonInputStream, String jsonPathExpression, String attributeMark, String nameSpace, String contentKeyName, String encoding, String elementName) throws IOException {
 
-        String xml = "";
-        try {
+        try(InputStreamReader isr = new InputStreamReader(jsonInputStream, StandardCharsets.UTF_8);
+            BufferedReader br = new BufferedReader(isr)){
+
             XMLConverter xmlInstance = new XMLConverter();
             xmlInstance.setNameSpace(nameSpace);
             xmlInstance.setAttributeMark(attributeMark);
             if (contentKeyName != null) {
                 xmlInstance.setDataTagName(contentKeyName);
-
             } else {
                 xmlInstance.setDataTagName("");
             }
+
             if (jsonPathExpression == null) {
-                JSONObject jsonObject = new JSONObject(jsonStr);
-                xml = xmlInstance.toString_p(jsonObject, elementName);
+                Object json =new JSONTokener(br).nextValue();
+                if(json instanceof JSONObject){
+                    return xmlInstance.toBytes_p(json, elementName, encoding);
+                } else if(json instanceof JSONArray){
+                    return xmlInstance.toBytes_p(json, "list", encoding);
+                }
+                JSONObject jsonObject = new JSONObject(jsonInputStream);
+                return xmlInstance.toBytes_p(jsonObject, elementName, encoding);
             } else {
-                Object items = JsonPath.read(jsonStr, jsonPathExpression);
-                Map<String, Object> map = new HashMap<String, Object>();
+                Object items = JsonPath.read(jsonInputStream, jsonPathExpression);
+                Map<String, Object> map = new HashMap<>();
                 map.put(elementName, items);
                 JSONObject jsonObject = new JSONObject(map);
-                if ((items instanceof JSONArray || items.getClass().isArray())) {
+                if ((items instanceof net.minidev.json.JSONArray || items.getClass().isArray())) {
                     if (((List) items).size() == 0) {
                         map.put(elementName, "");
                         jsonObject = new JSONObject(map);
                     }
-                    xml = xmlInstance.toString_p(jsonObject, "list");
+                    return xmlInstance.toBytes_p(jsonObject, "list", encoding);
                 } else {
-                    xml = xmlInstance.toString_p(jsonObject, null);
+                    return xmlInstance.toBytes_p(jsonObject, null, encoding);
                 }
             }
-            xml = "<?xml version=\"1.0\" encoding=\"" + encoding + "\"?>" + xml;
-        } catch (Exception e) {
-            return xml;
-
         }
-        return xml;
     }
 }

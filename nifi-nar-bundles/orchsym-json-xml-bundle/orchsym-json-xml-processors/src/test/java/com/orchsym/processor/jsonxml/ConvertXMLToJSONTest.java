@@ -16,29 +16,18 @@
  */
 package com.orchsym.processor.jsonxml;
 
-import java.io.IOException;
-
+import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertThat;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
-
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasEntry;
-import static org.hamcrest.Matchers.hasKey;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.CoreMatchers.*;
 
 /**
  * @author Lu JB
@@ -54,227 +43,167 @@ public class ConvertXMLToJSONTest {
         processor = new ConvertXMLToJSON();
         testRunner = TestRunners.newTestRunner(processor);
     }
-/*
-<Employees>
-    <Employee id="1">
-        <device>computer</device>
-        <device>ipad</device>
-        <age>30</age>
-        <name>jiangbin</name>
-        <gender>Male</gender>
-        <role department="IT" extra="manager">Java Developer</role>
-        <additional>
-            <petname>Doggy</petname>
-            <petage>2</petage>
-        </additional>
-    </Employee>
-    <Employee id="2">
-        <age>35</age>
-        <name>Lisa</name>
-        <gender>Female</gender>
-        <role  department="Decision" extra="CIO">CEO</role>
-    </Employee>
-    <Employee id="3">lu</Employee>
-</Employees>
-*/
-    private String createXmlString() {
-        return "<Employees><Employee id=\"1\"><device>computer</device><device>ipad</device><age>30</age><name>jiangbin</name><gender>Male</gender><role department=\"IT\" extra=\"manager\">Java Developer</role><additional><petname>Doggy</petname><petage>2</petage></additional></Employee><Employee id=\"2\"><age>35</age><name>Lisa</name><gender>Female</gender><role  department=\"Decision\" extra=\"CIO\">CEO</role></Employee><Employee id=\"3\">lu</Employee></Employees>";
+
+    private final String xmlString = readFileToString("src/test/resources/employees2.xml");
+
+    @Test
+    public void test_Invalid_Xml() {
+        testRunner.setValidateExpressionUsage(false);
+        testRunner.setProperty(ConvertXMLToJSON.DESTINATION, ConvertXMLToJSON.DESTINATION_CONTENT);
+
+        testRunner.enqueue("<item>123<".getBytes(StandardCharsets.UTF_8));
+        testRunner.run();
+
+        testRunner.assertAllFlowFilesTransferred(ConvertJSONToXML.REL_FAILURE, 1);
+        System.out.println(testRunner.getLogger().getErrorMessages());
     }
 
     @Test
-    public void testXml_To_Map() {
-        try {
-            String xmlContent = createXmlString();
-            Map<String, Object> map = processor.convertXMLStrToMap(xmlContent, null, null, "content");
-            assertThat(map.keySet(), hasSize(1));
-            assertThat(map, hasKey("Employees"));
+    public void testXml_To_Json_With_XPath_Expression() throws IOException {
+        testRunner.setValidateExpressionUsage(false);
+        testRunner.setProperty(ConvertXMLToJSON.DESTINATION, ConvertXMLToJSON.DESTINATION_CONTENT);
+        testRunner.setProperty(ConvertXMLToJSON.XML_PATH_EXPRESSION, "/Employees/Employee[1]");
+        testRunner.setProperty(ConvertXMLToJSON.XML_CONTENT_KEY_NAME, "content");
 
-            Map<String, Object> employeesMap = (Map<String, Object>)map.get("Employees");
-            assertThat(employeesMap.keySet(), hasSize(1));
+        testRunner.enqueue(xmlString.getBytes(StandardCharsets.UTF_8));
+        testRunner.run();
 
-            List employeeList = (List)employeesMap.get("Employee");
-            assertThat(employeeList.size(), equalTo(3));
-
-            Map<String, Object> employee1 = (Map<String, Object>) employeeList.get(0);
-            String gender = (String) employee1.get("gender");
-            assertThat(gender, equalTo("Male"));
-
-            //test attributes
-            Map<String, Object> roleMap = (Map<String, Object> )employee1.get("role");
-            assertThat(roleMap.keySet(), hasSize(3));
-            assertThat(roleMap, hasEntry("department", "IT"));
-            assertThat(roleMap, hasEntry("extra", "manager"));
-            assertThat(roleMap, hasEntry("content", "Java Developer"));
-            
-            //test multi items with same name
-            Object devicesObject = employee1.get("device");
-            assertTrue(devicesObject instanceof List<?>);
-
-            List<String> devicesList = (List<String>)employee1.get("device");
-            assertThat(devicesList, hasItems("computer","ipad"));
-            assertThat(devicesList, hasSize(2));
-
-            //test sub map
-            Map<String, Object> additionalMap = (Map<String, Object> )employee1.get("additional");
-            assertThat(additionalMap.keySet(), hasSize(2));
-            assertThat(additionalMap.get("petname"), equalTo("Doggy"));
-            assertThat(additionalMap.get("petage"), equalTo(2));
-
-        } catch (Exception e) {
-            assertEquals("", e.getMessage());
-        }
+        testRunner.assertAllFlowFilesTransferred(ConvertXMLToJSON.REL_SUCCESS, 1);
+        final List<MockFlowFile> result = testRunner.getFlowFilesForRelationship(ConvertJSONToXML.REL_SUCCESS);
+        result.get(0).assertContentEquals("{\"Employee\":{\"role\":{\"@department\":\"IT\",\"@extra\":\"manager\",\"content\":\"Java Developer\"},\"gender\":\"Male\",\"additional\":{\"petname\":\"Doggy\",\"petage\":2},\"name\":\"jiangbin\",\"@id\":1,\"device\":[\"computer\",\"ipad\"],\"age\":30}}".getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
-    public void test_Invalid_Xml_To_Map() {
-        try {
-            String xmlContent = "<item>123<";
-            Map<String, Object> map = processor.convertXMLStrToMap(xmlContent, null, null, "content");
-            assertThat(map.keySet(), empty());
-        } catch (Exception e) {
-            assertEquals("", e.getMessage());
-        }
+    public void testXml_To_Json_With_XPath_Expression_Age() throws IOException {
+        testRunner.setValidateExpressionUsage(false);
+        testRunner.setProperty(ConvertXMLToJSON.DESTINATION, ConvertXMLToJSON.DESTINATION_CONTENT);
+        testRunner.setProperty(ConvertXMLToJSON.XML_PATH_EXPRESSION, "/Employees/Employee[2]/age");
+        testRunner.setProperty(ConvertXMLToJSON.XML_CONTENT_KEY_NAME, "content");
+
+        testRunner.enqueue(xmlString.getBytes(StandardCharsets.UTF_8));
+        testRunner.run();
+
+        testRunner.assertAllFlowFilesTransferred(ConvertXMLToJSON.REL_SUCCESS, 1);
+        final List<MockFlowFile> result = testRunner.getFlowFilesForRelationship(ConvertJSONToXML.REL_SUCCESS);
+        result.get(0).assertContentEquals("{\"age\":35}".getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
-    public void testXml_To_Map_With_XPath_Expression() {
-        try {
-            String xmlContent = createXmlString();
-            Map<String, Object> map = processor.convertXMLStrToMap(xmlContent, "/Employees/Employee[3]", null, "content");
-            assertThat(map.keySet(), hasSize(1));
-            assertThat(map, hasKey("Employee"));
+    public void testXml_To_Json_With_XPath_Expression_Not_Found() throws IOException {
+        testRunner.setValidateExpressionUsage(false);
+        testRunner.setProperty(ConvertXMLToJSON.DESTINATION, ConvertXMLToJSON.DESTINATION_CONTENT);
+        testRunner.setProperty(ConvertXMLToJSON.XML_PATH_EXPRESSION, "/Employees/Employee[11]/age");
+        testRunner.setProperty(ConvertXMLToJSON.XML_CONTENT_KEY_NAME, "content");
 
-            Map<String, Object> employeeMap = (Map<String, Object>)map.get("Employee");
-            //test attributes
-            assertThat(employeeMap.keySet(), hasSize(2));
-            assertThat(employeeMap, hasEntry("id", "3"));
-            assertThat(employeeMap, hasEntry("content", "lu"));
-        } catch (Exception e) {
-            assertEquals("", e.getMessage());
-        }
+        testRunner.enqueue(xmlString.getBytes(StandardCharsets.UTF_8));
+        testRunner.run();
+
+        testRunner.assertAllFlowFilesTransferred(ConvertJSONToXML.REL_SUCCESS, 1);
+        final List<MockFlowFile> result = testRunner.getFlowFilesForRelationship(ConvertJSONToXML.REL_SUCCESS);
+        result.get(0).assertContentEquals("{}".getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
-    public void testXml_To_Map_With_XPath_Expression_Age() {
-        try {
-            String xmlContent = createXmlString();
-            Map<String, Object> map = processor.convertXMLStrToMap(xmlContent, "/Employees/Employee[2]/age", null, "content");
-            assertThat(map.keySet(), hasSize(1));
-            assertThat(map, hasKey("age"));
-            assertThat(map, hasEntry("age", "35"));
-        } catch (Exception e) {
-            assertEquals("", e.getMessage());
-        }
+    public void testXml_To_Json_With_Invalid_XPath_Expression() {
+        testRunner.setValidateExpressionUsage(false);
+        testRunner.setProperty(ConvertXMLToJSON.DESTINATION, ConvertXMLToJSON.DESTINATION_CONTENT);
+        testRunner.setProperty(ConvertXMLToJSON.XML_PATH_EXPRESSION, "###/Em");
+        testRunner.setProperty(ConvertXMLToJSON.XML_CONTENT_KEY_NAME, "content");
+
+        testRunner.enqueue(xmlString.getBytes(StandardCharsets.UTF_8));
+        testRunner.run();
+
+        testRunner.assertAllFlowFilesTransferred(ConvertJSONToXML.REL_FAILURE, 1);
+        System.out.println(testRunner.getLogger().getErrorMessages());
     }
 
     @Test
-    public void testXml_To_Map_With_XPath_Expression_Not_Found() {
-        try {
-            String xmlContent = createXmlString();
-            Map<String, Object> map = processor.convertXMLStrToMap(xmlContent, "/Employees/Employee[11]/age", null, "content");
-            assertThat(map.keySet(), empty());
-        } catch (Exception e) {
-            assertEquals("", e.getMessage());
-        }
+    public void testXml_To_Json_With_Mark_KeyName() throws IOException {
+        testRunner.setValidateExpressionUsage(false);
+        testRunner.setProperty(ConvertXMLToJSON.DESTINATION, ConvertXMLToJSON.DESTINATION_CONTENT);
+        testRunner.setProperty(ConvertXMLToJSON.XML_PATH_EXPRESSION, "/Employees/Employee");
+        testRunner.setProperty(ConvertXMLToJSON.XML_CONTENT_KEY_NAME, "newKeyName");
+        testRunner.setProperty(ConvertXMLToJSON.XML_ATTRIBUTE_MARK, "@");
+
+        testRunner.enqueue("<Employees><Employee id=\"3\">lu</Employee></Employees>".getBytes(StandardCharsets.UTF_8));
+        testRunner.run();
+
+        testRunner.assertAllFlowFilesTransferred(ConvertJSONToXML.REL_SUCCESS, 1);
+        final List<MockFlowFile> result = testRunner.getFlowFilesForRelationship(ConvertJSONToXML.REL_SUCCESS);
+        result.get(0).assertContentEquals("{\"Employee\":{\"@id\":3,\"newKeyName\":\"lu\"}}".getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
-    public void testXml_To_Map_With_Invalid_XPath_Expression() {
-        try {
-            String xmlContent = createXmlString();
-            Map<String, Object> map = processor.convertXMLStrToMap(xmlContent, "###/Em", null, "content");
-            assertThat(map.keySet(), empty());
-        } catch (Exception e) {
-            assertEquals("", e.getMessage());
-        }
+    public void testXml_To_Json_With_Default_KeyName() throws IOException {
+        testRunner.setValidateExpressionUsage(false);
+        testRunner.setProperty(ConvertXMLToJSON.DESTINATION, ConvertXMLToJSON.DESTINATION_CONTENT);
+        testRunner.setProperty(ConvertXMLToJSON.XML_PATH_EXPRESSION, "/Employees/Employee");
+        testRunner.setProperty(ConvertXMLToJSON.XML_ATTRIBUTE_MARK, "@");
+
+        testRunner.enqueue("<Employees><Employee id=\"3\">lu</Employee></Employees>".getBytes(StandardCharsets.UTF_8));
+        testRunner.run();
+
+        testRunner.assertAllFlowFilesTransferred(ConvertJSONToXML.REL_SUCCESS, 1);
+        final List<MockFlowFile> result = testRunner.getFlowFilesForRelationship(ConvertJSONToXML.REL_SUCCESS);
+        result.get(0).assertContentEquals("{\"Employee\":{\"@id\":3,\"content\":\"lu\"}}".getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
-    public void testXml_To_Map_With_Mark_KeyName() {
-        try {
-            String xmlContent = "<Employees><Employee id=\"3\">lu</Employee></Employees>";
-            String attributesMark = "@";
-            String keyName = "newKeyName";
-            Map<String, Object> map = processor.convertXMLStrToMap(xmlContent, "/Employees/Employee", attributesMark, keyName);
-            assertThat(map.keySet(), hasSize(1));
+    public void testXml_To_Json_With_Default_KeyName_2() throws IOException {
+        testRunner.setValidateExpressionUsage(false);
+        testRunner.setProperty(ConvertXMLToJSON.DESTINATION, ConvertXMLToJSON.DESTINATION_CONTENT);
+        testRunner.setProperty(ConvertXMLToJSON.XML_ATTRIBUTE_MARK, "@");
 
-            Map<String, Object> employeeMap = (Map<String, Object>)map.get("Employee");
-            assertThat(employeeMap, hasEntry("@id", "3"));
-            assertThat(employeeMap, hasEntry("newKeyName", "lu"));
-        } catch (Exception e) {
-            assertEquals("", e.getMessage());
-        }
+        testRunner.enqueue("<Employees><Employee id=\"3\">lu</Employee></Employees>".getBytes(StandardCharsets.UTF_8));
+        testRunner.run();
+
+        testRunner.assertAllFlowFilesTransferred(ConvertJSONToXML.REL_SUCCESS, 1);
+        final List<MockFlowFile> result = testRunner.getFlowFilesForRelationship(ConvertJSONToXML.REL_SUCCESS);
+        result.get(0).assertContentEquals("{\"Employees\":{\"Employee\":{\"@id\":3,\"content\":\"lu\"}}}".getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
-    public void testXml_To_Map_With_Default_KeyName() {
-        try {
-            String xmlContent = "<Employees><Employee id=\"3\">lu</Employee></Employees>";
-            String attributesMark = "@";
-            String keyName = null;
-            Map<String, Object> map = processor.convertXMLStrToMap(xmlContent, "/Employees/Employee", attributesMark, keyName);
-            assertThat(map.keySet(), hasSize(1));
+    public void testXml_To_Json_With_Default_KeyName_NO_Mark() throws IOException {
+        testRunner.setValidateExpressionUsage(false);
+        testRunner.setProperty(ConvertXMLToJSON.DESTINATION, ConvertXMLToJSON.DESTINATION_CONTENT);
+        testRunner.setProperty(ConvertXMLToJSON.XML_PATH_EXPRESSION, "Employees/Employee");
 
-            Map<String, Object> employeeMap = (Map<String, Object>)map.get("Employee");
-            assertThat(employeeMap, hasEntry("@id", "3"));
-            assertThat(employeeMap, hasEntry("content", "lu"));
-        } catch (Exception e) {
-            assertEquals("", e.getMessage());
-        }
+        testRunner.enqueue("<Employees><Employee id=\"3\">lu</Employee></Employees>".getBytes(StandardCharsets.UTF_8));
+        testRunner.run();
+
+        testRunner.assertAllFlowFilesTransferred(ConvertJSONToXML.REL_SUCCESS, 1);
+        final List<MockFlowFile> result = testRunner.getFlowFilesForRelationship(ConvertJSONToXML.REL_SUCCESS);
+        result.get(0).assertContentEquals("{\"Employee\":{\"@id\":3,\"content\":\"lu\"}}".getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
-    public void testXml_To_Map_With_Default_KeyName_2() {
-        try {
-            String xmlContent = "<Employees><Employee id=\"3\">lu</Employee></Employees>";
-            String attributesMark = "@";
-            String keyName = null;
-            Map<String, Object> map = processor.convertXMLStrToMap(xmlContent, null, attributesMark, keyName);
-            assertThat(map.keySet(), hasSize(1));
+    public void testXml_To_Json_With_Default_KeyName2_NO_Mark() throws IOException {
+        testRunner.setValidateExpressionUsage(false);
+        testRunner.setProperty(ConvertXMLToJSON.DESTINATION, ConvertXMLToJSON.DESTINATION_CONTENT);
 
-            Map<String, Object> employeesMap = (Map<String, Object>)map.get("Employees");
-            Map<String, Object> employeeMap = (Map<String, Object>)employeesMap.get("Employee");
-            assertThat(employeeMap.keySet(), hasSize(2));
-            assertThat(employeeMap, hasEntry("@id", 3));
-            assertThat(employeeMap, hasEntry("content", "lu"));
-        } catch (Exception e) {
-            assertEquals("", e.getMessage());
-        }
+        testRunner.enqueue("<Employees><Employee id=\"3\">lu</Employee></Employees>".getBytes(StandardCharsets.UTF_8));
+        testRunner.run();
+
+        testRunner.assertAllFlowFilesTransferred(ConvertJSONToXML.REL_SUCCESS, 1);
+        final List<MockFlowFile> result = testRunner.getFlowFilesForRelationship(ConvertJSONToXML.REL_SUCCESS);
+        result.get(0).assertContentEquals("{\"Employees\":{\"Employee\":{\"@id\":3,\"content\":\"lu\"}}}".getBytes(StandardCharsets.UTF_8));
     }
 
-    @Test
-    public void testXml_To_Map_With_Default_KeyName_NO_Mark() {
-        try {
-            String xmlContent = "<Employees><Employee id=\"3\">lu</Employee></Employees>";
-            String attributesMark = null;
-            String keyName = null;
-            Map<String, Object> map = processor.convertXMLStrToMap(xmlContent, "/Employees/Employee", attributesMark, keyName);
-            assertThat(map.keySet(), hasSize(1));
 
-            Map<String, Object> employeeMap = (Map<String, Object>)map.get("Employee");
-            assertThat(employeeMap, hasEntry("id", "3"));
-            assertThat(employeeMap, hasEntry("content", "lu"));
-        } catch (Exception e) {
-            assertEquals("", e.getMessage());
+    private String readFileToString(String file){
+        try(FileInputStream fis = new FileInputStream(file);
+            InputStreamReader isr = new InputStreamReader(fis, StandardCharsets.UTF_8);
+            BufferedReader br = new BufferedReader(isr)
+        ) {
+            StringBuilder sb = new StringBuilder();
+            String tempStr = null;
+            while ((tempStr = br.readLine()) != null){
+                sb.append(tempStr);
+            }
+            return sb.toString();
+        }catch (Exception e){
+            e.printStackTrace();
         }
-    }
-
-    @Test
-    public void testXml_To_Map_With_Default_KeyName2_NO_Mark() {
-        try {
-            String xmlContent = "<Employees><Employee id=\"3\">lu</Employee></Employees>";
-            String attributesMark = null;
-            String keyName = null;
-            Map<String, Object> map = processor.convertXMLStrToMap(xmlContent, null, attributesMark, keyName);
-            assertThat(map.keySet(), hasSize(1));
-
-            Map<String, Object> employeesMap = (Map<String, Object>)map.get("Employees");
-            Map<String, Object> employeeMap = (Map<String, Object>)employeesMap.get("Employee");
-            assertThat(employeeMap.keySet(), hasSize(2));
-            assertThat(employeeMap, hasEntry("id", 3));
-            assertThat(employeeMap, hasEntry("content", "lu"));
-        } catch (Exception e) {
-            assertEquals("", e.getMessage());
-        }
+        return "";
     }
 }

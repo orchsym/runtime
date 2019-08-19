@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Employee id="1">
+    <device>computer</device>
+    <device>ipad</device>
+    <age>30</age>
+    <name>jiangbin</name>
+    <gender>Male</gender>
+    <role department="IT" extra="manager">Java Developer</role>
+    <additional>
+        <petname>Doggy</petname>
+        <petage>2</petage>
+    </additional>
+</Employee>

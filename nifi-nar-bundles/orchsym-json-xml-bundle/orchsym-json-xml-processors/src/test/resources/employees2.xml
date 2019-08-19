@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Employees>
+    <Employee id="1">
+        <device>computer</device>
+        <device>ipad</device>
+        <age>30</age>
+        <name>jiangbin</name>
+        <gender>Male</gender>
+        <role department="IT" extra="manager">Java Developer</role>
+        <additional>
+            <petname>Doggy</petname>
+            <petage>2</petage>
+        </additional>
+    </Employee>
+    <Employee id="2">
+        <age>35</age>
+        <name>Lisa</name>
+        <gender>Female</gender>
+        <role  department="Decision" extra="CIO">CEO</role>
+    </Employee>
+    <Employee id="3">lu</Employee>
+</Employees>

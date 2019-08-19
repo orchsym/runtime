@@ -1,6 +1,9 @@
 package com.orchsym.processor.jsonxml;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,15 +15,14 @@ import org.json.XML;
 import org.json.XMLTokener;
 
 public class XMLConverter extends XML{
-    
     /** Attribute Mark. */
-    public String ATTRIBUTEMARK = null;
+    private String ATTRIBUTEMARK = null;
     
     /** Namespace. */
-    public String NAMESPACE = null;
+    private String NAMESPACE = null;
     
     /** Data Tag Name */
-    public String DATATAGNAME = "content";
+    private String DATATAGNAME = "content";
     
     public void setAttributeMark(String s) {
         ATTRIBUTEMARK = s;
@@ -33,19 +35,19 @@ public class XMLConverter extends XML{
     public void setDataTagName(String s) {
             DATATAGNAME = s;
     }
-    
+
     public JSONObject toJSONObject_p(String string) throws JSONException {
         return toJSONObject_internal(new StringReader(string), false);
     }
-    
+
     public JSONObject toJSONObject_p(Reader reader) throws JSONException {
         return toJSONObject_internal(reader, false);
     }
-    
+
     public JSONObject toJSONObject_p(Reader reader, boolean keepStrings) throws JSONException {
         return toJSONObject_internal(reader, keepStrings);
     }
-    
+
     public JSONObject toJSONObject_internal(Reader reader, boolean keepStrings) throws JSONException {
         JSONObject jo = new JSONObject();
         XMLTokener x = new XMLTokener(reader);
@@ -57,7 +59,7 @@ public class XMLConverter extends XML{
         }
         return jo;
     }
-    
+
     public String toString_p(final Object object, final String tagName) {
         return toString(object, tagName, false);
     }
@@ -228,7 +230,7 @@ public class XMLConverter extends XML{
                 sb.append(tagName);
                 //第一个tag, 添加namespce
                 if (NAMESPACE != null) {
-                        sb.append(" xmlns:=\"" + NAMESPACE +"\"");
+                        sb.append(" xmlns=\"").append(NAMESPACE).append("\"");
                         NAMESPACE = null;
                 }
                 Map<String, Object> map = ((JSONObject)object).toMap();
@@ -246,7 +248,7 @@ public class XMLConverter extends XML{
                             if (((String)key).contains(ATTRIBUTEMARK)) {
                                 removeKeyArr.add((String)key);
                                 String keyStr = ((String)key).replace(ATTRIBUTEMARK, "");
-                                sb.append(" " + keyStr + "=\"" + map.get(key) + "\"");;
+                                sb.append(" ").append(keyStr).append("=\"").append(map.get(key)).append("\"");;
                             } else if (map.containsKey(DATATAGNAME)){
                                 //single item, get the content
                                 objMap = new HashMap<String, Object>();
@@ -360,5 +362,161 @@ public class XMLConverter extends XML{
                 : (string.length() == 0) ? "<" + tagName + "/>" : "<" + tagName
                         + ">" + string + "</" + tagName + ">";
 
+    }
+
+    public byte[] toBytes_p(final Object object, final String tagName, final String encoding) throws IOException {
+        try(ByteArrayOutputStream baos = new ByteArrayOutputStream()){
+            baos.write(("<?xml version=\"1.0\" encoding=\"" + encoding + "\"?>").getBytes(StandardCharsets.UTF_8));
+            baos.write(toBytes(object, tagName, false));
+            return baos.toByteArray();
+        }
+    }
+
+    private byte[] toBytes(Object object, final String tagName, boolean attrInvolved) throws JSONException {
+        try(ByteArrayOutputStream baos = new ByteArrayOutputStream()){
+            JSONArray ja;
+            JSONObject jo;
+            if (attrInvolved) {
+                return object.toString().getBytes(StandardCharsets.UTF_8);
+            }
+            boolean containAttr = false;
+            if (object instanceof JSONObject) {
+                // Emit <tagName>
+                if (tagName != null) {
+                    baos.write('<');
+                    baos.write(tagName.getBytes(StandardCharsets.UTF_8));
+                    //第一个tag, 添加namespce
+                    if (NAMESPACE != null) {
+                        baos.write((" xmlns=\"" + NAMESPACE + "\"").getBytes(StandardCharsets.UTF_8));
+                        NAMESPACE = null;
+                    }
+                    Map<String, Object> map = ((JSONObject)object).toMap();
+                    for (Object key : map.keySet()) {
+                        if (ATTRIBUTEMARK != null && ((String)key).contains(ATTRIBUTEMARK)) {
+                            containAttr = true;
+                            break;
+                        }
+                    }
+                    //包含attributes
+                    if (containAttr) {
+                        ArrayList<String> removeKeyArr = new ArrayList<>();
+                        Map<String, Object> objMap = null;
+                        for (Object key : map.keySet()) {
+                            if (((String)key).contains(ATTRIBUTEMARK)) {
+                                removeKeyArr.add((String)key);
+                                String keyStr = ((String)key).replace(ATTRIBUTEMARK, "");
+                                baos.write((" " + keyStr + "=\"" + map.get(key) + "\"").getBytes(StandardCharsets.UTF_8));
+                            } else if (map.containsKey(DATATAGNAME)){
+                                //single item, get the content
+                                objMap = new HashMap<String, Object>();
+                                objMap.put(tagName, map.get(DATATAGNAME));
+                                object = new JSONObject(objMap);
+                            }
+                        }
+                        if (objMap == null) {
+                            for (String key : removeKeyArr) {
+                                //remove the attribute items
+                                map.remove(key);
+                            }
+                            objMap = map;
+                            containAttr = false;
+                        }
+                        object = new JSONObject(objMap);
+                    }
+                    baos.write('>');
+                }
+
+                // Loop thru the keys.
+                // don't use the new entrySet accessor to maintain Android Support
+                jo = (JSONObject) object;
+                for (final String key : jo.keySet()) {
+                    Object value = jo.opt(key);
+                    if (value == null) {
+                        value = "";
+                    } else if (value.getClass().isArray()) {
+                        value = new JSONArray(value);
+                    }
+
+                    // Emit content in body
+                    if ("content".equals(key)) {
+                        if (value instanceof JSONArray) {
+                            ja = (JSONArray) value;
+                            int jaLength = ja.length();
+                            // don't use the new iterator API to maintain support for Android
+                            for (int i = 0; i < jaLength; i++) {
+                                if (i > 0) {
+                                    baos.write('\n');
+                                }
+                                Object val = ja.opt(i);
+                                baos.write(escape(val.toString()).getBytes(StandardCharsets.UTF_8));
+                            }
+                        } else {
+                            baos.write(escape(value.toString()).getBytes(StandardCharsets.UTF_8));
+                        }
+
+                        // Emit an array of similar keys
+
+                    } else if (value instanceof JSONArray) {
+                        ja = (JSONArray) value;
+                        int jaLength = ja.length();
+                        // don't use the new iterator API to maintain support for Android
+                        for (int i = 0; i < jaLength; i++) {
+                            Object val = ja.opt(i);
+                            if (val instanceof JSONArray) {
+                                StringBuilder sb = new StringBuilder();
+                                sb.append('<').append(key).append('>').append(toString(val)).append("</").append(key).append('>');
+                                baos.write(sb.toString().getBytes(StandardCharsets.UTF_8));
+                            } else {
+                                baos.write(toBytes(val, key, containAttr));
+                            }
+                        }
+                    } else if ("".equals(value)) {
+                        baos.write(("<" + key + "/>").getBytes(StandardCharsets.UTF_8));
+                        // Emit a new tag <k>
+
+                    } else {
+                        baos.write(toBytes(value, key, containAttr));
+                    }
+                }
+                if (tagName != null) {
+
+                    // Emit the </tagname> close tag
+                    baos.write(("</" + tagName + ">").getBytes(StandardCharsets.UTF_8));
+                }
+                return baos.toByteArray();
+
+            }
+
+            if (object != null && (object instanceof JSONArray ||  object.getClass().isArray())) {
+                if(object.getClass().isArray()) {
+                    ja = new JSONArray(object);
+                } else {
+                    ja = (JSONArray) object;
+                }
+                baos.write("<array>".getBytes(StandardCharsets.UTF_8));
+                int jaLength = ja.length();
+                // don't use the new iterator API to maintain support for Android
+                for (int i = 0; i < jaLength; i++) {
+                    Object val = ja.opt(i);
+                    // XML does not have good support for arrays. If an array
+                    // appears in a place where XML is lacking, synthesize an
+                    // <array> element.
+                    baos.write((toBytes(val, tagName == null ? "element" : tagName, containAttr)));
+                }
+                baos.write("</array>".getBytes(StandardCharsets.UTF_8));
+                return baos.toByteArray();
+            }
+
+            // Just a string
+            String string = (object == null) ? "null" : escape(object.toString());
+            String jsonString2Xml = (tagName == null) ? "\"" + string + "\""
+                    : (string.length() == 0) ? "<" + tagName + "/>"
+                    : "<" + tagName + ">" + string + "</" + tagName + ">";
+            baos.write(jsonString2Xml.getBytes(StandardCharsets.UTF_8));
+            return baos.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "".getBytes(StandardCharsets.UTF_8);
     }
 }

@@ -1,0 +1,13 @@
+{
+  "name": {
+    "first_name": "Nicholas",
+    "last_name": "Zhan"
+  },
+  "tel": "12345678901",
+  "position": "Developer",
+  "age": 22,
+  "education": [
+    "HU",
+    "MTU"
+  ]
+}

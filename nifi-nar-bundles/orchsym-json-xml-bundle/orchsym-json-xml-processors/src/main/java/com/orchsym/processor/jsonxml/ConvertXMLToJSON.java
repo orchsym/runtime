@@ -4,56 +4,32 @@ import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Marks;
 import org.apache.nifi.annotation.documentation.Tags;
+import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.Validator;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
-import org.apache.nifi.flowfile.attributes.BooleanAllowableValues;
-import org.apache.nifi.processor.AbstractProcessor;
-import org.apache.nifi.processor.ProcessContext;
-import org.apache.nifi.processor.ProcessSession;
-import org.apache.nifi.processor.ProcessorInitializationContext;
-import org.apache.nifi.processor.Relationship;
+import org.apache.nifi.flowfile.attributes.CoreAttributes;
+import org.apache.nifi.processor.*;
 import org.apache.nifi.processor.exception.ProcessException;
-import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.util.StopWatch;
-import org.apache.nifi.annotation.lifecycle.OnScheduled;
-import org.apache.nifi.flowfile.attributes.CoreAttributes;
-
-import org.apache.commons.io.IOUtils;
-
-import java.io.BufferedOutputStream;
-import java.io.OutputStream;
-import java.io.InputStream;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.HashSet;
-import java.util.Collections;
+import org.json.JSONObject;
+import org.w3c.dom.*;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathFactory;
-
-import org.json.JSONObject;
-import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.xpath.*;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Lu JB
@@ -156,70 +132,34 @@ public class ConvertXMLToJSON extends AbstractProcessor {
         if (flowFile == null) {
             return;
         }
-        String content = null;
         try (final InputStream inputStream = session.read(flowFile)) {
-            content = IOUtils.toString(inputStream, StandardCharsets.UTF_8.name());
-        } catch (Exception e) {
-            getLogger().error("Failed to read the flowfile {}", new Object[] { flowFile });
-            session.transfer(flowFile, REL_FAILURE);
-            return;
-        }
-
-        Map<String, Object> jsonMap = convertXMLStrToMap(content, xpathExpression, attributeMark, contentKeyName);
-        Gson gson = new GsonBuilder().create();
-        final String jsonContent = gson.toJson(jsonMap);
-        try {
+            final byte[] jsonBytes = convertXmlBytesToJsonBytes(inputStream, xpathExpression, attributeMark, contentKeyName);
             final StopWatch stopWatch = new StopWatch(true);
-            FlowFile successFlow = null;
+            FlowFile successFlow;
             if (destinationContent) {
                 FlowFile contFlowfile = session.create(flowFile);
                 contFlowfile = session.write(contFlowfile, (in, out) -> {
                     try (OutputStream outputStream = new BufferedOutputStream(out)) {
-                        outputStream.write(jsonContent.getBytes("UTF-8"));
+                        outputStream.write(jsonBytes);
                     }
                 });
                 contFlowfile = session.putAttribute(contFlowfile, CoreAttributes.MIME_TYPE.key(), APPLICATION_JSON);
                 session.remove(flowFile);
                 successFlow = contFlowfile;
+                session.getProvenanceReporter().modifyContent(successFlow, stopWatch.getElapsed(TimeUnit.MILLISECONDS));
             } else {
-                successFlow = session.putAttribute(flowFile, JSON_ATTRIBUTE_NAME, jsonContent);
+                successFlow = session.putAttribute(flowFile, JSON_ATTRIBUTE_NAME, new String(jsonBytes, StandardCharsets.UTF_8));
+                session.getProvenanceReporter().modifyAttributes(successFlow, "Add Attribute: " + JSON_ATTRIBUTE_NAME);
             }
-
-            session.getProvenanceReporter().modifyContent(successFlow, stopWatch.getElapsed(TimeUnit.MILLISECONDS));
             session.transfer(successFlow, REL_SUCCESS);
-
         } catch (Exception e) {
             getLogger().error(e.getMessage());
             session.transfer(flowFile, REL_FAILURE);
         }
     }
 
-    protected Map<String, Object> convertXMLStrToMap(String xmlStr, String xpathExpression, String mark, String keyName) {
-        Map<String, Object> ret = new HashMap<String, Object>();
-        try {
-            if (xmlStr == null) {
-                return ret;
-            }
-            mark = mark == null ? "" : mark;
-            keyName = keyName == null ? "content" : keyName;
-            if (xpathExpression == null) {
-                XMLConverter xmlInstance = new XMLConverter();
-                xmlInstance.setAttributeMark(mark);
-                xmlInstance.setDataTagName(keyName);
-                JSONObject xmlJSONObj = xmlInstance.toJSONObject_p(xmlStr);
-                ret = xmlJSONObj.toMap();
-            } else {
-                NodeList nodeList = getNodeListFromXmlStr(xmlStr, xpathExpression);
-                ret = getJsonStringFromNodeList(nodeList, mark, keyName);
-            }
-        } catch (Exception e) {
-            return ret;
-        }
-
-        return ret;
-    }
-
-    private NodeList getNodeListFromXmlStr(String xmlStr, String xpathExpression) throws Exception {
+    private static byte[] getNodeBytesFromXmlBytes(InputStream xmlInputSream, String xpathExpression)
+            throws ParserConfigurationException, IOException, SAXException, XPathExpressionException, TransformerException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setValidating(false);
         factory.setNamespaceAware(true);
@@ -227,94 +167,58 @@ public class ConvertXMLToJSON extends AbstractProcessor {
         factory.setIgnoringElementContentWhitespace(true);
 
         DocumentBuilder builder = factory.newDocumentBuilder();
-        InputSource inputSource = new InputSource(new StringReader(xmlStr));
+        InputSource inputSource = new InputSource(new InputStreamReader(xmlInputSream));
         Document doc = builder.parse(inputSource);
 
-        XPathFactory xpf = XPathFactory.newInstance();
-        XPath xpath = xpf.newXPath();
+        XPath xpath = XPathFactory.newInstance().newXPath();
         XPathExpression compile = xpath.compile(xpathExpression);
         NodeList nodeList = (NodeList) compile.evaluate(doc, XPathConstants.NODESET);
-        return nodeList;
-    }
 
-    private Map<String, Object> getJsonStringFromNodeList(NodeList nodeList, String mark, String keyName) {
-        Map<String, Object> nodeMap = new HashMap<String, Object>();
-        for (int i = 0; i < nodeList.getLength(); i++) {
-            Node node = nodeList.item(i);
-            String nodeName = node.getNodeName();
-            Map<String, Object> map = new HashMap<String, Object>();
-            processNodeChildren(node, map, mark, keyName);
-
-            Map<String, Object> attrMap = getNodeAttributes(node, mark);
-            if (attrMap != null) {
-                ((Map<String, Object>) (map.get(nodeName))).putAll(attrMap);
-            }
-            mergeContentToMap(nodeMap, nodeName, map.get(nodeName));
+        for (int i = 0; i < nodeList.getLength(); ++i) {
+            Node nd = nodeList.item(i);
+            nd.getParentNode().removeChild(nd);
         }
-        return nodeMap;
+
+        // Create and setup transformer
+        Transformer transformer =  TransformerFactory.newInstance().newTransformer();
+        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+
+        // Turn the nodeList into a string
+        StringWriter writer = new StringWriter();
+        StreamResult result = new StreamResult(writer);
+        DOMSource source = new DOMSource();
+        for (int i = 0; i < nodeList.getLength(); ++i) {
+            source.setNode(nodeList.item(i));
+            transformer.transform(source, result);
+        }
+        return writer.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private void processNodeChildren(Node node, Map<String, Object> map, String mark, String keyName) {
-        Map<String, Object> childMap = new HashMap<String, Object>();
-        String nodeName = node.getNodeName();
-        if (node.getChildNodes().getLength() == 1) {
-            processNode(node, map, mark, keyName);
-        } else {
-            for (int i = 0; i < node.getChildNodes().getLength(); i++) {
-                Node subNode = node.getChildNodes().item(i);
-                if (subNode.getChildNodes().getLength() > 1) {
-                    // 递归获取所有子node
-                    processNodeChildren(subNode, childMap, mark, keyName);
-                } else {
-                    processNode(subNode, childMap, mark, keyName);
+    public static byte[] convertXmlBytesToJsonBytes(InputStream xmlInputStream, String xpathExpression, String mark, String keyName)
+            throws IOException, ParserConfigurationException, SAXException, XPathExpressionException, TransformerException {
+        try(InputStreamReader isr = new InputStreamReader(xmlInputStream, StandardCharsets.UTF_8);
+            BufferedReader br = new BufferedReader(isr);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            OutputStreamWriter osw = new OutputStreamWriter(baos, StandardCharsets.UTF_8)) {
+            mark = mark == null ? "" : mark;
+            keyName = keyName == null ? "content" : keyName;
+            if (xpathExpression == null) {
+                XMLConverter xmlInstance = new XMLConverter();
+                xmlInstance.setAttributeMark(mark);
+                xmlInstance.setDataTagName(keyName);
+                JSONObject xmlJSONObj = xmlInstance.toJSONObject_p(br);
+                xmlJSONObj.write(osw);
+                osw.flush();
+                return baos.toByteArray();
+            } else {
+                byte[] node = getNodeBytesFromXmlBytes(xmlInputStream, xpathExpression);
+                try(ByteArrayInputStream bais = new ByteArrayInputStream(node)){
+                    return convertXmlBytesToJsonBytes(bais, null, mark, keyName);
                 }
             }
-            map.put(nodeName, childMap);
         }
-    }
-
-    private void processNode(Node node, Map<String, Object> map, String mark, String keyName) {
-        String nodeKey = node.getNodeName();
-        Object nodeContent = node.getTextContent();
-        NamedNodeMap attributes = node.getAttributes();
-
-        Map<String, Object> attributeMap = getNodeAttributes(node, mark);
-        if (attributeMap != null) {
-            attributeMap.put(keyName, nodeContent);
-            nodeContent = attributeMap;
-        }
-        mergeContentToMap(map, nodeKey, nodeContent);
-    }
-
-    private Map<String, Object> getNodeAttributes(Node node, String mark) {
-        NamedNodeMap attributes = node.getAttributes();
-        if (attributes == null || attributes.getLength() == 0) {
-            return null;
-        }
-        Map<String, Object> map = new HashMap<String, Object>();
-        for (int i = 0; i < attributes.getLength(); i++) {
-            Attr attr = (Attr) attributes.item(i);
-            String attrName = attr.getNodeName();
-            attrName = mark + attrName;
-            String attrValue = attr.getNodeValue();
-            map.put(attrName, attrValue);
-        }
-        return map;
-    }
-
-    private void mergeContentToMap(Map<String, Object> map, String key, Object content) {
-        if (map.containsKey(key)) {
-            if (map.get(key) instanceof List<?>) {
-                ((List) map.get(key)).add(content);
-            } else {
-                List<Object> conentArr = new ArrayList<Object>();
-                conentArr.add((Object) map.get(key));
-                conentArr.add(content);
-                map.put(key, conentArr);
-            }
-        } else {
-            map.put(key, content);
-        }
-
     }
 }
