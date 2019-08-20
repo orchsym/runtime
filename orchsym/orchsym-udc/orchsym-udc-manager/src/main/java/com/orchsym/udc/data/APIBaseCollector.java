@@ -39,15 +39,16 @@ public abstract class APIBaseCollector implements CollectorService {
     @Override
     public JSONObject collect(Map<String, Object> parameters) {
 
-        final String url = LocalResource.getLocalUrl(getUrlPath());
+        final String urlPath = getUrlPath();
+        final String url = LocalResource.getLocalUrl(urlPath);
         try {
             final String result = HttpRequestUtil.getString(url);
             final JSONObject json = (JSONObject) new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE).parse(result);
 
             return retrieveJSON(json);
 
-        } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
+        } catch (Throwable e) {
+            logger.warn("failure to get the data from API {} with error {}", new Object[] { urlPath, e.getMessage() });
         }
 
         return new JSONObject();
