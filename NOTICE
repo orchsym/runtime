@@ -1,8 +1,12 @@
-Apache NiFi
-Copyright 2014-2018 The Apache Software Foundation
+Orchsym Runtime
+Copyright 2019 北京数聚鑫云信息技术有限公司
 
-This product includes software developed at
-The Apache Software Foundation (http://www.apache.org/).
+This product includes derived works from the Orchsym License v1.0 (https://github.com/orchsym/runtime/blob/master/orchsym/LICENSE)
+  Copyright 2019 北京数聚鑫云信息技术有限公司
+  while at BaishanCloud Orchsym https://www.baishan.com/tech/orchsym
+
+This includes derived works from the Apache NiFi project (https://github.com/apache/nifi):
+  Copyright 2014 The Apache Software Foundation
 
 This product includes the following work from the Apache Hadoop project under Apache Software License V2:
   BoundedByteArrayOutputStream.java adapted to SoftLimitBoundedByteArrayOutputStream.java

@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Orchsym Runtime under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional
+ * information regarding copyright ownership.
+ * 
+ * this file to You under the Orchsym License, Version 1.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * https://github.com/orchsym/runtime/blob/master/orchsym/LICENSE
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.baishancloud.orchsym.processors.sqlSchema;
 
 import com.google.common.collect.ImmutableMap;
@@ -31,7 +48,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class csvSchema extends AbstractSchema {
+public class CsvSchema extends AbstractSchema {
     private InputStream tableData;
     private String tableName;
     Map<String, Table> table = null;
@@ -40,7 +57,7 @@ public class csvSchema extends AbstractSchema {
      * @param tableName 数据表表名
      * @param tableData 数据内容
      */
-    public csvSchema(String tableName, InputStream tableData) {
+    public CsvSchema(String tableName, InputStream tableData) {
         super();
         this.tableName = tableName;
         this.tableData = tableData;
@@ -69,13 +86,13 @@ public class csvSchema extends AbstractSchema {
 
     Expression gettableDataExpression(SchemaPlus parentSchema, String name) {
         return Types.castIfNecessary(tableData.getClass(),
-                Expressions.call(Schemas.unwrap(getExpression(parentSchema, name), csvSchema.class),
+                Expressions.call(Schemas.unwrap(getExpression(parentSchema, name), CsvSchema.class),
                         BuiltInMethod.REFLECTIVE_SCHEMA_GET_TARGET.method));
     }
 
     private <T> Table fieldRelation() {
         String[] array = toArrayByInputStreamReader(tableData);
-        return new csvSchema.csvTable(array);
+        return new CsvSchema.csvTable(array);
     }
 
     private static class csvTable extends AbstractTable implements ScannableTable {
@@ -110,7 +127,7 @@ public class csvSchema extends AbstractSchema {
         public Enumerable<Object[]> scan(DataContext root) {
             return new AbstractEnumerable<Object[]>() {
                 public Enumerator<Object[]> enumerator() {
-                    return new csvSchema.csvEnumerator(array);
+                    return new CsvSchema.csvEnumerator(array);
                 }
             };
         }
