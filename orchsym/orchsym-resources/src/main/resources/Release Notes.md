@@ -1,22 +1,21 @@
 ----------------------------
-# Version 2.0_08000 Beta
+# Version 2.0_08000
 
 版本：1.7.1-2.0_08000
 
-发布时间：2019-08-16
+发布时间：2019-08-23
 
-组件：288 (16)
+组件：284 (12)
 服务：59 (2)
 
 
 ## 新功能
-- 表达式语言支持BigDecimal计算以及指定精度输出
+- 表达式语言支持BigDecimal计算
 - 前端改版第一阶段
 - [组件]开发FilterRecord记录过滤组件
 - 支持Usage Data Collector功能
 
 ## 改进
-- 数据库连接池服务不支持多版本
 - InferAvroSchema将生成的doc字段设置为可选
 - 优化XML和JSON互转组件
 - PublishAMQP，ConsumeAMQP组件参数需要支持表达式语言
