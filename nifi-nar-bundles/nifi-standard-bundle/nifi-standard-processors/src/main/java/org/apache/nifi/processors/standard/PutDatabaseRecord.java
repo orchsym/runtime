@@ -32,6 +32,7 @@ import org.apache.nifi.expression.AttributeExpression;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.logging.ComponentLog;
+import org.apache.nifi.lookup.KeyValueLookupService;
 import org.apache.nifi.processor.AbstractSessionFactoryProcessor;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
@@ -39,6 +40,7 @@ import org.apache.nifi.processor.ProcessSessionFactory;
 import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.apache.nifi.processor.util.pattern.DiscontinuedException;
 import org.apache.nifi.processor.util.pattern.ErrorTypes;
 import org.apache.nifi.processor.util.pattern.ExceptionHandler;
 import org.apache.nifi.processor.util.pattern.PartialFunctions;
@@ -73,9 +75,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
@@ -266,6 +270,24 @@ public class PutDatabaseRecord extends AbstractSessionFactoryProcessor {
             .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
             .build();
 
+    static final PropertyDescriptor CONN_PASS = new PropertyDescriptor.Builder()
+            .name("transaction-in-flow")
+            .displayName("Transaction in Flow")
+            .description("Transaction in Flow")
+            .allowableValues("true", "false")
+            .addValidator(StandardValidators.BOOLEAN_VALIDATOR)
+            .defaultValue("false")
+            .required(true)
+            .build();
+
+    static final PropertyDescriptor KV_SERVICE = new PropertyDescriptor.Builder()
+            .name("database-transaction-session")
+            .displayName("Database Transaction Session")
+            .description("The Controller Service that is used to obtain a database connection for transaction store.")
+            .required(true)
+            .identifiesControllerService(KeyValueLookupService.class)
+            .build();
+
     protected static List<PropertyDescriptor> propDescriptors;
 
     private final Map<SchemaKey, TableSchema> schemaCache = new LinkedHashMap<SchemaKey, TableSchema>(100) {
@@ -300,12 +322,14 @@ public class PutDatabaseRecord extends AbstractSessionFactoryProcessor {
         pds.add(QUOTED_IDENTIFIERS);
         pds.add(QUOTED_TABLE_IDENTIFIER);
         pds.add(QUERY_TIMEOUT);
+        pds.add(CONN_PASS);
+        pds.add(KV_SERVICE);
         pds.add(RollbackOnFailure.ROLLBACK_ON_FAILURE);
 
         propDescriptors = Collections.unmodifiableList(pds);
     }
 
-    private Put<FunctionContext, Connection> process;
+    private CustomPut process;
     private ExceptionHandler<FunctionContext> exceptionHandler;
 
     @Override
@@ -356,6 +380,13 @@ public class PutDatabaseRecord extends AbstractSessionFactoryProcessor {
     };
 
     private final Put.PutFlowFile<FunctionContext, Connection> putFlowFile = (context, session, functionContext, conn, flowFile, result) -> {
+
+        final KeyValueLookupService lookupService = context.getProperty(KV_SERVICE).asControllerService(KeyValueLookupService.class);
+        String databaseConnectionIdentifier = UUID.randomUUID().toString();
+        if (lookupService != null) {
+            lookupService.register(databaseConnectionIdentifier, conn);
+        }
+        session.putAttribute(flowFile, "database.connection.identifier", databaseConnectionIdentifier);
 
         exceptionHandler.execute(functionContext, flowFile, inputFlowFile -> {
 
@@ -415,42 +446,12 @@ public class PutDatabaseRecord extends AbstractSessionFactoryProcessor {
             schemaCache.clear();
         }
 
-        process = new Put<>();
+        process = new CustomPut();
 
         process.setLogger(getLogger());
         process.initConnection(initConnection);
         process.putFlowFile(putFlowFile);
         process.adjustRoute(RollbackOnFailure.createAdjustRoute(REL_FAILURE, REL_RETRY));
-
-        process.onCompleted((c, s, fc, conn) -> {
-            try {
-                conn.commit();
-            } catch (SQLException e) {
-                // Throw ProcessException to rollback process session.
-                throw new ProcessException("Failed to commit database connection due to " + e, e);
-            }
-        });
-
-        process.onFailed((c, s, fc, conn, e) -> {
-            try {
-                conn.rollback();
-            } catch (SQLException re) {
-                // Just log the fact that rollback failed.
-                // ProcessSession will be rollback by the thrown Exception so don't have to do anything here.
-                getLogger().warn("Failed to rollback database connection due to %s", new Object[]{re}, re);
-            }
-        });
-
-        process.cleanup((c, s, fc, conn) -> {
-            // make sure that we try to set the auto commit back to whatever it was.
-            if (fc.originalAutoCommit) {
-                try {
-                    conn.setAutoCommit(true);
-                } catch (final SQLException se) {
-                    getLogger().warn("Failed to reset autocommit due to {}", new Object[]{se});
-                }
-            }
-        });
 
         exceptionHandler = new ExceptionHandler<>();
         exceptionHandler.mapException(s -> {
@@ -462,12 +463,12 @@ public class PutDatabaseRecord extends AbstractSessionFactoryProcessor {
                 throw s;
 
             } catch (IllegalArgumentException
-                    |MalformedRecordException
-                    |SQLNonTransientException e) {
+                    | MalformedRecordException
+                    | SQLNonTransientException e) {
                 return ErrorTypes.InvalidInput;
 
             } catch (IOException
-                    |SQLException e) {
+                    | SQLException e) {
                 return ErrorTypes.TemporalFailure;
 
             } catch (Exception e) {
@@ -1022,7 +1023,7 @@ public class PutDatabaseRecord extends AbstractSessionFactoryProcessor {
                                        final boolean translateColumnNames, final boolean includePrimaryKeys) throws SQLException {
             final DatabaseMetaData dmd = conn.getMetaData();
 
-            try (final ResultSet colrs = dmd.getColumns(catalog, schema, tableName, "Oracle".equalsIgnoreCase(dmd.getDatabaseProductName())? null :"%")) {
+            try (final ResultSet colrs = dmd.getColumns(catalog, schema, tableName, "Oracle".equalsIgnoreCase(dmd.getDatabaseProductName()) ? null : "%")) {
                 final List<ColumnDescription> cols = new ArrayList<>();
                 while (colrs.next()) {
                     final ColumnDescription col = ColumnDescription.from(colrs);
@@ -1088,7 +1089,7 @@ public class PutDatabaseRecord extends AbstractSessionFactoryProcessor {
 
             final String nullableValue = resultSet.getString("IS_NULLABLE");
             final boolean isNullable = "YES".equalsIgnoreCase(nullableValue) || nullableValue.isEmpty();
-            
+
             String defaultValue = null;
             String autoIncrementValue = "NO";
             try {
@@ -1170,6 +1171,104 @@ public class PutDatabaseRecord extends AbstractSessionFactoryProcessor {
         public String toString() {
             return sql;
         }
-        
+
+    }
+
+    /**
+     * 自定义操作组件: 修改默认Connection行为，在后续组件中提交或回滚事务
+     * EE CommitDatabase.class
+     * EE RollbackDatabase.class
+     */
+    class CustomPut extends Put<FunctionContext, Connection> {
+        @Override
+        public void onTrigger(ProcessContext context, ProcessSession session, FunctionContext functionContext) throws ProcessException {
+            validateCompositePattern();
+
+            final Boolean connPass = context.getProperty(CONN_PASS).asBoolean();
+
+            final RoutingResult result = new RoutingResult();
+            final List<FlowFile> flowFiles = fetchFlowFiles.apply(context, session, functionContext, result);
+
+            // Transfer FlowFiles if there is any.
+            result.getRoutedFlowFiles().forEach(((relationship, routedFlowFiles) ->
+                    session.transfer(routedFlowFiles, relationship)));
+
+            if (flowFiles == null || flowFiles.isEmpty()) {
+                logger.debug("No incoming FlowFiles.");
+                return;
+            }
+
+            // Only pass in a flow file if there is a single one present
+            Connection connection = null;
+            try {
+                connection = initConnection.apply(context, session, functionContext, flowFiles.size() == 1 ? flowFiles.get(0) : null);
+
+                try {
+                    // Execute the core function.
+                    try {
+                        putFlowFiles(context, session, functionContext, connection, flowFiles, result);
+                    } catch (DiscontinuedException e) {
+                        // Whether it was an error or semi normal is depends on the implementation and reason why it wanted to discontinue.
+                        // So, no logging is needed here.
+                    }
+
+                    // Extension point to alter routes.
+                    if (adjustRoute != null) {
+                        adjustRoute.apply(context, session, functionContext, result);
+                    }
+
+                    // Put fetched, but unprocessed FlowFiles back to self.
+                    final List<FlowFile> transferredFlowFiles = result.getRoutedFlowFiles().values().stream()
+                            .flatMap(List::stream).collect(Collectors.toList());
+                    final List<FlowFile> unprocessedFlowFiles = flowFiles.stream()
+                            .filter(flowFile -> !transferredFlowFiles.contains(flowFile)).collect(Collectors.toList());
+                    result.routeTo(unprocessedFlowFiles, Relationship.SELF);
+
+                    if (!connPass) {
+                        connection.commit();
+                    }
+
+                    // Transfer FlowFiles.
+                    transferFlowFiles.apply(context, session, functionContext, result);
+
+                } catch (Exception e) {
+                    // 异常时，直接回滚并关闭连接，不考虑用户设置connPass
+                    try {
+                        connection.rollback();
+                    } catch (SQLException ex) {
+                        logger.error("[PutDatabaseRecord] transaction rollback error", ex);
+                    }
+                    try {
+                        connection.close();
+                    } catch (SQLException ex) {
+                        logger.error("[PutDatabaseRecord] connection close error", ex);
+                    }
+                    throw e;
+                } finally {
+                    if (!connPass && functionContext.originalAutoCommit) {
+                        connection.setAutoCommit(true);
+                    }
+                }
+
+            } catch (ProcessException e) {
+                throw e;
+            } catch (Exception e) {
+                // Throw uncaught exception as RuntimeException so that this processor will be yielded.
+                final String msg = String.format("Failed to execute due to %s", e);
+                logger.error(msg, e);
+                throw new RuntimeException(msg, e);
+            } finally {
+                // 如果是独立组件，需要关闭连接
+                if (!connPass && connection != null) {
+                    try {
+                        if (!connection.isClosed()) {
+                            connection.close();
+                        }
+                    } catch (SQLException e) {
+                        getLogger().error("PutDatabaseRecord connection conn't closed.\n" + e.getMessage());
+                    }
+                }
+            }
+        }
     }
 }
