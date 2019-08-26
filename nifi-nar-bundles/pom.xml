@@ -97,6 +97,7 @@
         <module>orchsym-attributes-bundle</module>
         <module>orchsym-json-xml-bundle</module>
         <module>orchsym-filter-bundle</module>
+        <module>orchsym-config-bundle</module>
     </modules>
     <build>
         <plugins>
