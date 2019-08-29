@@ -45,6 +45,7 @@ import org.apache.nifi.authorization.user.NiFiUser;
 import org.apache.nifi.authorization.user.NiFiUserDetails;
 import org.apache.nifi.authorization.user.NiFiUserUtils;
 import org.apache.nifi.util.FormatUtils;
+import org.apache.nifi.util.NiFiProperties;
 import org.apache.nifi.web.api.dto.AccessConfigurationDTO;
 import org.apache.nifi.web.api.dto.AccessStatusDTO;
 import org.apache.nifi.web.api.entity.AccessConfigurationEntity;
@@ -275,8 +276,13 @@ public class AccessResource extends ApplicationResource {
                 return;
             }
 
+            NiFiProperties nifiProperties = org.apache.nifi.util.NiFiProperties.createBasicNiFiProperties(null, null);
+            String webUrl = nifiProperties.getProperty("orchsym.iam.redirect.web.url");
+            if(org.apache.nifi.util.StringUtils.isBlank(webUrl)){
+                webUrl = "../../../runtime";
+            }
             // redirect to the name page
-            httpServletResponse.sendRedirect("../../../runtime");
+            httpServletResponse.sendRedirect(webUrl);
         } else {
             // remove the oidc request cookie
             removeOidcRequestCookie(httpServletResponse);
@@ -388,7 +394,11 @@ public class AccessResource extends ApplicationResource {
         }
 
         URI endSessionEndpoint = oidcService.getEndSessionEndpoint();
-        String postLogoutRedirectUri = generateResourceUri("..", "runtime");
+        NiFiProperties nifiProperties = org.apache.nifi.util.NiFiProperties.createBasicNiFiProperties(null, null);
+        String postLogoutRedirectUri = nifiProperties.getProperty("orchsym.iam.redirect.logout.url");
+        if(org.apache.nifi.util.StringUtils.isBlank(postLogoutRedirectUri)){
+            postLogoutRedirectUri = generateResourceUri("..", "runtime");
+        }
 
         if (endSessionEndpoint == null) {
             // handle the case, where the OpenID Provider does not have an end session endpoint
