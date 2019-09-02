@@ -1,28 +1,24 @@
-Thank you for submitting a contribution to Apache NiFi.
+谢谢您对数聚蜂巢Runtime的贡献
 
-In order to streamline the review of the contribution we ask you
-to ensure the following steps have been taken:
+为了简化对贡献的审查流程，我们要求您确保已采取如下步骤：
 
-### For all changes:
-- [ ] Is there a JIRA ticket associated with this PR? Is it referenced 
-     in the commit message?
 
-- [ ] Does your PR title start with NIFI-XXXX where XXXX is the JIRA number you are trying to resolve? Pay particular attention to the hyphen "-" character.
+### 所有修改:
+- [ ] 该PR是否关联相应的JIRA单？且是否在提交消息中显式引用？
 
-- [ ] Has your PR been rebased against the latest commit within the target branch (typically master)?
+- [ ] 当关联JIRA单时，标题是否以ORCHSYM-XXXX开头(注意分隔符为减号 “-”)，其中XXXX为您解决的JIRA单号？
 
-- [ ] Is your initial contribution a single, squashed commit?
+- [ ] 您的PR提交是否基于最新代码的分支（通常为master）？
 
-### For code changes:
-- [ ] Have you ensured that the full suite of tests is executed via mvn -Pcontrib-check clean install at the root nifi folder?
-- [ ] Have you written or updated unit tests to verify your changes?
-- [ ] If adding new dependencies to the code, are these dependencies licensed in a way that is compatible for inclusion under [ASF 2.0](http://www.apache.org/legal/resolved.html#category-a)? 
-- [ ] If applicable, have you updated the LICENSE file, including the main LICENSE file under nifi-assembly?
-- [ ] If applicable, have you updated the NOTICE file, including the main NOTICE file found under nifi-assembly?
-- [ ] If adding new Properties, have you added .displayName in addition to .name (programmatic access) for each of the new properties?
+- [ ] 您贡献的代码PR是否已处理成单个提交记录？
 
-### For documentation related changes:
-- [ ] Have you ensured that format looks appropriate for the output in which it is rendered?
+### 代码修改:
+- [ ] 确保您已经在库根目录下做过完整的代码打包测试，通过命令 mvn -Pcontrib-check clean install？
+- [ ] 您是否编写或更新单元测试来验证您的修改？
+- [ ] 如果在代码中添加了新的依赖，请确保这些依赖项是否与License兼容的方式获得许可？
+- [ ] 如果适用，您是否更新了根目录下的NOTICE文件？
+- [ ] 如果新开发了组件或控制器服务，是否针对参数配置在i18n目录下提供了中文支持？
 
-### Note:
-Please ensure that once the PR is submitted, you check travis-ci for build issues and submit an update to your PR as soon as possible.
+### 文档修改:
+- [ ] 您是否确保格式应该与打印或展示适配？
+
