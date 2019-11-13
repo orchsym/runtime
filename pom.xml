@@ -104,7 +104,7 @@
 		<surefire.version>2.20.1</surefire.version>
 
 		<avro.version>1.8.1</avro.version>
-		<jackson.version>2.9.5</jackson.version>
+		<jackson.version>2.10.1</jackson.version>
 		<nifi.groovy.version>2.5.4</nifi.groovy.version>
     </properties>
 
