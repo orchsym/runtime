@@ -94,7 +94,7 @@
         <inceptionYear>2014</inceptionYear>
         <org.slf4j.version>1.7.25</org.slf4j.version>
         <ranger.version>0.7.1</ranger.version>
-        <jetty.version>9.4.3.v20170317</jetty.version>
+        <jetty.version>9.4.41.v20210516</jetty.version>
         
         <junit.version>4.12</junit.version>
 		<junit5.version>5.2.0</junit5.version>
